@@ -1,0 +1,29 @@
+Metadata-Version: 2.4
+Name: rss2cubox
+Version: 0.1.0
+Summary: Scheduled RSS ingestion pipeline for Cubox
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: feedparser>=6.0.11
+Requires-Dist: requests>=2.31.0
+Provides-Extra: dev
+Requires-Dist: pytest>=8.0.0; extra == "dev"
+
+# rss2cubox
+
+GitHub Actions scheduled RSS ingestion to Cubox Open API.
+
+## Environment
+
+- `CUBOX_API_URL` (required): personal Cubox API URL
+- `CUBOX_FOLDER` (optional, default `RSS Inbox`)
+- `KEYWORDS_INCLUDE` (optional, comma-separated)
+- `KEYWORDS_EXCLUDE` (optional, comma-separated)
+- `MAX_ITEMS_PER_RUN` (optional, default `30`)
+
+## Test
+
+```bash
+python -m pip install -e ".[dev]"
+pytest -q
+```

@@ -1,0 +1,11 @@
+README.md
+pyproject.toml
+src/rss2cubox/__init__.py
+src/rss2cubox/runner.py
+src/rss2cubox.egg-info/PKG-INFO
+src/rss2cubox.egg-info/SOURCES.txt
+src/rss2cubox.egg-info/dependency_links.txt
+src/rss2cubox.egg-info/entry_points.txt
+src/rss2cubox.egg-info/requires.txt
+src/rss2cubox.egg-info/top_level.txt
+tests/test_runner.py
