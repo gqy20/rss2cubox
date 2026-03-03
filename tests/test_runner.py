@@ -84,6 +84,94 @@ def test_cubox_save_url_requires_api_url(monkeypatch: pytest.MonkeyPatch) -> Non
         runner.cubox_save_url(url="https://example.com")
 
 
+def test_analyze_candidates_with_ai_prefers_tool_use(monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = {}
+
+    class Resp:
+        @staticmethod
+        def raise_for_status() -> None:
+            return None
+
+        @staticmethod
+        def json() -> dict:
+            return {
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "analyze_batch",
+                        "input": {
+                            "results": [
+                                {
+                                    "eid": "e1",
+                                    "keep": True,
+                                    "score": 0.92,
+                                    "reason": "high signal",
+                                    "tags": ["ai"],
+                                    "brief": "good summary",
+                                }
+                            ]
+                        },
+                    }
+                ]
+            }
+
+    def fake_post(url, headers, json, timeout):  # noqa: ANN001
+        calls["url"] = url
+        calls["headers"] = headers
+        calls["json"] = json
+        calls["timeout"] = timeout
+        return Resp()
+
+    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
+    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
+    monkeypatch.setattr(runner, "ANTHROPIC_BASE_URL", "https://api.example.com/anthropic")
+    monkeypatch.setattr(runner, "AI_TIMEOUT_SECONDS", 12)
+    monkeypatch.setattr(runner.requests, "post", fake_post)
+
+    out = runner.analyze_candidates_with_ai(
+        [{"eid": "e1", "url": "https://example.com/1", "title": "t", "description": "d"}]
+    )
+
+    assert calls["url"] == "https://api.example.com/anthropic/v1/messages"
+    assert calls["timeout"] == 12
+    assert calls["json"]["tool_choice"] == {"type": "any"}
+    assert calls["json"]["tools"][0]["name"] == "analyze_batch"
+    assert out["e1"]["keep"] is True
+    assert out["e1"]["score"] == 0.92
+    assert out["e1"]["tags"] == ["ai"]
+
+
+def test_analyze_candidates_with_ai_text_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Resp:
+        @staticmethod
+        def raise_for_status() -> None:
+            return None
+
+        @staticmethod
+        def json() -> dict:
+            return {
+                "content": [
+                    {
+                        "type": "text",
+                        "text": (
+                            '{"results":[{"eid":"e2","keep":false,"score":0.3,'
+                            '"reason":"low signal","tags":[],"brief":""}]}'
+                        ),
+                    }
+                ]
+            }
+
+    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
+    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
+    monkeypatch.setattr(runner.requests, "post", lambda *_, **__: Resp())
+
+    out = runner.analyze_candidates_with_ai(
+        [{"eid": "e2", "url": "https://example.com/2", "title": "t2", "description": "d2"}]
+    )
+    assert out["e2"]["keep"] is False
+    assert out["e2"]["score"] == 0.3
+
+
 def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     feeds_file = tmp_path / "feeds.txt"
     state_file = tmp_path / "state.json"

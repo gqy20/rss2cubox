@@ -141,10 +141,53 @@ def extract_first_json(raw: str) -> str:
     return text
 
 
-def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
-    if not candidates or not ai_analysis_enabled():
+def coerce_analysis_map(parsed: object) -> dict[str, dict]:
+    if not isinstance(parsed, list):
         return {}
+    out: dict[str, dict] = {}
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        eid = str(item.get("eid", "")).strip()
+        if not eid:
+            continue
+        try:
+            score = float(item.get("score", 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
+        out[eid] = {
+            "keep": bool(item.get("keep", False)),
+            "score": score,
+            "reason": str(item.get("reason", "")),
+            "tags": item.get("tags", []) if isinstance(item.get("tags", []), list) else [],
+            "brief": str(item.get("brief", "")),
+        }
+    return out
 
+
+def extract_tool_use_results(data: dict) -> dict[str, dict]:
+    blocks = data.get("content", [])
+    for block in blocks:
+        if not isinstance(block, dict) or block.get("type") != "tool_use":
+            continue
+        payload = block.get("input")
+        if isinstance(payload, dict) and isinstance(payload.get("results"), list):
+            return coerce_analysis_map(payload["results"])
+        if isinstance(payload, list):
+            return coerce_analysis_map(payload)
+    return {}
+
+
+def extract_text_results(data: dict) -> dict[str, dict]:
+    content_blocks = data.get("content", [])
+    text = "\n".join(block.get("text", "") for block in content_blocks if isinstance(block, dict))
+    parsed = json.loads(extract_first_json(text))
+    if isinstance(parsed, dict) and isinstance(parsed.get("results"), list):
+        return coerce_analysis_map(parsed["results"])
+    return coerce_analysis_map(parsed)
+
+
+def build_ai_items(candidates: list[dict]) -> list[dict]:
     items = []
     for c in candidates:
         items.append(
@@ -155,10 +198,17 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
                 "description": c["description"][:800],
             }
         )
+    return items
+
+
+def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
+    if not candidates or not ai_analysis_enabled():
+        return {}
+
+    items = build_ai_items(candidates)
 
     system_prompt = (
-        "You are a strict RSS curator. Return JSON array only. "
-        "For each input item, output one object with keys: eid, keep, score, reason, tags, brief. "
+        "You are a strict RSS curator. Use only the provided tool to return analysis results. "
         "Rules: keep high-signal technical/news content, reject ads, promo spam, hiring-only posts, low-info reposts. "
         "score must be 0..1."
     )
@@ -174,6 +224,34 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
         "max_tokens": 2000,
         "temperature": 0.1,
         "system": system_prompt,
+        "tools": [
+            {
+                "name": "analyze_batch",
+                "description": "Return structured analysis for RSS entries.",
+                "input_schema": {
+                    "type": "object",
+                    "properties": {
+                        "results": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "eid": {"type": "string"},
+                                    "keep": {"type": "boolean"},
+                                    "score": {"type": "number"},
+                                    "reason": {"type": "string"},
+                                    "tags": {"type": "array", "items": {"type": "string"}},
+                                    "brief": {"type": "string"},
+                                },
+                                "required": ["eid", "keep", "score", "reason", "tags", "brief"],
+                            },
+                        }
+                    },
+                    "required": ["results"],
+                },
+            }
+        ],
+        "tool_choice": {"type": "any"},
         "messages": [{"role": "user", "content": user_prompt}],
     }
 
@@ -186,22 +264,15 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
         )
         response.raise_for_status()
         data = response.json()
-        content_blocks = data.get("content", [])
-        text = "\n".join(block.get("text", "") for block in content_blocks if isinstance(block, dict))
-        parsed = json.loads(extract_first_json(text))
-        out: dict[str, dict] = {}
-        for item in parsed:
-            eid = str(item.get("eid", "")).strip()
-            if not eid:
-                continue
-            out[eid] = {
-                "keep": bool(item.get("keep", False)),
-                "score": float(item.get("score", 0.0)),
-                "reason": str(item.get("reason", "")),
-                "tags": item.get("tags", []) if isinstance(item.get("tags", []), list) else [],
-                "brief": str(item.get("brief", "")),
-            }
-        return out
+        parsed = extract_tool_use_results(data)
+        if parsed:
+            return parsed
+        # Compatibility fallback for gateways that return plain text JSON.
+        parsed = extract_text_results(data)
+        if parsed:
+            return parsed
+        print("[WARN] AI analysis empty output, fallback to keyword-only mode")
+        return {}
     except Exception as exc:  # noqa: BLE001
         print(f"[WARN] AI analysis failed, fallback to keyword-only mode: {exc}")
         return {}
