@@ -1,2 +1,0 @@
-[console_scripts]
-rss2cubox = rss2cubox.runner:main
