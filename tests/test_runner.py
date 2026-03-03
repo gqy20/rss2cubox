@@ -112,6 +112,8 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
+    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
+    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
     monkeypatch.setattr(runner.feedparser, "parse", fake_parse)
     monkeypatch.setattr(runner, "cubox_save_url", fake_save)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)

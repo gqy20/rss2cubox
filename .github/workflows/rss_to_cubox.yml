@@ -35,7 +35,12 @@ jobs:
           CUBOX_FOLDER: "RSS Inbox"
           KEYWORDS_INCLUDE: ""
           KEYWORDS_EXCLUDE: ""
-          MAX_ITEMS_PER_RUN: "30"
+          MAX_ITEMS_PER_RUN: "20"
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
+          AI_MIN_SCORE: ${{ vars.AI_MIN_SCORE }}
+          AI_TIMEOUT_SECONDS: ${{ vars.AI_TIMEOUT_SECONDS }}
         run: |
           rss2cubox
 

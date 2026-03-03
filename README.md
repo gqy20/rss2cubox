@@ -1,16 +1,78 @@
 # rss2cubox
 
-GitHub Actions scheduled RSS ingestion to Cubox Open API.
+将多个 RSS 源按计划同步到 Cubox Open API，并通过 `state.json` 去重，避免重复推送。
 
-## Environment
+## 工作方式
 
-- `CUBOX_API_URL` (required): personal Cubox API URL
-- `CUBOX_FOLDER` (optional, default `RSS Inbox`)
-- `KEYWORDS_INCLUDE` (optional, comma-separated)
-- `KEYWORDS_EXCLUDE` (optional, comma-separated)
-- `MAX_ITEMS_PER_RUN` (optional, default `30`)
+1. 从 `feeds.txt` 读取 RSS 地址（自动忽略空行和 `#` 注释行）。
+2. 拉取 feed 条目并按关键词进行包含/排除过滤。
+3. 使用条目 `id/guid`（或 `link+title`）生成稳定 ID，基于 `state.json` 去重。
+4. 将新条目推送到 Cubox。
+5. 更新 `state.json`（GitHub Actions 会自动提交该文件）。
+6. 若配置 Anthropic 变量，会对本轮候选 URL+描述先做一轮 AI 分析，再决定是否推送。
 
-## Test
+## 快速开始（本地）
+
+```bash
+python -m pip install -e ".[dev]"
+cp feeds.txt feeds.local.txt   # 可选：保留示例 feeds.txt
+```
+
+设置环境变量并执行：
+
+```bash
+export CUBOX_API_URL="https://cubox.pro/c/api/save/..."
+export CUBOX_FOLDER="RSS Inbox"
+export KEYWORDS_INCLUDE=""
+export KEYWORDS_EXCLUDE=""
+export MAX_ITEMS_PER_RUN="20"
+export ANTHROPIC_AUTH_TOKEN=""
+export ANTHROPIC_BASE_URL="https://api.anthropic.com"
+export ANTHROPIC_MODEL=""
+export AI_MIN_SCORE="0.6"
+export AI_TIMEOUT_SECONDS="45"
+
+rss2cubox
+```
+
+## 环境变量
+
+- `CUBOX_API_URL`（必填）：你的 Cubox Open API 地址。
+- `CUBOX_FOLDER`（可选，默认 `RSS Inbox`）：保存到 Cubox 的目标文件夹名。
+- `KEYWORDS_INCLUDE`（可选）：包含关键词，逗号分隔，例如 `ai,openai,llm`。
+- `KEYWORDS_EXCLUDE`（可选）：排除关键词，逗号分隔。
+- `MAX_ITEMS_PER_RUN`（可选，默认 `20`）：单次最多推送条目数。
+- `FEEDS_FILE`（可选，默认 `feeds.txt`）：feed 列表文件路径。
+- `STATE_FILE`（可选，默认 `state.json`）：状态文件路径。
+- `ANTHROPIC_AUTH_TOKEN`（可选）：Anthropic 认证令牌；有值且配置了模型时启用 AI 分析。
+- `ANTHROPIC_BASE_URL`（可选，默认 `https://api.anthropic.com`）：Anthropic/兼容网关地址。
+- `ANTHROPIC_MODEL`（可选）：模型名，如你的本地值 `MiniMax-M2.5`。
+- `AI_MIN_SCORE`（可选，默认 `0.6`）：AI 保留阈值，低于阈值不推送。
+- `AI_TIMEOUT_SECONDS`（可选，默认 `45`）：AI 请求超时时间（秒）。
+
+## 文件说明
+
+- `feeds.txt`：RSS 地址列表，每行一个 URL。
+- `state.json`：已推送条目的去重状态（由程序维护）。
+- `.github/workflows/rss_to_cubox.yml`：定时任务与状态自动提交。
+
+## GitHub Actions 部署
+
+1. Fork 或创建仓库并推送代码。
+2. 在仓库 `Settings > Secrets and variables > Actions` 添加：
+   - `CUBOX_API_URL`
+   - `ANTHROPIC_AUTH_TOKEN`（如果启用 AI 分析）
+   - `ANTHROPIC_BASE_URL`
+   - `ANTHROPIC_MODEL`
+3. 在仓库 `Variables`（或 workflow `env`）中设置：
+   - `AI_MIN_SCORE`（可选）
+   - `AI_TIMEOUT_SECONDS`（可选）
+4. 修改 `feeds.txt` 为你自己的 RSS 源列表。
+5. 启用 workflow `RSS to Cubox`（支持手动触发和定时触发）。
+
+默认定时是每小时第 `7` 和 `37` 分钟执行一次，可在 `.github/workflows/rss_to_cubox.yml` 调整 `cron`。
+
+## 测试
 
 ```bash
 python -m pip install -e ".[dev]"

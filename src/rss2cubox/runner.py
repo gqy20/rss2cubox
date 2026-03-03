@@ -2,6 +2,7 @@
 import hashlib
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -16,7 +17,13 @@ CUBOX_API_URL = os.getenv("CUBOX_API_URL")
 CUBOX_FOLDER = os.getenv("CUBOX_FOLDER", "RSS Inbox")
 KEYWORDS_INCLUDE = [k.strip() for k in os.getenv("KEYWORDS_INCLUDE", "").split(",") if k.strip()]
 KEYWORDS_EXCLUDE = [k.strip() for k in os.getenv("KEYWORDS_EXCLUDE", "").split(",") if k.strip()]
-MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "30"))
+MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "20"))
+
+ANTHROPIC_AUTH_TOKEN = os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip()
+ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
+AI_MIN_SCORE = float(os.getenv("AI_MIN_SCORE", "0.6"))
+AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "45"))
 
 
 def load_lines(path: Path) -> list[str]:
@@ -85,12 +92,104 @@ def cubox_save_url(url: str, title: str = "", description: str = "", tags=None, 
     return response.text
 
 
+def ai_analysis_enabled() -> bool:
+    return bool(ANTHROPIC_AUTH_TOKEN and ANTHROPIC_MODEL)
+
+
+def anthropic_messages_url() -> str:
+    base = ANTHROPIC_BASE_URL.rstrip("/")
+    if base.endswith("/v1/messages"):
+        return base
+    if base.endswith("/v1"):
+        return f"{base}/messages"
+    return f"{base}/v1/messages"
+
+
+def extract_first_json(raw: str) -> str:
+    text = raw.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+    start = text.find("[")
+    end = text.rfind("]")
+    if start != -1 and end != -1 and end > start:
+        return text[start : end + 1]
+    return text
+
+
+def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
+    if not candidates or not ai_analysis_enabled():
+        return {}
+
+    items = []
+    for c in candidates:
+        items.append(
+            {
+                "eid": c["eid"],
+                "url": c["url"],
+                "title": c["title"],
+                "description": c["description"][:800],
+            }
+        )
+
+    system_prompt = (
+        "You are a strict RSS curator. Return JSON array only. "
+        "For each input item, output one object with keys: eid, keep, score, reason, tags, brief. "
+        "Rules: keep high-signal technical/news content, reject ads, promo spam, hiring-only posts, low-info reposts. "
+        "score must be 0..1."
+    )
+    user_prompt = json.dumps(items, ensure_ascii=False)
+    headers = {
+        "content-type": "application/json",
+        "x-api-key": ANTHROPIC_AUTH_TOKEN,
+        "anthropic-version": "2023-06-01",
+        "authorization": f"Bearer {ANTHROPIC_AUTH_TOKEN}",
+    }
+    payload = {
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": 2000,
+        "temperature": 0.1,
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": user_prompt}],
+    }
+
+    try:
+        response = requests.post(
+            anthropic_messages_url(),
+            headers=headers,
+            json=payload,
+            timeout=AI_TIMEOUT_SECONDS,
+        )
+        response.raise_for_status()
+        data = response.json()
+        content_blocks = data.get("content", [])
+        text = "\n".join(block.get("text", "") for block in content_blocks if isinstance(block, dict))
+        parsed = json.loads(extract_first_json(text))
+        out: dict[str, dict] = {}
+        for item in parsed:
+            eid = str(item.get("eid", "")).strip()
+            if not eid:
+                continue
+            out[eid] = {
+                "keep": bool(item.get("keep", False)),
+                "score": float(item.get("score", 0.0)),
+                "reason": str(item.get("reason", "")),
+                "tags": item.get("tags", []) if isinstance(item.get("tags", []), list) else [],
+                "brief": str(item.get("brief", "")),
+            }
+        return out
+    except Exception as exc:  # noqa: BLE001
+        print(f"[WARN] AI analysis failed, fallback to keyword-only mode: {exc}")
+        return {}
+
+
 def main() -> None:
     feeds = load_lines(FEEDS_FILE)
     state = load_state()
     sent = state.get("sent", {})
+    ai = state.get("ai", {})
 
-    pushed = 0
+    candidates: list[dict] = []
     now = datetime.now(timezone.utc).isoformat()
 
     for feed_url in feeds:
@@ -100,9 +199,6 @@ def main() -> None:
             continue
 
         for entry in parsed.entries:
-            if pushed >= MAX_ITEMS_PER_RUN:
-                break
-
             eid = stable_id(entry)
             if eid in sent:
                 continue
@@ -116,25 +212,63 @@ def main() -> None:
             description = (entry.get("summary", "") or "").strip()
             if len(description) > 600:
                 description = description[:600] + "..."
+            candidates.append(
+                {
+                    "eid": eid,
+                    "url": url,
+                    "title": title,
+                    "description": description,
+                }
+            )
 
-            try:
-                cubox_save_url(
-                    url=url,
-                    title=title,
-                    description=description,
-                    tags=None,
-                    folder=CUBOX_FOLDER,
-                )
-                sent[eid] = {"url": url, "ts": now}
-                pushed += 1
-                time.sleep(0.3)
-            except Exception as exc:  # noqa: BLE001
-                print(f"[ERROR] push failed: {url} -> {exc}")
+    analyses = analyze_candidates_with_ai(candidates)
 
+    pushed = 0
+    for item in candidates:
         if pushed >= MAX_ITEMS_PER_RUN:
             break
 
+        eid = item["eid"]
+        url = item["url"]
+        title = item["title"]
+        description = item["description"]
+        tags = None
+
+        result = analyses.get(eid)
+        if result:
+            ai[eid] = {
+                "keep": result.get("keep", False),
+                "score": result.get("score", 0.0),
+                "reason": result.get("reason", ""),
+                "ts": now,
+                "model": ANTHROPIC_MODEL,
+            }
+            if not result.get("keep", False):
+                continue
+            if float(result.get("score", 0.0)) < AI_MIN_SCORE:
+                continue
+            brief = str(result.get("brief", "")).strip()
+            if brief:
+                description = brief[:600]
+            if result.get("tags"):
+                tags = result["tags"]
+
+        try:
+            cubox_save_url(
+                url=url,
+                title=title,
+                description=description,
+                tags=tags,
+                folder=CUBOX_FOLDER,
+            )
+            sent[eid] = {"url": url, "ts": now}
+            pushed += 1
+            time.sleep(0.3)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ERROR] push failed: {url} -> {exc}")
+
     state["sent"] = sent
+    state["ai"] = ai
     save_state(state)
     print(f"Done. Pushed {pushed} items. State size={len(sent)}")
 
