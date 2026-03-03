@@ -70,7 +70,8 @@ rss2cubox
 4. 修改 `feeds.txt` 为你自己的 RSS 源列表。
 5. 启用 workflow `RSS to Cubox`（支持手动触发和定时触发）。
 
-默认定时是每小时第 `7` 和 `37` 分钟执行一次，可在 `.github/workflows/rss_to_cubox.yml` 调整 `cron`。
+默认定时是每天 `06:00`（北京时间，UTC+8）执行一次，等价于 `22:00 UTC`（前一天）。
+可在 `.github/workflows/rss_to_cubox.yml` 调整 `cron`。
 
 ## 测试
 
