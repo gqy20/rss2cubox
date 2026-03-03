@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -222,6 +223,60 @@ def test_analyze_candidates_with_ai_retries_then_success(monkeypatch: pytest.Mon
     )
     assert calls["count"] == 2
     assert out["e3"]["keep"] is True
+
+
+def test_analyze_candidates_with_ai_batches(monkeypatch: pytest.MonkeyPatch) -> None:
+    batch_sizes = []
+
+    class Resp:
+        def __init__(self, payload: dict) -> None:
+            self.payload = payload
+
+        @staticmethod
+        def raise_for_status() -> None:
+            return None
+
+        def json(self) -> dict:
+            items = json.loads(self.payload["messages"][0]["content"])
+            results = [
+                {
+                    "eid": item["eid"],
+                    "keep": True,
+                    "score": 0.9,
+                    "reason": "ok",
+                    "tags": ["ai"],
+                    "brief": "brief",
+                }
+                for item in items
+            ]
+            return {
+                "stop_reason": "tool_use",
+                "content": [{"type": "tool_use", "name": "analyze_batch", "input": {"results": results}}],
+            }
+
+    def fake_post(url, headers, json, timeout):  # noqa: ANN001
+        _ = (url, headers, timeout)
+        items = json_loads(json["messages"][0]["content"])
+        batch_sizes.append(len(items))
+        return Resp(json)
+
+    def json_loads(s: str) -> list[dict]:
+        return json.loads(s)
+
+    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
+    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
+    monkeypatch.setattr(runner, "AI_BATCH_SIZE", 3)
+    monkeypatch.setattr(runner, "AI_RETRY_ATTEMPTS", 1)
+    monkeypatch.setattr(runner.requests, "post", fake_post)
+
+    cands = [
+        {"eid": f"e{i}", "url": f"https://example.com/{i}", "title": "t", "description": "d"}
+        for i in range(7)
+    ]
+    out = runner.analyze_candidates_with_ai(cands)
+    assert batch_sizes == [3, 3, 1]
+    assert len(out) == 7
+    assert out["e0"]["keep"] is True
 
 
 def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

@@ -47,9 +47,11 @@ def env_int(name: str, default: int) -> int:
 
 
 AI_MIN_SCORE = env_float("AI_MIN_SCORE", 0.6)
-AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 45)
+AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 90)
 AI_RETRY_ATTEMPTS = env_int("AI_RETRY_ATTEMPTS", 3)
 AI_RETRY_BACKOFF_SECONDS = env_float("AI_RETRY_BACKOFF_SECONDS", 1.5)
+AI_BATCH_SIZE = env_int("AI_BATCH_SIZE", 5)
+AI_MAX_CANDIDATES = env_int("AI_MAX_CANDIDATES", max(MAX_ITEMS_PER_RUN * 2, 1))
 
 
 def load_lines(path: Path) -> list[str]:
@@ -203,11 +205,11 @@ def build_ai_items(candidates: list[dict]) -> list[dict]:
     return items
 
 
-def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
-    if not candidates or not ai_analysis_enabled():
+def _analyze_batch_with_ai(batch: list[dict]) -> dict[str, dict]:
+    if not batch or not ai_analysis_enabled():
         return {}
 
-    items = build_ai_items(candidates)
+    items = build_ai_items(batch)
 
     system_prompt = (
         "You are a strict RSS curator. Use only the provided tool to return analysis results. "
@@ -257,6 +259,7 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
         "messages": [{"role": "user", "content": user_prompt}],
     }
 
+    batch_eids = [item.get("eid", "") for item in batch]
     for attempt in range(1, max(1, AI_RETRY_ATTEMPTS) + 1):
         try:
             response = requests.post(
@@ -267,6 +270,13 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
             )
             response.raise_for_status()
             data = response.json()
+            stop_reason = data.get("stop_reason")
+            block_types = [block.get("type") for block in data.get("content", []) if isinstance(block, dict)]
+            usage = data.get("usage", {})
+            print(
+                f"[INFO] AI batch size={len(batch)} attempt={attempt} "
+                f"stop_reason={stop_reason} block_types={block_types} usage={usage}"
+            )
             parsed = extract_tool_use_results(data)
             if parsed:
                 return parsed
@@ -277,15 +287,39 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
             raise ValueError("empty or unrecognized AI output")
         except Exception as exc:  # noqa: BLE001
             if attempt >= max(1, AI_RETRY_ATTEMPTS):
-                print(f"[WARN] AI analysis failed after {attempt} attempts, fallback to keyword-only mode: {exc}")
+                print(
+                    f"[WARN] AI batch failed after {attempt} attempts "
+                    f"(size={len(batch)}, eids={batch_eids[:3]}...): {exc}"
+                )
                 return {}
             sleep_seconds = AI_RETRY_BACKOFF_SECONDS * (2 ** (attempt - 1))
             print(
-                f"[WARN] AI analysis attempt {attempt} failed: {exc}; "
+                f"[WARN] AI batch attempt {attempt} failed "
+                f"(size={len(batch)}): {exc}; "
                 f"retrying in {sleep_seconds:.1f}s"
             )
             time.sleep(sleep_seconds)
     return {}
+
+
+def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
+    if not candidates or not ai_analysis_enabled():
+        return {}
+    batch_size = max(1, AI_BATCH_SIZE)
+    out: dict[str, dict] = {}
+    total = len(candidates)
+    batches = (total + batch_size - 1) // batch_size
+    for idx in range(0, total, batch_size):
+        batch = candidates[idx : idx + batch_size]
+        batch_no = idx // batch_size + 1
+        print(f"[INFO] AI analyzing batch {batch_no}/{batches}, size={len(batch)}")
+        parsed = _analyze_batch_with_ai(batch)
+        out.update(parsed)
+    if out:
+        print(f"[INFO] AI analyzed {len(out)}/{total} candidates")
+    else:
+        print("[WARN] AI analysis produced no usable results, fallback to keyword-only mode")
+    return out
 
 
 def main() -> None:
@@ -326,10 +360,22 @@ def main() -> None:
                 }
             )
 
-    analyses = analyze_candidates_with_ai(candidates)
+    candidates_for_run = candidates[: max(1, AI_MAX_CANDIDATES)]
+    if len(candidates_for_run) < len(candidates):
+        print(
+            f"[INFO] candidates limited for AI/push: "
+            f"{len(candidates_for_run)}/{len(candidates)}"
+        )
+
+    analyses = analyze_candidates_with_ai(candidates_for_run)
+    ai_enabled = ai_analysis_enabled()
+    if ai_enabled and analyses:
+        missing = sum(1 for item in candidates_for_run if item["eid"] not in analyses)
+        if missing:
+            print(f"[WARN] AI missing results for {missing} candidates; those items will be skipped")
 
     pushed = 0
-    for item in candidates:
+    for item in candidates_for_run:
         if pushed >= MAX_ITEMS_PER_RUN:
             break
 
@@ -340,6 +386,8 @@ def main() -> None:
         tags = None
 
         result = analyses.get(eid)
+        if ai_enabled and analyses and not result:
+            continue
         if result:
             ai[eid] = {
                 "keep": result.get("keep", False),

@@ -41,8 +41,21 @@ jobs:
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
           AI_MIN_SCORE: ${{ vars.AI_MIN_SCORE }}
           AI_TIMEOUT_SECONDS: ${{ vars.AI_TIMEOUT_SECONDS }}
+          AI_RETRY_ATTEMPTS: ${{ vars.AI_RETRY_ATTEMPTS }}
+          AI_RETRY_BACKOFF_SECONDS: ${{ vars.AI_RETRY_BACKOFF_SECONDS }}
+          AI_BATCH_SIZE: ${{ vars.AI_BATCH_SIZE }}
+          AI_MAX_CANDIDATES: ${{ vars.AI_MAX_CANDIDATES }}
         run: |
-          rss2cubox
+          set -o pipefail
+          rss2cubox 2>&1 | tee rss2cubox.log
+
+      - name: Upload run log artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rss2cubox-log-${{ github.run_id }}
+          path: rss2cubox.log
+          if-no-files-found: warn
 
       - name: Commit state
         run: |

@@ -30,7 +30,11 @@ export ANTHROPIC_AUTH_TOKEN=""
 export ANTHROPIC_BASE_URL="https://api.anthropic.com"
 export ANTHROPIC_MODEL=""
 export AI_MIN_SCORE="0.6"
-export AI_TIMEOUT_SECONDS="45"
+export AI_TIMEOUT_SECONDS="90"
+export AI_RETRY_ATTEMPTS="3"
+export AI_RETRY_BACKOFF_SECONDS="1.5"
+export AI_BATCH_SIZE="5"
+export AI_MAX_CANDIDATES="40"
 
 rss2cubox
 ```
@@ -48,7 +52,11 @@ rss2cubox
 - `ANTHROPIC_BASE_URL`（可选，默认 `https://api.anthropic.com`）：Anthropic/兼容网关地址。
 - `ANTHROPIC_MODEL`（可选）：模型名，如你的本地值 `MiniMax-M2.5`。
 - `AI_MIN_SCORE`（可选，默认 `0.6`）：AI 保留阈值，低于阈值不推送。
-- `AI_TIMEOUT_SECONDS`（可选，默认 `45`）：AI 请求超时时间（秒）。
+- `AI_TIMEOUT_SECONDS`（可选，默认 `90`）：AI 请求超时时间（秒）。
+- `AI_RETRY_ATTEMPTS`（可选，默认 `3`）：AI 请求失败重试次数。
+- `AI_RETRY_BACKOFF_SECONDS`（可选，默认 `1.5`）：AI 重试退避基数，按指数退避。
+- `AI_BATCH_SIZE`（可选，默认 `5`）：AI 分析批大小，建议 5~8。
+- `AI_MAX_CANDIDATES`（可选，默认 `MAX_ITEMS_PER_RUN*2`）：单次运行参与 AI 分析和后续推送的候选上限。
 
 ## 文件说明
 
@@ -67,11 +75,17 @@ rss2cubox
 3. 在仓库 `Variables`（或 workflow `env`）中设置：
    - `AI_MIN_SCORE`（可选）
    - `AI_TIMEOUT_SECONDS`（可选）
+   - `AI_RETRY_ATTEMPTS`（可选）
+   - `AI_RETRY_BACKOFF_SECONDS`（可选）
+   - `AI_BATCH_SIZE`（可选）
+   - `AI_MAX_CANDIDATES`（可选）
 4. 修改 `feeds.txt` 为你自己的 RSS 源列表。
 5. 启用 workflow `RSS to Cubox`（支持手动触发和定时触发）。
 
 默认定时是每天 `06:00`（北京时间，UTC+8）执行一次，等价于 `22:00 UTC`（前一天）。
 可在 `.github/workflows/rss_to_cubox.yml` 调整 `cron`。
+
+每次 workflow 运行会上传 `rss2cubox.log` 到 GitHub Actions artifacts，便于排查 AI 分析与推送日志。
 
 ## 测试
 
