@@ -22,8 +22,32 @@ MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "20"))
 ANTHROPIC_AUTH_TOKEN = os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip()
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
-AI_MIN_SCORE = float(os.getenv("AI_MIN_SCORE", "0.6"))
-AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "45"))
+
+
+def env_float(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        print(f"[WARN] invalid {name}={raw!r}, fallback to {default}")
+        return default
+
+
+def env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        print(f"[WARN] invalid {name}={raw!r}, fallback to {default}")
+        return default
+
+
+AI_MIN_SCORE = env_float("AI_MIN_SCORE", 0.6)
+AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 45)
 
 
 def load_lines(path: Path) -> list[str]:
