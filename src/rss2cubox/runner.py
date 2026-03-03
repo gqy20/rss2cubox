@@ -48,6 +48,8 @@ def env_int(name: str, default: int) -> int:
 
 AI_MIN_SCORE = env_float("AI_MIN_SCORE", 0.6)
 AI_TIMEOUT_SECONDS = env_int("AI_TIMEOUT_SECONDS", 45)
+AI_RETRY_ATTEMPTS = env_int("AI_RETRY_ATTEMPTS", 3)
+AI_RETRY_BACKOFF_SECONDS = env_float("AI_RETRY_BACKOFF_SECONDS", 1.5)
 
 
 def load_lines(path: Path) -> list[str]:
@@ -255,27 +257,35 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
         "messages": [{"role": "user", "content": user_prompt}],
     }
 
-    try:
-        response = requests.post(
-            anthropic_messages_url(),
-            headers=headers,
-            json=payload,
-            timeout=AI_TIMEOUT_SECONDS,
-        )
-        response.raise_for_status()
-        data = response.json()
-        parsed = extract_tool_use_results(data)
-        if parsed:
-            return parsed
-        # Compatibility fallback for gateways that return plain text JSON.
-        parsed = extract_text_results(data)
-        if parsed:
-            return parsed
-        print("[WARN] AI analysis empty output, fallback to keyword-only mode")
-        return {}
-    except Exception as exc:  # noqa: BLE001
-        print(f"[WARN] AI analysis failed, fallback to keyword-only mode: {exc}")
-        return {}
+    for attempt in range(1, max(1, AI_RETRY_ATTEMPTS) + 1):
+        try:
+            response = requests.post(
+                anthropic_messages_url(),
+                headers=headers,
+                json=payload,
+                timeout=AI_TIMEOUT_SECONDS,
+            )
+            response.raise_for_status()
+            data = response.json()
+            parsed = extract_tool_use_results(data)
+            if parsed:
+                return parsed
+            # Compatibility fallback for gateways that return plain text JSON.
+            parsed = extract_text_results(data)
+            if parsed:
+                return parsed
+            raise ValueError("empty or unrecognized AI output")
+        except Exception as exc:  # noqa: BLE001
+            if attempt >= max(1, AI_RETRY_ATTEMPTS):
+                print(f"[WARN] AI analysis failed after {attempt} attempts, fallback to keyword-only mode: {exc}")
+                return {}
+            sleep_seconds = AI_RETRY_BACKOFF_SECONDS * (2 ** (attempt - 1))
+            print(
+                f"[WARN] AI analysis attempt {attempt} failed: {exc}; "
+                f"retrying in {sleep_seconds:.1f}s"
+            )
+            time.sleep(sleep_seconds)
+    return {}
 
 
 def main() -> None:

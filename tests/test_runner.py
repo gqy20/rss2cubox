@@ -2,6 +2,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import requests
 
 from rss2cubox import runner
 
@@ -170,6 +171,57 @@ def test_analyze_candidates_with_ai_text_fallback(monkeypatch: pytest.MonkeyPatc
     )
     assert out["e2"]["keep"] is False
     assert out["e2"]["score"] == 0.3
+
+
+def test_analyze_candidates_with_ai_retries_then_success(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Resp:
+        @staticmethod
+        def raise_for_status() -> None:
+            return None
+
+        @staticmethod
+        def json() -> dict:
+            return {
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "analyze_batch",
+                        "input": {
+                            "results": [
+                                {
+                                    "eid": "e3",
+                                    "keep": True,
+                                    "score": 0.88,
+                                    "reason": "good",
+                                    "tags": ["weekly"],
+                                    "brief": "ok",
+                                }
+                            ]
+                        },
+                    }
+                ]
+            }
+
+    calls = {"count": 0}
+
+    def flaky_post(*_, **__):  # noqa: ANN001
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise requests.exceptions.ReadTimeout("timeout")
+        return Resp()
+
+    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
+    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
+    monkeypatch.setattr(runner, "AI_RETRY_ATTEMPTS", 2)
+    monkeypatch.setattr(runner, "AI_RETRY_BACKOFF_SECONDS", 0)
+    monkeypatch.setattr(runner.requests, "post", flaky_post)
+    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+
+    out = runner.analyze_candidates_with_ai(
+        [{"eid": "e3", "url": "https://example.com/3", "title": "t3", "description": "d3"}]
+    )
+    assert calls["count"] == 2
+    assert out["e3"]["keep"] is True
 
 
 def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
