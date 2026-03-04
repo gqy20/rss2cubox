@@ -13,6 +13,7 @@ from rss2cubox.ai_pipeline import (
     ai_analysis_enabled,
     analyze_candidates_with_ai,
 )
+from rss2cubox.enrich_agent import run_enrich_analysis
 from rss2cubox.global_agent import run_global_analysis
 from rss2cubox.feed_sources import RSSHubInstancePool
 from rss2cubox.metrics import (
@@ -201,6 +202,12 @@ def main() -> None:
             "candidates_reordered_by_ai_score",
             stage="ai_decision",
             candidates=len(candidates_for_run),
+        )
+        run_enrich_analysis(
+            candidates=candidates_for_run,
+            analyses=analyses,
+            ai_min_score=AI_MIN_SCORE,
+            log_event=log_event,
         )
 
     sync_pipeline.process_candidates_for_push(
