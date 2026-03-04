@@ -5,6 +5,7 @@ from types import SimpleNamespace
 import pytest
 import requests
 
+from rss2cubox import feed_sources, sync_pipeline
 from rss2cubox import runner
 
 
@@ -12,7 +13,7 @@ def test_load_lines_ignores_blank_and_comment(tmp_path: Path) -> None:
     feeds = tmp_path / "feeds.txt"
     feeds.write_text("# comment\n\nhttps://a.example/rss\n  \nhttps://b.example/rss\n", encoding="utf-8")
 
-    assert runner.load_lines(feeds) == ["https://a.example/rss", "https://b.example/rss"]
+    assert feed_sources.load_lines(feeds) == ["https://a.example/rss", "https://b.example/rss"]
 
 
 def test_load_feed_specs_supports_sections(tmp_path: Path) -> None:
@@ -21,7 +22,7 @@ def test_load_feed_specs_supports_sections(tmp_path: Path) -> None:
         "[rsshub]\n/sspai/index\n\n[direct]\nhttps://example.com/feed.xml\n",
         encoding="utf-8",
     )
-    assert runner.load_feed_specs(feeds) == [
+    assert feed_sources.load_feed_specs(feeds) == [
         {"kind": "rsshub", "value": "/sspai/index"},
         {"kind": "direct", "value": "https://example.com/feed.xml"},
     ]
@@ -29,11 +30,12 @@ def test_load_feed_specs_supports_sections(tmp_path: Path) -> None:
 
 def test_resolve_feed_urls_with_rsshub_route() -> None:
     instances = ["https://a.rsshub.test", "https://b.rsshub.test"]
-    assert runner.resolve_feed_urls("rsshub", "/sspai/index", instances) == [
+    pool = feed_sources.RSSHubInstancePool(instances=instances)
+    assert feed_sources.resolve_feed_urls("rsshub", "/sspai/index", pool) == [
         "https://a.rsshub.test/sspai/index",
         "https://b.rsshub.test/sspai/index",
     ]
-    assert runner.resolve_feed_urls("rsshub", "rsshub://sspai/index", instances) == [
+    assert feed_sources.resolve_feed_urls("rsshub", "rsshub://sspai/index", pool) == [
         "https://a.rsshub.test/sspai/index",
         "https://b.rsshub.test/sspai/index",
     ]
@@ -41,6 +43,7 @@ def test_resolve_feed_urls_with_rsshub_route() -> None:
 
 def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyPatch) -> None:
     instances = ["https://bad.rsshub.test", "https://ok.rsshub.test"]
+    pool = feed_sources.RSSHubInstancePool(instances=instances, cooldown_seconds=1)
 
     def fake_fetch(url: str):  # noqa: ANN001
         if url.startswith("https://bad.rsshub.test"):
@@ -49,7 +52,7 @@ def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyP
 
     monkeypatch.setattr(runner, "fetch_and_parse_feed", fake_fetch)
 
-    selected, parsed, attempt = runner.parse_feed_with_fallback("rsshub", "/sspai/index", instances)
+    selected, parsed, attempt = runner.parse_feed_with_fallback("rsshub", "/sspai/index", pool)
     assert selected == "https://ok.rsshub.test/sspai/index"
     assert attempt == 2
     assert parsed is not None
@@ -59,35 +62,33 @@ def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyP
 def test_load_rsshub_instances_from_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     pool = tmp_path / "rsshub_instances.txt"
     pool.write_text("# comment\nhttps://x.rsshub.test/\nhttps://y.rsshub.test\n", encoding="utf-8")
-    monkeypatch.setattr(runner, "RSSHUB_INSTANCES_FILE", pool)
     monkeypatch.delenv("RSSHUB_INSTANCES", raising=False)
 
-    assert runner.load_rsshub_instances() == ["https://x.rsshub.test", "https://y.rsshub.test"]
+    assert feed_sources.load_rsshub_instances(pool) == ["https://x.rsshub.test", "https://y.rsshub.test"]
 
 
 def test_state_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_file = tmp_path / "state.json"
-    monkeypatch.setattr(runner, "STATE_FILE", state_file)
+    _ = monkeypatch
     payload = {"sent": {"x": {"url": "https://example.com", "ts": "2026-01-01T00:00:00+00:00"}}}
 
-    runner.save_state(payload)
-    assert runner.load_state() == payload
+    sync_pipeline.save_state(state_file, payload)
+    assert sync_pipeline.load_state(state_file) == payload
 
 
 def test_stable_id_prefers_entry_id() -> None:
     entry_a = {"id": "same", "link": "https://a", "title": "A"}
     entry_b = {"id": "same", "link": "https://b", "title": "B"}
-    assert runner.stable_id(entry_a) == runner.stable_id(entry_b)
+    assert sync_pipeline.stable_id(entry_a) == sync_pipeline.stable_id(entry_b)
 
 
 def test_passes_filter_include_exclude(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", ["openai"])
-    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", ["hiring"])
+    _ = monkeypatch
     entry_ok = {"title": "OpenAI releases update"}
     entry_bad = {"title": "OpenAI hiring boom"}
 
-    assert runner.passes_filter(entry_ok) is True
-    assert runner.passes_filter(entry_bad) is False
+    assert sync_pipeline.passes_filter(entry_ok, ["openai"], ["hiring"]) is True
+    assert sync_pipeline.passes_filter(entry_bad, ["openai"], ["hiring"]) is False
 
 
 def test_cubox_save_url_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -106,10 +107,9 @@ def test_cubox_save_url_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
         calls["timeout"] = timeout
         return Resp()
 
-    monkeypatch.setattr(runner, "CUBOX_API_URL", "https://cubox.example/api")
-    monkeypatch.setattr(runner.requests, "post", fake_post)
-
-    out = runner.cubox_save_url(
+    out = sync_pipeline.cubox_save_url(
+        api_url="https://cubox.example/api",
+        request_post=fake_post,
         url="https://example.com/post",
         title="t",
         description="d",
@@ -131,9 +131,9 @@ def test_cubox_save_url_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_cubox_save_url_requires_api_url(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(runner, "CUBOX_API_URL", None)
+    _ = monkeypatch
     with pytest.raises(RuntimeError):
-        runner.cubox_save_url(url="https://example.com")
+        sync_pipeline.cubox_save_url(api_url=None, request_post=lambda *args, **kwargs: None, url="https://example.com")
 
 
 def test_analyze_candidates_with_ai_prefers_tool_use(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -360,14 +360,16 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
     monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
     monkeypatch.setattr(runner, "fetch_and_parse_feed", fake_fetch)
-    monkeypatch.setattr(runner, "cubox_save_url", fake_save)
+    monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
+        kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
+    ))
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
     assert len(pushed_urls) == 1
     assert pushed_urls[0][0] == "https://example.com/1"
-    state = runner.load_state()
+    state = sync_pipeline.load_state(state_file)
     assert len(state["sent"]) == 1
 
 
