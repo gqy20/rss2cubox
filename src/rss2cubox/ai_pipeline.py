@@ -48,9 +48,12 @@ def coerce_analysis_map(parsed: object) -> dict[str, dict]:
         out[eid] = {
             "keep": bool(item.get("keep", False)),
             "score": score,
-            "reason": str(item.get("reason", "")),
+            "core_event": str(item.get("core_event", "")),
+            "hidden_signal": str(item.get("hidden_signal", "")),
+            "actionable": str(item.get("actionable", "")),
+            "reason": str(item.get("hidden_signal", item.get("reason", ""))), # Fallback for old pipeline
             "tags": item.get("tags", []) if isinstance(item.get("tags", []), list) else [],
-            "brief": str(item.get("brief", "")),
+            "brief": str(item.get("core_event", item.get("brief", ""))),
         }
     return out
 
@@ -93,20 +96,26 @@ def build_ai_items(candidates: list[dict]) -> list[dict]:
 
 def build_ai_payload(model: str, items: list[dict]) -> dict[str, Any]:
     system_prompt = (
-        "You are a strict RSS curator. Use only the provided tool to return analysis results. "
-        "Rules: keep high-signal technical/news content, reject ads, promo spam, hiring-only posts, low-info reposts. "
-        "score must be 0..1."
+        "You are an elite Tech/Business Intelligence Analyst filtering RSS feeds.\n"
+        "Your goal is to extract high-value 'signals' from noise.\n"
+        "Rules:\n"
+        "1. Reject generic news, PR fluff, tool ads, and low-info reposts (keep=false).\n"
+        "2. Provide `core_event`: A cold, objective one-sentence summary of the factual event.\n"
+        "3. Provide `hidden_signal`: What does this actually mean? The underlying paradigm shift, industry impact, or deep technical implication.\n"
+        "4. Provide `actionable`: How should an engineer or tech professional react? (e.g. 'Investigate this architecture', 'Monitor competitor', 'Low priority').\n"
+        "5. Provide `score`: 0.0 to 1.0 (>= 0.85 means high value).\n"
+        "6. Provide `tags`: 1-3 sharp tech categories."
     )
     user_prompt = json.dumps(items, ensure_ascii=False)
     return {
         "model": model,
-        "max_tokens": 2000,
+        "max_tokens": 4096,
         "temperature": 0.1,
         "system": system_prompt,
         "tools": [
             {
                 "name": "analyze_batch",
-                "description": "Return structured analysis for RSS entries.",
+                "description": "Return structured analysis and intelligence signals for RSS entries.",
                 "input_schema": {
                     "type": "object",
                     "properties": {
@@ -118,11 +127,12 @@ def build_ai_payload(model: str, items: list[dict]) -> dict[str, Any]:
                                     "eid": {"type": "string"},
                                     "keep": {"type": "boolean"},
                                     "score": {"type": "number"},
-                                    "reason": {"type": "string"},
+                                    "core_event": {"type": "string"},
+                                    "hidden_signal": {"type": "string"},
+                                    "actionable": {"type": "string"},
                                     "tags": {"type": "array", "items": {"type": "string"}},
-                                    "brief": {"type": "string"},
                                 },
-                                "required": ["eid", "keep", "score", "reason", "tags", "brief"],
+                                "required": ["eid", "keep", "score", "core_event", "hidden_signal", "actionable", "tags"],
                             },
                         }
                     },

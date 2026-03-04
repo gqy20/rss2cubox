@@ -3,7 +3,12 @@ name: RSS to Cubox
 on:
   schedule:
     - cron: "0 22 * * *"
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      push_to_cubox:
+        description: 'Push to Cubox (uncheck to only update web data)'
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -31,7 +36,7 @@ jobs:
 
       - name: Run sync
         env:
-          CUBOX_API_URL: ${{ secrets.CUBOX_API_URL }}
+          CUBOX_API_URL: ${{ (github.event_name == 'schedule' || inputs.push_to_cubox == 'true') && secrets.CUBOX_API_URL || 'skip' }}
           CUBOX_FOLDER: "RSS Inbox"
           KEYWORDS_INCLUDE: ""
           KEYWORDS_EXCLUDE: ""

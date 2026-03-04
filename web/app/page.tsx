@@ -1,11 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
-
-function formatTime(value: string): string {
-  const dt = new Date(value)
-  if (Number.isNaN(dt.getTime())) return value
-  return dt.toLocaleString()
-}
+import DashboardClient from './DashboardClient'
 
 async function loadData(): Promise<{
   rows: Array<{ id: string; title: string; url: string; source: string; time: string; score?: number }>
@@ -37,36 +32,8 @@ export default async function Page() {
 
   return (
     <main className="main">
-      <h1 className="h1">RSS Signal Wall</h1>
-      <div className="muted">Auto-updated by GitHub Actions commit. Vercel redeploys on every new commit.</div>
-
-      <section className="kpi">
-        <article className="card">
-          <div className="small">Updates</div>
-          <div className="value">{data.updates_total ?? 0}</div>
-        </article>
-        <article className="card">
-          <div className="small">Sources</div>
-          <div className="value">{data.sources_total ?? 0}</div>
-        </article>
-        <article className="card">
-          <div className="small">Generated</div>
-          <div className="value" style={{ fontSize: 14 }}>{formatTime(data.generated_at ?? '')}</div>
-        </article>
-      </section>
-
-      <h2 style={{ marginTop: 24 }}>Latest Updates</h2>
-      <section className="grid">
-        {rows.map((row) => (
-          <article key={row.id} className="card">
-            <div className="small">{row.source}</div>
-            <h3 className="title">{row.title}</h3>
-            <div className="small">score: {typeof row.score === 'number' ? row.score.toFixed(2) : '0.00'}</div>
-            <div className="small">{formatTime(row.time)}</div>
-            <a className="link" href={row.url} target="_blank" rel="noreferrer">Open</a>
-          </article>
-        ))}
-      </section>
+      <DashboardClient rows={rows} metrics={data} />
     </main>
   )
 }
+

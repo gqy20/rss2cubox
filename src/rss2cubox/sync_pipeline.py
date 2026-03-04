@@ -287,6 +287,10 @@ def process_candidates_for_push(
             keep = bool(result.get("keep", False))
             score = float(result.get("score", 0.0))
             reason = str(result.get("reason", ""))
+            core_event = str(result.get("core_event", ""))
+            hidden_signal = str(result.get("hidden_signal", ""))
+            actionable = str(result.get("actionable", ""))
+            
             event["keep"] = keep
             event["score"] = score
             event["tags"] = result.get("tags", []) if isinstance(result.get("tags", []), list) else []
@@ -307,8 +311,12 @@ def process_candidates_for_push(
                 "keep": keep,
                 "score": score,
                 "reason": reason,
+                "core_event": core_event,
+                "hidden_signal": hidden_signal,
+                "actionable": actionable,
                 "ts": now_iso,
                 "model": ai_model,
+                "tags": event["tags"],
             }
             if not keep:
                 stats["ai_dropped_keep_false"] += 1
@@ -336,16 +344,17 @@ def process_candidates_for_push(
         stats["push_attempted"] += 1
         push_start = time.perf_counter()
         try:
-            cubox_save_url(
-                api_url=cubox_api_url,
-                request_post=request_post,
-                url=url,
-                title=title,
-                description=description,
-                tags=tags,
-                folder=cubox_folder,
-            )
-            sent[eid] = {"url": url, "ts": now_iso}
+            if cubox_api_url and str(cubox_api_url).strip().lower() not in ("false", "0", "skip"):
+                cubox_save_url(
+                    api_url=cubox_api_url,
+                    request_post=request_post,
+                    url=url,
+                    title=title,
+                    description=description,
+                    tags=tags,
+                    folder=cubox_folder,
+                )
+            sent[eid] = {"url": url, "ts": now_iso, "title": title}
             stats["pushed"] += 1
             stats["per_feed_push_counts"][source_feed] = stats["per_feed_push_counts"].get(source_feed, 0) + 1
             event["status"] = "pushed"

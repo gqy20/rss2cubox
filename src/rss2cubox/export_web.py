@@ -163,8 +163,12 @@ def build_updates(state: dict[str, Any], limit: int) -> list[dict[str, Any]]:
                 'time': ts,
                 'source': host,
                 'url': url,
-                'title': _guess_title_from_url(url),
+                'title': str(value.get('title', '')).strip() or _guess_title_from_url(url),
                 'score': score,
+                'core_event': ai_result.get('core_event', '') if isinstance(ai_result, dict) else '',
+                'hidden_signal': ai_result.get('hidden_signal', '') if isinstance(ai_result, dict) else '',
+                'actionable': ai_result.get('actionable', '') if isinstance(ai_result, dict) else '',
+                'reason': ai_result.get('reason', '') if isinstance(ai_result, dict) else '',
                 'tags': ai_result.get('tags', []) if isinstance(ai_result, dict) else [],
             }
         )
