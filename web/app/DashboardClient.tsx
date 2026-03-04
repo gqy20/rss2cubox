@@ -324,9 +324,9 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
         </section>
 
         {insights && (
-          <section style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
+          <section style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginTop: 8, alignItems: 'start' }}>
             {Array.isArray(insights.trends) && insights.trends.length > 0 && (
-              <div className="glass chart-card" style={{ padding: '16px 20px' }}>
+              <div className="glass chart-card" style={{ padding: '16px 20px', minHeight: 0 }}>
                 <h3 className="chart-title" style={{ marginBottom: 12 }}>
                   <TrendingUp size={16} color="#2dd4bf" /> 宏观技术趋势
                 </h3>
@@ -339,7 +339,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
             )}
 
             {Array.isArray(insights.weak_signals) && insights.weak_signals.length > 0 && (
-              <div className="glass chart-card" style={{ padding: '16px 20px' }}>
+              <div className="glass chart-card" style={{ padding: '16px 20px', minHeight: 0 }}>
                 <h3 className="chart-title" style={{ marginBottom: 12 }}>
                   <Radio size={16} color="#f59e0b" /> 暗流弱信号
                 </h3>
@@ -352,7 +352,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
             )}
 
             {Array.isArray(insights.daily_advices) && insights.daily_advices.length > 0 && (
-              <div className="glass chart-card" style={{ padding: '16px 20px' }}>
+              <div className="glass chart-card" style={{ padding: '16px 20px', minHeight: 0 }}>
                 <h3 className="chart-title" style={{ marginBottom: 12 }}>
                   <Lightbulb size={16} color="#a78bfa" /> 今日行动建议
                 </h3>

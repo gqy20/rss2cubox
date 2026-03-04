@@ -498,7 +498,10 @@ body {
   flex-direction: column;
   border-left: 1px solid var(--panel-border);
   padding-left: 40px;
-  max-height: calc(100vh - 64px);
+  position: sticky;
+  top: 32px;
+  height: calc(100vh - 64px);
+  align-self: flex-start;
 }
 
 .timeline-container {
