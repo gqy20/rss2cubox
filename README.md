@@ -4,7 +4,10 @@
 
 ## 工作方式
 
-1. 从 `feeds.txt` 读取 RSS 地址（自动忽略空行和 `#` 注释行）。
+1. 从 `feeds.txt` 读取 feed 定义（自动忽略空行和 `#` 注释行）。
+   - 使用 `[rsshub]` 区块管理 RSSHub 路由（如 `/sspai/index` 或 `rsshub://sspai/index`）。
+   - 使用 `[direct]` 区块管理完整 URL（`https://...`）。
+   - RSSHub 路由会从 `rsshub_instances.txt` 实例池按顺序尝试，自动切换可用实例。
 2. 拉取 feed 条目并按关键词进行包含/排除过滤。
 3. 使用条目 `id/guid`（或 `link+title`）生成稳定 ID，基于 `state.json` 去重。
 4. 将新条目推送到 Cubox。
@@ -35,6 +38,7 @@ export AI_RETRY_ATTEMPTS="3"
 export AI_RETRY_BACKOFF_SECONDS="1.5"
 export AI_BATCH_SIZE="5"
 export AI_MAX_CANDIDATES="40"
+export RSSHUB_INSTANCES_FILE="rsshub_instances.txt"
 
 rss2cubox
 ```
@@ -48,6 +52,9 @@ rss2cubox
 - `MAX_ITEMS_PER_RUN`（可选，默认 `20`）：单次最多推送条目数。
 - `FEEDS_FILE`（可选，默认 `feeds.txt`）：feed 列表文件路径。
 - `STATE_FILE`（可选，默认 `state.json`）：状态文件路径。
+- `RSSHUB_INSTANCES_FILE`（可选，默认 `rsshub_instances.txt`）：
+  RSSHub 公共实例池文件路径，每行一个实例 URL。
+- `RSSHUB_INSTANCES`（可选）：当实例池文件缺失或为空时，回退使用该环境变量（逗号分隔）。
 - `ANTHROPIC_AUTH_TOKEN`（可选）：Anthropic 认证令牌；有值且配置了模型时启用 AI 分析。
 - `ANTHROPIC_BASE_URL`（可选，默认 `https://api.anthropic.com`）：Anthropic/兼容网关地址。
 - `ANTHROPIC_MODEL`（可选）：模型名，如你的本地值 `MiniMax-M2.5`。
@@ -60,7 +67,8 @@ rss2cubox
 
 ## 文件说明
 
-- `feeds.txt`：RSS 地址列表，每行一个 URL。
+- `feeds.txt`：feed 列表，分 `[rsshub]` 和 `[direct]` 两个区块。
+- `rsshub_instances.txt`：RSSHub 公共实例池，每行一个 URL。
 - `state.json`：已推送条目的去重状态（由程序维护）。
 - `.github/workflows/rss_to_cubox.yml`：定时任务与状态自动提交。
 
@@ -79,7 +87,7 @@ rss2cubox
    - `AI_RETRY_BACKOFF_SECONDS`（可选）
    - `AI_BATCH_SIZE`（可选）
    - `AI_MAX_CANDIDATES`（可选）
-4. 修改 `feeds.txt` 为你自己的 RSS 源列表。
+4. 修改 `feeds.txt`（按 `[rsshub]` / `[direct]` 分区）和 `rsshub_instances.txt`（维护实例池）。
 5. 启用 workflow `RSS to Cubox`（支持手动触发和定时触发）。
 
 默认定时是每天 `06:00`（北京时间，UTC+8）执行一次，等价于 `22:00 UTC`（前一天）。

@@ -15,6 +15,56 @@ def test_load_lines_ignores_blank_and_comment(tmp_path: Path) -> None:
     assert runner.load_lines(feeds) == ["https://a.example/rss", "https://b.example/rss"]
 
 
+def test_load_feed_specs_supports_sections(tmp_path: Path) -> None:
+    feeds = tmp_path / "feeds.txt"
+    feeds.write_text(
+        "[rsshub]\n/sspai/index\n\n[direct]\nhttps://example.com/feed.xml\n",
+        encoding="utf-8",
+    )
+    assert runner.load_feed_specs(feeds) == [
+        {"kind": "rsshub", "value": "/sspai/index"},
+        {"kind": "direct", "value": "https://example.com/feed.xml"},
+    ]
+
+
+def test_resolve_feed_urls_with_rsshub_route() -> None:
+    instances = ["https://a.rsshub.test", "https://b.rsshub.test"]
+    assert runner.resolve_feed_urls("rsshub", "/sspai/index", instances) == [
+        "https://a.rsshub.test/sspai/index",
+        "https://b.rsshub.test/sspai/index",
+    ]
+    assert runner.resolve_feed_urls("rsshub", "rsshub://sspai/index", instances) == [
+        "https://a.rsshub.test/sspai/index",
+        "https://b.rsshub.test/sspai/index",
+    ]
+
+
+def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyPatch) -> None:
+    instances = ["https://bad.rsshub.test", "https://ok.rsshub.test"]
+
+    def fake_parse(url: str):  # noqa: ANN001
+        if url.startswith("https://bad.rsshub.test"):
+            return SimpleNamespace(bozo=True, entries=[])
+        return SimpleNamespace(bozo=False, entries=[{"id": "1", "link": "https://example.com/1"}])
+
+    monkeypatch.setattr(runner.feedparser, "parse", fake_parse)
+
+    selected, parsed, attempt = runner.parse_feed_with_fallback("rsshub", "/sspai/index", instances)
+    assert selected == "https://ok.rsshub.test/sspai/index"
+    assert attempt == 2
+    assert parsed is not None
+    assert getattr(parsed, "bozo", True) is False
+
+
+def test_load_rsshub_instances_from_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    pool = tmp_path / "rsshub_instances.txt"
+    pool.write_text("# comment\nhttps://x.rsshub.test/\nhttps://y.rsshub.test\n", encoding="utf-8")
+    monkeypatch.setattr(runner, "RSSHUB_INSTANCES_FILE", pool)
+    monkeypatch.delenv("RSSHUB_INSTANCES", raising=False)
+
+    assert runner.load_rsshub_instances() == ["https://x.rsshub.test", "https://y.rsshub.test"]
+
+
 def test_state_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_file = tmp_path / "state.json"
     monkeypatch.setattr(runner, "STATE_FILE", state_file)
@@ -319,3 +369,37 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert pushed_urls[0][0] == "https://example.com/1"
     state = runner.load_state()
     assert len(state["sent"]) == 1
+
+
+def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    summary_file = tmp_path / "summary.md"
+    monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))
+
+    runner.write_step_summary(
+        {
+            "feeds_total": 2,
+            "feeds_invalid": 1,
+            "fetched": 10,
+            "deduped": 3,
+            "missing_link": 1,
+            "keyword_filtered": 2,
+            "candidates": 4,
+            "candidates_selected": 4,
+            "ai_enabled": True,
+            "ai_analyzed": 4,
+            "ai_missing": 0,
+            "ai_kept": 2,
+            "ai_dropped_keep_false": 1,
+            "ai_dropped_score": 1,
+            "push_attempted": 2,
+            "pushed": 2,
+            "push_failed": 0,
+            "state_size": 99,
+        }
+    )
+
+    content = summary_file.read_text(encoding="utf-8")
+    assert "RSS2Cubox Run Summary" in content
+    assert "| fetched | 10 |" in content
+    assert "| ai_kept | 2 |" in content
+    assert "| pushed | 2 |" in content

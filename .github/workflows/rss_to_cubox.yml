@@ -45,6 +45,7 @@ jobs:
           AI_RETRY_BACKOFF_SECONDS: ${{ vars.AI_RETRY_BACKOFF_SECONDS }}
           AI_BATCH_SIZE: ${{ vars.AI_BATCH_SIZE }}
           AI_MAX_CANDIDATES: ${{ vars.AI_MAX_CANDIDATES }}
+          RSSHUB_INSTANCES_FILE: "rsshub_instances.txt"
         run: |
           set -o pipefail
           rss2cubox 2>&1 | tee rss2cubox.log

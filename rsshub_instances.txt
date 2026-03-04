@@ -1,0 +1,11 @@
+# RSSHub public instance pool (one URL per line)
+https://rsshub.rssforever.com
+https://rsshub.app
+https://hub.slarker.me
+https://rsshub.pseudoyu.com
+https://rsshub.ktachibana.party
+https://rsshub.umzzz.com
+https://rsshub.isrss.com
+https://rss.4040940.xyz
+https://rsshub.cups.moe
+https://rss.spriple.org

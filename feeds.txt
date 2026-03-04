@@ -1,3 +1,10 @@
-# One feed URL per line
-https://rsshub.rssforever.com/infoq/recommend
-https://rsshub.rssforever.com/juejin/trending/ai/weekly
+# Feed definitions
+# Use [rsshub] for RSSHub routes and [direct] for full feed URLs.
+
+[rsshub]
+/infoq/recommend
+/juejin/trending/ai/weekly
+/sspai/index
+
+[direct]
+https://imjuya.github.io/juya-ai-daily/rss.xml
