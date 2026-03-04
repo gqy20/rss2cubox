@@ -1,21 +1,21 @@
 {
-  "generated_at": "2026-03-04T09:50:36.789908+00:00",
-  "updates_total": 208,
-  "pushed_total": 72,
-  "dropped_total": 136,
+  "generated_at": "2026-03-04T08:49:09.764920+00:00",
+  "updates_total": 168,
+  "pushed_total": 63,
+  "dropped_total": 105,
   "failed_total": 0,
-  "sources_total": 25,
+  "sources_total": 21,
   "top_sources": [
     {
-      "source": "/hackernews",
-      "count": 68
+      "source": "Hacker News",
+      "count": 78
     },
     {
-      "source": "/infoq/recommend",
-      "count": 21
+      "source": "InfoQ 推荐",
+      "count": 25
     },
     {
-      "source": "status.anthropic.com",
+      "source": "Claude Status 历史事件",
       "count": 17
     },
     {
@@ -23,86 +23,82 @@
       "count": 13
     },
     {
-      "source": "Hacker News",
-      "count": 10
+      "source": "少数派首页",
+      "count": 12
     },
     {
       "source": "HelloGitHub 月刊",
       "count": 10
     },
     {
-      "source": "/sspai/index",
+      "source": "Cursor Blog News",
       "count": 10
     },
     {
-      "source": "/cursor/blog/news",
+      "source": "Anthropic News",
       "count": 10
     },
     {
-      "source": "/anthropic/news",
-      "count": 10
+      "source": "Cursor Blog",
+      "count": 8
     },
     {
-      "source": "/cursor/blog",
-      "count": 7
-    },
-    {
-      "source": "InfoQ 推荐",
+      "source": "Claude Code Releases",
       "count": 4
     },
     {
-      "source": "github.com",
+      "source": "量子位 活动",
       "count": 4
     },
     {
-      "source": "/qbitai/category/huodong",
-      "count": 4
-    },
-    {
-      "source": "blog.google",
+      "source": "Google AI Blog",
       "count": 3
     },
     {
-      "source": "少数派首页",
+      "source": "OpenAI News",
       "count": 2
     },
     {
-      "source": "openai.com",
+      "source": "掘金 AI 周榜",
       "count": 2
     },
     {
-      "source": "/juejin/trending/ai/weekly",
+      "source": "Cursor Changelog",
       "count": 2
     },
     {
-      "source": "/cursor/changelog",
+      "source": "Hugging Face Blog（RSSHub）",
       "count": 2
     },
     {
-      "source": "/huggingface/blog",
+      "source": "量子位 E 半导体",
       "count": 2
     },
     {
-      "source": "/qbitai/category/ebandeng",
-      "count": 2
+      "source": "Google DeepMind News",
+      "count": 1
+    },
+    {
+      "source": "量子位 智库",
+      "count": 1
+    },
+    {
+      "source": "Cursor Blog Research",
+      "count": 1
     }
   ],
   "top_drop_reasons": [
     {
       "reason": "ai_keep_false",
-      "count": 111
+      "count": 84
     },
     {
       "reason": "max_items_per_run_reached",
       "count": 20
     },
     {
-      "reason": "missing_ai_result",
-      "count": 3
-    },
-    {
       "reason": "ai_score_below_threshold",
-      "count": 2
+      "count": 1
     }
   ]
 }

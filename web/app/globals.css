@@ -305,7 +305,6 @@ body::before {
   border: 2px solid;
   flex-shrink: 0;
 }
-}
 
 .glow-green { border-color: var(--high-score); box-shadow: 0 0 10px var(--high-score); }
 .glow-blue { border-color: var(--mid-score); box-shadow: 0 0 8px var(--mid-score); }
