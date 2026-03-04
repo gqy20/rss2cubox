@@ -275,6 +275,10 @@
     "3ef73d889ea96573ab7ed047780a8ee09c61e72c6dd6af064497992a8f0419ef": {
       "url": "https://imjuya.github.io/juya-ai-daily/issue-1/",
       "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "427d54078136b468ba70e792a0052cff48e7da189867d46f6654783b116c31c2": {
+      "url": "https://www.infoq.cn/article/m8YV2acr2KKMSpskuSPj",
+      "ts": "2026-03-04T02:26:21.456217+00:00"
     }
   },
   "ai": {
@@ -295,22 +299,22 @@
     "1ad4c5158f8c6e0e7523cf8c4dea4865256159158a8225c6a31cb7d25383e8f3": {
       "keep": false,
       "score": 0.2,
-      "reason": "Community roundup/aggregation content - user submissions about what they bought. Not technical news, low-signal community content.",
-      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "reason": "社区速递：个人消费分享，非高价值技术内容",
+      "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
     },
     "a3aab793d6add7c0ff5587329c0e8355c4afb935a8918c6e0abbe24c5ec9d892": {
       "keep": false,
       "score": 0.15,
-      "reason": "Cultural/entertainment analysis piece about amnesia in films. Not technical news, cultural commentary.",
-      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "reason": "娱乐内容：影视分析，非技术或行业新闻",
+      "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
     },
     "3be3ca69fcc3feb4a072dc745977fc7f40c41dba807f83beaacd7542538f8e4e": {
       "keep": false,
-      "score": 0.2,
-      "reason": "Personal experience blog post about learning programming. Not technical news, individual blog content.",
-      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "score": 0.4,
+      "reason": "个人学习笔记：经验分享但缺乏新闻价值和技术深度",
+      "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
     },
     "2399796f65714012a8b995fb051bbeb4898a0e895cab2fd14883df2af81f8f50": {
@@ -322,23 +326,23 @@
     },
     "8d3fe3ba4b8cf07496224eb821a3f518c462c23a2b74174a5ec5b530ec2ea69c": {
       "keep": false,
-      "score": 0.4,
-      "reason": "App roundup/review content with promotional elements. While technically-oriented, it's more of a curated list/buyer's guide rather than high-signal news or in-depth technical analysis.",
-      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "score": 0.35,
+      "reason": "App推荐：消费级应用更新，非高价值技术新闻",
+      "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
     },
     "d5b8c1200b4eebb6be166d4b867eb0c122b0b05111cdbf2375aad83cfa965813": {
-      "keep": false,
-      "score": 0.35,
-      "reason": "Niche retro computing content about using Windows 8.1 on discontinued Lumia 1020. Interesting but low practical relevance and highly specialized audience.",
-      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "keep": true,
+      "score": 0.55,
+      "reason": "Technical content about Windows Phone 8.1, though niche and focused on deprecated platform. Contains technical details and historical analysis of mobile OS.",
+      "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
     },
     "8af85e69b0629dc11516b233bb11d86e3ed54ab78b68ddb358a5c3777ac466a5": {
       "keep": false,
       "score": 0.25,
-      "reason": "Contest entry/annual essay about personal AI usage. User-generated content focused on personal narrative rather than technical news or analysis. Low information value for general tech audience.",
-      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "reason": "Contest entry/personal essay rather than technical news or high-signal content. Low information density for technical audience.",
+      "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
     },
     "de9f0e9d30fcd791d6c58d0c3561269f1d993542441f336441aeb80b90bf6beb": {
@@ -350,9 +354,9 @@
     },
     "b0971aa3f8267d84eba0ce51ee9feadeb9806310b5a77f426e27979dd0800af6": {
       "keep": false,
-      "score": 0.15,
-      "reason": "Promotional/contest content - this is an essay competition entry rather than technical news or actionable technical content. The description explicitly states it's for a contest voting event.",
-      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "score": 0.2,
+      "reason": "Contest entry analyzing platform's own content. Meta-content rather than original technical/news content. Low external signal.",
+      "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
     },
     "9295ca1fcc9116bd036ac7eae9f50dc3f993eed04ae1ff69f21596613c43b07a": {
@@ -458,6 +462,13 @@
       "score": 0.75,
       "reason": "该RSS条目为AI技术新闻聚合内容，列出了多个具体的AI模型发布、功能更新和技术动态，包括Anthropic、xAI、蚂蚁集团、Cohere、字节跳动、OpenAI等公司的具体产品版本号和功能特性，具有较高的技术信息价值。",
       "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "427d54078136b468ba70e792a0052cff48e7da189867d46f6654783b116c31c2": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "技术新闻：关于AI生成代码对开源生态影响的深度分析，有具体案例和数据",
+      "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
     }
   }
