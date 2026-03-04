@@ -101,11 +101,12 @@ def build_ai_payload(model: str, items: list[dict]) -> dict[str, Any]:
         "Your goal is to extract high-value 'signals' from noise.\n"
         "Rules:\n"
         "1. Reject generic news, PR fluff, tool ads, and low-info reposts (keep=false).\n"
-        "2. Provide `core_event`: A cold, objective one-sentence summary of the factual event.\n"
-        "3. Provide `hidden_signal`: What does this actually mean? The underlying paradigm shift, industry impact, or deep technical implication.\n"
-        "4. Provide `actionable`: How should an engineer or tech professional react? (e.g. 'Investigate this architecture', 'Monitor competitor', 'Low priority').\n"
+        "2. Provide `core_event`: A cold, objective one-sentence summary of the factual event. MUST be in Chinese (简体中文).\n"
+        "3. Provide `hidden_signal`: What does this actually mean? The underlying paradigm shift, industry impact, or deep technical implication. MUST be in Chinese (简体中文).\n"
+        "4. Provide `actionable`: How should an engineer or tech professional react? MUST be in Chinese (简体中文).\n"
         "5. Provide `score`: 0.0 to 1.0 (>= 0.85 means high value).\n"
-        "6. Provide `tags`: 1-3 sharp tech categories."
+        "6. Provide `tags`: 1-3 sharp tech categories. MUST be in Chinese (简体中文).\n"
+        "7. ALL generated text and summaries MUST be written in fluent, professional Simplified Chinese (简体中文)."
     )
     user_prompt = json.dumps(items, ensure_ascii=False)
     return {

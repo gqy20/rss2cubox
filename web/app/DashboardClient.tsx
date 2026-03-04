@@ -3,10 +3,10 @@
 import { useState, useMemo } from 'react'
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell as PieCell, Legend, BarChart, Bar, Cell
+  PieChart, Pie, Cell as PieCell, Legend
 } from 'recharts'
-import { ExternalLink, Activity, Filter, Radar, Info, CheckCircle2, ChevronRight, Zap, Target } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { ExternalLink, Activity, Filter, Radar, Zap } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 // Types
 type Row = { id: string; title: string; url: string; source: string; time: string; score?: number; reason?: string; tags?: string[]; core_event?: string; hidden_signal?: string; actionable?: string }
@@ -40,12 +40,10 @@ function formatDay(value: string): string {
   return dt.toLocaleString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
-const SCORE_COLORS = { high: '#34d399', mid: '#60a5fa', low: '#9ca3af' }
 const PIE_COLORS = ['#2dd4bf', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc']
 
 export default function DashboardClient({ rows, metrics }: { rows: Row[], metrics: Metrics }) {
   const [filter, setFilter] = useState<'all' | 'high'>('all')
-  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // Derived state
   const displayedRows = useMemo(() => {
@@ -70,33 +68,27 @@ export default function DashboardClient({ rows, metrics }: { rows: Row[], metric
     return Object.values(dayCounts).slice(-7) // Last 7 days
   }, [rows])
 
-  // Chart Data: Score Distribution for Left Panel
-  const scoreData = useMemo(() => {
-    let high = 0, mid = 0, low = 0
-    rows.forEach(r => {
-      const s = r.score ?? 0
-      if (s >= 0.85) high++
-      else if (s >= 0.7) mid++
-      else low++
-    })
-    return [
-      { name: '高价值 (≥0.85)', value: high, color: SCORE_COLORS.high },
-      { name: '普通 (0.7-0.85)', value: mid, color: SCORE_COLORS.mid },
-      { name: '较低 (<0.7)', value: low, color: SCORE_COLORS.low },
-    ]
-  }, [rows])
-
   // Chart Data: Sources
   const sourceData = useMemo(() => {
+    let rawData: Array<{ name: string; value: number }> = []
     if (metrics.top_sources?.length) {
-      return metrics.top_sources.map(s => ({ name: s.source, value: s.count }))
+      rawData = metrics.top_sources.map(s => ({ name: s.source, value: s.count }))
+    } else {
+      const counts: Record<string, number> = {}
+      rows.forEach(r => counts[r.source] = (counts[r.source] || 0) + 1)
+      rawData = Object.entries(counts)
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value)
     }
-    const counts: Record<string, number> = {}
-    rows.forEach(r => counts[r.source] = (counts[r.source] || 0) + 1)
-    return Object.entries(counts)
-      .map(([name, value]) => ({ name, value }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 5)
+
+    // 保留前5，其余合并为「其他」
+    const top5 = rawData.slice(0, 5)
+    const others = rawData.slice(5)
+    if (others.length > 0) {
+      const othersTotal = others.reduce((sum, item) => sum + item.value, 0)
+      top5.push({ name: '其他', value: othersTotal })
+    }
+    return top5
   }, [metrics.top_sources, rows])
 
   return (
@@ -187,29 +179,6 @@ export default function DashboardClient({ rows, metrics }: { rows: Row[], metric
             </div>
           </div>
         </section>
-
-        {/* Third chart block for dashboard layout balance */}
-        <section className="glass chart-card" style={{ flex: 1, minHeight: 200 }}>
-           <h3 className="chart-title"><Target size={18} color="#c084fc" /> 最新批次质量评估</h3>
-           <div style={{ width: '100%', height: 'calc(100% - 40px)', minHeight: 200 }}>
-             <ResponsiveContainer>
-               <BarChart data={scoreData} margin={{ top: 20, right: 20, bottom: 20, left: -20 }} layout="vertical">
-                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
-                 <XAxis type="number" stroke="#8aa3be" fontSize={12} tickLine={false} axisLine={false} />
-                 <YAxis dataKey="name" type="category" stroke="#8aa3be" fontSize={12} tickLine={false} axisLine={false} width={120} />
-                 <Tooltip 
-                   cursor={{ fill: 'rgba(255,255,255,0.05)' }}
-                   contentStyle={{ backgroundColor: 'rgba(13, 27, 42, 0.9)', border: '1px solid #1f3550', borderRadius: '8px' }} 
-                 />
-                 <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={30}>
-                   {scoreData.map((entry, index) => (
-                     <Cell key={`cell-${index}`} fill={entry.color} />
-                   ))}
-                 </Bar>
-               </BarChart>
-             </ResponsiveContainer>
-           </div>
-        </section>
       </div>
 
       <div className="dashboard-right">
@@ -236,7 +205,6 @@ export default function DashboardClient({ rows, metrics }: { rows: Row[], metric
               const s = row.score ?? 0
               const isHigh = s >= 0.85
               const isMid = s >= 0.7 && s < 0.85
-              const isExpanded = expandedId === row.id
 
               return (
                 <motion.div 
@@ -251,13 +219,22 @@ export default function DashboardClient({ rows, metrics }: { rows: Row[], metric
                     <div className="node-time">{formatDay(row.time)}<br/>{formatShortTime(row.time)}</div>
                   </div>
 
-                  <div className={`glass timeline-content ${isExpanded ? 'expanded' : ''}`} onClick={() => setExpandedId(isExpanded ? null : row.id)}>
+                  <a 
+                    href={row.url} 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="glass timeline-content hover-scale" 
+                    style={{ display: 'block', textDecoration: 'none', cursor: 'pointer' }}
+                  >
                     <div className="t-header" style={{ flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
                         <span className="source-badge">{row.source}</span>
-                        <span className={`score-badge ${isHigh ? 'score-high' : isMid ? 'score-mid' : 'score-low'}`}>
-                          0.{Math.round(s * 100)} Score
-                        </span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span className={`score-badge ${isHigh ? 'score-high' : isMid ? 'score-mid' : 'score-low'}`}>
+                            0.{Math.round(s * 100)} Score
+                          </span>
+                          <ExternalLink size={14} color="#8aa3be" />
+                        </div>
                       </div>
                       {row.tags && row.tags.length > 0 && (
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -268,48 +245,36 @@ export default function DashboardClient({ rows, metrics }: { rows: Row[], metric
                       )}
                     </div>
                     
-                    <h3 className="t-title" style={{ fontSize: 14, marginTop: 8 }}>
+                    <h3 className="t-title" style={{ fontSize: 14, marginTop: 8, color: '#f8fafc', fontWeight: 600 }}>
                       {row.hidden_signal || row.title}
                     </h3>
 
-                    <AnimatePresence>
-                      {isExpanded && (
-                        <motion.div 
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: 'auto', opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          className="t-expanded-area"
-                        >
-                          {row.core_event && (
-                            <div className="t-ai-box" style={{ padding: 12, marginBottom: 8, background: 'rgba(52, 211, 153, 0.05)', borderLeft: '2px solid #34d399' }}>
-                              <div className="ai-label"><Info size={13} color="#34d399"/> 核心事件</div>
-                              <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0' }}>{row.core_event}</p>
-                            </div>
-                          )}
-                          
-                          {row.actionable && (
-                            <div className="t-ai-box" style={{ padding: 12, marginBottom: 12, background: 'rgba(250, 204, 21, 0.05)', borderLeft: '2px solid #facc15' }}>
-                              <div className="ai-label"><Zap size={13} color="#facc15"/> 行动建议及影响</div>
-                              <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0' }}>{row.actionable}</p>
-                            </div>
-                          )}
-
-                          {row.reason && !row.core_event && (
-                            <div className="t-ai-box" style={{ padding: 12, marginBottom: 12 }}>
-                              <div className="ai-label"><CheckCircle2 size={13} color="#34d399"/> 分析理由</div>
-                              <p className="ai-text" style={{ fontSize: 13 }}>{row.reason}</p>
-                            </div>
-                          )}
-                          
-                          <div className="t-actions">
-                            <a href={row.url} target="_blank" rel="noreferrer" className="action-btn" onClick={e => e.stopPropagation()} style={{ fontSize: 12, padding: '6px 12px' }}>
-                              阅读原文 <ChevronRight size={14} />
-                            </a>
-                          </div>
-                        </motion.div>
+                    <div className="t-ai-content" style={{ marginTop: 12 }}>
+                      {row.core_event && (
+                        <div className="t-ai-box" style={{ padding: 10, marginBottom: 8, background: 'rgba(52, 211, 153, 0.05)', borderLeft: '2px solid #34d399', borderRadius: '0 4px 4px 0' }}>
+                          <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
+                            <strong style={{color: '#34d399', marginRight: 6}}>核心</strong>{row.core_event}
+                          </p>
+                        </div>
                       )}
-                    </AnimatePresence>
-                  </div>
+                      
+                      {row.actionable && (
+                        <div className="t-ai-box" style={{ padding: 10, background: 'rgba(250, 204, 21, 0.05)', borderLeft: '2px solid #facc15', borderRadius: '0 4px 4px 0' }}>
+                          <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
+                            <strong style={{color: '#facc15', marginRight: 6}}>建议</strong>{row.actionable}
+                          </p>
+                        </div>
+                      )}
+
+                      {row.reason && !row.core_event && (
+                        <div className="t-ai-box" style={{ padding: 10, background: 'rgba(96, 165, 250, 0.05)', borderLeft: '2px solid #60a5fa', borderRadius: '0 4px 4px 0' }}>
+                          <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
+                            <strong style={{color: '#60a5fa', marginRight: 6}}>分析</strong>{row.reason}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </a>
                 </motion.div>
               )
             })}
