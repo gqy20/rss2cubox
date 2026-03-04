@@ -22,7 +22,11 @@
 /huggingface/blog # Hugging Face Blog（RSSHub）
 /hackernews # Hacker News
 /producthunt/today # Product Hunt 今日
+/github/trending/daily/python # GitHub Trending Python（日）
 /github/topics/llm # GitHub Topic LLM
+/github/topics/agent # GitHub Topic Agent
+/github/topics/autonomous-agent # GitHub Topic Autonomous-Agent
+/github/topics/ai-agent # GitHub Topic AI-Agent
 /github/topics/agents # GitHub Topic Agents
 /hellogithub/volume # HelloGitHub 月刊
 /hellogithub/home/featured # HelloGitHub 精选
@@ -39,6 +43,59 @@
 /twitter/user/JeremyHoward # X @JeremyHoward
 /twitter/user/swyx # X @swyx
 /twitter/user/simonw # X @simonw
+# 核心 AI 研究者
+/twitter/user/drfeifei # X @drfeifei
+/twitter/user/percyliang # X @percyliang
+/twitter/user/lilianweng # X @lilianweng
+/twitter/user/chrmanning # X @chrmanning
+/twitter/user/DrJimFan # X @DrJimFan
+/twitter/user/ShunyuYao12 # X @ShunyuYao12
+# Agent / LLM 工程圈
+/twitter/user/jerryjliu0 # X @jerryjliu0
+/twitter/user/hwchase17 # X @hwchase17
+/twitter/user/yoheinakajima # X @yoheinakajima
+/twitter/user/hamzafarrukh # X @hamzafarrukh
+/twitter/user/amasad # X @amasad
+/twitter/user/tobi # X @tobi
+/twitter/user/chipro # X @chipro
+/twitter/user/eugeneyan # X @eugeneyan
+/twitter/user/JayAlammar # X @JayAlammar
+/twitter/user/nir_diamant # X @nir_diamant
+# AI 创始人 / 公司人物
+/twitter/user/gdb # X @gdb
+/twitter/user/DarioAmodei # X @DarioAmodei
+/twitter/user/EMostaque # X @EMostaque
+/twitter/user/AravSrinivas # X @AravSrinivas
+/twitter/user/polynoamial # X @polynoamial
+/twitter/user/ilyasut # X @ilyasut
+# AI Builder / Hacker
+/twitter/user/danshipper # X @danshipper
+/twitter/user/btibor91 # X @btibor91
+/twitter/user/petergyang # X @petergyang
+/twitter/user/thesephist # X @thesephist
+/twitter/user/natfriedman # X @natfriedman
+/twitter/user/OfficialLoganK # X @OfficialLoganK
+/twitter/user/paulg # X @paulg
+/twitter/user/svpino # X @svpino
+/twitter/user/aakashg0 # X @aakashg0
+/twitter/user/emollick # X @emollick
+# 中文 AI Twitter
+/twitter/user/op7418 # X @op7418（归藏）
+/twitter/user/dotey # X @dotey（宝玉）
+/twitter/user/baoyu_io # X @baoyu_io（宝玉xp）
+/twitter/user/wangdengke # X @wangdengke（王登科）
+/twitter/user/vikingmute # X @vikingmute（viking）
+/twitter/user/waimaox # X @waimaox（歪脑）
+/twitter/user/zhwangart # X @zhwangart（王喆）
+/twitter/user/leiphys # X @leiphys（雷涛）
+/twitter/user/imian # X @imian（陈冕）
+# AI 公司官方账号
+/twitter/user/OpenAI # X @OpenAI
+/twitter/user/GoogleDeepMind # X @GoogleDeepMind
+/twitter/user/AnthropicAI # X @AnthropicAI
+/twitter/user/MetaAI # X @MetaAI
+/twitter/user/huggingface # X @huggingface
+/twitter/user/StabilityAI # X @StabilityAI
 /bilibili/user/video/3546566589679687 # 废才俱乐部Club
 /bilibili/user/video/302188068 # 小白debug
 /bilibili/user/video/26798384 # 柴知道
@@ -66,6 +123,35 @@ https://community.openai.com/c/announcements.rss # OpenAI 开发者公告
 https://huggingface.co/blog/feed.xml # Hugging Face Blog（官方）
 https://github.com/anthropics/claude-code/releases.atom # Claude Code Releases
 https://status.anthropic.com/history.rss # Claude Status 历史事件
+https://rss.arxiv.org/rss/cs.AI # arXiv cs.AI
+https://rss.arxiv.org/rss/cs.LG # arXiv cs.LG
+https://rss.arxiv.org/rss/cs.CL # arXiv cs.CL
+https://rss.arxiv.org/rss/cs.CV # arXiv cs.CV
+# AI / LLM / Agent 研究博客
+https://lilianweng.github.io/index.xml # Lilian Weng Blog
+https://simonwillison.net/atom/everything/ # Simon Willison Blog
+https://huyenchip.com/feed.xml # Chip Huyen Blog
+https://sebastianraschka.com/rss.xml # Sebastian Raschka Blog
+https://jalammar.github.io/feed.xml # Jay Alammar Blog
+# AI Engineering / LLM 系统博客
+https://eugeneyan.com/rss/ # Eugene Yan Blog
+https://swyx.io/rss.xml # Swyx Blog
+https://til.simonwillison.net/feed.xml # Simon Willison TIL
+https://www.latent.space/feed # Latent Space
+# AI 研究 / 深度技术博客
+https://gwern.net/rss.xml # Gwern Blog
+https://distill.pub/rss.xml # Distill
+https://bair.berkeley.edu/blog/feed.xml # BAIR Blog
+https://www.inference.vc/rss.xml # Inference Blog
+# AI Builder / Hacker 博客
+https://tinyprojects.dev/feed.xml # Tiny Projects
+https://thesephist.com/rss.xml # thesephist Blog
+https://nat.org/blog/rss.xml # Nat Friedman Blog
+# AI 论文与研究综述博客
+https://danieltakeshi.github.io/feed.xml # Seita's Place
+https://vitalab.github.io/rss.xml # VITALab
+https://mlinproduction.com/feed # ML in Production
+https://machinelearningmastery.com/feed # Machine Learning Mastery
 https://www.youtube.com/feeds/videos.xml?channel_id=UCLKPca3kwwd-B59HNr-_lvA # YouTube AI Engineer
 https://www.youtube.com/feeds/videos.xml?channel_id=UCC-lyoTfSrcJzA1ab3APAgw # YouTube LangChain
 https://www.youtube.com/feeds/videos.xml?channel_id=UCeRjipR4_SsCddq9VZ2AeKg # YouTube LlamaIndex
