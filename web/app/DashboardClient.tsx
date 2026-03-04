@@ -52,6 +52,34 @@ function formatDay(value: string): string {
   return dt.toLocaleString('zh-CN', { month: 'short', day: 'numeric' })
 }
 
+// Logo SVG 组件
+function Logo({ size = 36 }: { size?: number }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 64 64" fill="none">
+      <defs>
+        <linearGradient id="lg1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#2dd4bf"/>
+          <stop offset="100%" stopColor="#60a5fa"/>
+        </linearGradient>
+        <linearGradient id="lg2" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#2dd4bf" stopOpacity="0.12"/>
+          <stop offset="100%" stopColor="#60a5fa" stopOpacity="0.12"/>
+        </linearGradient>
+        <filter id="lglow">
+          <feGaussianBlur stdDeviation="1.5" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <circle cx="32" cy="32" r="31" fill="url(#lg2)" stroke="url(#lg1)" strokeWidth="1"/>
+      <path d="M 14 50 A 26 26 0 0 1 50 14" stroke="url(#lg1)" strokeWidth="2.5" strokeLinecap="round" filter="url(#lglow)"/>
+      <path d="M 18 50 A 18 18 0 0 1 50 18" stroke="url(#lg1)" strokeWidth="2.5" strokeLinecap="round" opacity="0.7"/>
+      <path d="M 22 50 A 10 10 0 0 1 50 22" stroke="url(#lg1)" strokeWidth="2.5" strokeLinecap="round" opacity="0.45"/>
+      <circle cx="14" cy="50" r="3.5" fill="url(#lg1)" filter="url(#lglow)"/>
+      <circle cx="50" cy="14" r="2" fill="#60a5fa" opacity="0.9"/>
+    </svg>
+  )
+}
+
 const PIE_COLORS = ['#2dd4bf', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc']
 
 // KPI 数字滚动动画
@@ -184,8 +212,11 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
       <div className="dashboard-left">
         <div className="header-container" style={{ marginBottom: 24 }}>
           <div>
-            <h1 className="h1">RSS 信号控制台</h1>
-            <div className="muted">最后更新时间：{metrics.generated_at ? new Date(metrics.generated_at).toLocaleString('zh-CN') : '未知'}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Logo size={40} />
+              <h1 className="h1">RSS 信号控制台</h1>
+            </div>
+            <div className="muted" style={{ marginTop: 6, marginLeft: 52 }}>最后更新：{metrics.generated_at ? new Date(metrics.generated_at).toLocaleString('zh-CN') : '未知'}</div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
             <div className="source-badge glow-pulse" style={{ backgroundColor: 'rgba(45, 212, 191, 0.2)', padding: '6px 12px' }}>

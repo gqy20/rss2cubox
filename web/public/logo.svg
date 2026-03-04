@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="g1" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf"/>
+      <stop offset="100%" stop-color="#60a5fa"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#60a5fa" stop-opacity="0.15"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- 背景圆 -->
+  <circle cx="32" cy="32" r="31" fill="url(#g2)" stroke="url(#g1)" stroke-width="1"/>
+
+  <!-- 信号弧线 — 从左下角发散，类 RSS 但更对称 -->
+  <!-- 最外圈弧 -->
+  <path d="M 14 50 A 26 26 0 0 1 50 14" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round" filter="url(#glow)"/>
+  <!-- 中圈弧 -->
+  <path d="M 18 50 A 18 18 0 0 1 50 18" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round" opacity="0.7"/>
+  <!-- 内圈弧 -->
+  <path d="M 22 50 A 10 10 0 0 1 50 22" stroke="url(#g1)" stroke-width="2.5" stroke-linecap="round" opacity="0.45"/>
+
+  <!-- 原点 -->
+  <circle cx="14" cy="50" r="3.5" fill="url(#g1)" filter="url(#glow)"/>
+
+  <!-- 右上角小扫描点，暗示实时监控 -->
+  <circle cx="50" cy="14" r="2" fill="#60a5fa" opacity="0.9">
+    <animate attributeName="opacity" values="0.9;0.2;0.9" dur="2s" repeatCount="indefinite"/>
+  </circle>
+</svg>
