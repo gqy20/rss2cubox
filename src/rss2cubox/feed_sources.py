@@ -5,9 +5,11 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import os
+import re
 import time
 from threading import Lock
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import requests
 
@@ -166,6 +168,81 @@ def fetch_and_parse_feed(
     return parsed
 
 
+def _extract_youtube_video_id(url: str) -> str:
+    text = str(url or "").strip()
+    if not text:
+        return ""
+    parsed = urlparse(text)
+    host = parsed.netloc.lower()
+    path = parsed.path or ""
+
+    if "youtu.be" in host:
+        return path.strip("/").split("/")[0] if path.strip("/") else ""
+    if "youtube.com" in host:
+        if path == "/watch":
+            qs = parse_qs(parsed.query)
+            return (qs.get("v", [""])[0] or "").strip()
+        parts = [part for part in path.split("/") if part]
+        if len(parts) >= 2 and parts[0] in {"shorts", "embed", "live"}:
+            return parts[1].strip()
+    return ""
+
+
+def _pick_url(value: Any) -> str:
+    if isinstance(value, str):
+        text = value.strip()
+        return text if text.startswith(("http://", "https://")) else ""
+    if isinstance(value, dict):
+        for key in ("url", "href", "src", "value"):
+            text = _pick_url(value.get(key))
+            if text:
+                return text
+        return ""
+    if isinstance(value, list):
+        for item in value:
+            text = _pick_url(item)
+            if text:
+                return text
+    return ""
+
+
+def extract_cover_url(entry: Any, url: str) -> str:
+    # Prefer explicit image fields from feed entries.
+    field_candidates = [
+        entry.get("media_thumbnail"),
+        entry.get("media_content"),
+        entry.get("itunes_image"),
+        entry.get("image"),
+        entry.get("cover"),
+        entry.get("thumbnail"),
+    ]
+    for field in field_candidates:
+        candidate = _pick_url(field)
+        if candidate:
+            return candidate
+
+    for link in entry.get("links", []) or []:
+        if not isinstance(link, dict):
+            continue
+        href = _pick_url(link.get("href"))
+        rel = str(link.get("rel", "")).lower()
+        link_type = str(link.get("type", "")).lower()
+        if href and (rel == "enclosure" or link_type.startswith("image/")):
+            return href
+
+    for enclosure in entry.get("enclosures", []) or []:
+        href = _pick_url(enclosure.get("href") if isinstance(enclosure, dict) else enclosure)
+        if href:
+            return href
+
+    # URL-based fallback for YouTube.
+    yt_video_id = _extract_youtube_video_id(url)
+    if yt_video_id and re.fullmatch(r"[A-Za-z0-9_-]{6,20}", yt_video_id):
+        return f"https://i.ytimg.com/vi/{yt_video_id}/hqdefault.jpg"
+
+    return ""
+
+
 def parse_feed_with_fallback(
     feed_kind: str,
     feed_value: str,
@@ -305,6 +382,7 @@ def parse_feed_spec(
         url = entry["link"]
         title = entry.get("title", "") or ""
         description = (entry.get("summary", "") or "").strip()
+        cover_url = extract_cover_url(entry, url)
         if len(description) > 600:
             description = description[:600] + "..."
         candidates.append(
@@ -313,6 +391,7 @@ def parse_feed_spec(
                 "url": url,
                 "title": title,
                 "description": description,
+                "cover_url": cover_url,
                 "source_feed": feed_url,
                 "source_label": source_label,
             }

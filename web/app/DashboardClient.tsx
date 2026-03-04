@@ -9,7 +9,22 @@ import { ExternalLink, Filter, Radar, Zap, TrendingUp, Radio, Lightbulb, Search,
 import { motion } from 'framer-motion'
 
 // Types
-type Row = { id: string; title: string; url: string; source: string; time: string; score?: number; reason?: string; tags?: string[]; core_event?: string; hidden_signal?: string; actionable?: string }
+type Row = {
+  id: string
+  title: string
+  url: string
+  source: string
+  time: string
+  score?: number
+  reason?: string
+  tags?: string[]
+  core_event?: string
+  hidden_signal?: string
+  actionable?: string
+  source_feed?: string
+  source_label?: string
+  cover_url?: string
+}
 type Metrics = {
   generated_at?: string
   updates_total?: number
@@ -50,6 +65,64 @@ function formatDay(value: string): string {
   const dt = new Date(value)
   if (Number.isNaN(dt.getTime())) return value
   return dt.toLocaleString('zh-CN', { month: 'short', day: 'numeric' })
+}
+
+// 提取bili视频的BV号
+function extractBVId(url: string): string | null {
+  const patterns = [
+    /bilibili\.com\/video\/(BV[A-Za-z0-9]+)/i,
+    /b23\.tv\/([A-Za-z0-9]+)/i,
+  ]
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match) return match[1]
+  }
+  return null
+}
+
+function extractYouTubeVideoId(url: string): string | null {
+  let parsed: URL
+  try {
+    parsed = new URL(url)
+  } catch {
+    return null
+  }
+  const host = parsed.hostname.toLowerCase()
+  const path = parsed.pathname || ''
+  if (host.includes('youtu.be')) {
+    const id = path.replace(/^\/+/, '').split('/')[0]
+    return id || null
+  }
+  if (host.includes('youtube.com')) {
+    if (path === '/watch') {
+      const id = parsed.searchParams.get('v') || ''
+      return id || null
+    }
+    const parts = path.split('/').filter(Boolean)
+    if (parts.length >= 2 && ['shorts', 'embed', 'live'].includes(parts[0])) {
+      return parts[1] || null
+    }
+  }
+  return null
+}
+
+function getPreviewInfo(row: Row): { coverUrl: string; platform: 'youtube' | 'bilibili' | null } {
+  const directCover = (row.cover_url || '').trim()
+  if (directCover) {
+    const ytId = extractYouTubeVideoId(row.url)
+    if (ytId) return { coverUrl: directCover, platform: 'youtube' }
+    const bvId = extractBVId(row.url)
+    if (bvId) return { coverUrl: directCover, platform: 'bilibili' }
+    return { coverUrl: directCover, platform: null }
+  }
+
+  const ytId = extractYouTubeVideoId(row.url)
+  if (ytId) {
+    return { coverUrl: `https://i.ytimg.com/vi/${ytId}/hqdefault.jpg`, platform: 'youtube' }
+  }
+  const bvId = extractBVId(row.url)
+  if (bvId) return { coverUrl: '', platform: 'bilibili' }
+  return { coverUrl: '', platform: null }
 }
 
 // Logo SVG 组件
@@ -164,8 +237,14 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
       const kw = search.trim().toLowerCase()
       result = result.filter(r =>
         (r.title || '').toLowerCase().includes(kw) ||
+        (r.source || '').toLowerCase().includes(kw) ||
+        (r.source_label || '').toLowerCase().includes(kw) ||
+        (r.source_feed || '').toLowerCase().includes(kw) ||
         (r.hidden_signal || '').toLowerCase().includes(kw) ||
         (r.core_event || '').toLowerCase().includes(kw) ||
+        (r.reason || '').toLowerCase().includes(kw) ||
+        (r.actionable || '').toLowerCase().includes(kw) ||
+        (r.url || '').toLowerCase().includes(kw) ||
         (r.tags || []).some(t => t.toLowerCase().includes(kw))
       )
     }
@@ -418,7 +497,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
               <input
                 ref={searchRef}
                 className="search-input"
-                placeholder="搜索标题、标签、AI分析…  [按 / 聚焦]"
+                placeholder="搜索标题、来源、标签、核心/分析/建议、链接…  [按 / 聚焦]"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -469,6 +548,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
               const s = row.score ?? 0
               const isHigh = s >= 0.85
               const isMid = s >= 0.7 && s < 0.85
+              const preview = getPreviewInfo(row)
 
               return (
                 <motion.div 
@@ -515,6 +595,44 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                       )}
                     </div>
                     
+                    {(preview.coverUrl || preview.platform) && (
+                      <div style={{ marginTop: 8, marginBottom: 6, borderRadius: 8, overflow: 'hidden', position: 'relative' }}>
+                        {preview.coverUrl ? (
+                          <img
+                            src={preview.coverUrl}
+                            alt={row.title || '封面图'}
+                            loading="lazy"
+                            referrerPolicy="no-referrer"
+                            style={{ width: '100%', aspectRatio: '16 / 9', objectFit: 'cover', display: 'block' }}
+                          />
+                        ) : (
+                          <div
+                            style={{
+                              width: '100%',
+                              paddingTop: '56.25%',
+                              background: 'linear-gradient(135deg, #23ADE5 0%, #FA7298 100%)',
+                              position: 'relative',
+                            }}
+                          >
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: '50%',
+                                left: '50%',
+                                transform: 'translate(-50%, -50%)',
+                                color: '#fff',
+                                fontSize: 13,
+                                fontWeight: 500,
+                                whiteSpace: 'nowrap',
+                              }}
+                            >
+                              {preview.platform === 'bilibili' ? 'B站视频' : '视频封面'}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <h3 className="t-title" style={{ fontSize: 14, marginTop: 8, color: '#f8fafc', fontWeight: 600 }}>
                       {row.hidden_signal || row.title}
                     </h3>

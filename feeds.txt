@@ -48,6 +48,14 @@
 /bilibili/user/video/4848323 # 数字游牧人
 /bilibili/user/video/346575605 # kate人不错
 /bilibili/user/video/1316597695 # AI学长小林
+# 小红书（RSSHub）
+# 路由：/xiaohongshu/user/:user_id/notes
+# 说明：:user_id 为 24 位，需从小红书用户主页 URL 中提取
+/xiaohongshu/user/68502b1a000000001b01a7ba/notes # AgentOPC（小红书）
+/xiaohongshu/user/5d7ece920000000001018707/notes # SinKry 的 Ai 方舟（小红书）
+/xiaohongshu/user/6467b1210000000010027a51/notes # AI 拯救打工人（大厂爆料版）（小红书）
+/xiaohongshu/user/5ec66abd0000000001006a8a/notes # AI 异类弗兰克（小红书）
+/xiaohongshu/user/6314a2cc0000000012003173/notes # Aaron-OpenOnion（小红书）
 
 [direct]
 https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报

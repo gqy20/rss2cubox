@@ -10,7 +10,21 @@ type GlobalInsights = {
   daily_advices?: string[]
 }
 
-type Row = { id: string; title: string; url: string; source: string; time: string; score?: number; status?: string; tags?: string[]; core_event?: string; hidden_signal?: string; actionable?: string; reason?: string }
+type Row = {
+  id: string
+  title: string
+  url: string
+  source: string
+  time: string
+  score?: number
+  status?: string
+  tags?: string[]
+  core_event?: string
+  hidden_signal?: string
+  actionable?: string
+  reason?: string
+  cover_url?: string
+}
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []

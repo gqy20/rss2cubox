@@ -236,6 +236,7 @@ def process_candidates_for_push(
         title = item["title"]
         description = item["description"]
         tags = None
+        cover_url = str(item.get("cover_url", "")).strip()
         source_feed = item.get("source_feed", "unknown")
         source_label = str(item.get("source_label", "")).strip()
         event: dict[str, Any] = {
@@ -244,6 +245,7 @@ def process_candidates_for_push(
             "source_feed": source_feed,
             "source_label": source_label,
             "url": url,
+            "cover_url": cover_url,
             "title": title,
             "score": 0.0,
             "keep": None,

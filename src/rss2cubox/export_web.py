@@ -53,6 +53,7 @@ def _normalize_event_row(row: dict[str, Any]) -> dict[str, Any] | None:
         item_id = sync_pipeline.stable_id({'link': url, 'title': str(row.get('title', ''))})
     source_feed = str(row.get('source_feed', '')).strip()
     source_label = str(row.get('source_label', '')).strip()
+    cover_url = str(row.get('cover_url', '')).strip()
     source = source_label or _source_from_feed_value(source_feed) or urlparse(url).netloc or 'unknown'
     title = str(row.get('title', '')).strip() or _guess_title_from_url(url)
     status = str(row.get('status', 'unknown')).strip() or 'unknown'
@@ -70,6 +71,7 @@ def _normalize_event_row(row: dict[str, Any]) -> dict[str, Any] | None:
         'source': source,
         'source_feed': source_feed,
         'source_label': source_label,
+        'cover_url': cover_url,
         'url': url,
         'title': title,
         'score': score,
