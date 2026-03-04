@@ -398,6 +398,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
     monkeypatch.setattr(runner, "STATE_FILE", state_file)
+    monkeypatch.setattr(runner, "RUN_EVENTS_FILE", tmp_path / "run_events.jsonl")
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 1)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -463,6 +464,7 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
 
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
     monkeypatch.setattr(runner, "STATE_FILE", state_file)
+    monkeypatch.setattr(runner, "RUN_EVENTS_FILE", tmp_path / "run_events.jsonl")
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -511,6 +513,7 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
 
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
     monkeypatch.setattr(runner, "STATE_FILE", state_file)
+    monkeypatch.setattr(runner, "RUN_EVENTS_FILE", tmp_path / "run_events.jsonl")
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -622,6 +625,7 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
 
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
     monkeypatch.setattr(runner, "STATE_FILE", state_file)
+    monkeypatch.setattr(runner, "RUN_EVENTS_FILE", tmp_path / "run_events.jsonl")
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])

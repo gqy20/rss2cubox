@@ -26,6 +26,7 @@ from rss2cubox.metrics import (
 FEEDS_FILE = Path(os.getenv("FEEDS_FILE", "feeds.txt"))
 STATE_FILE = Path(os.getenv("STATE_FILE", "state.json"))
 RSSHUB_INSTANCES_FILE = Path(os.getenv("RSSHUB_INSTANCES_FILE", "rsshub_instances.txt"))
+RUN_EVENTS_FILE = Path(os.getenv("RUN_EVENTS_FILE", "run_events.jsonl"))
 
 CUBOX_API_URL = os.getenv("CUBOX_API_URL")
 CUBOX_FOLDER = os.getenv("CUBOX_FOLDER", "RSS Inbox")
@@ -113,6 +114,7 @@ def main() -> None:
         runtime_context=runtime_context,
         config_snapshot=config_snapshot,
     )
+    run_events: list[dict[str, Any]] = []
     log_event(
         "INFO",
         "run_start",
@@ -214,7 +216,14 @@ def main() -> None:
         request_post=requests.post,
         stage_metrics=stage_metrics,
         log_event=log_event,
+        event_sink=run_events,
     )
+    for event in run_events:
+        event.setdefault("run_id", runtime_context.get("run_id", ""))
+        event.setdefault("head_sha", runtime_context.get("head_sha", ""))
+        event.setdefault("ref_name", runtime_context.get("ref_name", ""))
+        event.setdefault("event_name", runtime_context.get("event_name", ""))
+    sync_pipeline.save_jsonl(RUN_EVENTS_FILE, run_events)
 
     state["sent"] = sent
     state["ai"] = ai

@@ -46,6 +46,32 @@ def save_state(state_file: Path, state: dict) -> None:
         f.write("\n")
 
 
+def load_jsonl(path: Path) -> list[dict[str, Any]]:
+    if not path.exists():
+        return []
+    rows: list[dict[str, Any]] = []
+    with path.open("r", encoding="utf-8") as f:
+        for line in f:
+            raw = line.strip()
+            if not raw:
+                continue
+            try:
+                obj = json.loads(raw)
+            except json.JSONDecodeError:
+                continue
+            if isinstance(obj, dict):
+                rows.append(obj)
+    return rows
+
+
+def save_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8") as f:
+        for row in rows:
+            f.write(json.dumps(row, ensure_ascii=False))
+            f.write("\n")
+
+
 def stable_id(entry: dict) -> str:
     identifier = entry.get("id") or entry.get("guid")
     if identifier:
@@ -197,22 +223,47 @@ def process_candidates_for_push(
     request_post: Any,
     stage_metrics: Any,
     log_event: Any,
+    event_sink: list[dict[str, Any]] | None = None,
     sleep_seconds: float = 0.3,
 ) -> None:
-    for item in candidates_for_run:
-        if stats["pushed"] >= max_items_per_run:
-            break
+    def emit_event(event: dict[str, Any]) -> None:
+        if event_sink is not None:
+            event_sink.append(event)
 
+    for item in candidates_for_run:
         eid = item["eid"]
         url = item["url"]
         title = item["title"]
         description = item["description"]
         tags = None
         source_feed = item.get("source_feed", "unknown")
+        event: dict[str, Any] = {
+            "id": eid,
+            "time": now_iso,
+            "source_feed": source_feed,
+            "url": url,
+            "title": title,
+            "score": 0.0,
+            "keep": None,
+            "status": "pending",
+            "drop_reason": "",
+            "pushed": False,
+            "tags": [],
+        }
+        if stats["pushed"] >= max_items_per_run:
+            event["status"] = "dropped"
+            event["drop_reason"] = "max_items_per_run_reached"
+            drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+            drop_by_feed["max_items_per_run_reached"] = drop_by_feed.get("max_items_per_run_reached", 0) + 1
+            emit_event(event)
+            continue
         if eid in sent:
             stats["run_deduped"] += 1
             drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
             drop_by_feed["run_deduped"] = drop_by_feed.get("run_deduped", 0) + 1
+            event["status"] = "dropped"
+            event["drop_reason"] = "run_deduped"
+            emit_event(event)
             continue
 
         result = analyses.get(eid)
@@ -228,11 +279,17 @@ def process_candidates_for_push(
                 action="drop",
                 reason="missing_ai_result",
             )
+            event["status"] = "dropped"
+            event["drop_reason"] = "missing_ai_result"
+            emit_event(event)
             continue
         if result:
             keep = bool(result.get("keep", False))
             score = float(result.get("score", 0.0))
             reason = str(result.get("reason", ""))
+            event["keep"] = keep
+            event["score"] = score
+            event["tags"] = result.get("tags", []) if isinstance(result.get("tags", []), list) else []
             action = "keep" if keep and score >= ai_min_score else "drop"
             log_event(
                 "INFO",
@@ -257,11 +314,17 @@ def process_candidates_for_push(
                 stats["ai_dropped_keep_false"] += 1
                 drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
                 drop_by_feed["ai_keep_false"] = drop_by_feed.get("ai_keep_false", 0) + 1
+                event["status"] = "dropped"
+                event["drop_reason"] = "ai_keep_false"
+                emit_event(event)
                 continue
             if score < ai_min_score:
                 stats["ai_dropped_score"] += 1
                 drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
                 drop_by_feed["ai_score_below_threshold"] = drop_by_feed.get("ai_score_below_threshold", 0) + 1
+                event["status"] = "dropped"
+                event["drop_reason"] = "ai_score_below_threshold"
+                emit_event(event)
                 continue
             stats["ai_kept"] += 1
             brief = str(result.get("brief", "")).strip()
@@ -285,6 +348,8 @@ def process_candidates_for_push(
             sent[eid] = {"url": url, "ts": now_iso}
             stats["pushed"] += 1
             stats["per_feed_push_counts"][source_feed] = stats["per_feed_push_counts"].get(source_feed, 0) + 1
+            event["status"] = "pushed"
+            event["pushed"] = True
             push_duration_ms = int((time.perf_counter() - push_start) * 1000)
             stage_metrics.observe("push", push_duration_ms)
             log_event(
@@ -311,6 +376,9 @@ def process_candidates_for_push(
                 duration_ms=push_duration_ms,
                 error=str(exc),
             )
+            event["status"] = "failed"
+            event["drop_reason"] = "push_failed"
+        emit_event(event)
 
 
 def cubox_save_url(

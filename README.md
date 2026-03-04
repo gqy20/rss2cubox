@@ -65,11 +65,16 @@ python -m pip install -e ".[dev]"
 rss2cubox
 ```
 
-## 5) state.json 说明
+## 5) 数据文件职责
 
-- `sent`: 已推送条目（最终防重）
-- `feed_cursor`: 每源时间游标（仅提速）
-- `feed_failures`: 每源失败计数和熔断冷却状态
+- `state.json`
+  - `sent`: 已推送条目（防重复推送到 Cubox）
+  - `feed_cursor`: 每源时间游标（增量抓取）
+  - `feed_failures`: 每源失败计数与熔断状态
+- `run_events.jsonl`
+  - 本次运行的逐条处理结果（pushed/dropped/failed）
+- `web/public/data/updates_history.jsonl`
+  - 前端历史数据池（由 `run_events.jsonl` 增量合并）
 
 ## 6) GitHub Actions
 
@@ -77,9 +82,11 @@ rss2cubox
 - 每次运行会输出 `rss2cubox.log` artifact
 - Step Summary 包含：阶段耗时、熔断跳过数、去重数、每源推送/丢弃统计
 - 每次运行后会自动执行 `rss2cubox-export-web`，生成：
+  - `run_events.jsonl`
+  - `web/public/data/updates_history.jsonl`
   - `web/public/data/updates.json`
   - `web/public/data/metrics.json`
-- workflow 会把 `state.json` 和上述前端数据文件一起提交到 `main`
+- workflow 会把上述数据文件提交到 `main`
 
 ## 7) Vercel 前端（自动更新）
 
