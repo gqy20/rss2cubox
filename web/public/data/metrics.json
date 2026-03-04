@@ -1,34 +1,26 @@
 {
-  "generated_at": "2026-03-04T08:49:09.764920+00:00",
-  "updates_total": 168,
-  "pushed_total": 63,
-  "dropped_total": 105,
+  "generated_at": "2026-03-04T11:09:38.321818+00:00",
+  "updates_total": 195,
+  "pushed_total": 74,
+  "dropped_total": 121,
   "failed_total": 0,
-  "sources_total": 21,
+  "sources_total": 29,
   "top_sources": [
     {
       "source": "Hacker News",
-      "count": 78
+      "count": 68
     },
     {
       "source": "InfoQ 推荐",
-      "count": 25
+      "count": 21
     },
     {
       "source": "Claude Status 历史事件",
-      "count": 17
-    },
-    {
-      "source": "HelloGitHub 精选",
-      "count": 13
+      "count": 19
     },
     {
       "source": "少数派首页",
-      "count": 12
-    },
-    {
-      "source": "HelloGitHub 月刊",
-      "count": 10
+      "count": 11
     },
     {
       "source": "Cursor Blog News",
@@ -44,6 +36,14 @@
     },
     {
       "source": "Claude Code Releases",
+      "count": 6
+    },
+    {
+      "source": "YouTube Google DeepMind",
+      "count": 4
+    },
+    {
+      "source": "YouTube Temporal",
       "count": 4
     },
     {
@@ -53,6 +53,26 @@
     {
       "source": "Google AI Blog",
       "count": 3
+    },
+    {
+      "source": "YouTube Anthropic",
+      "count": 2
+    },
+    {
+      "source": "YouTube HuggingFace",
+      "count": 2
+    },
+    {
+      "source": "YouTube OpenAI",
+      "count": 2
+    },
+    {
+      "source": "YouTube LlamaIndex",
+      "count": 2
+    },
+    {
+      "source": "YouTube LangChain",
+      "count": 2
     },
     {
       "source": "OpenAI News",
@@ -65,32 +85,12 @@
     {
       "source": "Cursor Changelog",
       "count": 2
-    },
-    {
-      "source": "Hugging Face Blog（RSSHub）",
-      "count": 2
-    },
-    {
-      "source": "量子位 E 半导体",
-      "count": 2
-    },
-    {
-      "source": "Google DeepMind News",
-      "count": 1
-    },
-    {
-      "source": "量子位 智库",
-      "count": 1
-    },
-    {
-      "source": "Cursor Blog Research",
-      "count": 1
     }
   ],
   "top_drop_reasons": [
     {
       "reason": "ai_keep_false",
-      "count": 84
+      "count": 100
     },
     {
       "reason": "max_items_per_run_reached",

@@ -719,6 +719,61 @@
       "url": "https://hellogithub.com/repository/ef01295189f047afb41dbc8eb01bfd20",
       "ts": "2026-03-04T09:46:44.600916+00:00",
       "title": "freemocap: 免费开源的动作捕捉系统"
+    },
+    "a70f15a15a0f8398f7a6f9481097d68d449422cffdf401d33f966255738e3a7e": {
+      "url": "https://www.youtube.com/watch?v=5KTHvKCrQ00",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Claude ran a business in our office"
+    },
+    "63b1798772e8cfd4d1c61b06f2d53dce336426c759e788401897c89fcdab42b0": {
+      "url": "https://www.youtube.com/watch?v=bNrbxCvFrKA",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Gemini 3 Deep Think: Identifying logical errors in complex mathematics research"
+    },
+    "da74e34f44fbb02b10cb1e96e0aa51d403ca50bc91049ee327cf72dab1e0c8a1": {
+      "url": "https://www.youtube.com/watch?v=YXjbfc8ioV8",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Vibe Check: Temporal SDKs are Not a Thin Client"
+    },
+    "b6361c493b8acdc0c81eca650e534b841e7d6acd7ac6d42b65e4b7397cf2eb7d": {
+      "url": "https://www.youtube.com/watch?v=9oxWgT4G6yI",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Talk: Kernels Deep Dive (Ben Burtenshaw)"
+    },
+    "2f529d9c17a62e05ca2fb34270faa14b1dbb4c3a809762d1b3060c746a2c3fb2": {
+      "url": "https://www.youtube.com/watch?v=-I7bvla4YTo",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Build durable ML pipelines with Temporal"
+    },
+    "bc92a0cfbd5c3dba4d6e592b33906f43fcb55ef75c5b4917e06bea11a6ede3db": {
+      "url": "https://www.youtube.com/watch?v=IE0BmXsIzTI",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Gemini 3 Deep Think: Optimizing 2D semiconductor fabrication"
+    },
+    "f74e85c01cf70e8c6455df52349c534fed9d792838d456cb1987a187057fa7ff": {
+      "url": "https://www.youtube.com/watch?v=XLcj5Jlyv-Y",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "The Brutal Truth About AI From the People Actually Building It | Best of Gradient Dissent"
+    },
+    "1a93fac2873ddb6ec943920fb1683a82526134e9952a1fad4c23d91bc44e61dd": {
+      "url": "https://www.youtube.com/watch?v=DvKutXclQoc",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Reducing Overcaveating in GPT-5.3 Instant"
+    },
+    "ceaee96f11db349ea4099779d1a659b3912eb02d3b338347b9b5d696d9c73dfa": {
+      "url": "https://www.youtube.com/watch?v=0q11SEogJFU",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Vibe Check:  Deploying OpenClaw and Exploring Autonomous Systems in the Wild"
+    },
+    "6f3951c99dd0eb8ad949ffb5d0f84c2e5e4b959cb71801366382e92d4ae116ce": {
+      "url": "https://www.youtube.com/watch?v=0pmnDimaXnQ",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Improving Web Search Results in GPT-5.3 Instant"
+    },
+    "0950a33eb2bc8d691d5a7b79b553474a0c9e6c7f14d928be559a83d73b9a7a94": {
+      "url": "https://www.youtube.com/watch?v=eyLf4Kqd6lg",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "title": "Build a Deep Research Agent | Python, OpenAI, Temporal"
     }
   },
   "ai": {
@@ -1161,12 +1216,12 @@
     },
     "7b84c81e7d48b1d36bc206a7a50e3980f15b88be7dd08e468466bd8e5bb5815c": {
       "keep": false,
-      "score": 0.2,
-      "reason": "AI代码编辑器的内部使用案例展示，属于产品宣传而非技术信号。",
-      "core_event": "Cursor官方博客介绍其技术支持团队如何使用Cursor进行代码查看、日志分析和团队知识管理。",
-      "hidden_signal": "AI代码编辑器的内部使用案例展示，属于产品宣传而非技术信号。",
-      "actionable": "无需采取行动，这是Cursor产品的营销性质博客，介绍其客服团队如何使用自家工具。",
-      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "score": 0.35,
+      "reason": "AI代码编辑器正探索将产品自身用于内部支持流程，体现AI工具的元应用潜力，但内容偏向PR宣传。",
+      "core_event": "Cursor官方博客介绍其技术支持团队如何使用Cursor提升工作效率。",
+      "hidden_signal": "AI代码编辑器正探索将产品自身用于内部支持流程，体现AI工具的元应用潜力，但内容偏向PR宣传。",
+      "actionable": "关注AI辅助编程工具在企业支持场景的落地进展，但此类营销内容价值有限。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "AI编程",
@@ -1395,44 +1450,44 @@
     },
     "07d6f9e914cfec016d53b65640861ef2e2580cc5478df8f1c76266147686484b": {
       "keep": false,
-      "score": 0.2,
-      "reason": "这是一起多服务联动的事故，已修复并归档。虽涉及多个产品线，但作为已解决的历史事件，不提供持续价值。",
-      "core_event": "Anthropic旗下claude.ai、cowork、platform、claude code多服务出现错误，已于UTC 3月3日10:18解决。",
-      "hidden_signal": "这是一起多服务联动的事故，已修复并归档。虽涉及多个产品线，但作为已解决的历史事件，不提供持续价值。",
-      "actionable": "无需行动。该事件已完全解决，不影响当前系统状态。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.15,
+      "reason": "这是典型的云服务运维事件，属于正常的服务稳定性披露，不构成行业信号或技术趋势。",
+      "core_event": "Anthropic 旗下的 Claude.ai 及相关平台于 3 月 4 日发生服务中断，已于当日修复。",
+      "hidden_signal": "这是典型的云服务运维事件，属于正常的服务稳定性披露，不构成行业信号或技术趋势。",
+      "actionable": "无需工程师采取行动。此事件已解决，仅为 Claude 官方状态页的运维公告。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "云服务",
-        "运维事件"
+        "运维",
+        "云服务"
       ]
     },
     "f9b2257851caf42f87a5963306ddf974bd6aaf68efbbfd86310ff86fa1848859": {
       "keep": false,
-      "score": 0.1,
-      "reason": "发布页面缺少任何版本说明、changelog或变更内容，信息量为零，不构成任何有价值的信号。",
-      "core_event": "Anthropic在GitHub上发布了Claude Code v2.1.66版本更新，但未提供任何版本说明内容。",
-      "hidden_signal": "发布页面缺少任何版本说明、changelog或变更内容，信息量为零，不构成任何有价值的信号。",
-      "actionable": "无需行动。版本发布说明缺失，无法提取任何技术细节或变更信息。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.0,
+      "reason": "版本发布记录，缺少实质信息，无分析价值。",
+      "core_event": "Claude Code v2.1.66版本发布，无更新说明。",
+      "hidden_signal": "版本发布记录，缺少实质信息，无分析价值。",
+      "actionable": "无实质内容，仅为版本标记。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI开发工具",
-        "版本发布"
+        "版本记录"
       ]
     },
     "9964d545508ee012a049e838791c131005e9706bce6098674466857cbdc2e12c": {
       "keep": false,
-      "score": 0.2,
-      "reason": "这是一起已完结的运维事件，无持续影响，属于典型的incident report归档，不构成前瞻性信号。",
-      "core_event": "Anthropic旗下Claude Opus 4.6发生服务错误，已于UTC 3月3日14:29解决。",
-      "hidden_signal": "这是一起已完结的运维事件，无持续影响，属于典型的incident report归档，不构成前瞻性信号。",
-      "actionable": "无需行动。该事件已完全解决，不影响当前系统状态。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.4,
+      "reason": "主流AI模型服务仍存在稳定性问题，即使是头部厂商Anthropic也难以完全避免服务中断。",
+      "core_event": "Claude Opus 4.6模型在UTC时间3月14:29出现错误并已被修复。",
+      "hidden_signal": "主流AI模型服务仍存在稳定性问题，即使是头部厂商Anthropic也难以完全避免服务中断。",
+      "actionable": "此事件已解决，仅作为历史记录参考，无需进一步行动。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "云服务",
-        "运维事件"
+        "AI服务",
+        "系统稳定性",
+        "Anthropic"
       ]
     },
     "f04333c73261b8c3e351f4ec9904dba86c59ba1049d6733c09e3ce0ddfc407ed": {
@@ -1989,6 +2044,347 @@
         "开源社区",
         "工具推荐"
       ]
+    },
+    "a70f15a15a0f8398f7a6f9481097d68d449422cffdf401d33f966255738e3a7e": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "这是首个头部AI公司公开进行的真实商业环境AI自主运营实验，揭示了当前AI Agent在闭环商业场景中的实际能力边界和失败模式，为AI代理经济时代提供了重要的实证参考。",
+      "core_event": "Anthropic在2025年进行了一项实验，让AI模型Claude自主管理办公室小商业事务，包括采购、定价、库存和客户处理，探索AI在实际经济中自主运行的可能性。",
+      "hidden_signal": "这是首个头部AI公司公开进行的真实商业环境AI自主运营实验，揭示了当前AI Agent在闭环商业场景中的实际能力边界和失败模式，为AI代理经济时代提供了重要的实证参考。",
+      "actionable": "关注AI Agent在业务流程中的实际边界与局限性，特别是在需要自主决策的场景中可能出现的失败模式。为未来AI Agent产品设计提供参考。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "商业自动化",
+        "实验研究"
+      ]
+    },
+    "63b1798772e8cfd4d1c61b06f2d53dce336426c759e788401897c89fcdab42b0": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "大语言模型在形式化数学推理方面已达到可发现人类审稿人遗漏错误的水平，这对学术出版和同行评审流程具有深远影响。",
+      "core_event": "Rutgers大学数学家Lisa Carbone使用Gemini 3 Deep Think在一篇高能物理与无限维代数领域的论文中发现了一个此前未被人类同行评审注意到的逻辑缺陷。",
+      "hidden_signal": "大语言模型在形式化数学推理方面已达到可发现人类审稿人遗漏错误的水平，这对学术出版和同行评审流程具有深远影响。",
+      "actionable": "重新审视AI在学术同行评审中的定位，评估将大语言模型作为辅助审查工具的可行性，尤其在高复杂度数学/物理领域。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI推理",
+        "数学",
+        "学术出版"
+      ]
+    },
+    "da74e34f44fbb02b10cb1e96e0aa51d403ca50bc91049ee327cf72dab1e0c8a1": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Temporal 的核心价值在于其事件溯源架构和确定性重放机制，而非传统的工作流引擎。MIT 许可证意味着企业可无限制使用和修改，这对工作流编排领域具有里程碑意义。",
+      "core_event": "Temporal SDK 维护者通过直播深入讲解 Temporal 开源代码，揭示 SDK 并非简单薄客户端，而是包含复杂的工作流持久化、重放和确定性执行机制。",
+      "hidden_signal": "Temporal 的核心价值在于其事件溯源架构和确定性重放机制，而非传统的工作流引擎。MIT 许可证意味着企业可无限制使用和修改，这对工作流编排领域具有里程碑意义。",
+      "actionable": "如果工程团队使用 Temporal，建议深入理解其 SDK 的工作原理，特别是工作流重放和 worker 轮询机制，这对排查生产环境问题和优化工作流性能至关重要。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "工作流编排",
+        "事件溯源",
+        "后端架构"
+      ]
+    },
+    "b6361c493b8acdc0c81eca650e534b841e7d6acd7ac6d42b65e4b7397cf2eb7d": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "深度学习推理中内存带宽已是主要瓶颈，fused kernels和定制化kernel构建是提升实际部署性能的关键差异化技术。",
+      "core_event": "",
+      "hidden_signal": "深度学习推理中内存带宽已是主要瓶颈，fused kernels和定制化kernel构建是提升实际部署性能的关键差异化技术。",
+      "actionable": "深入研究fused kernels和内存带宽优化技术，在实际项目中评估Nix构建系统和Hugging Face Kernels的工程价值。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "深度学习",
+        "性能优化",
+        "系统架构"
+      ]
+    },
+    "2f529d9c17a62e05ca2fb34270faa14b1dbb4c3a809762d1b3060c746a2c3fb2": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "ML工程领域正在从实验性脚本向生产级可靠工作流范式转变，持久化执行状态和细粒度资源控制成为新标准。",
+      "core_event": "一段详细教程视频，演示如何使用Temporal构建具有检查点机制和故障恢复能力的ML训练流水线。",
+      "hidden_signal": "ML工程领域正在从实验性脚本向生产级可靠工作流范式转变，持久化执行状态和细粒度资源控制成为新标准。",
+      "actionable": "深入学习Temporal框架在ML工程中的应用；评估其对大规模模型训练工作流可靠性的提升；考虑在项目中引入checkpoint机制和可恢复工作流设计。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "ML工程",
+        "工作流编排",
+        "Temporal"
+      ]
+    },
+    "bc92a0cfbd5c3dba4d6e592b33906f43fcb55ef75c5b4917e06bea11a6ede3db": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "AI模型已具备材料科学领域的专家级推理能力，能够处理复杂的多变量工艺优化问题，这标志着AI从实验室走向半导体制造前端。",
+      "core_event": "Google DeepMind团队使用Gemini 3 Deep Think成功优化了二维半导体薄膜晶体生长的制造工艺，实现了超过100μm的薄膜生长目标。",
+      "hidden_signal": "AI模型已具备材料科学领域的专家级推理能力，能够处理复杂的多变量工艺优化问题，这标志着AI从实验室走向半导体制造前端。",
+      "actionable": "关注大语言模型在材料科学领域的实际应用进展，考虑将类似AI推理能力引入半导体制造研发流程。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI推理",
+        "半导体",
+        "材料科学"
+      ]
+    },
+    "f74e85c01cf70e8c6455df52349c534fed9d792838d456cb1987a187057fa7ff": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "AI领域内部人士开始公开表达对AI发展速度和方向的担忧，暗示行业可能正在接近某个临界点或面临此前未公开讨论的风险因素。",
+      "core_event": "一段集成了5位AI领域专家对AI发展现状和未来的坦诚讨论的播客访谈视频。",
+      "hidden_signal": "AI领域内部人士开始公开表达对AI发展速度和方向的担忧，暗示行业可能正在接近某个临界点或面临此前未公开讨论的风险因素。",
+      "actionable": "观看完整访谈，重点关注AI专家对当前AI发展速度的真实评估和具体担忧；记录关键洞见用于后续行业趋势分析。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI行业趋势",
+        "AI安全风险",
+        "专家洞察"
+      ]
+    },
+    "1a93fac2873ddb6ec943920fb1683a82526134e9952a1fad4c23d91bc44e61dd": {
+      "keep": true,
+      "score": 0.87,
+      "reason": "这反映了AI模型在安全性和实用性之间的权衡正在微调，过度谨慎的输出开始被优化，反映出模型对齐技术的成熟度提升。",
+      "core_event": "OpenAI研究人员Blair Chen解释了GPT-5.3 Instant如何减少ChatGPT中不必要的免责声明，使AI助手更直接有用。",
+      "hidden_signal": "这反映了AI模型在安全性和实用性之间的权衡正在微调，过度谨慎的输出开始被优化，反映出模型对齐技术的成熟度提升。",
+      "actionable": "持续关注模型对齐技术的改进，尤其是如何在保持安全性的同时减少过度谨慎导致的用户体验下降，这对于构建更实用的AI助手具有重要参考价值。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "大语言模型",
+        "AI对齐",
+        "模型优化"
+      ]
+    },
+    "ceaee96f11db349ea4099779d1a659b3912eb02d3b338347b9b5d696d9c73dfa": {
+      "keep": true,
+      "score": 0.87,
+      "reason": "AI Agent正从单纯对话系统向具备自主行动能力的系统演进，开源框架与轻量云基础设施的结合正在降低Agent生产部署门槛。",
+      "core_event": "一段演示视频，展示如何在DigitalOcean Droplet上部署开源AI Agent框架OpenClaw并运行实时任务。",
+      "hidden_signal": "AI Agent正从单纯对话系统向具备自主行动能力的系统演进，开源框架与轻量云基础设施的结合正在降低Agent生产部署门槛。",
+      "actionable": "评估OpenClaw等自主Agent框架在生产环境中的适用性；探索轻量级云基础设施（如Droplet）上部署AI Agent的可行性和成本效益；关注Agent从对话向行动执行的技术演进。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "开源框架",
+        "云部署"
+      ]
+    },
+    "6f3951c99dd0eb8ad949ffb5d0f84c2e5e4b959cb71801366382e92d4ae116ce": {
+      "keep": true,
+      "score": 0.86,
+      "reason": "GPT-5.3在搜索增强场景中的上下文理解和风格控制能力提升，表明模型在外部信息整合与生成质量方面取得进展。",
+      "core_event": "OpenAI研究人员Josh McGrath解释了GPT-5.3 Instant在使用Web搜索时的响应如何变得更上下文相关、风格更自然。",
+      "hidden_signal": "GPT-5.3在搜索增强场景中的上下文理解和风格控制能力提升，表明模型在外部信息整合与生成质量方面取得进展。",
+      "actionable": "Web搜索结果质量的提升是AI助手实用性的关键，继续关注多模态理解和推理能力在搜索场景中的融合应用。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "大语言模型",
+        "搜索增强",
+        "模型能力"
+      ]
+    },
+    "0950a33eb2bc8d691d5a7b79b553474a0c9e6c7f14d928be559a83d73b9a7a94": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "AI Agent开发正在引入事件驱动架构和持久化工作流模式，以解决大模型调用成本高和失败处理复杂的问题。",
+      "core_event": "一段技术教程视频，演示如何使用Python、OpenAI和Temporal构建具备耐久性的深度研究Agent。",
+      "hidden_signal": "AI Agent开发正在引入事件驱动架构和持久化工作流模式，以解决大模型调用成本高和失败处理复杂的问题。",
+      "actionable": "结合教程学习Deep Research Agent的实现思路；探索利用Temporal实现Agent工作流的持久化和错误处理；评估在自研项目中采用类似架构的可行性。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "LLM应用开发",
+        "工作流引擎"
+      ]
+    },
+    "af29f5bf2b13f2e7fcc1e45d22b4f8cacce3f633602dd6befecde021980bbb12": {
+      "keep": false,
+      "score": 0.55,
+      "reason": "AI模型提供商正通过版本分层和努力程度(effort)参数化来精细化控制用户体验和计算资源消耗，体现成本优化趋势。",
+      "core_event": "Anthropic发布Claude Code v2.1.68，将Opus 4.6设为Max和Team订阅的默认模型，并重新引入ultrathink关键词。",
+      "hidden_signal": "AI模型提供商正通过版本分层和努力程度(effort)参数化来精细化控制用户体验和计算资源消耗，体现成本优化趋势。",
+      "actionable": "关注Claude Code版本迭代策略的变化，理解其对不同订阅层级的差异化服务思路。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI模型",
+        "版本更新",
+        "Anthropic"
+      ]
+    },
+    "d64f00e627790393535865aec0fff98b12f609229105a95bbc18928ed2c654e6": {
+      "keep": false,
+      "score": 0.55,
+      "reason": "初创公司正以\"知识工作 AGI\"为卖点入场，与 Anthropic/OpenAI 竞争。需关注其技术路线是否与主流 LLM 路径存在本质差异。",
+      "core_event": "Poolside 联合创始人 Jason Warner & Eiso Kant 在首次公开会议上演示了其通往 AGI 的路线图。",
+      "hidden_signal": "初创公司正以\"知识工作 AGI\"为卖点入场，与 Anthropic/OpenAI 竞争。需关注其技术路线是否与主流 LLM 路径存在本质差异。",
+      "actionable": "关注但无需立即行动。持续观察 Poolside 在代码生成领域的实际技术突破与市场表现。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AGI",
+        "AI创业",
+        "大模型"
+      ]
+    },
+    "aecbd80b97a9d6cfe60637607f2f884804194a49faa9dd89f1c7546c20b7bf89": {
+      "keep": false,
+      "score": 0.55,
+      "reason": "Gemini 3具备多模态推理能力，可结合文本和图像进行工程设计推理，但此类案例展示技术演示意义大于实际工程突破。",
+      "core_event": "",
+      "hidden_signal": "Gemini 3具备多模态推理能力，可结合文本和图像进行工程设计推理，但此类案例展示技术演示意义大于实际工程突破。",
+      "actionable": "了解AI辅助CAD设计的当前能力边界，但不必急于部署，核心技术细节公开有限。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI工程",
+        "CAD设计",
+        "快速原型"
+      ]
+    },
+    "0be135a170dd3bb73a26ae2cb4234ef3f03eaca19b336fcbb94608c85bd9bc53": {
+      "keep": false,
+      "score": 0.45,
+      "reason": "AI驱动的数据预处理工具正在填补传统ETL与智能解析之间的空白，针对非结构化/半结构化企业数据的痛点。",
+      "core_event": "LlamaSheets是一个将混乱Excel文件转换为结构化Parquet文件的工具，可保留传统解析会遗漏的语义上下文、层级和格式。",
+      "hidden_signal": "AI驱动的数据预处理工具正在填补传统ETL与智能解析之间的空白，针对非结构化/半结构化企业数据的痛点。",
+      "actionable": "了解并评估此类工具在数据处理工作流中的潜在应用价值，同时关注其与传统ETL工具的差异化定位。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "数据工程",
+        "AI工具",
+        "ETL"
+      ]
+    },
+    "6633c0717ed33f3c5a483fbe3575fed1c86a0d14325cede65cbe2dd59d09fc54": {
+      "keep": false,
+      "score": 0.42,
+      "reason": "AI公司正在从对话界面向任务代理演进，这是AI Agent产品化的重要趋势，但产品处于早期推广阶段。",
+      "core_event": "Anthropic推出Claude Cowork功能，允许用户将耗时任务交给Claude处理，从本地文件、云工具和网页获取信息并综合生成成品。",
+      "hidden_signal": "AI公司正在从对话界面向任务代理演进，这是AI Agent产品化的重要趋势，但产品处于早期推广阶段。",
+      "actionable": "评估其与现有工作流自动化工具的竞争格局，谨慎对待产品发布期的宣传信息。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "产品发布",
+        "工作流自动化"
+      ]
+    },
+    "382129cafcb7b09357d0677afac903bc4995c4362542203520f226269f55f1fb": {
+      "keep": false,
+      "score": 0.35,
+      "reason": "企业文档处理是 RAG 场景的核心挑战，但此内容为 LlamaIndex 产品推广，不构成技术趋势信号。",
+      "core_event": "StackAI 分享如何使用 LlamaParse 实现企业文档的高精度摄取与检索。",
+      "hidden_signal": "企业文档处理是 RAG 场景的核心挑战，但此内容为 LlamaIndex 产品推广，不构成技术趋势信号。",
+      "actionable": "如需构建企业级文档处理 Pipeline，可评估 LlamaParse 与 StackAI 集成方案。此视频为产品演示。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "RAG",
+        "文档处理",
+        "企业AI"
+      ]
+    },
+    "131163321e94dab54fd4542f08e5e06dbbcd178bace8a6857cb8d105b0203986": {
+      "keep": false,
+      "score": 0.3,
+      "reason": "低代码/自然语言 Agent 构建已成为主流趋势，但此视频为产品推广内容，不含新的技术范式。",
+      "core_event": "LangChain 发布 LangSmith Agent Builder，允许用户用自然语言描述目标来构建 AI Agent。",
+      "hidden_signal": "低代码/自然语言 Agent 构建已成为主流趋势，但此视频为产品推广内容，不含新的技术范式。",
+      "actionable": "无需采取行动。此为 LangChain 产品营销视频，不构成技术决策依据。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Agent",
+        "低代码",
+        "LLM应用"
+      ]
+    },
+    "85d959392c342ff7cc1a8d04f8e5889db9b03dad39aa7374f6f4442377d1e252": {
+      "keep": false,
+      "score": 0.3,
+      "reason": "科技公司正在通过名人效应推广AI创意工具，本质上仍是市场营销行为，缺乏实质性技术突破信息。",
+      "core_event": "Google DeepMind邀请著名音乐制作人Wyclef Jean演示其Music AI Sandbox工具，展示AI在音乐创作中的应用。",
+      "hidden_signal": "科技公司正在通过名人效应推广AI创意工具，本质上仍是市场营销行为，缺乏实质性技术突破信息。",
+      "actionable": "无需采取行动，这是面向消费者的PR营销内容。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI音乐",
+        "营销推广",
+        "名人合作"
+      ]
+    },
+    "2422972a28ceeaad110bf7815213453761a9aa3f533d47c7f285d0a17cc90910": {
+      "keep": false,
+      "score": 0.25,
+      "reason": "Agent 可观测性是工程化需求，但此内容为产品营销，不含行业洞察。",
+      "core_event": "LangChain 宣传 LangSmith 平台提供 Agent 可观测性、评估和部署能力。",
+      "hidden_signal": "Agent 可观测性是工程化需求，但此内容为产品营销，不含行业洞察。",
+      "actionable": "无需采取行动。此为 LangChain 产品营销内容。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Agent",
+        "可观测性",
+        "DevOps"
+      ]
+    },
+    "16440c38daa883161cd5a2cc8b87932e28c13a723f56583222222b995f904700": {
+      "keep": false,
+      "score": 0.25,
+      "reason": "这是一条产品推广内容，缺乏深度的技术洞见或行业信号，属于低价值信息。",
+      "core_event": "一段HuggingFace官方产品教程视频，介绍HuggingChat的功能特性、使用方式和使用定价。",
+      "hidden_signal": "这是一条产品推广内容，缺乏深度的技术洞见或行业信号，属于低价值信息。",
+      "actionable": "无需采取行动。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "产品教程"
+      ]
+    },
+    "f79b8c77345a76c5c5d243128620adce87bffaab3fa5d43b3020fe7ca3d7b0e9": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "这是标准的基础教育内容，不构成任何技术信号或行业情报，对技术决策无参考价值。",
+      "core_event": "一个面向零基础学习者的 Python for AI 入门课程视频。",
+      "hidden_signal": "这是标准的基础教育内容，不构成任何技术信号或行业情报，对技术决策无参考价值。",
+      "actionable": "无需关注，这是面向完全初学者的 Python 基础教程，不包含任何新的技术信号或行业洞察。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Python",
+        "AI教育"
+      ]
+    },
+    "efe7ce99862caa7b0430b61ee011b975fad346ccfe4c59d16c984ce94ded7a15": {
+      "keep": false,
+      "score": 0.1,
+      "reason": "消费级内容平台利用情感叙事进行内容营销的常规操作，无实质技术或商业价值。",
+      "core_event": "少数派年度征文活动中，一篇关于2025年失去至亲的个人经历分享文章。",
+      "hidden_signal": "消费级内容平台利用情感叙事进行内容营销的常规操作，无实质技术或商业价值。",
+      "actionable": "无操作建议，此为个人情感类文章，非技术情报。",
+      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "内容营销",
+        "个人叙事"
+      ]
     }
   },
   "feed_cursor": {
@@ -2011,7 +2407,7 @@
     "https://blog.google/technology/ai/rss/": "2026-03-03T17:00:00+00:00",
     "https://community.openai.com/c/announcements.rss": "2026-01-15T20:11:25+00:00",
     "https://huggingface.co/blog/feed.xml": "2026-03-03T16:50:49+00:00",
-    "https://github.com/anthropics/claude-code/releases.atom": "2026-03-04T01:19:19+00:00",
+    "https://github.com/anthropics/claude-code/releases.atom": "2026-03-04T10:11:14+00:00",
     "https://status.anthropic.com/history.rss": "2026-03-04T08:32:41+00:00",
     "/anthropic/news": "2026-02-26T16:00:00+00:00",
     "/hellogithub/volume": "2026-02-28T00:10:09+00:00",
@@ -2022,179 +2418,263 @@
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCrDwWp7EBBv4NwvScIpBDOA": "2026-02-27T22:11:53+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCXZCJLdBC09xxGZ6gcdrc6A": "2026-03-03T17:57:22+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCP7jMXSY2xbc3KCAE0MHQ-A": "2026-02-28T09:28:04+00:00",
-    "https://www.youtube.com/feeds/videos.xml?channel_id=UCHlNU7kIZhRgSbhHvFoy72w": "2026-03-04T07:13:37+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCHlNU7kIZhRgSbhHvFoy72w": "2026-03-04T10:18:44+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCBp3w4DCEC64FZr4k9ROxig": "2026-03-02T08:59:57+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCGovZyy8OfFPNlNV0i1fI1g": "2026-03-03T21:14:27+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCn8ujwUInbJkBhffxqAPBVQ": "2026-03-03T22:22:15+00:00"
   },
   "feed_failures": {
     "/anthropic/research": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.518615+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.308969+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.518626+00:00"
+      "updated_at": "2026-03-04T11:06:20.308977+00:00"
     },
     "/modelscope/models": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519023+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309482+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519030+00:00"
+      "updated_at": "2026-03-04T11:06:20.309486+00:00"
     },
     "/producthunt/today": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519155+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309535+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519158+00:00"
+      "updated_at": "2026-03-04T11:06:20.309538+00:00"
     },
     "/github/topics/llm": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519172+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309551+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519175+00:00"
+      "updated_at": "2026-03-04T11:06:20.309553+00:00"
     },
     "/github/topics/agents": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519188+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309566+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519190+00:00"
+      "updated_at": "2026-03-04T11:06:20.309568+00:00"
     },
     "/juejin/aicoding": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519301+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309610+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519307+00:00"
+      "updated_at": "2026-03-04T11:06:20.309613+00:00"
     },
     "/twitter/user/karpathy": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519332+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309625+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519335+00:00"
+      "updated_at": "2026-03-04T11:06:20.309627+00:00"
     },
     "/twitter/user/fchollet": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519351+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309639+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519356+00:00"
+      "updated_at": "2026-03-04T11:06:20.309642+00:00"
     },
     "/twitter/user/soumithchintala": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519383+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309653+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519386+00:00"
+      "updated_at": "2026-03-04T11:06:20.309656+00:00"
     },
     "/twitter/user/rasbt": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519413+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309668+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519418+00:00"
+      "updated_at": "2026-03-04T11:06:20.309670+00:00"
     },
     "/twitter/user/ylecun": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519451+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309682+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519457+00:00"
+      "updated_at": "2026-03-04T11:06:20.309684+00:00"
     },
     "/twitter/user/demishassabis": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519492+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309696+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519499+00:00"
+      "updated_at": "2026-03-04T11:06:20.309698+00:00"
     },
     "/twitter/user/Yoshua_Bengio": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519534+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309710+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519541+00:00"
+      "updated_at": "2026-03-04T11:06:20.309712+00:00"
     },
     "/twitter/user/sama": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519576+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309726+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519583+00:00"
+      "updated_at": "2026-03-04T11:06:20.309728+00:00"
     },
     "/twitter/user/AndrewYNg": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519618+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309741+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519625+00:00"
+      "updated_at": "2026-03-04T11:06:20.309743+00:00"
     },
     "/twitter/user/JeremyHoward": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519660+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309756+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519666+00:00"
+      "updated_at": "2026-03-04T11:06:20.309758+00:00"
     },
     "/twitter/user/swyx": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519700+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309770+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519707+00:00"
+      "updated_at": "2026-03-04T11:06:20.309773+00:00"
     },
     "/twitter/user/simonw": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T10:17:20.519739+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T11:36:20.309785+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519746+00:00"
+      "updated_at": "2026-03-04T11:06:20.309787+00:00"
     },
     "https://community.openai.com/c/announcements.rss": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T10:17:20.520322+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T11:36:20.310209+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.520330+00:00"
+      "updated_at": "2026-03-04T11:06:20.310216+00:00"
     },
     "/bilibili/user/video/3546566589679687": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.519780+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309800+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519786+00:00"
+      "updated_at": "2026-03-04T11:06:20.309802+00:00"
     },
     "/bilibili/user/video/302188068": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.519823+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309815+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519829+00:00"
+      "updated_at": "2026-03-04T11:06:20.309817+00:00"
     },
     "/bilibili/user/video/26798384": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.519864+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309830+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519870+00:00"
+      "updated_at": "2026-03-04T11:06:20.309832+00:00"
     },
     "/bilibili/user/video/316183842": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.519904+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309844+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519910+00:00"
+      "updated_at": "2026-03-04T11:06:20.309846+00:00"
     },
     "/bilibili/user/video/14739873": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.519944+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309859+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519950+00:00"
+      "updated_at": "2026-03-04T11:06:20.309861+00:00"
     },
     "/bilibili/user/video/3493277319825652": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.519983+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309873+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.519990+00:00"
+      "updated_at": "2026-03-04T11:06:20.309875+00:00"
     },
     "/bilibili/user/video/4848323": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.520024+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309888+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.520031+00:00"
+      "updated_at": "2026-03-04T11:06:20.309890+00:00"
     },
     "/bilibili/user/video/346575605": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.520064+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309902+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.520068+00:00"
+      "updated_at": "2026-03-04T11:06:20.309904+00:00"
     },
     "/bilibili/user/video/1316597695": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T09:48:20.520119+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T11:08:20.309916+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T09:47:20.520126+00:00"
+      "updated_at": "2026-03-04T11:06:20.309919+00:00"
+    },
+    "/infoq/recommend": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.308678+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.308691+00:00"
+    },
+    "/anthropic/news": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.308871+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.308877+00:00"
+    },
+    "/qbitai/category/ebandeng": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309108+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309116+00:00"
+    },
+    "/qbitai/category/auto": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309151+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309156+00:00"
+    },
+    "/qbitai/category/zhiku": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309186+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309195+00:00"
+    },
+    "/huggingface/blog": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309502+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309505+00:00"
+    },
+    "/hackernews": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309519+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309522+00:00"
+    },
+    "/hellogithub/volume": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309581+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309583+00:00"
+    },
+    "/hellogithub/home/featured": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309596+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309598+00:00"
+    },
+    "/xiaohongshu/user/68502b1a000000001b01a7ba/notes": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309931+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309933+00:00"
+    },
+    "/xiaohongshu/user/5d7ece920000000001018707/notes": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309946+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309948+00:00"
+    },
+    "/xiaohongshu/user/6467b1210000000010027a51/notes": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309960+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309963+00:00"
+    },
+    "/xiaohongshu/user/5ec66abd0000000001006a8a/notes": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.309975+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.309977+00:00"
+    },
+    "/xiaohongshu/user/6314a2cc0000000012003173/notes": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T11:07:20.310020+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T11:06:20.310027+00:00"
     }
   }
 }
