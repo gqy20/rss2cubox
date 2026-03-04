@@ -294,6 +294,10 @@ def process_candidates_for_push(
             event["keep"] = keep
             event["score"] = score
             event["tags"] = result.get("tags", []) if isinstance(result.get("tags", []), list) else []
+            event["core_event"] = core_event
+            event["hidden_signal"] = hidden_signal
+            event["actionable"] = actionable
+            event["reason"] = reason
             action = "keep" if keep and score >= ai_min_score else "drop"
             log_event(
                 "INFO",

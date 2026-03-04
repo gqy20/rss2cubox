@@ -2,6 +2,14 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import DashboardClient from './DashboardClient'
 
+type GlobalInsights = {
+  generated_at?: string
+  source_count?: number
+  trends?: string[]
+  weak_signals?: string[]
+  daily_advices?: string[]
+}
+
 async function loadData(): Promise<{
   rows: Array<{ id: string; title: string; url: string; source: string; time: string; score?: number }>
   metrics: {
@@ -10,12 +18,15 @@ async function loadData(): Promise<{
     sources_total?: number
     top_sources?: Array<{ source: string; count: number }>
   }
+  insights: GlobalInsights | null
 }> {
   const updatesPath = path.join(process.cwd(), 'public', 'data', 'updates.json')
   const metricsPath = path.join(process.cwd(), 'public', 'data', 'metrics.json')
-  const [updatesRaw, metricsRaw] = await Promise.all([
+  const insightsPath = path.join(process.cwd(), 'public', 'data', 'global_insights.json')
+  const [updatesRaw, metricsRaw, insightsRaw] = await Promise.all([
     readFile(updatesPath, 'utf-8').catch(() => '[]'),
     readFile(metricsPath, 'utf-8').catch(() => '{}'),
+    readFile(insightsPath, 'utf-8').catch(() => 'null'),
   ])
   const rows = JSON.parse(updatesRaw) as Array<{ id: string; title: string; url: string; source: string; time: string; score?: number }>
   const metrics = JSON.parse(metricsRaw) as {
@@ -24,15 +35,16 @@ async function loadData(): Promise<{
     sources_total?: number
     top_sources?: Array<{ source: string; count: number }>
   }
-  return { rows: rows.slice(0, 60), metrics }
+  const insights = JSON.parse(insightsRaw) as GlobalInsights | null
+  return { rows: rows.slice(0, 60), metrics, insights }
 }
 
 export default async function Page() {
-  const { rows, metrics: data } = await loadData()
+  const { rows, metrics: data, insights } = await loadData()
 
   return (
     <main className="main">
-      <DashboardClient rows={rows} metrics={data} />
+      <DashboardClient rows={rows} metrics={data} insights={insights} />
     </main>
   )
 }

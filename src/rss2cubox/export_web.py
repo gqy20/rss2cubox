@@ -76,6 +76,10 @@ def _normalize_event_row(row: dict[str, Any]) -> dict[str, Any] | None:
         'drop_reason': drop_reason,
         'pushed': bool(row.get('pushed', False)),
         'tags': tags,
+        'core_event': str(row.get('core_event', '') or ''),
+        'hidden_signal': str(row.get('hidden_signal', '') or ''),
+        'actionable': str(row.get('actionable', '') or ''),
+        'reason': str(row.get('reason', '') or ''),
         'run_id': str(row.get('run_id', '')).strip(),
         'head_sha': str(row.get('head_sha', '')).strip(),
         'event_name': str(row.get('event_name', '')).strip(),
@@ -220,6 +224,23 @@ def export_web_data(
     history_rows = sync_pipeline.load_jsonl(history_file)
     run_rows = sync_pipeline.load_jsonl(run_events_file)
     merged_history = merge_history_rows(history_rows, run_rows, history_limit=history_limit)
+
+    # 用 state.json 中的 AI 字段回填 history 中缺失的摘要
+    ai_state: dict[str, Any] = state.get('ai', {})
+    if isinstance(ai_state, dict) and ai_state:
+        for row in merged_history:
+            eid = row.get('id', '')
+            ai = ai_state.get(eid)
+            if not isinstance(ai, dict):
+                continue
+            for field in ('core_event', 'hidden_signal', 'actionable', 'reason', 'tags'):
+                if not row.get(field):
+                    row[field] = ai.get(field, '' if field != 'tags' else [])
+            if not row.get('score'):
+                try:
+                    row['score'] = float(ai.get('score', 0.0))
+                except (TypeError, ValueError):
+                    pass
     history_file.parent.mkdir(parents=True, exist_ok=True)
     sync_pipeline.save_jsonl(history_file, merged_history)
 

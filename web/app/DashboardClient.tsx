@@ -5,7 +5,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell as PieCell, Legend
 } from 'recharts'
-import { ExternalLink, Activity, Filter, Radar, Zap } from 'lucide-react'
+import { ExternalLink, Activity, Filter, Radar, Zap, TrendingUp, Radio, Lightbulb } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 // Types
@@ -15,6 +15,13 @@ type Metrics = {
   updates_total?: number
   sources_total?: number
   top_sources?: Array<{ source: string; count: number }>
+}
+type GlobalInsights = {
+  generated_at?: string
+  source_count?: number
+  trends?: string[]
+  weak_signals?: string[]
+  daily_advices?: string[]
 }
 
 function formatTime(value: string): string {
@@ -42,7 +49,7 @@ function formatDay(value: string): string {
 
 const PIE_COLORS = ['#2dd4bf', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc']
 
-export default function DashboardClient({ rows, metrics }: { rows: Row[], metrics: Metrics }) {
+export default function DashboardClient({ rows, metrics, insights }: { rows: Row[], metrics: Metrics, insights?: GlobalInsights | null }) {
   const [filter, setFilter] = useState<'all' | 'high'>('all')
 
   // Derived state
@@ -179,6 +186,49 @@ export default function DashboardClient({ rows, metrics }: { rows: Row[], metric
             </div>
           </div>
         </section>
+
+        {insights && (
+          <section style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
+            {insights.trends && insights.trends.length > 0 && (
+              <div className="glass chart-card" style={{ padding: '16px 20px' }}>
+                <h3 className="chart-title" style={{ marginBottom: 12 }}>
+                  <TrendingUp size={16} color="#2dd4bf" /> 宏观技术趋势
+                </h3>
+                <ol style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {insights.trends.map((t, i) => (
+                    <li key={i} style={{ fontSize: 13, color: '#cbd5e1', lineHeight: 1.6 }}>{t}</li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {insights.weak_signals && insights.weak_signals.length > 0 && (
+              <div className="glass chart-card" style={{ padding: '16px 20px' }}>
+                <h3 className="chart-title" style={{ marginBottom: 12 }}>
+                  <Radio size={16} color="#f59e0b" /> 暗流弱信号
+                </h3>
+                <ul style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {insights.weak_signals.map((s, i) => (
+                    <li key={i} style={{ fontSize: 13, color: '#cbd5e1', lineHeight: 1.6 }}>{s}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {insights.daily_advices && insights.daily_advices.length > 0 && (
+              <div className="glass chart-card" style={{ padding: '16px 20px' }}>
+                <h3 className="chart-title" style={{ marginBottom: 12 }}>
+                  <Lightbulb size={16} color="#a78bfa" /> 今日行动建议
+                </h3>
+                <ul style={{ margin: 0, padding: '0 0 0 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {insights.daily_advices.map((a, i) => (
+                    <li key={i} style={{ fontSize: 13, color: '#cbd5e1', lineHeight: 1.6 }}>{a}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
       </div>
 
       <div className="dashboard-right">

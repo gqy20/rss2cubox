@@ -9,6 +9,8 @@ description = "Scheduled RSS ingestion pipeline for Cubox"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+  "anyio>=4.12.1",
+  "claude-agent-sdk>=0.1.45",
   "feedparser>=6.0.11",
   "requests>=2.31.0",
 ]

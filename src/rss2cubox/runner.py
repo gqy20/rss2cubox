@@ -13,6 +13,7 @@ from rss2cubox.ai_pipeline import (
     ai_analysis_enabled,
     analyze_candidates_with_ai,
 )
+from rss2cubox.global_agent import run_global_analysis
 from rss2cubox.feed_sources import RSSHubInstancePool
 from rss2cubox.metrics import (
     StageMetrics,
@@ -226,6 +227,12 @@ def main() -> None:
         event.setdefault("ref_name", runtime_context.get("ref_name", ""))
         event.setdefault("event_name", runtime_context.get("event_name", ""))
     sync_pipeline.save_jsonl(RUN_EVENTS_FILE, run_events)
+
+    # 全局 Agent 深度分析（如失败不影响主流程）
+    try:
+        run_global_analysis(analyses=analyses, candidates=candidates_for_run)
+    except Exception as e:
+        log_event("WARN", "global_agent_failed", stage="global_agent", error=str(e))
 
     state["sent"] = sent
     state["ai"] = ai
