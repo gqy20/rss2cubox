@@ -479,10 +479,10 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                   className="timeline-item"
                 >
                   <div className="timeline-node">
-                    <div className={`node-dot ${isHigh ? 'glow-green' : isMid ? 'glow-blue' : 'glow-gray'}`}></div>
                     <div className="node-time">
                       <span title={formatDay(row.time) + ' ' + formatShortTime(row.time)}>{formatRelativeTime(row.time, now)}</span>
                     </div>
+                    <div className={`node-dot ${isHigh ? 'glow-green' : isMid ? 'glow-blue' : 'glow-gray'}`}></div>
                   </div>
 
                   <a 
