@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-03-04T08:49:09.764920+00:00",
-  "updates_total": 168,
-  "pushed_total": 63,
-  "dropped_total": 105,
+  "generated_at": "2026-03-04T09:50:36.789908+00:00",
+  "updates_total": 208,
+  "pushed_total": 72,
+  "dropped_total": 136,
   "failed_total": 0,
-  "sources_total": 19,
+  "sources_total": 25,
   "top_sources": [
     {
       "source": "/hackernews",
@@ -17,6 +17,18 @@
     {
       "source": "status.anthropic.com",
       "count": 17
+    },
+    {
+      "source": "HelloGitHub 精选",
+      "count": 13
+    },
+    {
+      "source": "Hacker News",
+      "count": 10
+    },
+    {
+      "source": "HelloGitHub 月刊",
+      "count": 10
     },
     {
       "source": "/sspai/index",
@@ -35,6 +47,10 @@
       "count": 7
     },
     {
+      "source": "InfoQ 推荐",
+      "count": 4
+    },
+    {
       "source": "github.com",
       "count": 4
     },
@@ -45,6 +61,10 @@
     {
       "source": "blog.google",
       "count": 3
+    },
+    {
+      "source": "少数派首页",
+      "count": 2
     },
     {
       "source": "openai.com",
@@ -65,36 +85,24 @@
     {
       "source": "/qbitai/category/ebandeng",
       "count": 2
-    },
-    {
-      "source": "deepmind.google",
-      "count": 1
-    },
-    {
-      "source": "/qbitai/category/zhiku",
-      "count": 1
-    },
-    {
-      "source": "/cursor/blog/research",
-      "count": 1
-    },
-    {
-      "source": "/qbitai/category/auto",
-      "count": 1
     }
   ],
   "top_drop_reasons": [
     {
       "reason": "ai_keep_false",
-      "count": 84
+      "count": 111
     },
     {
       "reason": "max_items_per_run_reached",
       "count": 20
     },
     {
+      "reason": "missing_ai_result",
+      "count": 3
+    },
+    {
       "reason": "ai_score_below_threshold",
-      "count": 1
+      "count": 2
     }
   ]
 }

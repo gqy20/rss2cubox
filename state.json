@@ -674,6 +674,51 @@
       "url": "https://thephp.foundation/blog/2026/02/27/welcoming-elizabeth-barron-new-executive-director/",
       "ts": "2026-03-04T08:45:40.656833+00:00",
       "title": "Welcoming Elizabeth Barron as the New Executive Director of the PHP Foundation"
+    },
+    "7f4031c0650e973ffdd5b32258c72b39c431d4ec41301fc7df2268a25842f812": {
+      "url": "https://www.infoq.cn/article/ydyggRjpZUGwEZAAdtTF",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "谷歌将其开发者文档带入AI智能体时代"
+    },
+    "e97eef563049593797651eaad6aa9bf198fd6536d79cb99025d46850254db528": {
+      "url": "https://www.infoq.cn/article/QpgxweT242UrUwxgNu0y",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "美团 AI 浏览器遭开发者公开维权！目前双方已和解，相关代码已完成开源处理"
+    },
+    "d3e511ed3a0e2bae2af77d1e55457a9faa2bd861a8dd06e850957c0639743856": {
+      "url": "https://metaduck.com/reverse-engineering-the-wetware-spiking-networks-td-errors-and-the-end-of-matrix-math/",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "Reverse-Engineering the Wetware: Spiking Networks and the End of Matrix Math"
+    },
+    "304a61877c2ef28d3d4310082885071c166c4ea4701897f1f86a6d7adf1da092": {
+      "url": "https://hellogithub.com/repository/7a864f9749604b42a7bf8bd8aa735129",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "skills: Claude 官方开源的 Skills 教程"
+    },
+    "5b69d61224615419d64d4928e9a310bf49c7ab35b61ffc26503a11a9406c8482": {
+      "url": "https://hellogithub.com/repository/3bdde3ad6226495099b02115111cafad",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "folio-2025: 当个人主页变成 3D 游戏"
+    },
+    "37beb4be2d5ff19ade99e40db73958f7eae5ca542b14506ba45da22689e50931": {
+      "url": "https://hellogithub.com/repository/6daa16e405ce46ed97b4a57706aeb29f",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "daily_stock_analysis: 基于 LLM 的智能股票分析系统"
+    },
+    "099524e2477bb1596eece2f2207a1ef3bb425b6d9cc54f5582afe177dd54e435": {
+      "url": "https://www.ddmckinnon.com/2026/02/11/my-%f0%9f%8c%b6-take-on-vibe-coding-for-pms/",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "My spicy take on vibe coding for PMs"
+    },
+    "b03103f72d8acbe096319984ab4e0a7320fe2b7751b0389692ced02a00f99645": {
+      "url": "https://hellogithub.com/repository/152412c3b6be46538fb99ce21058fef4",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "streamdown: 专为流式输出而生的 Markdown 渲染组件"
+    },
+    "8ece0790fd90221dd7e0f1d30b6a1ea8c204b94469d7277883dec6dcaef8fda7": {
+      "url": "https://hellogithub.com/repository/ef01295189f047afb41dbc8eb01bfd20",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "title": "freemocap: 免费开源的动作捕捉系统"
     }
   },
   "ai": {
@@ -1057,16 +1102,16 @@
     },
     "43f80d6cff3fd94469f9533a344738c65359946e898eb8beaac09a1728697338": {
       "keep": false,
-      "score": 0.15,
-      "reason": "此类资源汇总页面的分享频率可作为衡量技术社区兴趣热度的反向指标——当大量资源汇总帖出现时，往往意味着社区缺乏实质性突破。",
-      "core_event": "一个图形编程资源聚合网站的链接被分享到Hacker News。",
-      "hidden_signal": "此类资源汇总页面的分享频率可作为衡量技术社区兴趣热度的反向指标——当大量资源汇总帖出现时，往往意味着社区缺乏实质性突破。",
-      "actionable": "忽略此类汇总类资源页面，专注具体技术实践内容。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.1,
+      "reason": "资源聚合性质的内容，非原创技术贡献或行业趋势信号。",
+      "core_event": "某开发者发布图形编程资源合集网站，包含学习材料和工具链接。",
+      "hidden_signal": "资源聚合性质的内容，非原创技术贡献或行业趋势信号。",
+      "actionable": "无需行动，这仅是一个图形编程资源集合页面。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "图形学",
-        "资源汇总"
+        "图形编程",
+        "学习资源"
       ]
     },
     "c0213438880f6b9b8304400683b17172ced0409e9ec9041c6bea0621e198b093": {
@@ -1116,45 +1161,45 @@
     },
     "7b84c81e7d48b1d36bc206a7a50e3980f15b88be7dd08e468466bd8e5bb5815c": {
       "keep": false,
-      "score": 0.91,
-      "reason": "AI编码工具正从开发者辅助工具演变为企业知识管理与协作平台，支持场景的上下文聚合能力可能重塑技术团队的问题解决范式。",
-      "core_event": "Cursor技术团队博客揭示其内部支持流程如何使用Cursor AI编码工具，将代码、日志、团队知识与历史对话整合到单一会话中。",
-      "hidden_signal": "AI编码工具正从开发者辅助工具演变为企业知识管理与协作平台，支持场景的上下文聚合能力可能重塑技术团队的问题解决范式。",
-      "actionable": "关注AI辅助编程工具在企业支持场景的落地效果，评估将AI工具深度整合到技术团队知识管理流程的可行性。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.2,
+      "reason": "AI代码编辑器的内部使用案例展示，属于产品宣传而非技术信号。",
+      "core_event": "Cursor官方博客介绍其技术支持团队如何使用Cursor进行代码查看、日志分析和团队知识管理。",
+      "hidden_signal": "AI代码编辑器的内部使用案例展示，属于产品宣传而非技术信号。",
+      "actionable": "无需采取行动，这是Cursor产品的营销性质博客，介绍其客服团队如何使用自家工具。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "AI编程",
-        "开发者工具",
-        "知识管理"
+        "产品营销"
       ]
     },
     "53f3cc48095725d6d60c72ae3223eabb0d1cd8d8b4fd45b633336f4639882970": {
       "keep": false,
-      "score": 0.2,
-      "reason": "轻量级文本编辑器的更新在当前IDE市场饱和背景下，反映部分开发者对简约工具的持续需求，但难以构成行业信号。",
-      "core_event": "Textadept编辑器官网上线并被分享到Hacker News。",
-      "hidden_signal": "轻量级文本编辑器的更新在当前IDE市场饱和背景下，反映部分开发者对简约工具的持续需求，但难以构成行业信号。",
-      "actionable": "已有成熟编辑器的开发者无需关注，寻求轻量级编辑器替代的可评估。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.35,
+      "reason": "轻量级文本编辑器仍有特定用户群体，但缺乏实质性技术突破，属于噪音内容。",
+      "core_event": "Textadept编辑器项目更新，开发者社区在Hacker News上引发讨论。",
+      "hidden_signal": "轻量级文本编辑器仍有特定用户群体，但缺乏实质性技术突破，属于噪音内容。",
+      "actionable": "了解Textadept编辑器的最新动态，评估其作为轻量级开发环境的潜力。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "编辑器",
-        "工具"
+        "编程工具",
+        "文本编辑器"
       ]
     },
     "099524e2477bb1596eece2f2207a1ef3bb425b6d9cc54f5582afe177dd54e435": {
-      "keep": false,
-      "score": 0.12,
-      "reason": "\"Vibe coding\"概念的讨论反映软件工程领域对AI辅助编程的态度分化，这可能是AI编程助手普及过程中的舆论噪声。",
-      "core_event": "一位个人博主发布了关于\"vibe coding\"对产品经理影响的观点文章。",
-      "hidden_signal": "\"Vibe coding\"概念的讨论反映软件工程领域对AI辅助编程的态度分化，这可能是AI编程助手普及过程中的舆论噪声。",
-      "actionable": "忽略此类个人主观观点文章，筛选信息时优先关注技术实现细节和实证研究。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "keep": true,
+      "score": 0.82,
+      "reason": "AI编程工具正在重塑技术团队角色边界，产品经理可能直接参与代码生成过程，这标志着技术民主化趋势加速。",
+      "core_event": "产品经理分享对AI驱动编程（vibe coding）的观点，认为这种编程方式正在改变产品开发流程。",
+      "hidden_signal": "AI编程工具正在重塑技术团队角色边界，产品经理可能直接参与代码生成过程，这标志着技术民主化趋势加速。",
+      "actionable": "关注vibe coding（氛围编程）方法论在团队协作中的应用，评估AI辅助编程工具对产品开发效率的实际影响。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI编程",
-        "观点评论"
+        "AI开发工具",
+        "团队协作",
+        "技术趋势"
       ]
     },
     "a8baaf9f89fb5fe32be73a6965524cd182fb642a65dd470f00d03ddea4c05c6e": {
@@ -1203,16 +1248,16 @@
     },
     "96ed1cf1f0b3a0dc3d4701c858c199f9935c081efc895716a09914ce7aef3ff6": {
       "keep": false,
-      "score": 0.25,
-      "reason": "经典文献的突然流行往往反映当前领域缺乏创新方向，社区转向历史寻觅灵感，编程语言设计领域可能正陷入范式疲劳。",
-      "core_event": "1974年关于编程语言设计的学术论文被分享到Hacker News。",
-      "hidden_signal": "经典文献的突然流行往往反映当前领域缺乏创新方向，社区转向历史寻觅灵感，编程语言设计领域可能正陷入范式疲劳。",
-      "actionable": "归档类历史文献，价值有限，不建议投入时间深入研究。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.05,
+      "reason": "历史学术文献，不反映当前技术发展趋势。",
+      "core_event": "加州大学戴维斯分校发布1974年关于编程语言设计的学术论文PDF。",
+      "hidden_signal": "历史学术文献，不反映当前技术发展趋势。",
+      "actionable": "无需关注，1974年的学术论文距今过久，无即时技术参考价值。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "编程语言",
-        "历史文献"
+        "学术研究"
       ]
     },
     "17814b3cac7f8ed624f1271dadcb03fe75da9575a8a282fbc457928a9dd4011b": {
@@ -1233,29 +1278,28 @@
     "1ad4c5158f8c6e0e7523cf8c4dea4865256159158a8225c6a31cb7d25383e8f3": {
       "keep": false,
       "score": 0.15,
-      "reason": "少数派Matrix社区内容为消费电子爱好者分享平台，不构成技术或商业情报价值。",
-      "core_event": "",
-      "hidden_signal": "少数派Matrix社区内容为消费电子爱好者分享平台，不构成技术或商业情报价值。",
-      "actionable": "消费电子产品社区内容，与技术专业决策无直接关联，可忽略。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "reason": "消费电子爱好者社区的日常内容分享，无技术突破或行业趋势信息。",
+      "core_event": "少数派Matrix社区发布一月好物分享汇总，包括数码产品等个人购物推荐。",
+      "hidden_signal": "消费电子爱好者社区的日常内容分享，无技术突破或行业趋势信息。",
+      "actionable": "无需关注，属于社区内容分享类低价值信息。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "社区",
-        "消费电子",
-        "数码"
+        "社区分享",
+        "消费电子"
       ]
     },
     "c88d7d50c4f66a9fd2d073cdeaa2143e418f653ba8ef2f1b28292b4ff7fa9e26": {
       "keep": false,
-      "score": 0.4,
-      "reason": "Apple芯片迭代进入常规升级周期，M5 Pro/Max定位专业工作站市场，性能提升幅度待第三方验证。",
-      "core_event": "",
-      "hidden_signal": "Apple芯片迭代进入常规升级周期，M5 Pro/Max定位专业工作站市场，性能提升幅度待第三方验证。",
-      "actionable": "关注M5 Pro/Max芯片的性能基准数据，用于硬件采购决策，但不需急于行动。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.25,
+      "reason": "苹果常规产品迭代发布，芯片性能提升属于预期内更新，无颠覆性技术信号。",
+      "core_event": "苹果发布搭载全新M5 Pro和M5 Max芯片的新款MacBook Pro。",
+      "hidden_signal": "苹果常规产品迭代发布，芯片性能提升属于预期内更新，无颠覆性技术信号。",
+      "actionable": "无需关注，这是苹果新品发布新闻，不构成技术决策参考。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "Apple",
+        "苹果",
         "芯片",
         "硬件"
       ]
@@ -1263,15 +1307,15 @@
     "410e131841318c584b555e397705626c91a292ed517c8fc84de88b9a85fc299a": {
       "keep": false,
       "score": 0.1,
-      "reason": "自然地质现象报道，与技术行业无直接关联",
-      "core_event": "美国地质调查局报道Echinus酸性间歇泉重新活跃",
-      "hidden_signal": "自然地质现象报道，与技术行业无直接关联",
-      "actionable": "非技术内容，与科技/商业 intelligence无关",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "reason": "这是一条自然现象报道，无技术或商业价值。",
+      "core_event": "美国地质调查局报道埃基纳斯酸性间歇泉（Echinus Geyser）重新喷发。",
+      "hidden_signal": "这是一条自然现象报道，无技术或商业价值。",
+      "actionable": "无需行动。这是地质科普新闻，不涉及技术或商业情报。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "地质科学",
-        "自然现象"
+        "科普"
       ]
     },
     "96291259b42ef971c04882be73eb25d29a48414a37571fa5cdf4f903268c15ca": {
@@ -1499,29 +1543,28 @@
     "0462d86adddeecaf121cbe918707b585be74fab257296af7273c338dd90c11da": {
       "keep": false,
       "score": 0.15,
-      "reason": "这是2019年的旧文在Hacker News上被重新分享，属于低价值的历史内容回溯，无新技术趋势或行业变革信息",
-      "core_event": "一篇关于循环游戏（Circle Games）的2019年博客文章被分享到Hacker News",
-      "hidden_signal": "这是2019年的旧文在Hacker News上被重新分享，属于低价值的历史内容回溯，无新技术趋势或行业变革信息",
-      "actionable": "该内容为2019年历史文章的Hacker News转发，暂无实际技术指导意义。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "reason": "旧文重发，无新信息，非即时技术信号。",
+      "core_event": "一篇2019年关于\"Circle Games\"的博客文章被分享到Hacker News。",
+      "hidden_signal": "旧文重发，无新信息，非即时技术信号。",
+      "actionable": "无需行动。这是一篇2019年文章的重新分享，无时效性价值。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "历史文章",
-        "Hacker News转发"
+        "社区分享"
       ]
     },
     "2ee15f155b3c745e315a49077797fac4e0a93258748eac93932753d8565a78de": {
       "keep": false,
       "score": 0.1,
-      "reason": "个人博客的运营变更，无行业技术影响",
-      "core_event": "某博主宣布无限期暂停读书俱乐部活动",
-      "hidden_signal": "个人博客的运营变更，无行业技术影响",
-      "actionable": "非技术内容，与科技/商业 intelligence无关",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "reason": "与科技行业无直接关联的纯个人内容，不包含任何可操作的行业信号。",
+      "core_event": "个人博客宣布读书会无限期暂停。",
+      "hidden_signal": "与科技行业无直接关联的纯个人内容，不包含任何可操作的行业信号。",
+      "actionable": "无技术相关行动建议。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "个人博客",
-        "非技术"
+        "个人博客"
       ]
     },
     "1678b4a3ac7de330ee77118bc5709569b52a26ca7f91def24af4820b9f9d91bb": {
@@ -1555,24 +1598,403 @@
       ]
     },
     "d3e511ed3a0e2bae2af77d1e55457a9faa2bd861a8dd06e850957c0639743856": {
-      "keep": false,
-      "score": 0.22,
-      "reason": "脉冲神经网络(SNN)若取得突破将颠覆当前深度学习范式，但该领域长期停留在理论阶段，此文更多属于科幻性质的推测而非技术信号。",
-      "core_event": "一篇博客文章探讨\"湿件\"逆向工程、脉冲神经网络以及矩阵运算的终结。",
-      "hidden_signal": "脉冲神经网络(SNN)若取得突破将颠覆当前深度学习范式，但该领域长期停留在理论阶段，此文更多属于科幻性质的推测而非技术信号。",
-      "actionable": "理论性过强且标题夸张，不建议投入时间，关注有实证基础的神经网络研究。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "keep": true,
+      "score": 0.88,
+      "reason": "AI领域可能出现范式转换信号：从基于矩阵乘法的密集计算转向事件驱动的稀疏脉冲计算，这将对AI硬件架构和算法设计产生深远影响。",
+      "core_event": "一篇深度文章探讨反向工程人脑神经网络的可行性，提出尖峰神经网络可能终结深度学习中的矩阵运算范式。",
+      "hidden_signal": "AI领域可能出现范式转换信号：从基于矩阵乘法的密集计算转向事件驱动的稀疏脉冲计算，这将对AI硬件架构和算法设计产生深远影响。",
+      "actionable": "工程师可关注尖峰神经网络(SNN)与脉冲神经网络的发展，尝试将SNN与传统Transformer架构结合，探索更高效的边缘计算AI方案。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "神经网络",
-        "理论探索"
+        "AI算法",
+        "神经形态计算",
+        "前沿研究"
+      ]
+    },
+    "7f4031c0650e973ffdd5b32258c72b39c431d4ec41301fc7df2268a25842f812": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "AI开发工具正从静态训练转向动态文档检索，Model Context Protocol正在成为AI工具获取实时信息的标准接口，文档即代码基础设施的理念正在形成。",
+      "core_event": "谷歌发布Developer Knowledge API公开预览版，提供MCP服务器，使AI开发工具可实时访问官方开发者文档。",
+      "hidden_signal": "AI开发工具正从静态训练转向动态文档检索，Model Context Protocol正在成为AI工具获取实时信息的标准接口，文档即代码基础设施的理念正在形成。",
+      "actionable": "工程师应关注MCP协议在文档API集成中的应用，探索将官方文档实时接入AI开发工作流的最佳实践。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI开发工具",
+        "API基础设施",
+        "MCP协议"
+      ]
+    },
+    "e97eef563049593797651eaad6aa9bf198fd6536d79cb99025d46850254db528": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "中国科技巨头与开源社区的矛盾正在显现，企业AI产品对开源代码的依赖缺乏proper attribution，暗示开源生态的商业伦理缺失及法律框架不完善。",
+      "core_event": "美团旗下光年之外团队的Tabbit AI浏览器被指抄袭独立开发者的开源项目\"陪读蛙\"，双方已和解并完成代码开源处理。",
+      "hidden_signal": "中国科技巨头与开源社区的矛盾正在显现，企业AI产品对开源代码的依赖缺乏proper attribution，暗示开源生态的商业伦理缺失及法律框架不完善。",
+      "actionable": "开源项目维护者应重视代码许可证保护，大型企业在采用开源代码时应建立合规审查机制，开发者社区需推动更明确的开源许可规范。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开源生态",
+        "AI产品争议",
+        "知识产权"
+      ]
+    },
+    "304a61877c2ef28d3d4310082885071c166c4ea4701897f1f86a6d7adf1da092": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "AI Agent开发正在走向标准化和模块化，提示词工程从个人经验转向可复用插件形式",
+      "core_event": "Anthropic官方开源Agent Skills项目，提供通过SKILL.md文件结构标准化封装提示词和工具调用的方法",
+      "hidden_signal": "AI Agent开发正在走向标准化和模块化，提示词工程从个人经验转向可复用插件形式",
+      "actionable": "了解标准化的AI Agent技能封装方法，但实际项目落地需评估其与现有工作流的兼容性",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "提示词工程",
+        "开源"
+      ]
+    },
+    "5b69d61224615419d64d4928e9a310bf49c7ab35b61ffc26503a11a9406c8482": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "Web 3D技术已足够成熟，个人作品集正从静态展示向可交互3D体验演进，这是前端工程力的极致体现。",
+      "core_event": "前端开发者Bruno Simon发布folio-2025，将个人主页打造成可驾车探索的沉浸式3D开放世界。",
+      "hidden_signal": "Web 3D技术已足够成熟，个人作品集正从静态展示向可交互3D体验演进，这是前端工程力的极致体现。",
+      "actionable": "前端开发者应学习Three.js高级用法；可将此类3D交互作为个人作品集亮点，但需评估性能与可访问性平衡。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "WebGL",
+        "Three.js",
+        "创意编程"
+      ]
+    },
+    "37beb4be2d5ff19ade99e40db73958f7eae5ca542b14506ba45da22689e50931": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "LLM应用正在渗透垂直领域，金融数据分析的AI原生架构开始出现",
+      "core_event": "开源社区出现基于LLM的A股、港股、美股智能股票分析系统，支持每日自动分析与推送",
+      "hidden_signal": "LLM应用正在渗透垂直领域，金融数据分析的AI原生架构开始出现",
+      "actionable": "关注LLM在金融领域应用的技术架构设计，理解多数据源整合和自动化分析pipeline的构建方法",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM应用",
+        "金融科技",
+        "自动化"
+      ]
+    },
+    "b03103f72d8acbe096319984ab4e0a7320fe2b7751b0389692ced02a00f99645": {
+      "keep": true,
+      "score": 0.82,
+      "reason": "大语言模型应用爆发带来细分的UI渲染需求，流式内容渲染将成为LLM产品标配技术。",
+      "core_event": "streamdown发布，专为LLM流式输出场景设计React Markdown渲染组件，解决闪烁、渲染错误和安全问题。",
+      "hidden_signal": "大语言模型应用爆发带来细分的UI渲染需求，流式内容渲染将成为LLM产品标配技术。",
+      "actionable": "LLM应用开发者应在产品中集成此类流式渲染组件，避免闪烁和渲染错误；关注WebSocket与Markdown渲染的结合实现。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "前端开发",
+        "LLM应用",
+        "React组件"
+      ]
+    },
+    "8ece0790fd90221dd7e0f1d30b6a1ea8c204b94469d7277883dec6dcaef8fda7": {
+      "keep": true,
+      "score": 0.78,
+      "reason": "AI视觉算法使消费级硬件实现专业级动捕成为可能，降低3D内容创作门槛。",
+      "core_event": "freemocap发布，基于普通摄像头实现无需标记点和GPU的全身3D动作捕捉。",
+      "hidden_signal": "AI视觉算法使消费级硬件实现专业级动捕成为可能，降低3D内容创作门槛。",
+      "actionable": "游戏开发者和动画制作人员可评估该方案作为低成本动捕入门方案；关注其与Blender、Maya等工具的整合潜力。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "动作捕捉",
+        "计算机视觉",
+        "3D开发"
+      ]
+    },
+    "02a5a7324076a3ce9f6963dc1406071092f0c245123d30c9d4b29d5d4666569b": {
+      "keep": true,
+      "score": 0.5,
+      "reason": "中文数字化教育工具市场较小众，但笔画动画技术可迁移至其他SVG路径动画场景。",
+      "core_event": "开源JavaScript库hanzi-writer发布，支持汉字笔画顺序展示和交互式书写练习。",
+      "hidden_signal": "中文数字化教育工具市场较小众，但笔画动画技术可迁移至其他SVG路径动画场景。",
+      "actionable": "中文教育应用开发者可考虑集成该库提升学习体验；前端工程师可研究其SVG动画实现方案。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "前端开发",
+        "教育资源",
+        "SVG动画"
+      ]
+    },
+    "c7f87b90c0000f3e9a0ac389ae96b531887426a3ce9a8d9b04364b14f8495928": {
+      "keep": false,
+      "score": 0.55,
+      "reason": "Go语言在网络工具领域优势明显，多线程下载和故障转移是成熟技术方案",
+      "core_event": "",
+      "hidden_signal": "Go语言在网络工具领域优势明显，多线程下载和故障转移是成熟技术方案",
+      "actionable": "可作为Go语言高并发下载实现的参考，学习其多源并行下载和故障转移机制",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Go",
+        "下载工具",
+        "网络"
+      ]
+    },
+    "b15c5d288bf9996d30addb6e5f7c4c55549ab846d06a4148af769470a5555850": {
+      "keep": false,
+      "score": 0.45,
+      "reason": "创意项目展示了前端可视化技术能力，但缺乏可扩展的技术创新或行业影响。",
+      "core_event": "开发者展示一个创新的堆叠式生命游戏可视化项目。",
+      "hidden_signal": "创意项目展示了前端可视化技术能力，但缺乏可扩展的技术创新或行业影响。",
+      "actionable": "可作为创意编程参考，了解元胞自动机的创新可视化方式。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "创意编程",
+        "可视化"
+      ]
+    },
+    "0fc848617c1cf3dcbeb7412d200a94f60f362c1fdca5d59f757952b888805a91": {
+      "keep": false,
+      "score": 0.45,
+      "reason": "Rust生态系统在终端工具领域持续扩展，ASCII艺术与Rust结合展现生态系统活力",
+      "core_event": "开源项目weathr使用Rust编写终端ASCII动画天气展示工具，支持雨雪闪电等天气效果",
+      "hidden_signal": "Rust生态系统在终端工具领域持续扩展，ASCII艺术与Rust结合展现生态系统活力",
+      "actionable": "可作为Rust异步编程和终端UI实现的参考项目，但大规模生产环境部署需评估性能和兼容性",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Rust",
+        "终端工具",
+        "ASCII"
+      ]
+    },
+    "c4a76caeef214b25028cb935d511a52ae7a4076c0f93946d704fe9da61b69cb5": {
+      "keep": false,
+      "score": 0.35,
+      "reason": "Windows定制优化需求持续存在，第三方优化工具市场活跃但存在安全风险",
+      "core_event": "",
+      "hidden_signal": "Windows定制优化需求持续存在，第三方优化工具市场活跃但存在安全风险",
+      "actionable": "Windows系统管理员可关注其实现思路，但生产环境使用需评估安全性和稳定性",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Windows",
+        "系统优化",
+        "工具"
+      ]
+    },
+    "bddcb9da0111b8b3fc4c90d9c4b41bb5017728dd959888ec4854956ae22ab732": {
+      "keep": false,
+      "score": 0.35,
+      "reason": "桌面端UI美化需求持续存在，但此类特效工具技术含量有限，属于视觉装饰类项目。",
+      "core_event": "MFCMouseEffect发布，提供点击波纹、粒子拖尾、悬停发光等Windows桌面鼠标特效。",
+      "hidden_signal": "桌面端UI美化需求持续存在，但此类特效工具技术含量有限，属于视觉装饰类项目。",
+      "actionable": "桌面应用开发者可作为轻量级特效库参考实现思路，但生产环境使用需评估性能影响和用户接受度。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Windows开发",
+        "UI特效"
+      ]
+    },
+    "131b46874b7e021211e033f94f195433458be2ffc0e7687ee7b156799c0d2de3": {
+      "keep": false,
+      "score": 0.3,
+      "reason": "零代码 AI Agent 创建是热门方向，但该内容仅为项目发布页面，非行业重大事件",
+      "core_event": "nexent 项目发布：零代码 AI 智能体生成平台",
+      "hidden_signal": "零代码 AI Agent 创建是热门方向，但该内容仅为项目发布页面，非行业重大事件",
+      "actionable": "工程师可参考其数据处理和自然语言生成智能体的实现思路，但该项目为项目介绍页而非技术突破新闻。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "无代码开发"
+      ]
+    },
+    "ba4d5696527b42fad6ef9194770f98504f12adff50eed93321cd012730253a84": {
+      "keep": false,
+      "score": 0.25,
+      "reason": "个人 AI 助手项目，属于应用层实现而非底层技术突破或行业重大事件",
+      "core_event": "openclaw 项目发布：用 TypeScript 开发的开源个人 AI 助手",
+      "hidden_signal": "个人 AI 助手项目，属于应用层实现而非底层技术突破或行业重大事件",
+      "actionable": "该内容为项目介绍页，工程师可了解其 TypeScript 实现方式但不属于技术新闻或行业信号。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI助手",
+        "TypeScript"
+      ]
+    },
+    "25a6df2b501b1358e38c13f984eece62788da777d539ad40634488d018cb72ab": {
+      "keep": false,
+      "score": 0.2,
+      "reason": "常规期刊内容，非即时技术突破或行业信号。",
+      "core_event": "《HelloGitHub》第119期发布，列出多个开源C项目。",
+      "hidden_signal": "常规期刊内容，非即时技术突破或行业信号。",
+      "actionable": "无需行动。这是HelloGitHub期刊的常规列表，无单一高价值信号。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开源",
+        "C语言",
+        "工具推荐"
+      ]
+    },
+    "bd8a37444d611c74e32c2cb6db192dd56a4cf7c3af7bec179d6d0fadef0937f8": {
+      "keep": false,
+      "score": 0.2,
+      "reason": "常规期刊内容，非即时技术突破或行业信号。",
+      "core_event": "《HelloGitHub》第118期发布，列出clifm等命令行工具。",
+      "hidden_signal": "常规期刊内容，非即时技术突破或行业信号。",
+      "actionable": "无需行动。这是HelloGitHub期刊的常规列表，无单一高价值信号。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开源",
+        "C#",
+        "命令行工具"
+      ]
+    },
+    "8a4cbf1c18cd460190f270538b1ca84153099fba187bff5a27003464aafa924f": {
+      "keep": false,
+      "score": 0.2,
+      "reason": "常规期刊内容，非即时技术突破或行业信号。",
+      "core_event": "《HelloGitHub》第117期发布，列出Hexecute等工具。",
+      "hidden_signal": "常规期刊内容，非即时技术突破或行业信号。",
+      "actionable": "无需行动。这是HelloGitHub期刊的常规列表，无单一高价值信号。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开源",
+        "Wayland",
+        "桌面工具"
+      ]
+    },
+    "75079c606ad7640795334403aeccd1be3178810c5e59ec81ca7e29756546defc": {
+      "keep": false,
+      "score": 0.2,
+      "reason": "AI Agent 教程类内容，属于教育资源而非技术或商业信号",
+      "core_event": "learn-claude-code 项目发布：从零构建 AI Agent 的教程",
+      "hidden_signal": "AI Agent 教程类内容，属于教育资源而非技术或商业信号",
+      "actionable": "该内容为教程项目介绍，工程师可学习 AI Agent 基础知识但不属于技术新闻或行业信号。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "教程"
+      ]
+    },
+    "f92f8d9a24b39c7a30792c7b59099fc19e2aa154276173edcb46eed65240a2d1": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "HelloGitHub 作为内容聚合栏目持续运营，但此类周刊本质为项目罗列，不产生可操作的技术信号。",
+      "core_event": "HelloGitHub 发布第 116 期，推荐 sj.h 等 C 语言开源项目。",
+      "hidden_signal": "HelloGitHub 作为内容聚合栏目持续运营，但此类周刊本质为项目罗列，不产生可操作的技术信号。",
+      "actionable": "无需关注。HelloGitHub 为周刊性质的项目推荐栏目，内容为 GitHub 热门开源项目的摘要罗列，属于低信息密度的内容聚合而非技术信号。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "内容聚合",
+        "开源项目"
+      ]
+    },
+    "1ec34681661231bd52d2de32e52d63c61d476d6f6480c0c5106be1f990f8b929": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "周刊类内容不产生技术信号，仅为项目发现性质的摘要罗列。",
+      "core_event": "HelloGitHub 发布第 115 期，推荐 iotop、libsodium 等开源工具。",
+      "hidden_signal": "周刊类内容不产生技术信号，仅为项目发现性质的摘要罗列。",
+      "actionable": "无需关注。内容为 HelloGitHub 周刊的项目推荐列表，属于低信息密度的内容聚合。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "内容聚合",
+        "开源工具"
+      ]
+    },
+    "18a0de8f0d6594969d020de086c4018fc3c92e25db7b1ffc110a754379bbadd2": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "周刊推荐内容不构成技术信号。",
+      "core_event": "HelloGitHub 发布第 114 期，推荐 fastfetch、miniaudio 等 C 项目。",
+      "hidden_signal": "周刊推荐内容不构成技术信号。",
+      "actionable": "无需关注。内容为 HelloGitHub 周刊的项目推荐列表。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "内容聚合",
+        "C 项目"
+      ]
+    },
+    "7cc615f51c4aedc3c5c6f78a3b1d6bf572ec818684e48067667b06ba44bf51ba": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "周刊性质内容不产生可操作的技术信号。",
+      "core_event": "HelloGitHub 发布第 113 期，推荐 nob.h、pogocache 等项目。",
+      "hidden_signal": "周刊性质内容不产生可操作的技术信号。",
+      "actionable": "无需关注。内容为 HelloGitHub 周刊的项目推荐列表。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "内容聚合",
+        "缓存服务"
+      ]
+    },
+    "7a932fa05ebebbb0f2d1d0794199dff9e78941387b7c945941e0d6d933ff9150": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "周刊推荐内容不构成技术信号。",
+      "core_event": "HelloGitHub 发布第 112 期，推荐 AltSnap、libpostal 等工具。",
+      "hidden_signal": "周刊推荐内容不构成技术信号。",
+      "actionable": "无需关注。内容为 HelloGitHub 周刊的项目推荐列表。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "内容聚合",
+        "工具推荐"
+      ]
+    },
+    "45bfbb5f6942c709f3f9d39d0e0b0b751ddb3df3759545bb03d4d63868961731": {
+      "keep": false,
+      "score": 0.1,
+      "reason": "HelloGitHub 为中文社区的开源项目推荐平台，该内容仅为期刊目录而非技术新闻或行业事件，不构成投资或技术决策依据",
+      "core_event": "《HelloGitHub》第111期发布，列出当月热门开源项目",
+      "hidden_signal": "HelloGitHub 为中文社区的开源项目推荐平台，该内容仅为期刊目录而非技术新闻或行业事件，不构成投资或技术决策依据",
+      "actionable": "这是 HelloGitHub 期刊目录页，内容为项目列表而非新闻事件，安全研究人员可忽略此内容。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开源社区",
+        "工具推荐"
+      ]
+    },
+    "4f1404c4aad40984f42127cd1543bef859b747fe786f8641c63e61543b44ce57": {
+      "keep": false,
+      "score": 0.1,
+      "reason": "HelloGitHub 为中文社区的开源项目推荐平台，该内容仅为期刊目录而非技术新闻或行业事件，不构成投资或技术决策依据",
+      "core_event": "《HelloGitHub》第110期发布，列出当月热门开源项目",
+      "hidden_signal": "HelloGitHub 为中文社区的开源项目推荐平台，该内容仅为期刊目录而非技术新闻或行业事件，不构成投资或技术决策依据",
+      "actionable": "这是 HelloGitHub 期刊目录页，内容为项目列表而非新闻事件，开发者可忽略此内容。",
+      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开源社区",
+        "工具推荐"
       ]
     }
   },
   "feed_cursor": {
-    "/infoq/recommend": "2026-03-04T08:15:00+00:00",
+    "/infoq/recommend": "2026-03-04T09:00:00+00:00",
     "/juejin/trending/ai/weekly": "2026-03-02T01:12:54+00:00",
-    "/sspai/index": "2026-03-04T07:00:46+00:00",
+    "/sspai/index": "2026-03-04T09:30:07+00:00",
     "/anthropic/engineering": "2026-02-04T16:00:00+00:00",
     "/anthropic/red": "2026-02-04T16:00:00+00:00",
     "/qbitai/category/ebandeng": "2024-09-23T03:51:16+00:00",
@@ -1591,134 +2013,188 @@
     "https://huggingface.co/blog/feed.xml": "2026-03-03T16:50:49+00:00",
     "https://github.com/anthropics/claude-code/releases.atom": "2026-03-04T01:19:19+00:00",
     "https://status.anthropic.com/history.rss": "2026-03-04T08:32:41+00:00",
-    "/anthropic/news": "2026-02-26T16:00:00+00:00"
+    "/anthropic/news": "2026-02-26T16:00:00+00:00",
+    "/hellogithub/volume": "2026-02-28T00:10:09+00:00",
+    "/hellogithub/home/featured": "2026-03-03T01:32:14+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCLKPca3kwwd-B59HNr-_lvA": "2026-02-17T07:01:31+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCC-lyoTfSrcJzA1ab3APAgw": "2026-03-02T19:19:13+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCeRjipR4_SsCddq9VZ2AeKg": "2026-03-03T05:41:18+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCrDwWp7EBBv4NwvScIpBDOA": "2026-02-27T22:11:53+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCXZCJLdBC09xxGZ6gcdrc6A": "2026-03-03T17:57:22+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCP7jMXSY2xbc3KCAE0MHQ-A": "2026-02-28T09:28:04+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCHlNU7kIZhRgSbhHvFoy72w": "2026-03-04T07:13:37+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCBp3w4DCEC64FZr4k9ROxig": "2026-03-02T08:59:57+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCGovZyy8OfFPNlNV0i1fI1g": "2026-03-03T21:14:27+00:00",
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCn8ujwUInbJkBhffxqAPBVQ": "2026-03-03T22:22:15+00:00"
   },
   "feed_failures": {
     "/anthropic/research": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709017+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.518615+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709030+00:00"
+      "updated_at": "2026-03-04T09:47:20.518626+00:00"
     },
     "/modelscope/models": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709567+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519023+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709574+00:00"
+      "updated_at": "2026-03-04T09:47:20.519030+00:00"
     },
     "/producthunt/today": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709719+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519155+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709725+00:00"
+      "updated_at": "2026-03-04T09:47:20.519158+00:00"
     },
     "/github/topics/llm": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709756+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519172+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709760+00:00"
+      "updated_at": "2026-03-04T09:47:20.519175+00:00"
     },
     "/github/topics/agents": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709785+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519188+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709790+00:00"
-    },
-    "/hellogithub/volume": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709833+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709838+00:00"
-    },
-    "/hellogithub/home/featured": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709863+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709867+00:00"
+      "updated_at": "2026-03-04T09:47:20.519190+00:00"
     },
     "/juejin/aicoding": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709895+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519301+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709899+00:00"
+      "updated_at": "2026-03-04T09:47:20.519307+00:00"
     },
     "/twitter/user/karpathy": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709929+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519332+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709933+00:00"
+      "updated_at": "2026-03-04T09:47:20.519335+00:00"
     },
     "/twitter/user/fchollet": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709957+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519351+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709961+00:00"
+      "updated_at": "2026-03-04T09:47:20.519356+00:00"
     },
     "/twitter/user/soumithchintala": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.709992+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519383+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.709996+00:00"
+      "updated_at": "2026-03-04T09:47:20.519386+00:00"
     },
     "/twitter/user/rasbt": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710023+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519413+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710028+00:00"
+      "updated_at": "2026-03-04T09:47:20.519418+00:00"
     },
     "/twitter/user/ylecun": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710053+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519451+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710057+00:00"
+      "updated_at": "2026-03-04T09:47:20.519457+00:00"
     },
     "/twitter/user/demishassabis": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710083+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519492+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710088+00:00"
+      "updated_at": "2026-03-04T09:47:20.519499+00:00"
     },
     "/twitter/user/Yoshua_Bengio": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710109+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519534+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710113+00:00"
+      "updated_at": "2026-03-04T09:47:20.519541+00:00"
     },
     "/twitter/user/sama": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710139+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519576+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710143+00:00"
+      "updated_at": "2026-03-04T09:47:20.519583+00:00"
     },
     "/twitter/user/AndrewYNg": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710169+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519618+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710173+00:00"
+      "updated_at": "2026-03-04T09:47:20.519625+00:00"
     },
     "/twitter/user/JeremyHoward": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710199+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519660+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710204+00:00"
+      "updated_at": "2026-03-04T09:47:20.519666+00:00"
     },
     "/twitter/user/swyx": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710224+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519700+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710229+00:00"
+      "updated_at": "2026-03-04T09:47:20.519707+00:00"
     },
     "/twitter/user/simonw": {
-      "count": 6,
-      "cooldown_until": "2026-03-04T09:01:47.710255+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-04T10:17:20.519739+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710260+00:00"
+      "updated_at": "2026-03-04T09:47:20.519746+00:00"
     },
     "https://community.openai.com/c/announcements.rss": {
-      "count": 5,
-      "cooldown_until": "2026-03-04T08:47:47.710410+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-04T10:17:20.520322+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T08:31:47.710415+00:00"
+      "updated_at": "2026-03-04T09:47:20.520330+00:00"
+    },
+    "/bilibili/user/video/3546566589679687": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.519780+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.519786+00:00"
+    },
+    "/bilibili/user/video/302188068": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.519823+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.519829+00:00"
+    },
+    "/bilibili/user/video/26798384": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.519864+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.519870+00:00"
+    },
+    "/bilibili/user/video/316183842": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.519904+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.519910+00:00"
+    },
+    "/bilibili/user/video/14739873": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.519944+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.519950+00:00"
+    },
+    "/bilibili/user/video/3493277319825652": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.519983+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.519990+00:00"
+    },
+    "/bilibili/user/video/4848323": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.520024+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.520031+00:00"
+    },
+    "/bilibili/user/video/346575605": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.520064+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.520068+00:00"
+    },
+    "/bilibili/user/video/1316597695": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T09:48:20.520119+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T09:47:20.520126+00:00"
     }
   }
 }
