@@ -783,6 +783,7 @@ dependencies = [
     { name = "anyio" },
     { name = "claude-agent-sdk" },
     { name = "feedparser" },
+    { name = "pydantic" },
     { name = "requests" },
 ]
 
@@ -796,6 +797,7 @@ requires-dist = [
     { name = "anyio", specifier = ">=4.12.1" },
     { name = "claude-agent-sdk", specifier = ">=0.1.45" },
     { name = "feedparser", specifier = ">=6.0.11" },
+    { name = "pydantic", specifier = ">=2.11.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
     { name = "requests", specifier = ">=2.31.0" },
 ]

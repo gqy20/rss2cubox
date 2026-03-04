@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import requests as _requests
+from pydantic import BaseModel, Field, ValidationError, field_validator
 
 GLOBAL_INSIGHTS_FILE = Path(os.getenv("WEB_INSIGHTS_FILE", "web/public/data/global_insights.json"))
 
@@ -27,15 +29,47 @@ JINA_READER_BASE = "https://r.jina.ai/"
 JINA_MAX_CHARS = 8000  # 截断防止 Token 超限
 
 
+class GlobalInsightsReport(BaseModel):
+    trends: list[str] = Field(default_factory=list)
+    weak_signals: list[str] = Field(default_factory=list)
+    daily_advices: list[str] = Field(default_factory=list)
+
+    @field_validator("trends", "weak_signals", "daily_advices", mode="before")
+    @classmethod
+    def _coerce_items(cls, value: Any) -> list[str]:
+        return _to_str_list(value)
+
+
+def _split_text_to_items(text: str) -> list[str]:
+    normalized = (
+        text.replace("<br/>", "\n")
+        .replace("<br />", "\n")
+        .replace("<br>", "\n")
+    )
+    lines = [line.strip() for line in normalized.splitlines() if line.strip()]
+    if len(lines) <= 1:
+        # Fallback: split by numbered list markers in a single long line
+        parts = re.split(r"\s*(?=\d+[.)、]\s*)", normalized.strip())
+        lines = [part.strip() for part in parts if part.strip()]
+    items: list[str] = []
+    for line in lines:
+        cleaned = re.sub(r"^\d+[.)、]\s*", "", line).strip()
+        if cleaned:
+            items.append(cleaned)
+    return items
+
+
 def _to_str_list(value: Any) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    out: list[str] = []
-    for item in value:
-        text = str(item).strip()
-        if text:
-            out.append(text)
-    return out
+    if isinstance(value, list):
+        out: list[str] = []
+        for item in value:
+            text = str(item).strip()
+            if text:
+                out.append(text)
+        return out
+    if isinstance(value, str):
+        return _split_text_to_items(value)
+    return []
 
 
 def _build_user_prompt(high_value_items: list[dict]) -> str:
@@ -103,10 +137,26 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     @tool(
         "submit_insights",
         "分析完成后，调用此工具提交最终结构化情报报告",
-        {"trends": list, "weak_signals": list, "daily_advices": list},
+        {
+            "type": "object",
+            "properties": {
+                "trends": {"type": "array", "items": {"type": "string"}},
+                "weak_signals": {"type": "array", "items": {"type": "string"}},
+                "daily_advices": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": ["trends", "weak_signals", "daily_advices"],
+            "additionalProperties": False,
+        },
     )
     async def submit_insights(args: dict) -> dict:
-        result_holder.update(args)
+        try:
+            parsed = GlobalInsightsReport.model_validate(args)
+        except ValidationError as e:
+            return {
+                "content": [{"type": "text", "text": f"submit_insights 参数格式错误，请按数组字符串重提：{e}"}],
+                "is_error": True,
+            }
+        result_holder.update(parsed.model_dump())
         return {"content": [{"type": "text", "text": "报告已收到，分析完毕。"}]}
 
     server = create_sdk_mcp_server(
@@ -121,6 +171,19 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         mcp_servers={"insights-tools": server},
         permission_mode="acceptEdits",
         max_turns=30,
+        output_format={
+            "type": "json_schema",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "trends": {"type": "array", "items": {"type": "string"}},
+                    "weak_signals": {"type": "array", "items": {"type": "string"}},
+                    "daily_advices": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["trends", "weak_signals", "daily_advices"],
+                "additionalProperties": False,
+            },
+        },
     )
 
     async with ClaudeSDKClient(options=options) as client:
@@ -170,12 +233,30 @@ def run_global_analysis(
         return
 
     output_file.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        parsed_report = GlobalInsightsReport.model_validate(result)
+    except ValidationError as e:
+        print(f"[global_agent] 报告格式校验失败: {e}", flush=True)
+        return
+
+    trends = parsed_report.trends
+    weak_signals = parsed_report.weak_signals
+    daily_advices = parsed_report.daily_advices
+    if not trends and not weak_signals and not daily_advices:
+        print(
+            "[global_agent] 报告字段为空（可能返回了不兼容格式）",
+            f"types={{trends:{type(result.get('trends')).__name__}, "
+            f"weak_signals:{type(result.get('weak_signals')).__name__}, "
+            f"daily_advices:{type(result.get('daily_advices')).__name__}}}",
+            flush=True,
+        )
+
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source_count": len(high_value),
-        "trends": _to_str_list(result.get("trends")),
-        "weak_signals": _to_str_list(result.get("weak_signals")),
-        "daily_advices": _to_str_list(result.get("daily_advices")),
+        "trends": trends,
+        "weak_signals": weak_signals,
+        "daily_advices": daily_advices,
     }
     output_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[global_agent] 全局分析完成，结果已写入 {output_file}", flush=True)

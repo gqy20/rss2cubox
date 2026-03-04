@@ -16,7 +16,7 @@ import os
 from typing import Any
 
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
-ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "3")))
+ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
 ENRICH_MIN_SCORE = float(os.getenv("ENRICH_MIN_SCORE", "0.7"))  # 只深化高于此分的条目
 ENRICH_MAX_ITEMS = int(os.getenv("ENRICH_MAX_ITEMS", "15"))     # 最多深化条数，防止超时
 ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "90")))
