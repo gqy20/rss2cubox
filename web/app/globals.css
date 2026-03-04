@@ -347,6 +347,43 @@ body {
   padding-top: 16px;
 }
 
+/* 情报条目 AI 内容：默认折叠，hover 后展开 */
+.t-ai-content {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 0.35s ease, opacity 0.3s ease;
+}
+
+.timeline-content:hover .t-ai-content {
+  max-height: 600px;
+  opacity: 1;
+}
+
+/* hover 展开提示文字 */
+.t-expand-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 6px 0 0 0;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  font-style: italic;
+}
+
+.timeline-content:hover .t-expand-hint {
+  opacity: 0;
+  height: 0;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* 当前数据源筛选按钮 */
+.source-filter-active {
+  background: rgba(167, 139, 250, 0.2) !important;
+  border-color: rgba(167, 139, 250, 0.5) !important;
+  color: #a78bfa !important;
+}
+
 .t-ai-box {
   background: linear-gradient(135deg, rgba(52, 211, 153, 0.05), transparent);
   border: 1px solid rgba(52, 211, 153, 0.1);

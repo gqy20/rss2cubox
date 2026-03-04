@@ -51,12 +51,14 @@ const PIE_COLORS = ['#2dd4bf', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc']
 
 export default function DashboardClient({ rows, metrics, insights }: { rows: Row[], metrics: Metrics, insights?: GlobalInsights | null }) {
   const [filter, setFilter] = useState<'all' | 'high'>('all')
+  const [selectedSource, setSelectedSource] = useState<string | null>(null)
 
   // Derived state
   const displayedRows = useMemo(() => {
-    if (filter === 'high') return rows.filter(r => (r.score ?? 0) >= 0.85)
-    return rows
-  }, [rows, filter])
+    let result = filter === 'high' ? rows.filter(r => (r.score ?? 0) >= 0.85) : rows
+    if (selectedSource) result = result.filter(r => r.source === selectedSource)
+    return result
+  }, [rows, filter, selectedSource])
 
   // Chart Data: Time Series Area Chart
   const trendData = useMemo(() => {
@@ -171,9 +173,19 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                     innerRadius={70} outerRadius={90}
                     paddingAngle={5} dataKey="value"
                     stroke="none"
+                    style={{ cursor: 'pointer' }}
+                    onClick={(_, index) => {
+                      const src = sourceData[index]?.name
+                      if (!src || src === '其他') return
+                      setSelectedSource(prev => prev === src ? null : src)
+                    }}
                   >
                     {sourceData.map((entry, index) => (
-                      <PieCell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
+                      <PieCell
+                        key={`cell-${index}`}
+                        fill={PIE_COLORS[index % PIE_COLORS.length]}
+                        opacity={selectedSource && entry.name !== selectedSource ? 0.25 : 1}
+                      />
                     ))}
                   </Pie>
                   <Tooltip 
@@ -234,7 +246,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
       <div className="dashboard-right">
         <div className="controls-bar" style={{ borderBottom: '1px solid var(--panel-border)', paddingBottom: 16, marginBottom: 0 }}>
           <h2 style={{ fontSize: '20px', margin: 0, fontWeight: 600 }}>实时高能情报轴</h2>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <Filter size={16} color="#8aa3be" />
             <button 
               className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
@@ -246,11 +258,34 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
               onClick={() => setFilter('high')}
               style={{ padding: '4px 10px', fontSize: 13 }}
             >高价值</button>
+            {selectedSource && (
+              <button
+                className="filter-btn source-filter-active"
+                onClick={() => setSelectedSource(null)}
+                style={{ padding: '4px 10px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
+                title="点击清除数据源筛选"
+              >
+                <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedSource}</span>
+                <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
+              </button>
+            )}
           </div>
         </div>
 
         <div className="timeline-container">
           <section className="timeline" style={{ marginTop: 16 }}>
+            {displayedRows.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#8aa3be' }}>
+                <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>◎</div>
+                <div style={{ fontSize: 14 }}>{selectedSource ? `「${selectedSource}」暂无匹配信号` : '暂无信号数据'}</div>
+                {selectedSource && (
+                  <button
+                    onClick={() => setSelectedSource(null)}
+                    style={{ marginTop: 12, background: 'none', border: '1px solid #8aa3be', color: '#8aa3be', padding: '4px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 13 }}
+                  >清除筛选</button>
+                )}
+              </div>
+            )}
             {displayedRows.map((row, idx) => {
               const s = row.score ?? 0
               const isHigh = s >= 0.85
@@ -281,7 +316,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                         <span className="source-badge">{row.source}</span>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span className={`score-badge ${isHigh ? 'score-high' : isMid ? 'score-mid' : 'score-low'}`}>
-                            0.{Math.round(s * 100)} Score
+                            {s.toFixed(2)} Score
                           </span>
                           <ExternalLink size={14} color="#8aa3be" />
                         </div>
@@ -299,7 +334,11 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                       {row.hidden_signal || row.title}
                     </h3>
 
-                    <div className="t-ai-content" style={{ marginTop: 12 }}>
+                    {(row.core_event || row.actionable || row.reason) && (
+                      <p className="t-expand-hint">悬停查看AI分析 ↓</p>
+                    )}
+
+                    <div className="t-ai-content">
                       {row.core_event && (
                         <div className="t-ai-box" style={{ padding: 10, marginBottom: 8, background: 'rgba(52, 211, 153, 0.05)', borderLeft: '2px solid #34d399', borderRadius: '0 4px 4px 0' }}>
                           <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>

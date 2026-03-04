@@ -16,6 +16,7 @@ import requests as _requests
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
 GLOBAL_INSIGHTS_FILE = Path(os.getenv("WEB_INSIGHTS_FILE", "web/public/data/global_insights.json"))
+GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 
 SYSTEM_PROMPT = (
     "你是一位顶级科技产业与投资分析师，专注从海量 RSS 信息流中提炼宏观趋势与深层弱信号。"
@@ -165,12 +166,18 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         tools=[read_webpage, submit_insights],
     )
 
+    allowed_tools = ["mcp__insights-tools__read_webpage", "mcp__insights-tools__submit_insights"]
+    if GLOBAL_AGENT_ENABLE_SKILLS:
+        allowed_tools.append("Skill")
+
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
-        allowed_tools=["mcp__insights-tools__read_webpage", "mcp__insights-tools__submit_insights"],
+        allowed_tools=allowed_tools,
         mcp_servers={"insights-tools": server},
         permission_mode="acceptEdits",
         max_turns=30,
+        cwd=Path.cwd(),
+        setting_sources=["user", "project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
         output_format={
             "type": "json_schema",
             "schema": {

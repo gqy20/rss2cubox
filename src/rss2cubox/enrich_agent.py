@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from typing import Any
 
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
@@ -21,6 +22,7 @@ ENRICH_MIN_SCORE = float(os.getenv("ENRICH_MIN_SCORE", "0.7"))  # 只深化高�
 ENRICH_MAX_ITEMS = int(os.getenv("ENRICH_MAX_ITEMS", "15"))     # 最多深化条数，防止超时
 ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "90")))
 ENRICH_ALLOW_WEBFETCH_FALLBACK = os.getenv("ENRICH_ALLOW_WEBFETCH_FALLBACK", "false").lower() in ("1", "true", "yes")
+ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
 JINA_MAX_CHARS = max(1000, int(os.getenv("JINA_MAX_CHARS", "10000")))
 _enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "0.03").strip()
@@ -135,6 +137,8 @@ async def _enrich_one(item: dict, original: dict) -> dict | None:
         "mcp__enrich-tools__read_webpage_jina",
         "mcp__enrich-tools__submit_enriched",
     ]
+    if ENRICH_ENABLE_SKILLS:
+        allowed_tools.append("Skill")
     if ENRICH_ALLOW_WEBFETCH_FALLBACK:
         allowed_tools.append("WebFetch")
 
@@ -146,6 +150,8 @@ async def _enrich_one(item: dict, original: dict) -> dict | None:
         max_turns=8,  # Jina 读取 + 可选兜底 + submit_enriched
         max_budget_usd=ENRICH_MAX_BUDGET_USD,
         can_use_tool=can_use_tool,
+        cwd=Path.cwd(),
+        setting_sources=["user", "project"] if ENRICH_ENABLE_SKILLS else None,
     )
 
     async with ClaudeSDKClient(options=options) as client:
