@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell as PieCell, Legend
@@ -54,12 +54,48 @@ function formatDay(value: string): string {
 
 const PIE_COLORS = ['#2dd4bf', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc']
 
+// KPI 数字滚动动画
+function AnimatedNumber({ value }: { value: number }) {
+  const [display, setDisplay] = useState(0)
+  useEffect(() => {
+    const duration = 900
+    const startTime = performance.now()
+    const update = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplay(Math.round(value * eased))
+      if (progress < 1) requestAnimationFrame(update)
+    }
+    requestAnimationFrame(update)
+  }, [value])
+  return <>{display}</>
+}
+
+// 分数进度条
+function ScoreBar({ score }: { score: number }) {
+  const color = score >= 0.85 ? '#34d399' : score >= 0.7 ? '#60a5fa' : '#9ca3af'
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <div style={{ width: 36, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{
+          width: `${Math.round(score * 100)}%`, height: '100%',
+          background: color, borderRadius: 2,
+          boxShadow: score >= 0.85 ? `0 0 4px ${color}` : 'none'
+        }} />
+      </div>
+      <span style={{ fontSize: 11, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums', letterSpacing: '0.02em' }}>{score.toFixed(2)}</span>
+    </div>
+  )
+}
+
 export default function DashboardClient({ rows, metrics, insights }: { rows: Row[], metrics: Metrics, insights?: GlobalInsights | null }) {
   const [filter, setFilter] = useState<'all' | 'high'>('all')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'time' | 'score'>('time')
   const [now, setNow] = useState<Date | null>(null)
+  const searchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     setNow(new Date())
@@ -67,10 +103,29 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
     return () => clearInterval(timer)
   }, [])
 
+  // 键盘快捷键
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === '/' && document.activeElement?.tagName !== 'INPUT') {
+        e.preventDefault()
+        searchRef.current?.focus()
+      }
+      if (e.key === 'Escape') {
+        setSearch('')
+        setSelectedSource(null)
+        setSelectedTag(null)
+        searchRef.current?.blur()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
+
   // Derived state
   const displayedRows = useMemo(() => {
     let result = filter === 'high' ? rows.filter(r => (r.score ?? 0) >= 0.85) : rows
     if (selectedSource) result = result.filter(r => r.source === selectedSource)
+    if (selectedTag) result = result.filter(r => (r.tags || []).includes(selectedTag))
     if (search.trim()) {
       const kw = search.trim().toLowerCase()
       result = result.filter(r =>
@@ -82,7 +137,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
     }
     if (sortBy === 'score') result = [...result].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     return result
-  }, [rows, filter, selectedSource, search, sortBy])
+  }, [rows, filter, selectedSource, selectedTag, search, sortBy])
 
   // Chart Data: Time Series Area Chart
   const trendData = useMemo(() => {
@@ -142,25 +197,25 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
         <section className="kpi" style={{ marginBottom: 24 }}>
           <article className="glass kpi-card">
             <div className="kpi-title">有效信号</div>
-            <div className="kpi-value">{rows.length}</div>
+            <div className="kpi-value"><AnimatedNumber value={rows.length} /></div>
           </article>
           <article className="glass kpi-card">
             <div className="kpi-title">高价值 (≥0.85)</div>
-            <div className="kpi-value" style={{ color: '#34d399' }}>{rows.filter(r => (r.score ?? 0) >= 0.85).length}</div>
+            <div className="kpi-value" style={{ color: '#34d399' }}><AnimatedNumber value={rows.filter(r => (r.score ?? 0) >= 0.85).length} /></div>
           </article>
           <article className="glass kpi-card">
             <div className="kpi-title">今日新增</div>
             <div className="kpi-value" style={{ color: '#60a5fa' }}>
-              {rows.filter(r => {
+              <AnimatedNumber value={rows.filter(r => {
                 const d = new Date(r.time)
                 const today = new Date()
                 return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()
-              }).length}
+              }).length} />
             </div>
           </article>
           <article className="glass kpi-card">
             <div className="kpi-title">活跃情报源</div>
-            <div className="kpi-value" style={{ color: '#a78bfa' }}>{metrics.sources_total ?? 0}</div>
+            <div className="kpi-value" style={{ color: '#a78bfa' }}><AnimatedNumber value={metrics.sources_total ?? 0} /></div>
           </article>
         </section>
 
@@ -302,14 +357,25 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                   <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
                 </button>
               )}
+              {selectedTag && (
+                <button
+                  className="filter-btn source-filter-active"
+                  onClick={() => setSelectedTag(null)}
+                  style={{ padding: '4px 10px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <span>#{selectedTag}</span>
+                  <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
+                </button>
+              )}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
             <div style={{ flex: 1, position: 'relative' }}>
               <Search size={13} color="#8aa3be" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
               <input
+                ref={searchRef}
                 className="search-input"
-                placeholder="搜索标题、标签、AI分析..."
+                placeholder="搜索标题、标签、AI分析…  [按 / 聚焦]"
                 value={search}
                 onChange={e => setSearch(e.target.value)}
               />
@@ -326,7 +392,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
               <ArrowUpDown size={12} />{sortBy === 'score' ? '按分数' : '按时间'}
             </button>
           </div>
-          {(search || selectedSource) && (
+          {(search || selectedSource || selectedTag) && (
             <div style={{ fontSize: 12, color: '#8aa3be' }}>
               共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{displayedRows.length}</span> 条结果
             </div>
@@ -380,16 +446,18 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                           <span className="source-badge">{row.source}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span className={`score-badge ${isHigh ? 'score-high' : isMid ? 'score-mid' : 'score-low'}`}>
-                            {s.toFixed(2)} Score
-                          </span>
+                          <ScoreBar score={s} />
                           <ExternalLink size={14} color="#8aa3be" />
                         </div>
                       </div>
                       {row.tags && row.tags.length > 0 && (
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {row.tags.slice(0, 3).map((tag, i) => (
-                            <span key={i} className="hashtag">#{tag}</span>
+                            <span
+                              key={i}
+                              className={`hashtag${selectedTag === tag ? ' hashtag-active' : ''}`}
+                              onClick={e => { e.preventDefault(); e.stopPropagation(); setSelectedTag(prev => prev === tag ? null : tag) }}
+                            >#{tag}</span>
                           ))}
                         </div>
                       )}
