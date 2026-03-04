@@ -124,12 +124,18 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
   const [sortBy, setSortBy] = useState<'time' | 'score'>('time')
   const [now, setNow] = useState<Date | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
+  const timelineRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setNow(new Date())
     const timer = setInterval(() => setNow(new Date()), 60000)
     return () => clearInterval(timer)
   }, [])
+
+  // 筛选条件变化时自动滚回顶部
+  useEffect(() => {
+    timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [filter, selectedSource, selectedTag, search, sortBy])
 
   // 键盘快捷键
   useEffect(() => {
@@ -430,20 +436,29 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
           )}
         </div>
 
-        <div className="timeline-container">
+        <div className="timeline-container" ref={timelineRef}>
           <section className="timeline" style={{ marginTop: 16 }}>
-            {displayedRows.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#8aa3be' }}>
-                <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>◎</div>
-                <div style={{ fontSize: 14 }}>{selectedSource ? `「${selectedSource}」暂无匹配信号` : '暂无信号数据'}</div>
-                {selectedSource && (
-                  <button
-                    onClick={() => setSelectedSource(null)}
-                    style={{ marginTop: 12, background: 'none', border: '1px solid #8aa3be', color: '#8aa3be', padding: '4px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 13 }}
-                  >清除筛选</button>
-                )}
-              </div>
-            )}
+            {displayedRows.length === 0 && (() => {
+              const reason = search.trim()
+                ? `「${search.trim()}」`
+                : selectedTag
+                ? `#${selectedTag}`
+                : selectedSource
+                ? `「${selectedSource}」`
+                : null
+              return (
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#8aa3be' }}>
+                  <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>◎</div>
+                  <div style={{ fontSize: 14 }}>{reason ? `${reason} 暂无匹配信号` : '暂无信号数据'}</div>
+                  {reason && (
+                    <button
+                      onClick={() => { setSearch(''); setSelectedSource(null); setSelectedTag(null) }}
+                      style={{ marginTop: 12, background: 'none', border: '1px solid #8aa3be', color: '#8aa3be', padding: '4px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 13 }}
+                    >清除所有筛选</button>
+                  )}
+                </div>
+              )
+            })()}
             {displayedRows.map((row, idx) => {
               const s = row.score ?? 0
               const isHigh = s >= 0.85
@@ -453,7 +468,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                 <motion.div 
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.03 }}
+                  transition={{ delay: Math.min(idx * 0.03, 0.3) }}
                   key={`${row.id || row.url}-${row.time}-${idx}`} 
                   className="timeline-item"
                 >
