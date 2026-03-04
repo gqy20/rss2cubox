@@ -51,6 +51,15 @@ jobs:
           set -o pipefail
           rss2cubox 2>&1 | tee rss2cubox.log
 
+      - name: Export web data
+        env:
+          STATE_FILE: "state.json"
+          WEB_UPDATES_FILE: "web/public/data/updates.json"
+          WEB_METRICS_FILE: "web/public/data/metrics.json"
+          WEB_UPDATES_LIMIT: "2000"
+        run: |
+          rss2cubox-export-web
+
       - name: Upload run log artifact
         if: always()
         uses: actions/upload-artifact@v4
@@ -61,11 +70,11 @@ jobs:
 
       - name: Commit state
         run: |
-          if git status --porcelain | grep -q "state.json"; then
+          if git status --porcelain | grep -qE "state.json|web/public/data/updates.json|web/public/data/metrics.json"; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add state.json
-            git commit -m "chore: update rss state"
+            git add state.json web/public/data/updates.json web/public/data/metrics.json
+            git commit -m "chore: update rss state and web data"
             git push
           else
             echo "No state changes."

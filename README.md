@@ -76,8 +76,25 @@ rss2cubox
 - 工作流：`.github/workflows/rss_to_cubox.yml`
 - 每次运行会输出 `rss2cubox.log` artifact
 - Step Summary 包含：阶段耗时、熔断跳过数、去重数、每源推送/丢弃统计
+- 每次运行后会自动执行 `rss2cubox-export-web`，生成：
+  - `web/public/data/updates.json`
+  - `web/public/data/metrics.json`
+- workflow 会把 `state.json` 和上述前端数据文件一起提交到 `main`
 
-## 7) 测试
+## 7) Vercel 前端（自动更新）
+
+- 前端目录：`web/`
+- 在 Vercel 创建项目时把 **Root Directory** 设为 `web`
+- 每次 GitHub Action 推送新 commit 后，Vercel 会自动重新部署
+- 页面读取 `web/public/data/*.json`，因此部署完成后就是最新数据
+
+本地可单独导出前端数据：
+
+```bash
+rss2cubox-export-web
+```
+
+## 8) 测试
 
 ```bash
 pytest -q

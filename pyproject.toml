@@ -20,6 +20,7 @@ dev = [
 
 [project.scripts]
 rss2cubox = "rss2cubox.runner:main"
+rss2cubox-export-web = "rss2cubox.export_web:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
