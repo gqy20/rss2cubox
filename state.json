@@ -359,6 +359,106 @@
     "6c790a16de0afd2b5fe6beb9576b591d428632f9eec4ffcb9153132bc51741c7": {
       "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
       "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "bb3fa747a3a471d213f497c5c4e642d973b4cf74b67651e0bf2f443a5b485560": {
+      "url": "https://www.infoq.cn/article/ahajHtW6IWVZ2gp7bBHA",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "10小时连崩4次、Claude疯狂宕机！刚把ChatGPT干到295%卸载量，就没顶住二次“爆红”？"
+    },
+    "ca2bdfcccfa09e4deb3b5f3865b5c70caea77f4f27ee8b0314f7a330d796cb26": {
+      "url": "https://www.anthropic.com/news/statement-comments-secretary-war",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Statement on the comments from Secretary of War Pete Hegseth"
+    },
+    "45019e6a01a94f1f04e45acb93b02be4b1a7ccb54ae4db709c8fe1969ec71568": {
+      "url": "https://www.qbitai.com/2026/02/378674.html",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "2025具身智能创投全景：554亿热钱，4大估值梯队，10亿元现金流门槛｜量子位智库报告"
+    },
+    "e05d4b091cbc2181405bf81482862221834d6ab20735ce25545649aa7056b470": {
+      "url": "https://www.bloomberg.com/news/articles/2025-06-05/anysphere-hailed-as-fastest-growing-startup-ever-raises-900-million",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Cursor, Hailed as Fastest Growing Startup Ever, Raises $900 Million"
+    },
+    "852efebff91b2549f8a3ece89dc72aeadf5c7380f71de3b15fe5dbe1a190eebe": {
+      "url": "https://www.bbc.com/news/articles/cly2m5e5ke4o",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "TikTok will not introduce end-to-end encryption, saying it makes users less safe"
+    },
+    "b7abcb1a73306f4226fc6fa0b1ab748892308a32ddef1432671cd8bfe4d6b595": {
+      "url": "https://grapheneos.social/@GrapheneOS/116160393783585567",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Motorola GrapheneOS devices will be bootloader unlockable/relockable"
+    },
+    "1dfaa948d064af05dcf1db1503fee1e8cd970877a3d78cf00c224a534927ee25": {
+      "url": "https://www.anthropic.com/news/statement-department-of-war",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Statement from Dario Amodei on our discussions with the Department of War"
+    },
+    "518675ffece94c02013ae9b1a080f2445e7efe669de5d866d04761dbde972c4f": {
+      "url": "https://www.infoq.cn/article/blMfufW3klIctS0CXD8D",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "马云现身谈AI：未来一天不用工作八小时，但很多熟悉工种会消失"
+    },
+    "f78c7f9dddc347e85133cceea3ae9a816c285f1e9294579781c7f43b0cabac48": {
+      "url": "https://www.infoq.cn/article/fuqDscvvQ8CoeeG4Xbf0",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "覆盖 35 万开发者的应用风险数据库发布，聚焦儿童隐私与广告链路数据暴露"
+    },
+    "d3d38ded1c6032b4580b2d55fcf2ea72defa0ed32bf4cfbc14c6f1adbb322e39": {
+      "url": "https://www.anthropic.com/news/detecting-and-preventing-distillation-attacks",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Detecting and preventing distillation attacks"
+    },
+    "380ca6a607e9e38da2855bc7def5413ed2c1a7ff06851a44519b7f587a949c2c": {
+      "url": "https://fortune.com/2026/01/23/cursor-built-web-browser-with-swarm-ai-agents-powered-openai/",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Cursor Built a Web Browser Using a Swarm of AI Agents"
+    },
+    "6e1bb112cae40f946e70bd9c3a688cdb69e1f0852e5cfc2007098bbca8218503": {
+      "url": "https://fortune.com/2025/12/19/cursor-ai-coding-startup-graphite-competition-heats-up/",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Cursor Acquires Code Review Startup Graphite"
+    },
+    "432145ce1d8cb2a502069f394affd535df0e4501703013d7c6c72b8aada6c222": {
+      "url": "https://cursor.com/blog/agent-sandboxing",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Implementing a secure sandbox for local agents"
+    },
+    "85d39541f641e3e0f1ce7a0c860a38a54b8c87854f1d87681205c6408c47ca23": {
+      "url": "https://www.infoq.cn/article/qAd3vVp3IdXx7dNw3vvH",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "大模型记忆系统 MemOS 2.0：StarDust 技术演进与关键挑战｜QCon北京"
+    },
+    "62d5eb25a465f261105c226b5689b70bd843fecbd51adeacff7e5d1766b30589": {
+      "url": "https://www.anthropic.com/news/acquires-vercept",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Anthropic acquires Vercept to advance Claude's computer use capabilities"
+    },
+    "5dc5d96aa7654992d9a75163e2a129eea1fe37a71a06faf53ac813a76e4c8fc2": {
+      "url": "https://www.infoq.cn/article/RcBF9xRZMeX3uLhwT5sj",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "平台工程实验室扩展了formae的多云支持"
+    },
+    "0d40f97ea619e69da2455c23bb9616b833fcec3d6c370d9d979f18705bb56e2c": {
+      "url": "https://www.anthropic.com/news/responsible-scaling-policy-v3",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Anthropic’s Responsible Scaling Policy: Version 3.0"
+    },
+    "c6a012cc47ab33a224ef024dc139fa2bdf563a0f1a8c94fa8334e86abc331d7c": {
+      "url": "https://www.wired.com/story/cursor-launches-pro-design-tools-figma/",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Cursor Launches Visual Editor, an AI Coding Tool for Designers"
+    },
+    "445bd6a2355ccd4ae8891ae59830301009b61bb22e303509fa313b479e6febb6": {
+      "url": "https://www.qbitai.com/2026/02/382914.html",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "分拆百度Robotaxi萝卜快跑？李彦宏回应了"
+    },
+    "459cc69c004bf274d3cb70a2b810828c9c5b4648a90a84983c987f0875bf1c17": {
+      "url": "https://www.anthropic.com/news/bengaluru-office-partnerships-across-india",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "title": "Anthropic opens Bengaluru office and announces new partnerships across India"
     }
   },
   "ai": {
@@ -690,12 +790,312 @@
       "reason": "Technical content explaining AI agent evaluations - valuable for teams building AI agents. High practical value.",
       "ts": "2026-03-04T03:39:51.342596+00:00",
       "model": "MiniMax-M2.5"
+    },
+    "bb3fa747a3a471d213f497c5c4e642d973b4cf74b67651e0bf2f443a5b485560": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Even leading AI labs struggle with infrastructure scaling under viral demand. This reveals the operational maturity gap between AI model capability and production-grade reliability - a systemic industry challenge.",
+      "core_event": "Claude experienced 4 major global outages within 10 hours on March 2, 2025, with peak of ~2000 user reports on Downdetector",
+      "hidden_signal": "Even leading AI labs struggle with infrastructure scaling under viral demand. This reveals the operational maturity gap between AI model capability and production-grade reliability - a systemic industry challenge.",
+      "actionable": "Monitor Claude/Anthopic infrastructure reliability; prepare fallback strategies for production AI deployments",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Infrastructure",
+        "Reliability Engineering",
+        "Anthropic"
+      ]
+    },
+    "ca2bdfcccfa09e4deb3b5f3865b5c70caea77f4f27ee8b0314f7a330d796cb26": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "This marks a major escalation in US government-AI lab tensions. The Trump administration is actively moving to treat leading AI companies as national security risks, potentially restricting their government contracts and defense-related work. This could fundamentally reshape the AI industry-government relationship.",
+      "core_event": "US Secretary of War Pete Hegseth directed the Department of War to designate Anthropic as a supply chain risk, following months of negotiations that reached an impasse.",
+      "hidden_signal": "This marks a major escalation in US government-AI lab tensions. The Trump administration is actively moving to treat leading AI companies as national security risks, potentially restricting their government contracts and defense-related work. This could fundamentally reshape the AI industry-government relationship.",
+      "actionable": "Monitor the situation closely. This represents a significant escalation in US government scrutiny of leading AI labs and could set precedent for future regulatory actions against AI companies.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Regulation",
+        "National Security",
+        "US Government"
+      ]
+    },
+    "45019e6a01a94f1f04e45acb93b02be4b1a7ccb54ae4db709c8fe1969ec71568": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Embodied intelligence (robotics/AI hardware) has reached institutional investment maturity with clear market stratification - 10B cash flow threshold signals market is filtering for commercially viable players, not just technology demos",
+      "core_event": "Quantum Bit智库 released a report on 2025 embodied intelligence investment landscape: 55.4B RMB funding, 4 valuation tiers, 10B RMB cash flow threshold",
+      "hidden_signal": "Embodied intelligence (robotics/AI hardware) has reached institutional investment maturity with clear market stratification - 10B cash flow threshold signals market is filtering for commercially viable players, not just technology demos",
+      "actionable": "Critical reading for investors and product strategists - track valuation gaps and market entry barriers",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Robotics",
+        "Venture_Capital",
+        "Market_Intelligence"
+      ]
+    },
+    "e05d4b091cbc2181405bf81482862221834d6ab20735ce25545649aa7056b470": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Massive market validation for AI coding tools—$900M war chest signalsCursor will aggressively pursue enterprise market share against Microsoft/GitHub. The 'fastest growing' label creates self-fulfilling growth dynamics.",
+      "core_event": "Cursor (Anysphere) raised $900M at a ~$9B valuation, being called the fastest-growing startup ever.",
+      "hidden_signal": "Massive market validation for AI coding tools—$900M war chest signalsCursor will aggressively pursue enterprise market share against Microsoft/GitHub. The 'fastest growing' label creates self-fulfilling growth dynamics.",
+      "actionable": "Track Cursor's valuation trajectory and how $900M deployment impacts competitive landscape. Assess if this funding enables aggressive enterprise expansion.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI-Coding",
+        "Funding",
+        "Valuation"
+      ]
+    },
+    "852efebff91b2549f8a3ece89dc72aeadf5c7380f71de3b15fe5dbe1a190eebe": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Significant platform security policy with geopolitical implications; TikTok is explicitly choosing not to provide cryptographic privacy guarantees likely to facilitate lawful intercept capabilities while framing it as 'user safety' - a notable departure from industry-standard E2E messaging encryption.",
+      "core_event": "TikTok explicitly stated it will not implement end-to-end encryption, claiming it makes users less safe.",
+      "hidden_signal": "Significant platform security policy with geopolitical implications; TikTok is explicitly choosing not to provide cryptographic privacy guarantees likely to facilitate lawful intercept capabilities while framing it as 'user safety' - a notable departure from industry-standard E2E messaging encryption.",
+      "actionable": "Security engineers should treat TikTok as a non-confidential channel; organizations with data compliance requirements (GDPR, HIPAA) should evaluate TikTok usage; monitor for regulatory responses to this explicit security policy position.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Platform-Security",
+        "Privacy",
+        "Policy"
+      ]
+    },
+    "b7abcb1a73306f4226fc6fa0b1ab748892308a32ddef1432671cd8bfe4d6b595": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "GrapheneOS (hardened security Android fork) is expanding hardware availability, giving security-conscious users more device options beyond Pixel; bootloader unlock support enables verified boot with custom OS - significant for threat models requiring hardware integrity verification.",
+      "core_event": "GrapheneOS announced it will expand to Motorola devices, which will support bootloader unlock and relock functionality.",
+      "hidden_signal": "GrapheneOS (hardened security Android fork) is expanding hardware availability, giving security-conscious users more device options beyond Pixel; bootloader unlock support enables verified boot with custom OS - significant for threat models requiring hardware integrity verification.",
+      "actionable": "Security engineers evaluating mobile device security should add Motorola to approved device list for high-security deployments; monitor GrapheneOS compatibility and security audit status for these new devices.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Mobile-Security",
+        "GrapheneOS",
+        "Android"
+      ]
+    },
+    "1dfaa948d064af05dcf1db1503fee1e8cd970877a3d78cf00c224a534927ee25": {
+      "keep": true,
+      "score": 0.89,
+      "reason": "Even AI companies deeply aligned with defense/government use cases are facing regulatory headwinds. This suggests the US government is taking a harder line on AI supply chain security regardless of the company's cooperation stance. Could indicate upcoming executive actions affecting the entire AI industry.",
+      "core_event": "Dario Amodei responded to the Department of War's decision to designate Anthropic as a supply chain risk, reaffirming commitment to AI defense applications.",
+      "hidden_signal": "Even AI companies deeply aligned with defense/government use cases are facing regulatory headwinds. This suggests the US government is taking a harder line on AI supply chain security regardless of the company's cooperation stance. Could indicate upcoming executive actions affecting the entire AI industry.",
+      "actionable": "Track how this affects Anthropic's government partnerships and monitor for similar actions against other AI labs (OpenAI, Google DeepMind). This could signal a broader regulatory crackdown.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Regulation",
+        "Defense AI",
+        "Industry Impact"
+      ]
+    },
+    "518675ffece94c02013ae9b1a080f2445e7efe669de5d866d04761dbde972c4f": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "A major tech founder explicitly acknowledging AI's exponential pace and predicting mass job displacement signals a paradigm shift in how business leaders view AI's societal impact - from experimental to existential.",
+      "core_event": "Jack Ma predicted AI will迭代以周计算 (iterate weekly), enabling future societies to work less while eliminating many familiar job categories",
+      "hidden_signal": "A major tech founder explicitly acknowledging AI's exponential pace and predicting mass job displacement signals a paradigm shift in how business leaders view AI's societal impact - from experimental to existential.",
+      "actionable": "Track AI's pace of capability growth; prepare for rapid job displacement in repetitive cognitive roles",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Impact",
+        "Future of Work",
+        "Industry Vision"
+      ]
+    },
+    "f78c7f9dddc347e85133cceea3ae9a816c285f1e9294579781c7f43b0cabac48": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "The self-reported privacy labeling system on app stores is fundamentally broken - apps declaring 'no data collected' are still transmitting precise geolocation via RTB. This creates regulatory liability and exposes the inadequacy of current app store oversight mechanisms.",
+      "core_event": "Pixalate released a public database (KYD) covering 356K mobile app developers with focus on children's privacy and ad data exposure, revealing gaps between app store privacy labels and actual RTB data transmission",
+      "hidden_signal": "The self-reported privacy labeling system on app stores is fundamentally broken - apps declaring 'no data collected' are still transmitting precise geolocation via RTB. This creates regulatory liability and exposes the inadequacy of current app store oversight mechanisms.",
+      "actionable": "Audit your mobile apps for privacy label discrepancies; implement runtime verification of data transmission claims",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "privacy",
+        "mobile-security",
+        "ad-tech"
+      ]
+    },
+    "d3d38ded1c6032b4580b2d55fcf2ea72defa0ed32bf4cfbc14c6f1adbb322e39": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "Model distillation attacks represent an emerging threat vector against AI providers; those who fail to detect such attacks risk having their models 'stolen' cheaply while bearing full training costs.",
+      "core_event": "Anthropic published research on detecting and preventing model distillation attacks where attackers use AI outputs to train competing models.",
+      "hidden_signal": "Model distillation attacks represent an emerging threat vector against AI providers; those who fail to detect such attacks risk having their models 'stolen' cheaply while bearing full training costs.",
+      "actionable": "Review the detection methodology and implement similar protections for proprietary models; consider watermarking outputs as a defensive layer.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI-Security",
+        "Model-Protection",
+        "Adversarial-ML"
+      ]
+    },
+    "380ca6a607e9e38da2855bc7def5413ed2c1a7ff06851a44519b7f587a949c2c": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "Multi-agent swarm architectures are maturing to solve complex system-building tasks - signals shift from AI-assisting-individuals to AI-building-systems",
+      "core_event": "Cursor built a functional web browser using a swarm of coordinated AI agents",
+      "hidden_signal": "Multi-agent swarm architectures are maturing to solve complex system-building tasks - signals shift from AI-assisting-individuals to AI-building-systems",
+      "actionable": "Architects: Study multi-agent orchestration patterns. This demonstrates swarm/collective AI solving complex tasks beyond single-agent capabilities",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Multi-Agent AI",
+        "Swarm Architecture",
+        "Paradigm Shift"
+      ]
+    },
+    "6e1bb112cae40f946e70bd9c3a688cdb69e1f0852e5cfc2007098bbca8218503": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "AI coding tools are moving beyond code completion to own the entire developer workflow—including traditionally separate Git-based code review processes. This signals vertical integration play in the dev toolchain.",
+      "core_event": "Cursor (Anysphere) acquired Graphite, a code review startup, to integrate code review capabilities directly into its AI coding IDE.",
+      "hidden_signal": "AI coding tools are moving beyond code completion to own the entire developer workflow—including traditionally separate Git-based code review processes. This signals vertical integration play in the dev toolchain.",
+      "actionable": "Monitor how Cursor integrates code review into IDE and whether this drives enterprise adoption. Evaluate competing tools like GitHub Copilot's code review capabilities.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI-Coding",
+        "M&A",
+        "DevTools"
+      ]
+    },
+    "432145ce1d8cb2a502069f394affd535df0e4501703013d7c6c72b8aada6c222": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "As AI agents gain capability to execute code and take actions locally, sandboxing becomes a critical security architecture pattern; this represents the emerging 'agent security' domain where agents must be contained like untrusted code.",
+      "core_event": "Cursor built cross-platform secure sandboxing for local AI agents on macOS, Linux, and Windows to constrain agent execution environments.",
+      "hidden_signal": "As AI agents gain capability to execute code and take actions locally, sandboxing becomes a critical security architecture pattern; this represents the emerging 'agent security' domain where agents must be contained like untrusted code.",
+      "actionable": "Engineers building local AI agents should investigate containerization/sandboxing patterns (gvisor, WebAssembly sandbox, or OS-level isolation) before production deployment; monitor how Cursor's approach evolves.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI-Security",
+        "Agent-Architecture",
+        "Sandboxing"
+      ]
+    },
+    "85d39541f641e3e0f1ce7a0c860a38a54b8c87854f1d87681205c6408c47ca23": {
+      "keep": true,
+      "score": 0.86,
+      "reason": "Memory is evolving from UX feature to system-level infrastructure for AI agents - this represents the infrastructure layer needed for truly autonomous agents in production.",
+      "core_event": "MemOS 2.0 (StarDust) is a memory system for LLMs being presented at QCon, focusing on cross-session continuity and long-term task handling for agents",
+      "hidden_signal": "Memory is evolving from UX feature to system-level infrastructure for AI agents - this represents the infrastructure layer needed for truly autonomous agents in production.",
+      "actionable": "Evaluate MemOS/Mem0 for agent memory architectures in production systems",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agents",
+        "Infrastructure",
+        "Memory Systems"
+      ]
+    },
+    "62d5eb25a465f261105c226b5689b70bd843fecbd51adeacff7e5d1766b30589": {
+      "keep": true,
+      "score": 0.86,
+      "reason": "The AI race is shifting toward agentic AI and computer use capabilities. Acquisitions in this space indicate Anthropic is racing to close the gap with competitors on autonomous agent technology - a critical differentiator for enterprise adoption.",
+      "core_event": "Anthropic acquired Vercept, a company focused on advancing Claude's computer use capabilities.",
+      "hidden_signal": "The AI race is shifting toward agentic AI and computer use capabilities. Acquisitions in this space indicate Anthropic is racing to close the gap with competitors on autonomous agent technology - a critical differentiator for enterprise adoption.",
+      "actionable": "Evaluate Vercept's technology for competitive positioning. This acquisition signals Anthropic's intensified focus on computer use/agentic capabilities - a key competitive frontier in LLM development.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agents",
+        "Acquisition",
+        "LLM Competition"
+      ]
+    },
+    "5dc5d96aa7654992d9a75163e2a129eea1fe37a71a06faf53ac813a76e4c8fc2": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "IaC tooling is being re-architected for AI-native workflows - reducing multi-cloud integration from weeks to hours signals major DevOps productivity shift.",
+      "core_event": "Platform Engineering Labs expanded formae to support GCP, Azure, OCI, OVHcloud with new 'infrastructure builder platform' for AI coding agent optimization",
+      "hidden_signal": "IaC tooling is being re-architected for AI-native workflows - reducing multi-cloud integration from weeks to hours signals major DevOps productivity shift.",
+      "actionable": "Assess formae for multi-cloud IaC needs; monitor AI-assisted infrastructure development tools",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "DevOps",
+        "Multi-cloud",
+        "Platform Engineering"
+      ]
+    },
+    "0d40f97ea619e69da2455c23bb9616b833fcec3d6c370d9d979f18705bb56e2c": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "As frontier AI capabilities advance, safety policies must evolve. RSPv3 likely reflects lessons from recent AI developments and may introduce stricter deployment controls - important for understanding Anthropic's risk posture and industry safety standards.",
+      "core_event": "Anthropic released version 3.0 of its Responsible Scaling Policy, updating its AI safety framework.",
+      "hidden_signal": "As frontier AI capabilities advance, safety policies must evolve. RSPv3 likely reflects lessons from recent AI developments and may introduce stricter deployment controls - important for understanding Anthropic's risk posture and industry safety standards.",
+      "actionable": "Review RSPv3 for changes in safety thresholds and deployment requirements. This updates Anthropic's commitments and may signal evolving safety priorities for frontier AI models.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Safety",
+        "AI Governance",
+        "Policy"
+      ]
+    },
+    "c6a012cc47ab33a224ef024dc139fa2bdf563a0f1a8c94fa8334e86abc331d7c": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "AI coding tools are expanding TAM by targeting non-developers (designers, PMs), potentially democratizing or disrupting traditional developer workflows.",
+      "core_event": "Cursor launched a Visual Editor that allows users to build interfaces by dragging and dropping elements, targeting designers.",
+      "hidden_signal": "AI coding tools are expanding TAM by targeting non-developers (designers, PMs), potentially democratizing or disrupting traditional developer workflows.",
+      "actionable": "Evaluate Visual Editor for team use cases where designers collaborate on frontend code. Consider implications if non-developers can now contribute to codebases.",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI-Coding",
+        "Product-Launch",
+        "Design-Tools"
+      ]
+    },
+    "445bd6a2355ccd4ae8891ae59830301009b61bb22e303509fa313b479e6febb6": {
+      "keep": true,
+      "score": 0.81,
+      "reason": "Chinese autonomous driving companies may be preparing for capital restructuring as Robotaxi commercialization pressures mount - signals potential IPO or M&A activity in China's AV sector",
+      "core_event": "Robin Li responded to questions about spinning off Baidu's Robotaxi unit Luobo Kuaipao",
+      "hidden_signal": "Chinese autonomous driving companies may be preparing for capital restructuring as Robotaxi commercialization pressures mount - signals potential IPO or M&A activity in China's AV sector",
+      "actionable": "Track Baidu's autonomous driving unit restructuring - potential competitor or acquisition target",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Autonomous_Vehicle",
+        "China_Tech",
+        "Capital_Restructuring"
+      ]
+    },
+    "459cc69c004bf274d3cb70a2b810828c9c5b4648a90a84983c987f0875bf1c17": {
+      "keep": true,
+      "score": 0.72,
+      "reason": "Major AI labs are establishing physical presence in India's deep tech talent hub, signaling competitive battle for Indian engineers and market positioning against Chinese AI firms",
+      "core_event": "Anthropic has opened a new office in Bengaluru, India and announced partnerships with Indian companies",
+      "hidden_signal": "Major AI labs are establishing physical presence in India's deep tech talent hub, signaling competitive battle for Indian engineers and market positioning against Chinese AI firms",
+      "actionable": "Monitor Indian AI market for emerging partnership opportunities and talent acquisition channels",
+      "ts": "2026-03-04T07:06:36.364170+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI_Labs",
+        "India_Tech",
+        "Talent_War"
+      ]
     }
   },
   "feed_cursor": {
-    "/infoq/recommend": "2026-03-04T03:07:00+00:00",
+    "/infoq/recommend": "2026-03-04T07:00:00+00:00",
     "/juejin/trending/ai/weekly": "2026-03-02T01:12:54+00:00",
-    "/sspai/index": "2026-03-04T03:31:46+00:00",
+    "/sspai/index": "2026-03-04T07:00:46+00:00",
     "/anthropic/engineering": "2026-02-04T16:00:00+00:00",
     "/anthropic/red": "2026-02-04T16:00:00+00:00",
     "/qbitai/category/ebandeng": "2024-09-23T03:51:16+00:00",
@@ -713,134 +1113,135 @@
     "https://community.openai.com/c/announcements.rss": "2026-01-15T20:11:25+00:00",
     "https://huggingface.co/blog/feed.xml": "2026-03-03T16:50:49+00:00",
     "https://github.com/anthropics/claude-code/releases.atom": "2026-03-04T01:19:19+00:00",
-    "https://status.anthropic.com/history.rss": "2026-03-04T01:29:39+00:00"
+    "https://status.anthropic.com/history.rss": "2026-03-04T01:29:39+00:00",
+    "/anthropic/news": "2026-02-26T16:00:00+00:00"
   },
   "feed_failures": {
-    "/anthropic/news": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.744374+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.744399+00:00"
-    },
     "/anthropic/research": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.744847+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390135+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.744854+00:00"
+      "updated_at": "2026-03-04T07:07:30.390143+00:00"
     },
     "/modelscope/models": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745348+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390666+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745353+00:00"
+      "updated_at": "2026-03-04T07:07:30.390673+00:00"
     },
     "/producthunt/today": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745478+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390783+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745483+00:00"
+      "updated_at": "2026-03-04T07:07:30.390788+00:00"
     },
     "/github/topics/llm": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745505+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390811+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745509+00:00"
+      "updated_at": "2026-03-04T07:07:30.390816+00:00"
     },
     "/github/topics/agents": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745530+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390839+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745534+00:00"
+      "updated_at": "2026-03-04T07:07:30.390844+00:00"
     },
     "/hellogithub/volume": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745554+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390870+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745557+00:00"
+      "updated_at": "2026-03-04T07:07:30.390875+00:00"
     },
     "/hellogithub/home/featured": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745578+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390904+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745581+00:00"
+      "updated_at": "2026-03-04T07:07:30.390910+00:00"
     },
     "/juejin/aicoding": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745601+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390943+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745605+00:00"
+      "updated_at": "2026-03-04T07:07:30.390949+00:00"
     },
     "/twitter/user/karpathy": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745625+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.390976+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745630+00:00"
+      "updated_at": "2026-03-04T07:07:30.390980+00:00"
     },
     "/twitter/user/fchollet": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745650+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391004+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745653+00:00"
+      "updated_at": "2026-03-04T07:07:30.391008+00:00"
     },
     "/twitter/user/soumithchintala": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745673+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391031+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745677+00:00"
+      "updated_at": "2026-03-04T07:07:30.391036+00:00"
     },
     "/twitter/user/rasbt": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745696+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391058+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745699+00:00"
+      "updated_at": "2026-03-04T07:07:30.391063+00:00"
     },
     "/twitter/user/ylecun": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745719+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391085+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745722+00:00"
+      "updated_at": "2026-03-04T07:07:30.391089+00:00"
     },
     "/twitter/user/demishassabis": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745741+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391111+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745745+00:00"
+      "updated_at": "2026-03-04T07:07:30.391116+00:00"
     },
     "/twitter/user/Yoshua_Bengio": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745766+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391139+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745770+00:00"
+      "updated_at": "2026-03-04T07:07:30.391143+00:00"
     },
     "/twitter/user/sama": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745790+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391166+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745793+00:00"
+      "updated_at": "2026-03-04T07:07:30.391170+00:00"
     },
     "/twitter/user/AndrewYNg": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745814+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391193+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745817+00:00"
+      "updated_at": "2026-03-04T07:07:30.391197+00:00"
     },
     "/twitter/user/JeremyHoward": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745837+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391219+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745840+00:00"
+      "updated_at": "2026-03-04T07:07:30.391223+00:00"
     },
     "/twitter/user/swyx": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745859+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391246+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745863+00:00"
+      "updated_at": "2026-03-04T07:07:30.391250+00:00"
     },
     "/twitter/user/simonw": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T03:41:40.745883+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T07:09:30.391273+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T03:40:40.745887+00:00"
+      "updated_at": "2026-03-04T07:07:30.391277+00:00"
+    },
+    "https://community.openai.com/c/announcements.rss": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T07:08:30.391447+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T07:07:30.391454+00:00"
     }
   }
 }

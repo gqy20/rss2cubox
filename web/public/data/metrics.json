@@ -1,23 +1,72 @@
 {
-  "generated_at": "2026-03-04T03:58:47.309222+00:00",
-  "updates_total": 70,
-  "sources_total": 4,
+  "generated_at": "2026-03-04T07:10:03.166183+00:00",
+  "updates_total": 40,
+  "pushed_total": 20,
+  "dropped_total": 20,
+  "failed_total": 0,
+  "sources_total": 14,
   "top_sources": [
     {
-      "source": "www.infoq.cn",
-      "count": 32
+      "source": "/anthropic/news",
+      "count": 10
     },
     {
-      "source": "juejin.cn",
-      "count": 20
+      "source": "/infoq/recommend",
+      "count": 7
     },
     {
-      "source": "imjuya.github.io",
-      "count": 15
+      "source": "/cursor/blog/news",
+      "count": 6
     },
     {
-      "source": "sspai.com",
+      "source": "/hackernews",
       "count": 3
+    },
+    {
+      "source": "/sspai/index",
+      "count": 3
+    },
+    {
+      "source": "/cursor/blog",
+      "count": 2
+    },
+    {
+      "source": "/qbitai/category/huodong",
+      "count": 2
+    },
+    {
+      "source": "/qbitai/category/zhiku",
+      "count": 1
+    },
+    {
+      "source": "/cursor/blog/research",
+      "count": 1
+    },
+    {
+      "source": "/qbitai/category/auto",
+      "count": 1
+    },
+    {
+      "source": "/cursor/changelog",
+      "count": 1
+    },
+    {
+      "source": "/huggingface/blog",
+      "count": 1
+    },
+    {
+      "source": "/qbitai/category/ebandeng",
+      "count": 1
+    },
+    {
+      "source": "/juejin/trending/ai/weekly",
+      "count": 1
+    }
+  ],
+  "top_drop_reasons": [
+    {
+      "reason": "max_items_per_run_reached",
+      "count": 20
     }
   ]
 }
