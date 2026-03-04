@@ -1,18 +1,22 @@
 {
-  "generated_at": "2026-03-04T07:54:06.312754+00:00",
-  "updates_total": 97,
-  "pushed_total": 46,
-  "dropped_total": 51,
+  "generated_at": "2026-03-04T08:07:23.892736+00:00",
+  "updates_total": 127,
+  "pushed_total": 56,
+  "dropped_total": 71,
   "failed_total": 0,
   "sources_total": 19,
   "top_sources": [
     {
       "source": "/hackernews",
-      "count": 28
+      "count": 46
     },
     {
       "source": "/infoq/recommend",
-      "count": 12
+      "count": 15
+    },
+    {
+      "source": "status.anthropic.com",
+      "count": 10
     },
     {
       "source": "/cursor/blog/news",
@@ -24,15 +28,11 @@
     },
     {
       "source": "/sspai/index",
-      "count": 7
-    },
-    {
-      "source": "status.anthropic.com",
-      "count": 5
+      "count": 8
     },
     {
       "source": "/cursor/blog",
-      "count": 4
+      "count": 5
     },
     {
       "source": "/qbitai/category/huodong",
@@ -40,6 +40,10 @@
     },
     {
       "source": "blog.google",
+      "count": 3
+    },
+    {
+      "source": "github.com",
       "count": 2
     },
     {
@@ -67,10 +71,6 @@
       "count": 1
     },
     {
-      "source": "github.com",
-      "count": 1
-    },
-    {
       "source": "/qbitai/category/zhiku",
       "count": 1
     },
@@ -86,7 +86,7 @@
   "top_drop_reasons": [
     {
       "reason": "ai_keep_false",
-      "count": 30
+      "count": 50
     },
     {
       "reason": "max_items_per_run_reached",

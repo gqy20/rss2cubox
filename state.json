@@ -589,6 +589,56 @@
       "url": "https://openai.com/index/gpt-5-3-instant-system-card",
       "ts": "2026-03-04T07:50:07.415710+00:00",
       "title": "GPT-5.3 Instant System Card"
+    },
+    "4d9b2f8ade4acc5fea45e1573ed3ad0a7feb1583e46af473f73d4b87fdf91d9f": {
+      "url": "https://www.rfc-editor.org/rfc/rfc9849.html",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "RFC 9849. TLS Encrypted Client Hello"
+    },
+    "fd1c40eded8f5889c9bc7dad01e23089ac96ff96826b27515008e21a6012b611": {
+      "url": "https://www.tomshardware.com/pc-components/cpus/intels-make-or-break-18a-process-node-debuts-for-data-center-with-288-core-xeon-6-cpu-multi-chip-monster-sports-12-channels-of-ddr5-8000-foveros-direct-3d-packaging-tech",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "Intel's make-or-break 18A process node debuts for data center with 288-core Xeon"
+    },
+    "a34ca73667694b1cd4db327f369f32cfc7d9f92a6ba917235d4ecade2db254ff": {
+      "url": "https://www.infoq.cn/article/GMXyKiUa5vTrYyFyQIx4",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "Quesma 发布 OTelBench，用于评估 OpenTelemetry 基础设施与 AI 性能"
+    },
+    "998bd5b8bd3a12705ae43e94d8803b9b5428459974893f92d80fa5f2ed543e84": {
+      "url": "https://simonwillison.net/guides/agentic-engineering-patterns/",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "Agentic Engineering Patterns"
+    },
+    "c0213438880f6b9b8304400683b17172ced0409e9ec9041c6bea0621e198b093": {
+      "url": "https://arxiv.org/abs/2603.03251",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "Speculative Speculative Decoding (SSD)"
+    },
+    "dceda3e653c79b291e622ee6443d95143cf4205f08a6bfdb7a38b8ce3274fc70": {
+      "url": "https://openai.com/index/gpt-5-3-instant/",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "GPT‑5.3 Instant"
+    },
+    "0285625ee0d3aba1d90d877599dedf15abf5d6b3715fa7aa444dfa4f1076c31a": {
+      "url": "https://github.com/Ataraxy-Labs/weave",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "Weave – A language aware merge algorithm based on entities"
+    },
+    "704090707738b2221858e009f0b5456c58e7cf18f0f289ed7df1693bf2804181": {
+      "url": "https://blog.google/innovation-and-ai/models-and-research/google-deepmind/tips-prompt-writing-project-genie/",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "Create new worlds in Project Genie with these 4 tips"
+    },
+    "6085e0a9cb508476e1bfce9c51beb50e4198170a3ca73dce05fc04891fb2ac49": {
+      "url": "https://github.com/vladich/pg_jitter",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "Better JIT for Postgres"
+    },
+    "38994a3ab3a25345bc1da3755013c820c24e68fac192344a5be41657ca16afd9": {
+      "url": "https://news.ycombinator.com/item?id=47232903",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "title": "Launch HN: Cekura (YC F24) – Testing and monitoring for voice and chat AI agents"
     }
   },
   "ai": {
@@ -896,28 +946,28 @@
       ]
     },
     "998bd5b8bd3a12705ae43e94d8803b9b5428459974893f92d80fa5f2ed543e84": {
-      "keep": false,
+      "keep": true,
       "score": 0.88,
-      "reason": "AI Agent正从实验走向工程化阶段，需要系统性的工程实践和方法论来支撑大规模部署",
-      "core_event": "Simon Willison发布了一份关于代理工程模式的详细指南",
-      "hidden_signal": "AI Agent正从实验走向工程化阶段，需要系统性的工程实践和方法论来支撑大规模部署",
-      "actionable": "AI/ML工程师应仔细研究此指南，将代理工程模式应用于实际项目，关注自主Agent的工程化实践",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "reason": "AI Agent正从实验阶段迈向工程化生产阶段，此指南标志着行业对智能体可靠性的关注从算法转向系统工程，是AI应用落地的关键里程碑。",
+      "core_event": "Simon Willison发布《Agentic Engineering Patterns》指南，总结AI智能体工程化开发的设计模式。",
+      "hidden_signal": "AI Agent正从实验阶段迈向工程化生产阶段，此指南标志着行业对智能体可靠性的关注从算法转向系统工程，是AI应用落地的关键里程碑。",
+      "actionable": "AI工程师应研究此模式集合，理解agentic workflow的设计原则；重点关注可观测性、工具调用边界控制、状态管理等核心工程问题。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "人工智能",
-        "Agent工程",
-        "软件架构"
+        "软件工程",
+        "智能体"
       ]
     },
     "66185748add014a5fd5baf02f23e9cb21ba5c2ed8dc325d534b03b5efad7cf61": {
       "keep": false,
       "score": 0.35,
-      "reason": "海外技术社区对\"平台工程\"作为提升开发者效能手段的关注度持续上升，但此类讨论文章本身不产生新的技术范式或工具信号。",
-      "core_event": "InfoQ举办虚拟圆桌会议，邀请三位技术专家讨论文化、平台工程与开发者体验在高绩效团队中的作用。",
-      "hidden_signal": "海外技术社区对\"平台工程\"作为提升开发者效能手段的关注度持续上升，但此类讨论文章本身不产生新的技术范式或工具信号。",
-      "actionable": "此类关于团队文化的讨论文章属于常规知识分享，缺乏新技术或新工具的具体信息，不构成技术决策依据。建议关注更具体的工程实践或工具评测内容。",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "reason": "技术工具和流程的效能受限于组织文化，平台工程的成功需要文化支撑，技术与文化协同才能真正提升工程效能。",
+      "core_event": "InfoQ 虚拟圆桌讨论文化、代码与平台在打造高绩效团队中的作用，探讨平台工程与开发者体验对生产力的影响。",
+      "hidden_signal": "技术工具和流程的效能受限于组织文化，平台工程的成功需要文化支撑，技术与文化协同才能真正提升工程效能。",
+      "actionable": "技术领导者应关注团队文化对工程效能的影响，在推行平台工程时同步建设支持性文化，避免技术变革与文化脱节。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "团队文化",
@@ -941,136 +991,132 @@
       ]
     },
     "6085e0a9cb508476e1bfce9c51beb50e4198170a3ca73dce05fc04891fb2ac49": {
-      "keep": false,
-      "score": 0.7,
-      "reason": "",
-      "core_event": "",
-      "hidden_signal": "",
-      "actionable": "PostgreSQL开发者和数据库工程师可关注该项目，评估其对查询性能的提升效果，适时在生产环境中测试",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "keep": true,
+      "score": 0.72,
+      "reason": "PostgreSQL的JIT编译虽已集成但在复杂查询场景下性能仍不理想，此项目尝试填补这一工程优化空白，反映出数据库查询优化从传统执行计划向运行时编译演进的趋势。",
+      "core_event": "开发者vladich发布pg_jitter项目，旨在改进PostgreSQL的JIT即时编译性能。",
+      "hidden_signal": "PostgreSQL的JIT编译虽已集成但在复杂查询场景下性能仍不理想，此项目尝试填补这一工程优化空白，反映出数据库查询优化从传统执行计划向运行时编译演进的趋势。",
+      "actionable": "关注pg_jitter项目进展，若其性能提升显著，可评估其在生产环境中的适用性；PostgreSQL 16+版本已内置JIT支持，建议对比测试实际查询性能差异。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "数据库",
-        "PostgreSQL",
+        "编译器",
         "性能优化"
       ]
     },
     "aa79ada187209e4c113061b320da1c2730dd30dbda163cbd86eeba09131c142b": {
       "keep": false,
-      "score": 0.4,
-      "reason": "Java生态系统保持稳定迭代节奏，JDK 27/JDK 26仍处于早期开发阶段，Jakarta EE 12规范化推进，企业级Java生态无重大突破性变化。",
-      "core_event": "InfoQ发布Java生态资讯摘要，涵盖JDK 27早期访问构建、JDK 26 Build 35、Payara、Hibernate、Quarkus、Apache Camel和Jakarta EE 12等项目版本动态。",
-      "hidden_signal": "Java生态系统保持稳定迭代节奏，JDK 27/JDK 26仍处于早期开发阶段，Jakarta EE 12规范化推进，企业级Java生态无重大突破性变化。",
-      "actionable": "Java生态系统的例行版本更新资讯，对Java版本跟踪无直接价值。建议直接关注JDK官方发布说明或选择性阅读重大版本特性解析。",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "score": 0.22,
+      "reason": "Java 生态持续快速演进，多个项目同步更新，但此类例行版本汇总信息熵较高，属于常规信息消费而非可操作的技术信号。",
+      "core_event": "InfoQ 汇总 Java 近期资讯，包括 JDK 26-RC2、JDK 27 EA Build 10、Payara、Hibernate、Quarkus、Apache Camel、Jakarta EE 12 等版本更新。",
+      "hidden_signal": "Java 生态持续快速演进，多个项目同步更新，但此类例行版本汇总信息熵较高，属于常规信息消费而非可操作的技术信号。",
+      "actionable": "Java 开发者关注 JDK 27/JDK 26 早期构建版本进展，可测试新特性对现有系统的影响，为未来迁移做准备。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "Java",
         "JDK",
-        "企业级框架"
+        "生态更新"
       ]
     },
     "43f80d6cff3fd94469f9533a344738c65359946e898eb8beaac09a1728697338": {
       "keep": false,
-      "score": 0.65,
-      "reason": "",
-      "core_event": "",
-      "hidden_signal": "",
-      "actionable": "图形编程爱好者可利用此资源库系统学习，但需结合实战项目深化理解",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.25,
+      "reason": "此类资源列表本质为知识聚合，非原创研究或行业事件，对技术决策无直接指导价值。",
+      "core_event": "GPVM网站发布图形编程资源合集，涵盖GPU架构、渲染技术、API使用等主题。",
+      "hidden_signal": "此类资源列表本质为知识聚合，非原创研究或行业事件，对技术决策无直接指导价值。",
+      "actionable": "前端/图形工程师可将此资源站加入书签，定期浏览以保持技术广度；建议重点关注WebGPU、Vulkan及光线追踪相关现代图形API。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "图形编程",
-        "学习资源"
+        "图形学",
+        "教育资源"
       ]
     },
     "c0213438880f6b9b8304400683b17172ced0409e9ec9041c6bea0621e198b093": {
-      "keep": false,
-      "score": 0.55,
-      "reason": "投机解码是已知的LLM推理加速技术，SSD可能是在此基础上的增量改进，需阅读论文验证其创新程度。",
-      "core_event": "arXiv发布了一篇关于Speculative Speculative Decoding (SSD)的论文，旨在优化大语言模型推理速度。",
-      "hidden_signal": "投机解码是已知的LLM推理加速技术，SSD可能是在此基础上的增量改进，需阅读论文验证其创新程度。",
-      "actionable": "对于从事LLM推理优化的工程师，可关注该论文是否提出超越现有投机解码的实质性加速方法。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "keep": true,
+      "score": 0.88,
+      "reason": "LLM推理优化进入新阶段——从单次speculation到双重speculation，反映出推理速度已成为大模型落地的关键瓶颈，各方正通过算法创新突破算力限制。",
+      "core_event": "arXiv发布新论文提出Speculative Speculative Decoding (SSD)技术，旨在通过双重 speculative 机制进一步加速大语言模型推理。",
+      "hidden_signal": "LLM推理优化进入新阶段——从单次speculation到双重speculation，反映出推理速度已成为大模型落地的关键瓶颈，各方正通过算法创新突破算力限制。",
+      "actionable": "关注Speculative Decoding领域的最新进展，了解SSD如何在保证输出质量的前提下进一步提升推理速度。该技术可能对LLM推理优化有重要参考价值。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "人工智能",
-        "LLM",
-        "性能优化"
+        "大模型推理",
+        "算法优化",
+        "性能工程"
       ]
     },
     "0285625ee0d3aba1d90d877599dedf15abf5d6b3715fa7aa444dfa4f1076c31a": {
-      "keep": false,
-      "score": 0.45,
-      "reason": "该工具尝试解决代码合并时的语义冲突问题，但属于细分领域的工具型项目，不构成行业范式转变。",
-      "core_event": "",
-      "hidden_signal": "该工具尝试解决代码合并时的语义冲突问题，但属于细分领域的工具型项目，不构成行业范式转变。",
-      "actionable": "无需行动。这是一个针对特定代码合并场景的实验性工具，尚未经过大规模生产环境验证。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "keep": true,
+      "score": 0.82,
+      "reason": "代码合并领域正从纯文本比对向语义理解演进，实体级合并将成为Code AI工具链的基础设施能力。",
+      "core_event": "GitHub开源项目Weave发布，声称是一种基于实体感知的新型语言无关代码合并算法。",
+      "hidden_signal": "代码合并领域正从纯文本比对向语义理解演进，实体级合并将成为Code AI工具链的基础设施能力。",
+      "actionable": "对于构建AI辅助编程工具的团队，可研究Weave的实体感知合并算法如何提升代码合并的语义理解能力，这可能成为下一代代码合并工具的技术方向。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "代码工具",
-        "算法",
-        "开源"
+        "代码智能",
+        "软件开发",
+        "算法"
       ]
     },
     "08e485dd4e23292fc2bd7be767a421f170d2b4e523396e063f37ee62b7a239ee": {
       "keep": false,
       "score": 0.45,
-      "reason": "PHP Foundation组织架构调整，可能预示PHP生态系统进入新的发展阶段。",
-      "core_event": "PHP Foundation任命新执行董事Elizabeth Barron。",
-      "hidden_signal": "PHP Foundation组织架构调整，可能预示PHP生态系统进入新的发展阶段。",
-      "actionable": "关注PHP生态的后续发展，评估对PHP语言发展方向的影响。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "reason": "PHP作为老牌后端语言，其基金会的领导更替对语言发展方向有一定影响，但整体属于社区常规人事新闻，缺乏突破性技术或商业信号。",
+      "core_event": "PHP Foundation宣布Elizabeth Barron担任新任执行董事。",
+      "hidden_signal": "PHP作为老牌后端语言，其基金会的领导更替对语言发展方向有一定影响，但整体属于社区常规人事新闻，缺乏突破性技术或商业信号。",
+      "actionable": "关注Elizabeth Barron的领导方向及其对PHP生态系统的影响，但此类人事任命属于常规社区动态。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "编程语言",
-        "开源组织",
-        "PHP生态"
+        "PHP",
+        "开源社区",
+        "技术基金会"
       ]
     },
     "7b84c81e7d48b1d36bc206a7a50e3980f15b88be7dd08e468466bd8e5bb5815c": {
       "keep": false,
-      "score": 0.35,
-      "reason": "这是Cursor官方的营销内容，展示了AI编程助手在技术支持场景的内部用例，但缺乏第三方验证和深度技术分析，实质上是为产品功能背书的软文。",
-      "core_event": "Cursor官方博客介绍了其技术支持团队如何使用Cursor进行代码查看、日志分析、团队知识管理和过去对话整合，以消除技术支持工作中的上下文收集瓶颈。",
-      "hidden_signal": "这是Cursor官方的营销内容，展示了AI编程助手在技术支持场景的内部用例，但缺乏第三方验证和深度技术分析，实质上是为产品功能背书的软文。",
-      "actionable": "关注AI辅助编程工具在企业支持场景的落地效果，但需注意此内容为Cursor官方博客的营销性质案例研究。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.18,
+      "reason": "产品营销内容，介绍自家工具的使用场景，属于软文性质，不构成技术决策依据。",
+      "core_event": "Cursor 官方博客介绍其技术支持团队如何使用 Cursor 进行技术支持工作。",
+      "hidden_signal": "产品营销内容，介绍自家工具的使用场景，属于软文性质，不构成技术决策依据。",
+      "actionable": "非技术信号，忽略。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI编程工具",
-        "企业应用",
-        "Case Study"
+        "AI 编程",
+        "产品营销"
       ]
     },
     "53f3cc48095725d6d60c72ae3223eabb0d1cd8d8b4fd45b633336f4639882970": {
       "keep": false,
-      "score": 0.35,
-      "reason": "又一款编辑器工具的发布，属于常规工具更新，缺乏显著技术突破或行业影响。",
-      "core_event": "Textadept：一款跨平台、轻量级的文本编辑器发布。",
-      "hidden_signal": "又一款编辑器工具的发布，属于常规工具更新，缺乏显著技术突破或行业影响。",
-      "actionable": "该文本编辑器适合追求轻量级、跨平台编辑环境的开发者，可纳入个人工具链备选。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.15,
+      "reason": "个人工具项目发布，无行业影响。",
+      "core_event": "Textadept编辑器发布新版本更新。",
+      "hidden_signal": "个人工具项目发布，无行业影响。",
+      "actionable": "无需关注。Textadept是一个老旧的轻量级文本编辑器，无技术创新或行业信号。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "开发工具",
-        "文本编辑器"
+        "工具"
       ]
     },
     "099524e2477bb1596eece2f2207a1ef3bb425b6d9cc54f5582afe177dd54e435": {
       "keep": false,
-      "score": 0.35,
-      "reason": "反映当前业界对AI辅助编程方法论的讨论，但缺乏深度技术洞见。",
-      "core_event": "博主发表关于\"vibe coding\"产品经理方法的个人观点。",
-      "hidden_signal": "反映当前业界对AI辅助编程方法论的讨论，但缺乏深度技术洞见。",
-      "actionable": "这类观点性内容对工程师实际工作指导价值有限，可作为行业趋势观察的辅助参考。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.2,
+      "reason": "个人意见，无行业参考价值。",
+      "core_event": "个人博客发表关于vibe coding for PMs的观点文章。",
+      "hidden_signal": "个人意见，无行业参考价值。",
+      "actionable": "无需关注。这是个人博主的观点文章，缺乏技术深度和数据支撑，不构成可执行的行业信号。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI编程",
-        "产品管理",
-        "行业观点"
+        "观点"
       ]
     },
     "a8baaf9f89fb5fe32be73a6965524cd182fb642a65dd470f00d03ddea4c05c6e": {
@@ -1089,18 +1135,18 @@
       ]
     },
     "dceda3e653c79b291e622ee6443d95143cf4205f08a6bfdb7a38b8ce3274fc70": {
-      "keep": false,
-      "score": 0.3,
-      "reason": "可能为虚假信息或钓鱼链接，正版OpenAI产品页面通常在api.openai.com或chat.openai.com域名下。此类信息需谨慎核实。",
-      "core_event": "OpenAI发布名为GPT-5.3 Instant的产品页面。",
-      "hidden_signal": "可能为虚假信息或钓鱼链接，正版OpenAI产品页面通常在api.openai.com或chat.openai.com域名下。此类信息需谨慎核实。",
-      "actionable": "该页面无法访问或不存在，疑似虚假信息。需等待OpenAI官方正式发布后再评估其对AI格局的影响。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "keep": true,
+      "score": 0.88,
+      "reason": "OpenAI持续快速迭代大模型版本，模型能力边界不断扩展，AI竞赛进入以推理效率和成本优化为核心的新阶段，即时推理版本可能意味着推理速度的重大提升。",
+      "core_event": "OpenAI发布GPT-5.3 Instant版本，这是GPT-5系列的最新迭代版本。",
+      "hidden_signal": "OpenAI持续快速迭代大模型版本，模型能力边界不断扩展，AI竞赛进入以推理效率和成本优化为核心的新阶段，即时推理版本可能意味着推理速度的重大提升。",
+      "actionable": "评估GPT-5.3在多模态、长上下文推理、代码生成等关键能力上的实际表现，关注其在企业级应用中的部署成本和延迟特性。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "大语言模型",
-        "AI产品",
-        "信息安全"
+        "AI推理",
+        "OpenAI"
       ]
     },
     "f68b17b27f6cb1b0089daba5797aa49bffbe19cd14c9c5515c6d5fa25650de61": {
@@ -1120,73 +1166,71 @@
     },
     "96ed1cf1f0b3a0dc3d4701c858c199f9935c081efc895716a09914ce7aef3ff6": {
       "keep": false,
-      "score": 0.2,
-      "reason": "这是一篇被重新分享的历史学术文献，属于怀旧性质的技术内容，不反映当前编程语言领域的最新进展。",
-      "core_event": "加州大学戴维斯分校发布了一份1974年的编程语言设计经典论文。",
-      "hidden_signal": "这是一篇被重新分享的历史学术文献，属于怀旧性质的技术内容，不反映当前编程语言领域的最新进展。",
-      "actionable": "无需行动。这是1974年的编程语言设计历史论文，对当前工程实践无直接指导意义。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.1,
+      "reason": "历史文献存档，无当前技术价值。",
+      "core_event": "UC Davis发布1974年编程语言设计论文的PDF扫描件。",
+      "hidden_signal": "历史文献存档，无当前技术价值。",
+      "actionable": "无需采取行动。这是1974年的编程语言设计历史文献，属于学术存档性质，不提供当前技术信号。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "编程语言",
-        "学术",
         "历史"
       ]
     },
     "17814b3cac7f8ed624f1271dadcb03fe75da9575a8a282fbc457928a9dd4011b": {
       "keep": false,
-      "score": 0.2,
-      "reason": "信息不足，无法判断其技术价值或行业意义。",
-      "core_event": "Number Research Inc公司主页。",
-      "hidden_signal": "信息不足，无法判断其技术价值或行业意义。",
-      "actionable": "需要更多背景信息来评估其价值，目前无法判断该公司的技术方向。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.1,
+      "reason": "该信息源不提供任何可分析的技术信号，属于噪音内容。",
+      "core_event": "Number Research Inc是一个未提供具体产品或技术信息的网站。",
+      "hidden_signal": "该信息源不提供任何可分析的技术信号，属于噪音内容。",
+      "actionable": "无需特别关注，该网站缺乏实质性技术内容，属于低价值信息源。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "未分类"
+        "低价值"
       ]
     },
     "1ad4c5158f8c6e0e7523cf8c4dea4865256159158a8225c6a31cb7d25383e8f3": {
       "keep": false,
-      "score": 0.15,
-      "reason": "消费级硬件社区内容，与技术/商业信号分析目标无关。",
-      "core_event": "少数派Matrix社区发布第131期内容摘要，包含派友一月购物分享及桌面风扇改造等消费类内容。",
-      "hidden_signal": "消费级硬件社区内容，与技术/商业信号分析目标无关。",
-      "actionable": "消费电子产品爱好者社区内容，无工程或商业价值。忽略此类内容以保持信息摄入效率。",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "score": 0.08,
+      "reason": "消费电子爱好者社区的日常分享内容，与技术信号无关，属于噪声。",
+      "core_event": "少数派 Matrix 社区第 131 期内容汇总，包含派友一月购物分享、桌面风扇 DIY 项目等社区内容。",
+      "hidden_signal": "消费电子爱好者社区的日常分享内容，与技术信号无关，属于噪声。",
+      "actionable": "非相关消费级内容，无需技术领域从业者关注。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "消费电子",
-        "社区内容"
+        "社区",
+        "消费电子"
       ]
     },
     "c88d7d50c4f66a9fd2d073cdeaa2143e418f653ba8ef2f1b28292b4ff7fa9e26": {
       "keep": false,
-      "score": 0.15,
-      "reason": "这是苹果芯片的例行迭代升级，M5系列继续沿用台积电3nm工艺节点，未出现架构或制程上的突破性变化。",
-      "core_event": "苹果公司发布了搭载全新M5 Pro和M5 Max芯片的新款MacBook Pro。",
-      "hidden_signal": "这是苹果芯片的例行迭代升级，M5系列继续沿用台积电3nm工艺节点，未出现架构或制程上的突破性变化。",
-      "actionable": "无需行动。这是苹果公司的常规产品迭代发布，不构成对工程师或技术专业人员的技术决策影响。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.3,
+      "reason": "此为常规产品迭代公告，芯片性能提升属于预期内的硬件升级，未揭示新的技术范式或产业变革信号。",
+      "core_event": "苹果发布搭载M5 Pro和M5 Max芯片的新款MacBook Pro。",
+      "hidden_signal": "此为常规产品迭代公告，芯片性能提升属于预期内的硬件升级，未揭示新的技术范式或产业变革信号。",
+      "actionable": "苹果产品更新对后端/系统工程师影响有限；若涉及macOS开发，建议关注Metal 3更新对图形性能的影响。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "消费电子",
-        "芯片",
-        "硬件"
+        "硬件",
+        "苹果生态"
       ]
     },
     "410e131841318c584b555e397705626c91a292ed517c8fc84de88b9a85fc299a": {
       "keep": false,
       "score": 0.1,
-      "reason": "地质现象报道，与技术行业无直接关系，不产生技术信号。",
-      "core_event": "美国地质调查局报道Echinus间歇泉近期活动频繁。",
-      "hidden_signal": "地质现象报道，与技术行业无直接关系，不产生技术信号。",
-      "actionable": "非技术类新闻，与科技从业者日常工作无直接关联。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "reason": "该内容属于地球科学/自然现象报道，与技术产业或商业 intelligence 无关，属于噪音。",
+      "core_event": "美国地质调查局黄石火山观测站报道称埃基努斯间歇泉（最大酸性间歇泉）重新活跃喷发。",
+      "hidden_signal": "该内容属于地球科学/自然现象报道，与技术产业或商业 intelligence 无关，属于噪音。",
+      "actionable": "忽略此类纯自然科普内容，专注于技术产业信号。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "地质学",
-        "自然科学"
+        "地球科学",
+        "自然奇观"
       ]
     },
     "96291259b42ef971c04882be73eb25d29a48414a37571fa5cdf4f903268c15ca": {
@@ -1250,105 +1294,195 @@
       ]
     },
     "704090707738b2221858e009f0b5456c58e7cf18f0f289ed7df1693bf2804181": {
-      "keep": false,
-      "score": 0.52,
-      "reason": "Project Genie作为一个实验性界面展示了AI在3D/360度内容生成领域的探索，但距离实际工程应用仍有较大距离，属于前瞻性研究项目。",
-      "core_event": "Google DeepMind分享了使用Project Genie创建新世界的四个提示写作技巧。",
-      "hidden_signal": "Project Genie作为一个实验性界面展示了AI在3D/360度内容生成领域的探索，但距离实际工程应用仍有较大距离，属于前瞻性研究项目。",
-      "actionable": "该内容为产品使用技巧类文章，工程师可快速浏览了解新工具特性，但无需深入研究，属于低优先级信息。",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "keep": true,
+      "score": 0.75,
+      "reason": "生成式AI从2D图像/视频向3D交互式世界扩展，文字转3D世界技术可能成为下一代AI应用的重要方向，但目前仍处于研究早期阶段。",
+      "core_event": "Google DeepMind发布Project Genie实验性界面，用户可通过文字描述创建3D可探索世界。",
+      "hidden_signal": "生成式AI从2D图像/视频向3D交互式世界扩展，文字转3D世界技术可能成为下一代AI应用的重要方向，但目前仍处于研究早期阶段。",
+      "actionable": "关注Google在生成式AI创建交互式3D世界方面的研究进展，评估其对游戏、模拟训练、虚拟现实等领域的潜在影响。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI生成",
-        "实验性研究",
-        "3D内容"
+        "生成式AI",
+        "3D生成",
+        "Google DeepMind"
       ]
     },
     "07d6f9e914cfec016d53b65640861ef2e2580cc5478df8f1c76266147686484b": {
       "keep": false,
       "score": 0.2,
-      "reason": "这是典型的云服务商运营状态通知，仅表明服务曾短暂不可用，未披露任何技术根本原因或架构影响。",
-      "core_event": "AnthropicClaudeOpus4.6模型在3月3日出现错误并已被修复。",
-      "hidden_signal": "这是典型的云服务商运营状态通知，仅表明服务曾短暂不可用，未披露任何技术根本原因或架构影响。",
-      "actionable": "无需行动。这是已解决的服务状态更新，不包含可操作的技术细节。",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "reason": "多平台同时受影响，进一步印证3月3日可能存在基础设施层面的共性问题，但缺乏技术细节。",
+      "core_event": "Claude.ai、Claude Code等多个平台出现错误率升高，现已解决。",
+      "hidden_signal": "多平台同时受影响，进一步印证3月3日可能存在基础设施层面的共性问题，但缺乏技术细节。",
+      "actionable": "无需行动。此为已解决的服务错误公告，无深层技术情报价值。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI服务",
-        "运维",
-        "服务状态"
+        "AI平台",
+        "运维事故"
       ]
     },
     "f9b2257851caf42f87a5963306ddf974bd6aaf68efbbfd86310ff86fa1848859": {
       "keep": false,
-      "score": 0.15,
-      "reason": "Claude Code常规更新，无重大功能变化",
-      "core_event": "",
-      "hidden_signal": "Claude Code常规更新，无重大功能变化",
-      "actionable": "无需关注，这是常规版本迭代",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "score": 0.35,
+      "reason": "Claude Code作为面向开发者的AI编程助手持续迭代，但单一版本号更新缺乏具体功能说明，信息价值有限。",
+      "core_event": "Anthropic发布Claude Code v2.1.66版本更新。",
+      "hidden_signal": "Claude Code作为面向开发者的AI编程助手持续迭代，但单一版本号更新缺乏具体功能说明，信息价值有限。",
+      "actionable": "关注Anthropic Claude Code的更新日志和功能变化，评估其作为开发者工具的实用性和稳定性改进。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "开发者工具"
+        "AI编程助手",
+        "Anthropic"
       ]
     },
     "9964d545508ee012a049e838791c131005e9706bce6098674466857cbdc2e12c": {
       "keep": false,
-      "score": 0.15,
-      "reason": "这是典型的云服务商运营状态通知，仅表明服务曾短暂不可用，未披露任何技术根本原因或架构影响。",
-      "core_event": "AnthropicClaude服务状态页面显示其多个产品（claude.ai、claude code、cowork、platform）在3月3日发生错误并已被修复。",
-      "hidden_signal": "这是典型的云服务商运营状态通知，仅表明服务曾短暂不可用，未披露任何技术根本原因或架构影响。",
-      "actionable": "无需行动。这是已解决的服务状态更新，不包含可操作的技术细节。",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "score": 0.2,
+      "reason": "Opus 4.6与Sonnet 4.6、Haiku 4.5同天出现问题，可能存在共性基础设施问题，但未披露。",
+      "core_event": "Claude Opus 4.6模型出现错误率升高问题，现已解决。",
+      "hidden_signal": "Opus 4.6与Sonnet 4.6、Haiku 4.5同天出现问题，可能存在共性基础设施问题，但未披露。",
+      "actionable": "无需行动。此为已解决的服务错误公告，无深层技术情报价值。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "云计算",
-        "运维",
-        "服务状态"
+        "AI模型",
+        "运维事故"
       ]
     },
     "f04333c73261b8c3e351f4ec9904dba86c59ba1049d6733c09e3ce0ddfc407ed": {
       "keep": false,
-      "score": 0.05,
-      "reason": "Claude服务暂时不可用但已修复",
-      "core_event": "",
-      "hidden_signal": "Claude服务暂时不可用但已修复",
-      "actionable": "无需关注，这是已解决的服务状态事件",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "score": 0.15,
+      "reason": "Claude后台计费系统存在稳定性风险，但作为已解决的状态页面公告，缺乏深度技术分析。",
+      "core_event": "Claude_usage_reporting服务出现故障，admin API和成本报告受影响，团队已实施修复并监控恢复。",
+      "hidden_signal": "Claude后台计费系统存在稳定性风险，但作为已解决的状态页面公告，缺乏深度技术分析。",
+      "actionable": "无需行动。此为Claude服务状态页面例行事故更新，无实质技术情报价值。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "云服务"
+        "云计算服务",
+        "运维事故"
       ]
     },
     "51e97a41bb85bbcf69f055650de5cf578b040f48ceb2dba4aa4a1dc416400e6d": {
       "keep": false,
-      "score": 0.05,
-      "reason": "Claude Sonnet 4.6服务已恢复正常",
-      "core_event": "",
-      "hidden_signal": "Claude Sonnet 4.6服务已恢复正常",
-      "actionable": "无需关注，这是已解决的历史事件",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "score": 0.1,
+      "reason": "单一模型偶发错误，无根因披露，无法判断是模型本身问题还是基础设施问题。",
+      "core_event": "Claude Sonnet 4.6模型出现错误率升高问题，现已解决。",
+      "hidden_signal": "单一模型偶发错误，无根因披露，无法判断是模型本身问题还是基础设施问题。",
+      "actionable": "无需行动。此为已解决的服务错误公告，无深层技术情报价值。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "云服务"
+        "AI模型",
+        "运维事故"
       ]
     },
     "67950134f0b8ccb3908724ca05257700a5ea7f1b11549d6b34c94c0f918601c2": {
       "keep": false,
-      "score": 0.05,
-      "reason": "Claude Haiku 4.5服务已恢复正常",
-      "core_event": "",
-      "hidden_signal": "Claude Haiku 4.5服务已恢复正常",
-      "actionable": "无需关注，这是已解决的历史事件",
-      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "score": 0.1,
+      "reason": "Haiku模型偶发错误，与Sonnet 4.6同一天出现问题，但无关联分析。",
+      "core_event": "Claude Haiku 4.5模型出现错误率升高问题，现已解决。",
+      "hidden_signal": "Haiku模型偶发错误，与Sonnet 4.6同一天出现问题，但无关联分析。",
+      "actionable": "无需行动。此为已解决的服务错误公告，无深层技术情报价值。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "云服务"
+        "AI模型",
+        "运维事故"
+      ]
+    },
+    "4d9b2f8ade4acc5fea45e1573ed3ad0a7feb1583e46af473f73d4b87fdf91d9f": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "ECH填补了TLS 1.3中Server Name Indication (SNI)明文暴露的隐私漏洞，这是TLS协议隐私保护能力的重大升级，将对互联网隐私基础设施产生深远影响。",
+      "core_event": "IETF正式发布RFC 9849，将TLS加密客户端问候(ECH)确立为互联网标准。",
+      "hidden_signal": "ECH填补了TLS 1.3中Server Name Indication (SNI)明文暴露的隐私漏洞，这是TLS协议隐私保护能力的重大升级，将对互联网隐私基础设施产生深远影响。",
+      "actionable": "安全工程师应关注RFC 9849标准化进展，评估服务端与客户端对ECH的支持时间表；可在测试环境中部署验证TLS握手隐私保护效果。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "网络安全",
+        "TLS/SSL",
+        "隐私计算"
+      ]
+    },
+    "fd1c40eded8f5889c9bc7dad01e23089ac96ff96826b27515008e21a6012b611": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Intel通过18A节点和先进封装技术试图在数据中心市场实现技术追赶，3D堆叠封装将改变高性能计算芯片设计范式，chiplet架构成为数据中心CPU主流方向。",
+      "core_event": "Intel正式发布18A工艺节点及288核Xeon 6数据中心处理器，采用Foveros Direct 3D封装技术，提供12通道DDR5 8000内存支持。",
+      "hidden_signal": "Intel通过18A节点和先进封装技术试图在数据中心市场实现技术追赶，3D堆叠封装将改变高性能计算芯片设计范式，chiplet架构成为数据中心CPU主流方向。",
+      "actionable": "关注Intel 18A工艺的实际性能数据和良率表现，评估其与台积电3nm制程的竞争力，关注Xeon 6服务器平台的企业采纳情况。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "半导体制造",
+        "数据中心",
+        "先进封装"
+      ]
+    },
+    "a34ca73667694b1cd4db327f369f32cfc7d9f92a6ba917235d4ecade2db254ff": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "可观测性基础设施正从手动运维向 AI 自动化演进，OTelBench 提供了一个可量化的基准来衡量这一转变的效率，标志着可观测性领域的下一个范式转变：AI 驱动的 SRE。",
+      "core_event": "Quesma 发布开源基准测试套件 OTelBench，用于评估 OpenTelemetry 管道性能及 AI 代理在可观测性配置中的效率。",
+      "hidden_signal": "可观测性基础设施正从手动运维向 AI 自动化演进，OTelBench 提供了一个可量化的基准来衡量这一转变的效率，标志着可观测性领域的下一个范式转变：AI 驱动的 SRE。",
+      "actionable": "平台工程师应评估 OTelBench 用于建立可观测性基础设施的性能基准，特别是在高流量场景下识别 OTel Collector 瓶颈。结合 AI 代理能力，可探索自动化 SRE 任务的可能性。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "可观测性",
+        "AI 自动化",
+        "性能工程"
+      ]
+    },
+    "38994a3ab3a25345bc1da3755013c820c24e68fac192344a5be41657ca16afd9": {
+      "keep": true,
+      "score": 0.72,
+      "reason": "AI代理(Agent)正在从模型层向应用层和工具层演进，质量测试/监控成为新兴需求赛道，反映了AI产业从研发向规模化部署的关键基础设施建设趋势。",
+      "core_event": "YC F24批次初创公司Cekura正式发布，提供语音和聊天AI代理的测试与监控服务。",
+      "hidden_signal": "AI代理(Agent)正在从模型层向应用层和工具层演进，质量测试/监控成为新兴需求赛道，反映了AI产业从研发向规模化部署的关键基础设施建设趋势。",
+      "actionable": "关注AI代理(Agent)质量测试这一新兴赛道，评估其技术差异化及市场潜力，但本质上仍是YC初创公司的产品发布。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI代理",
+        "质量测试",
+        "YC创业"
+      ]
+    },
+    "0462d86adddeecaf121cbe918707b585be74fab257296af7273c338dd90c11da": {
+      "keep": false,
+      "score": 0.25,
+      "reason": "该内容为2019年旧文的重新分享，缺乏时效性，未提供新的技术洞见或产业信号，属于低价值噪音。",
+      "core_event": "一篇2019年关于\"Circle Games\"的博客文章被重新分享到Hacker News。",
+      "hidden_signal": "该内容为2019年旧文的重新分享，缺乏时效性，未提供新的技术洞见或产业信号，属于低价值噪音。",
+      "actionable": "此类旧文重发无实质新信息，可忽略。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "历史文章",
+        "技术博客"
+      ]
+    },
+    "2ee15f155b3c745e315a49077797fac4e0a93258748eac93932753d8565a78de": {
+      "keep": false,
+      "score": 0.05,
+      "reason": "个人生活/兴趣社区内容，与技术产业无任何关联，属于明显噪音。",
+      "core_event": "博主宣布无限期停止运营读书俱乐部。",
+      "hidden_signal": "个人生活/兴趣社区内容，与技术产业无任何关联，属于明显噪音。",
+      "actionable": "忽略个人博客/生活类内容。",
+      "ts": "2026-03-04T08:03:39.840951+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "个人博客",
+        "生活"
       ]
     }
   },
   "feed_cursor": {
-    "/infoq/recommend": "2026-03-04T07:20:21+00:00",
+    "/infoq/recommend": "2026-03-04T08:00:00+00:00",
     "/juejin/trending/ai/weekly": "2026-03-02T01:12:54+00:00",
     "/sspai/index": "2026-03-04T07:00:46+00:00",
     "/anthropic/engineering": "2026-02-04T16:00:00+00:00",
@@ -1373,148 +1507,130 @@
   },
   "feed_failures": {
     "/anthropic/research": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.934786+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688180+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.934795+00:00"
+      "updated_at": "2026-03-04T08:04:50.688191+00:00"
     },
     "/modelscope/models": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935248+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688653+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935253+00:00"
+      "updated_at": "2026-03-04T08:04:50.688657+00:00"
     },
     "/producthunt/today": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935380+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688723+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935386+00:00"
+      "updated_at": "2026-03-04T08:04:50.688726+00:00"
     },
     "/github/topics/llm": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935426+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688739+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935433+00:00"
+      "updated_at": "2026-03-04T08:04:50.688742+00:00"
     },
     "/github/topics/agents": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935473+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688755+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935480+00:00"
+      "updated_at": "2026-03-04T08:04:50.688757+00:00"
     },
     "/hellogithub/volume": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935517+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688772+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935524+00:00"
+      "updated_at": "2026-03-04T08:04:50.688775+00:00"
     },
     "/hellogithub/home/featured": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935560+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688788+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935567+00:00"
+      "updated_at": "2026-03-04T08:04:50.688790+00:00"
     },
     "/juejin/aicoding": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935605+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688803+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935611+00:00"
+      "updated_at": "2026-03-04T08:04:50.688806+00:00"
     },
     "/twitter/user/karpathy": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935649+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688818+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935656+00:00"
+      "updated_at": "2026-03-04T08:04:50.688820+00:00"
     },
     "/twitter/user/fchollet": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935692+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688833+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935716+00:00"
+      "updated_at": "2026-03-04T08:04:50.688835+00:00"
     },
     "/twitter/user/soumithchintala": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935759+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688847+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935766+00:00"
+      "updated_at": "2026-03-04T08:04:50.688850+00:00"
     },
     "/twitter/user/rasbt": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935804+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688862+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935811+00:00"
+      "updated_at": "2026-03-04T08:04:50.688865+00:00"
     },
     "/twitter/user/ylecun": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935848+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688877+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935855+00:00"
+      "updated_at": "2026-03-04T08:04:50.688879+00:00"
     },
     "/twitter/user/demishassabis": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935891+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688891+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935898+00:00"
+      "updated_at": "2026-03-04T08:04:50.688893+00:00"
     },
     "/twitter/user/Yoshua_Bengio": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935936+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688905+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935942+00:00"
+      "updated_at": "2026-03-04T08:04:50.688907+00:00"
     },
     "/twitter/user/sama": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.935979+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688919+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935986+00:00"
+      "updated_at": "2026-03-04T08:04:50.688922+00:00"
     },
     "/twitter/user/AndrewYNg": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.936025+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688934+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.936032+00:00"
+      "updated_at": "2026-03-04T08:04:50.688936+00:00"
     },
     "/twitter/user/JeremyHoward": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.936069+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688948+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.936075+00:00"
+      "updated_at": "2026-03-04T08:04:50.688950+00:00"
     },
     "/twitter/user/swyx": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.936111+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688963+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.936117+00:00"
+      "updated_at": "2026-03-04T08:04:50.688965+00:00"
     },
     "/twitter/user/simonw": {
-      "count": 4,
-      "cooldown_until": "2026-03-04T07:59:16.936154+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-04T08:20:50.688977+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.936161+00:00"
+      "updated_at": "2026-03-04T08:04:50.688979+00:00"
     },
     "https://community.openai.com/c/announcements.rss": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:55:16.936374+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T08:12:50.689054+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.936382+00:00"
-    },
-    "/cursor/changelog": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T07:52:16.935080+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935086+00:00"
-    },
-    "/cursor/blog": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T07:52:16.935123+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935129+00:00"
-    },
-    "/hackernews": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T07:52:16.935337+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:51:16.935343+00:00"
+      "updated_at": "2026-03-04T08:04:50.689056+00:00"
     }
   }
 }
