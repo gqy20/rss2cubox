@@ -253,6 +253,7 @@ def process_candidates_for_push(
             "drop_reason": "",
             "pushed": False,
             "tags": [],
+            "enriched": False,
         }
         if stats["pushed"] >= max_items_per_run:
             event["status"] = "dropped"
@@ -294,6 +295,7 @@ def process_candidates_for_push(
             core_event = str(result.get("core_event", ""))
             hidden_signal = str(result.get("hidden_signal", ""))
             actionable = str(result.get("actionable", ""))
+            enriched = bool(result.get("enriched", False))
             
             event["keep"] = keep
             event["score"] = score
@@ -302,6 +304,7 @@ def process_candidates_for_push(
             event["hidden_signal"] = hidden_signal
             event["actionable"] = actionable
             event["reason"] = reason
+            event["enriched"] = enriched
             action = "keep" if keep and score >= ai_min_score else "drop"
             log_event(
                 "INFO",
@@ -325,6 +328,7 @@ def process_candidates_for_push(
                 "ts": now_iso,
                 "model": ai_model,
                 "tags": event["tags"],
+                "enriched": enriched,
             }
             if not keep:
                 stats["ai_dropped_keep_false"] += 1

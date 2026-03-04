@@ -89,7 +89,7 @@ def build_ai_items(candidates: list[dict]) -> list[dict]:
                 "eid": c["eid"],
                 "url": c["url"],
                 "title": c["title"],
-                "description": c["description"][:800],
+                "description": c["description"][:5000],
             }
         )
     return items

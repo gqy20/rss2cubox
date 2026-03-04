@@ -79,6 +79,7 @@ def _normalize_event_row(row: dict[str, Any]) -> dict[str, Any] | None:
         'status': status,
         'drop_reason': drop_reason,
         'pushed': bool(row.get('pushed', False)),
+        'enriched': bool(row.get('enriched', False)),
         'tags': tags,
         'core_event': str(row.get('core_event', '') or ''),
         'hidden_signal': str(row.get('hidden_signal', '') or ''),
@@ -178,6 +179,7 @@ def build_updates(state: dict[str, Any], limit: int) -> list[dict[str, Any]]:
                 'actionable': ai_result.get('actionable', '') if isinstance(ai_result, dict) else '',
                 'reason': ai_result.get('reason', '') if isinstance(ai_result, dict) else '',
                 'tags': ai_result.get('tags', []) if isinstance(ai_result, dict) else [],
+                'enriched': bool(ai_result.get('enriched', False)) if isinstance(ai_result, dict) else False,
             }
         )
 

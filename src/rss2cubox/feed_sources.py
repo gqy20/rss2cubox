@@ -383,8 +383,8 @@ def parse_feed_spec(
         title = entry.get("title", "") or ""
         description = (entry.get("summary", "") or "").strip()
         cover_url = extract_cover_url(entry, url)
-        if len(description) > 600:
-            description = description[:600] + "..."
+        if len(description) > 5000:
+            description = description[:5000] + "..."
         candidates.append(
             {
                 "eid": eid,
