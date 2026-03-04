@@ -554,6 +554,41 @@
       "url": "https://www.qbitai.com/2026/03/383565.html",
       "ts": "2026-03-04T07:28:06.006543+00:00",
       "title": "今年最值得关注的AI榜单来啦！申报即日启动"
+    },
+    "795e9670c7fd5a15406bb0dbdd62dbc441a53e9b533199aeb9678a433e765bb7": {
+      "url": "https://colossus.com/article/inside-cursor/",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "title": "Inside Cursor: Sixty Days with the AI Coding Decacorn"
+    },
+    "96291259b42ef971c04882be73eb25d29a48414a37571fa5cdf4f903268c15ca": {
+      "url": "https://deepmind.google/blog/gemini-3-1-flash-lite-built-for-intelligence-at-scale/",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "title": "Gemini 3.1 Flash-Lite: Built for intelligence at scale"
+    },
+    "916d56b48c29b07653fe465d46903151616806df121c077b24ed0a5a2c59b80d": {
+      "url": "https://sspai.com/post/106477",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "title": "从采集到回顾，我用 AI 搭建了一套个人信息处理系统"
+    },
+    "a8baaf9f89fb5fe32be73a6965524cd182fb642a65dd470f00d03ddea4c05c6e": {
+      "url": "https://www.fastcompany.com/91271112/anysphere-most-innovative-companies-2025",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "title": "How AI Coding Tool Cursor is Changing the Way Developers Work"
+    },
+    "cad1527f95f16233e7e79cb95a775b2bc8599401cd701bd1984f954b3fd763b1": {
+      "url": "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-3-1-flash-lite/",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "title": "Gemini 3.1 Flash-Lite: Built for intelligence at scale"
+    },
+    "46b3e364b73731677062f4a9768f7e118174d4b13989c0d576352836c297c4f5": {
+      "url": "https://openai.com/index/gpt-5-3-instant",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "title": "GPT-5.3 Instant: Smoother, more useful everyday conversations"
+    },
+    "b4a245738a8f15bbdebab3ef1373fcf79551da4eab3fe1224e5ae079f72fc8af": {
+      "url": "https://openai.com/index/gpt-5-3-instant-system-card",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "title": "GPT-5.3 Instant System Card"
     }
   },
   "ai": {
@@ -847,17 +882,17 @@
     },
     "795e9670c7fd5a15406bb0dbdd62dbc441a53e9b533199aeb9678a433e765bb7": {
       "keep": true,
-      "score": 0.58,
-      "reason": "第三方科技媒体对AI编程独角兽Cursor的深度体验报道，反映了AI编程工具市场的热度以及投资者和媒体对此领域的关注，但需阅读正文判断内容深度。",
-      "core_event": "Colossus发布了对Cursor的深度体验文章，标题为《Inside Cursor: Sixty Days with the AI Coding Decacorn》，作者为Brie Wolfson。",
-      "hidden_signal": "第三方科技媒体对AI编程独角兽Cursor的深度体验报道，反映了AI编程工具市场的热度以及投资者和媒体对此领域的关注，但需阅读正文判断内容深度。",
-      "actionable": "无需立即采取行动，作为行业观察关注即可，了解AI编程助手市场的竞争态势和产品演进方向。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.9,
+      "reason": "AI代码编辑器市场已进入实际应用验证阶段。Cursor作为代表性产品获得\"Decacorn\"（百亿估值）地位，反映资本市场对AI编程工具的持续看好，也标志着AI辅助编码从概念验证进入产品化竞争。",
+      "core_event": "Colossus发布文章分享作者60天使用AI编程独角兽Cursor的深度体验。",
+      "hidden_signal": "AI代码编辑器市场已进入实际应用验证阶段。Cursor作为代表性产品获得\"Decacorn\"（百亿估值）地位，反映资本市场对AI编程工具的持续看好，也标志着AI辅助编码从概念验证进入产品化竞争。",
+      "actionable": "关注AI代码编辑器领域的实际使用反馈。Cursor作为AI编程工具的代表性产品，其用户体验和工程实践对其他AI辅助开发工具的设计有参考价值。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI编程工具",
-        "行业观察",
-        "市场趋势"
+        "AI编程",
+        "开发者工具",
+        "Cursor"
       ]
     },
     "998bd5b8bd3a12705ae43e94d8803b9b5428459974893f92d80fa5f2ed543e84": {
@@ -877,32 +912,32 @@
     },
     "66185748add014a5fd5baf02f23e9cb21ba5c2ed8dc325d534b03b5efad7cf61": {
       "keep": false,
-      "score": 0.72,
-      "reason": "技术团队管理正从单纯强调工具和流程转向重视文化和开发者体验，这是软件工程管理范式的重要演进，平台工程正在成为连接技术架构与团队效能的关键纽带。",
-      "core_event": "InfoQ举办虚拟圆桌讨论，探讨文化、代码与平台在高绩效团队中的作用，分享通过平台工程提升开发者效能的实践经验。",
-      "hidden_signal": "技术团队管理正从单纯强调工具和流程转向重视文化和开发者体验，这是软件工程管理范式的重要演进，平台工程正在成为连接技术架构与团队效能的关键纽带。",
-      "actionable": "技术领导者应重新审视团队文化对生产力的影响，将文化建设纳入技术战略，关注平台工程和开发者体验优化在实际团队管理中的落地效果。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.35,
+      "reason": "海外技术社区对\"平台工程\"作为提升开发者效能手段的关注度持续上升，但此类讨论文章本身不产生新的技术范式或工具信号。",
+      "core_event": "InfoQ举办虚拟圆桌会议，邀请三位技术专家讨论文化、平台工程与开发者体验在高绩效团队中的作用。",
+      "hidden_signal": "海外技术社区对\"平台工程\"作为提升开发者效能手段的关注度持续上升，但此类讨论文章本身不产生新的技术范式或工具信号。",
+      "actionable": "此类关于团队文化的讨论文章属于常规知识分享，缺乏新技术或新工具的具体信息，不构成技术决策依据。建议关注更具体的工程实践或工具评测内容。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "工程管理",
         "团队文化",
-        "平台工程"
+        "平台工程",
+        "开发者体验"
       ]
     },
     "916d56b48c29b07653fe465d46903151616806df121c077b24ed0a5a2c59b80d": {
-      "keep": false,
-      "score": 0.7,
-      "reason": "AI辅助的工具构建正在降低个人开发者构建定制化系统的门槛，提示词工程和AI协作已成为比传统编程更重要的技能，但具体代码实现的生命周期正在缩短。",
-      "core_event": "开发者分享使用AI搭建个人信息处理系统的完整实践，涵盖从信息采集到回顾的全流程，包括多个自定义工具的设计与实现。",
-      "hidden_signal": "AI辅助的工具构建正在降低个人开发者构建定制化系统的门槛，提示词工程和AI协作已成为比传统编程更重要的技能，但具体代码实现的生命周期正在缩短。",
-      "actionable": "技术从业者可借鉴其个人信息处理系统的设计思路，但在当前Coding Agent快速发展背景下，应更关注如何利用最新AI工具快速构建个性化工作流，而非执着于具体代码实现。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "keep": true,
+      "score": 0.88,
+      "reason": "AI编程工具正在降低个人开发者构建完整软件系统的门槛，标志AI Agent从辅助编码向系统级开发的范式转变。这一趋势将加速\"人人都是开发者\"时代的到来。",
+      "core_event": "少数派作者分享其利用AI（Claude Code等）搭建个人个人信息处理系统的经历，涵盖从需求采集到系统回顾的完整实践。",
+      "hidden_signal": "AI编程工具正在降低个人开发者构建完整软件系统的门槛，标志AI Agent从辅助编码向系统级开发的范式转变。这一趋势将加速\"人人都是开发者\"时代的到来。",
+      "actionable": "AI辅助编程正从简单代码补全向完整系统构建演进，个人开发者借助AI可快速搭建定制化工具。工程师可考虑用AI Coding Agent构建个人工作流辅助工具，但需注意具体代码实现可能快速过时。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI工具",
-        "个人知识管理",
-        "提示词工程"
+        "AI编程",
+        "个人工具",
+        "Coding Agent"
       ]
     },
     "6085e0a9cb508476e1bfce9c51beb50e4198170a3ca73dce05fc04891fb2ac49": {
@@ -922,12 +957,12 @@
     },
     "aa79ada187209e4c113061b320da1c2730dd30dbda163cbd86eeba09131c142b": {
       "keep": false,
-      "score": 0.65,
-      "reason": "Java生态系统仍在持续快速演进，Jakarta EE和企业级框架的更新表明Java在企业级市场的地位稳固，但需要关注云原生和轻量化方向的发展趋势。",
-      "core_event": "Java生态近期更新汇总：JDK 27发布Build 10早期访问版本，JDK 26维持Build 35，同时包含Payara、Hibernate、Quarkus、Apache Camel等框架和Jakarta EE 12的动态。",
-      "hidden_signal": "Java生态系统仍在持续快速演进，Jakarta EE和企业级框架的更新表明Java在企业级市场的地位稳固，但需要关注云原生和轻量化方向的发展趋势。",
-      "actionable": "Java开发者应关注JDK 27的演进方向，特别是Build 10中的更新内容，评估新特性对现有系统的影响，同时关注Jakarta EE 12的进展以把握企业级Java的未来走向。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "score": 0.4,
+      "reason": "Java生态系统保持稳定迭代节奏，JDK 27/JDK 26仍处于早期开发阶段，Jakarta EE 12规范化推进，企业级Java生态无重大突破性变化。",
+      "core_event": "InfoQ发布Java生态资讯摘要，涵盖JDK 27早期访问构建、JDK 26 Build 35、Payara、Hibernate、Quarkus、Apache Camel和Jakarta EE 12等项目版本动态。",
+      "hidden_signal": "Java生态系统保持稳定迭代节奏，JDK 27/JDK 26仍处于早期开发阶段，Jakarta EE 12规范化推进，企业级Java生态无重大突破性变化。",
+      "actionable": "Java生态系统的例行版本更新资讯，对Java版本跟踪无直接价值。建议直接关注JDK官方发布说明或选择性阅读重大版本特性解析。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "Java",
@@ -1039,18 +1074,18 @@
       ]
     },
     "a8baaf9f89fb5fe32be73a6965524cd182fb642a65dd470f00d03ddea4c05c6e": {
-      "keep": false,
-      "score": 0.3,
-      "reason": "Cursor获得媒体荣誉认可，反映其市场声量但缺乏技术洞察，属于常规商业PR报道，对技术决策无参考价值。",
-      "core_event": "Fast Company将Anysphere（Cursor的母公司）评为2025年度最具创新力公司之一，Mark Sullivan报道。",
-      "hidden_signal": "Cursor获得媒体荣誉认可，反映其市场声量但缺乏技术洞察，属于常规商业PR报道，对技术决策无参考价值。",
-      "actionable": "无需关注，此为PR性质的荣誉报道，不包含实质性技术或商业洞察。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "keep": true,
+      "score": 0.88,
+      "reason": "AI编程助手正在从概念验证走向实际生产力工具，标志软件工程行业进入人机协作新范式，开发者角色正在从代码编写者向架构设计者和AI协作者转变。",
+      "core_event": "Anysphere开发的AI编程工具Cursor正在改变软件开发者的日常工作方式，被Fast Company评为2025年度最具创新力公司之一。",
+      "hidden_signal": "AI编程助手正在从概念验证走向实际生产力工具，标志软件工程行业进入人机协作新范式，开发者角色正在从代码编写者向架构设计者和AI协作者转变。",
+      "actionable": "密切关注Cursor代表的AI辅助编程范式转变，开始将AI代码助手纳入开发工作流，学习掌握与AI协作编程的技能和最佳实践。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI编程工具",
-        "商业荣誉",
-        "PR"
+        "AI编程",
+        "软件开发",
+        "人机协作"
       ]
     },
     "dceda3e653c79b291e622ee6443d95143cf4205f08a6bfdb7a38b8ce3274fc70": {
@@ -1114,15 +1149,15 @@
     "1ad4c5158f8c6e0e7523cf8c4dea4865256159158a8225c6a31cb7d25383e8f3": {
       "keep": false,
       "score": 0.15,
-      "reason": "消费电子社区内容呈现同质化趋势，个人好物分享难以产生实质性技术或商业价值。",
-      "core_event": "少数派Matrix社区发布一月好物分享汇总，包含数码产品和个人DIY项目。",
-      "hidden_signal": "消费电子社区内容呈现同质化趋势，个人好物分享难以产生实质性技术或商业价值。",
-      "actionable": "无需关注，属于社区低价值内容聚合。",
-      "ts": "2026-03-04T07:28:06.006543+00:00",
+      "reason": "消费级硬件社区内容，与技术/商业信号分析目标无关。",
+      "core_event": "少数派Matrix社区发布第131期内容摘要，包含派友一月购物分享及桌面风扇改造等消费类内容。",
+      "hidden_signal": "消费级硬件社区内容，与技术/商业信号分析目标无关。",
+      "actionable": "消费电子产品爱好者社区内容，无工程或商业价值。忽略此类内容以保持信息摄入效率。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "社区内容",
-        "消费数码"
+        "消费电子",
+        "社区内容"
       ]
     },
     "c88d7d50c4f66a9fd2d073cdeaa2143e418f653ba8ef2f1b28292b4ff7fa9e26": {
@@ -1153,6 +1188,163 @@
         "地质学",
         "自然科学"
       ]
+    },
+    "96291259b42ef971c04882be73eb25d29a48414a37571fa5cdf4f903268c15ca": {
+      "keep": true,
+      "score": 0.89,
+      "reason": "头部AI厂商全面进入高效小模型竞争阶段，推理成本优化成为核心竞争力，边缘部署和大规模并发场景的AI普及速度将显著加快。",
+      "core_event": "Google DeepMind发布Gemini 3.1 Flash-Lite，宣称这是其3系列中速度最快、成本效率最高的模型。",
+      "hidden_signal": "头部AI厂商全面进入高效小模型竞争阶段，推理成本优化成为核心竞争力，边缘部署和大规模并发场景的AI普及速度将显著加快。",
+      "actionable": "评估Gemini 3.1 Flash-Lite在特定用例中的性价比，考虑将其作为大规模AI应用的低成本推理方案，关注其与云端模型的延迟和性能权衡。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "小模型",
+        "推理优化",
+        "边缘AI"
+      ]
+    },
+    "cad1527f95f16233e7e79cb95a775b2bc8599401cd701bd1984f954b3fd763b1": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "大语言模型竞争进入价格战阶段，谷歌通过Lite版本切入低成本市场，标志AI推理成本持续下降已成行业趋势",
+      "core_event": "谷歌发布Gemini 3.1 Flash-Lite AI模型，专为大规模低延迟应用设计",
+      "hidden_signal": "大语言模型竞争进入价格战阶段，谷歌通过Lite版本切入低成本市场，标志AI推理成本持续下降已成行业趋势",
+      "actionable": "关注Gemini 3.1 Flash-Lite的实际性能评测和定价，评估其在大规模生产环境中的成本效益，准备评估是否迁移部分工作负载",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI模型",
+        "大语言模型",
+        "云计算"
+      ]
+    },
+    "46b3e364b73731677062f4a9768f7e118174d4b13989c0d576352836c297c4f5": {
+      "keep": true,
+      "score": 0.87,
+      "reason": "AI助手正从专业任务处理向日常场景渗透，大语言模型竞争焦点从能力上限转向用户体验和实际可用性，反映行业进入精细化优化阶段。",
+      "core_event": "OpenAI推出GPT-5.3 Instant，宣称该模型能够提供更流畅、更实用的日常对话体验。",
+      "hidden_signal": "AI助手正从专业任务处理向日常场景渗透，大语言模型竞争焦点从能力上限转向用户体验和实际可用性，反映行业进入精细化优化阶段。",
+      "actionable": "评估新模型在日常对话场景中的实际体验，测试其响应速度和交互流畅度，关注如何在实际应用中充分利用其改进特性。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "大语言模型",
+        "AI产品化",
+        "用户体验"
+      ]
+    },
+    "b4a245738a8f15bbdebab3ef1373fcf79551da4eab3fe1224e5ae079f72fc8af": {
+      "keep": true,
+      "score": 0.86,
+      "reason": "OpenAI继续推进模型轻量化优化，在保持核心能力的同时降低延迟和成本，这反映了AI推理部署正在从云端向边缘延伸的行业趋势。",
+      "core_event": "OpenAI发布了GPT-5.3 Instant系统卡片，详细介绍了该语言模型的技术规格和能力边界。",
+      "hidden_signal": "OpenAI继续推进模型轻量化优化，在保持核心能力的同时降低延迟和成本，这反映了AI推理部署正在从云端向边缘延伸的行业趋势。",
+      "actionable": "关注该模型在多模态理解和长对话场景下的实际表现，评估其对现有工作流的提升效果，同时持续跟进OpenAI后续模型迭代路线图。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "大语言模型",
+        "AI推理",
+        "模型优化"
+      ]
+    },
+    "704090707738b2221858e009f0b5456c58e7cf18f0f289ed7df1693bf2804181": {
+      "keep": false,
+      "score": 0.52,
+      "reason": "Project Genie作为一个实验性界面展示了AI在3D/360度内容生成领域的探索，但距离实际工程应用仍有较大距离，属于前瞻性研究项目。",
+      "core_event": "Google DeepMind分享了使用Project Genie创建新世界的四个提示写作技巧。",
+      "hidden_signal": "Project Genie作为一个实验性界面展示了AI在3D/360度内容生成领域的探索，但距离实际工程应用仍有较大距离，属于前瞻性研究项目。",
+      "actionable": "该内容为产品使用技巧类文章，工程师可快速浏览了解新工具特性，但无需深入研究，属于低优先级信息。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI生成",
+        "实验性研究",
+        "3D内容"
+      ]
+    },
+    "07d6f9e914cfec016d53b65640861ef2e2580cc5478df8f1c76266147686484b": {
+      "keep": false,
+      "score": 0.2,
+      "reason": "这是典型的云服务商运营状态通知，仅表明服务曾短暂不可用，未披露任何技术根本原因或架构影响。",
+      "core_event": "AnthropicClaudeOpus4.6模型在3月3日出现错误并已被修复。",
+      "hidden_signal": "这是典型的云服务商运营状态通知，仅表明服务曾短暂不可用，未披露任何技术根本原因或架构影响。",
+      "actionable": "无需行动。这是已解决的服务状态更新，不包含可操作的技术细节。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI服务",
+        "运维",
+        "服务状态"
+      ]
+    },
+    "f9b2257851caf42f87a5963306ddf974bd6aaf68efbbfd86310ff86fa1848859": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "Claude Code常规更新，无重大功能变化",
+      "core_event": "",
+      "hidden_signal": "Claude Code常规更新，无重大功能变化",
+      "actionable": "无需关注，这是常规版本迭代",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开发者工具"
+      ]
+    },
+    "9964d545508ee012a049e838791c131005e9706bce6098674466857cbdc2e12c": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "这是典型的云服务商运营状态通知，仅表明服务曾短暂不可用，未披露任何技术根本原因或架构影响。",
+      "core_event": "AnthropicClaude服务状态页面显示其多个产品（claude.ai、claude code、cowork、platform）在3月3日发生错误并已被修复。",
+      "hidden_signal": "这是典型的云服务商运营状态通知，仅表明服务曾短暂不可用，未披露任何技术根本原因或架构影响。",
+      "actionable": "无需行动。这是已解决的服务状态更新，不包含可操作的技术细节。",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "云计算",
+        "运维",
+        "服务状态"
+      ]
+    },
+    "f04333c73261b8c3e351f4ec9904dba86c59ba1049d6733c09e3ce0ddfc407ed": {
+      "keep": false,
+      "score": 0.05,
+      "reason": "Claude服务暂时不可用但已修复",
+      "core_event": "",
+      "hidden_signal": "Claude服务暂时不可用但已修复",
+      "actionable": "无需关注，这是已解决的服务状态事件",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "云服务"
+      ]
+    },
+    "51e97a41bb85bbcf69f055650de5cf578b040f48ceb2dba4aa4a1dc416400e6d": {
+      "keep": false,
+      "score": 0.05,
+      "reason": "Claude Sonnet 4.6服务已恢复正常",
+      "core_event": "",
+      "hidden_signal": "Claude Sonnet 4.6服务已恢复正常",
+      "actionable": "无需关注，这是已解决的历史事件",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "云服务"
+      ]
+    },
+    "67950134f0b8ccb3908724ca05257700a5ea7f1b11549d6b34c94c0f918601c2": {
+      "keep": false,
+      "score": 0.05,
+      "reason": "Claude Haiku 4.5服务已恢复正常",
+      "core_event": "",
+      "hidden_signal": "Claude Haiku 4.5服务已恢复正常",
+      "actionable": "无需关注，这是已解决的历史事件",
+      "ts": "2026-03-04T07:50:07.415710+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "云服务"
+      ]
     }
   },
   "feed_cursor": {
@@ -1181,130 +1373,148 @@
   },
   "feed_failures": {
     "/anthropic/research": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.914803+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.934786+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.914811+00:00"
+      "updated_at": "2026-03-04T07:51:16.934795+00:00"
     },
     "/modelscope/models": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915222+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935248+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915227+00:00"
+      "updated_at": "2026-03-04T07:51:16.935253+00:00"
     },
     "/producthunt/today": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915366+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935380+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915375+00:00"
+      "updated_at": "2026-03-04T07:51:16.935386+00:00"
     },
     "/github/topics/llm": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915412+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935426+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915460+00:00"
+      "updated_at": "2026-03-04T07:51:16.935433+00:00"
     },
     "/github/topics/agents": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915564+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935473+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915570+00:00"
+      "updated_at": "2026-03-04T07:51:16.935480+00:00"
     },
     "/hellogithub/volume": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915596+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935517+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915600+00:00"
+      "updated_at": "2026-03-04T07:51:16.935524+00:00"
     },
     "/hellogithub/home/featured": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915622+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935560+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915626+00:00"
+      "updated_at": "2026-03-04T07:51:16.935567+00:00"
     },
     "/juejin/aicoding": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915648+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935605+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915652+00:00"
+      "updated_at": "2026-03-04T07:51:16.935611+00:00"
     },
     "/twitter/user/karpathy": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915673+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935649+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915677+00:00"
+      "updated_at": "2026-03-04T07:51:16.935656+00:00"
     },
     "/twitter/user/fchollet": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915697+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935692+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915700+00:00"
+      "updated_at": "2026-03-04T07:51:16.935716+00:00"
     },
     "/twitter/user/soumithchintala": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915720+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935759+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915723+00:00"
+      "updated_at": "2026-03-04T07:51:16.935766+00:00"
     },
     "/twitter/user/rasbt": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915743+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935804+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915747+00:00"
+      "updated_at": "2026-03-04T07:51:16.935811+00:00"
     },
     "/twitter/user/ylecun": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915767+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935848+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915771+00:00"
+      "updated_at": "2026-03-04T07:51:16.935855+00:00"
     },
     "/twitter/user/demishassabis": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915792+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935891+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915796+00:00"
+      "updated_at": "2026-03-04T07:51:16.935898+00:00"
     },
     "/twitter/user/Yoshua_Bengio": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915817+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935936+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915820+00:00"
+      "updated_at": "2026-03-04T07:51:16.935942+00:00"
     },
     "/twitter/user/sama": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915840+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.935979+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915844+00:00"
+      "updated_at": "2026-03-04T07:51:16.935986+00:00"
     },
     "/twitter/user/AndrewYNg": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915863+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.936025+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915868+00:00"
+      "updated_at": "2026-03-04T07:51:16.936032+00:00"
     },
     "/twitter/user/JeremyHoward": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915891+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.936069+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915894+00:00"
+      "updated_at": "2026-03-04T07:51:16.936075+00:00"
     },
     "/twitter/user/swyx": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915914+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.936111+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915918+00:00"
+      "updated_at": "2026-03-04T07:51:16.936117+00:00"
     },
     "/twitter/user/simonw": {
-      "count": 3,
-      "cooldown_until": "2026-03-04T07:32:54.915938+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-04T07:59:16.936154+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.915942+00:00"
+      "updated_at": "2026-03-04T07:51:16.936161+00:00"
     },
     "https://community.openai.com/c/announcements.rss": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T07:30:54.916066+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T07:55:16.936374+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T07:28:54.916071+00:00"
+      "updated_at": "2026-03-04T07:51:16.936382+00:00"
+    },
+    "/cursor/changelog": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T07:52:16.935080+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T07:51:16.935086+00:00"
+    },
+    "/cursor/blog": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T07:52:16.935123+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T07:51:16.935129+00:00"
+    },
+    "/hackernews": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T07:52:16.935337+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T07:51:16.935343+00:00"
     }
   }
 }
