@@ -774,6 +774,91 @@
       "url": "https://www.youtube.com/watch?v=eyLf4Kqd6lg",
       "ts": "2026-03-04T11:05:15.773848+00:00",
       "title": "Build a Deep Research Agent | Python, OpenAI, Temporal"
+    },
+    "20f963858dee34569d79cc7c7a2265bd263767d54488f74c0da90cd540dd6061": {
+      "url": "https://www.infoq.cn/article/C05yD2MauyGHZfhBNGQj",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "GPT-5核心推手闪电跳槽，Anthropic CEO高调炫耀员工留存碾压OpenAI，“AI第一公司”光环崩塌？"
+    },
+    "e0ec3986ec67cfad0c6d8f3ed3493c13df2d761cca6a1b1f7270ccb5435d9c8d": {
+      "url": "https://arxiv.org/abs/2603.02473",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "Diagnosing Retrieval vs. Utilization Bottlenecks in LLM Agent Memory"
+    },
+    "4b014e05fe7cf0404c38368e303b33f9be6f8a00880ec6098318107f95564b2b": {
+      "url": "https://arxiv.org/abs/2603.02240",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "SuperLocalMemory: Privacy-Preserving Multi-Agent Memory with Bayesian Trust Defense Against Memory Poisoning"
+    },
+    "9923ee50fc036e3664bfe18dbbf464ceb65b90a28f3921b036d0d3834e485bf5": {
+      "url": "https://arxiv.org/abs/2603.02479",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "PRISM: Pushing the Frontier of Deep Think via Process Reward Model-Guided Inference"
+    },
+    "a884b7bbf7e1aebc39c944dd0aeae2cfac0cbb331c1a3fa88ec1624f8008079d": {
+      "url": "https://arxiv.org/abs/2603.02540",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "A Neuropsychologically Grounded Evaluation of LLM Cognitive Abilities"
+    },
+    "e0d108df10497deae49cd204e36a77af53f7067b7488a38609e9a40e86c50e1e": {
+      "url": "https://arxiv.org/abs/2603.02359",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "Estimating Visual Attribute Effects in Advertising from Observational Data: A Deepfake-Informed Double Machine Learning Approach"
+    },
+    "d22c26fce53292d152159ba9977fa67d9226a24c03a8a4432d4bde41a43f6304": {
+      "url": "https://arxiv.org/abs/2603.02504",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "NeuroProlog: Multi-Task Fine-Tuning for Neurosymbolic Mathematical Reasoning via the Cocktail Effect"
+    },
+    "95729eba711f58cb74903af25a3944d71e0a1be40ea4727ff00251c40e6da3b1": {
+      "url": "https://iev.ee/blog/resharp-how-we-built-the-fastest-regex-in-fsharp/",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "RE#: how we built the fastest regex engine in F#"
+    },
+    "af29f5bf2b13f2e7fcc1e45d22b4f8cacce3f633602dd6befecde021980bbb12": {
+      "url": "https://github.com/anthropics/claude-code/releases/tag/v2.1.68",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "v2.1.68"
+    },
+    "39c0bccc4f173cdc888cf5d21ed1ad59bbca137ea3917604b1f0ec2ee8db7a6f": {
+      "url": "https://arxiv.org/abs/2603.02214",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "Federated Inference: Toward Privacy-Preserving Collaborative and Incentivized Model Serving"
+    },
+    "ebd2cd2fc64f130f6b71b1be5c5ceaacd097511a723457446bb7a0399f17a44b": {
+      "url": "https://arxiv.org/abs/2603.02396",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "COOL-MC: Verifying and Explaining RL Policies for Platelet Inventory Management"
+    },
+    "fc192564db03f67c9d9ad0ef199f5b128caf1e7d27e4395a1cfcd784607c8545": {
+      "url": "https://arxiv.org/abs/2603.02542",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "AnchorDrive: LLM Scenario Rollout with Anchor-Guided Diffusion Regeneration for Safety-Critical Scenario Generation"
+    },
+    "4fd2eab39b400026411320cde65b6ff4ae20f5acefe2d21eb18dfa41ee2b4382": {
+      "url": "https://arxiv.org/abs/2603.02239",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "Engineering Reasoning and Instruction (ERI) Benchmark: A Large Taxonomy-driven Dataset for Foundation Models and Agents"
+    },
+    "d5ecfe7a7c0a79c3f7a8b6dcee2b373a0199f444351e74a91fe4b2b62688c902": {
+      "url": "https://arxiv.org/abs/2603.02435",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "VL-KGE: Vision-Language Models Meet Knowledge Graph Embeddings"
+    },
+    "7b84c81e7d48b1d36bc206a7a50e3980f15b88be7dd08e468466bd8e5bb5815c": {
+      "url": "https://cursor.com/blog/cursor-support",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "How technical support at Cursor uses Cursor"
+    },
+    "2582934e41cfc54587307a08af391ce1a4a5c5db9e18d0608eb5de127cfc6030": {
+      "url": "https://terriblesoftware.org/2026/03/03/nobody-gets-promoted-for-simplicity/",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "Nobody Gets Promoted for Simplicity"
+    },
+    "0412bf0d646a98c4d3a09d214187646f9413b891d41896c25accf419c6f1ce9a": {
+      "url": "https://chrisclapham.com/blog/nuclear-war-an-llm-scenario",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "title": "Nuclear War: An LLM Scenario"
     }
   },
   "ai": {
@@ -1097,18 +1182,19 @@
     },
     "66185748add014a5fd5baf02f23e9cb21ba5c2ed8dc325d534b03b5efad7cf61": {
       "keep": false,
-      "score": 0.88,
-      "reason": "平台工程正在从基础设施建设演变为组织文化变革的载体，开发者体验已成为技术领导者的战略优先事项，而非单纯的工具选型问题。",
-      "core_event": "InfoQ虚拟圆桌讨论高绩效软件开发文化，强调平台工程与开发者体验是提升团队效能的核心驱动力。",
-      "hidden_signal": "平台工程正在从基础设施建设演变为组织文化变革的载体，开发者体验已成为技术领导者的战略优先事项，而非单纯的工具选型问题。",
-      "actionable": "关注平台工程实践，将开发者体验纳入效能提升战略，评估组织文化对技术创新的支撑作用。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.55,
+      "reason": "",
+      "core_event": "InfoQ圆桌讨论：高绩效软件团队的文化由日常行为塑造而非纸面价值观；平台工程通过标准化和集中化管理减少工程师重复劳动；开发者体验投资应聚焦自主性、掌控感和目标感",
+      "hidden_signal": "",
+      "actionable": "工程师应将运维和基础设施工作视为产品，运用产品思维解决问题；平台团队需与业务团队紧密协作，持续迭代而非追求一步到位的完美方案；投资开发者体验时优先解决工程师真实痛点；通过标准化和集中化管理降低重复劳动",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "平台工程",
-        "开发者体验",
-        "技术领导力"
-      ]
+        "软件工程",
+        "团队管理",
+        "平台工程"
+      ],
+      "enriched": false
     },
     "916d56b48c29b07653fe465d46903151616806df121c077b24ed0a5a2c59b80d": {
       "keep": true,
@@ -1142,32 +1228,34 @@
     },
     "aa79ada187209e4c113061b320da1c2730dd30dbda163cbd86eeba09131c142b": {
       "keep": false,
-      "score": 0.35,
-      "reason": "Java生态持续按既定发布周期推进，无突破性技术方向转变，属于常规版本迭代信息的聚合报道。",
-      "core_event": "Java生态系统本周发布JDK 27 Build 10、JDK 26 Build 35等版本更新，以及Payara、Hibernate、Quarkus等框架新闻。",
-      "hidden_signal": "Java生态持续按既定发布周期推进，无突破性技术方向转变，属于常规版本迭代信息的聚合报道。",
-      "actionable": "Java开发者可关注JDK 27新特性，但此类版本更新属于常规维护信息，无需特殊行动。",
-      "ts": "2026-03-04T08:45:40.656833+00:00",
+      "score": 0.62,
+      "reason": "",
+      "core_event": "Java生态更新：JDK 26进入候选发布阶段计划明年3月发布；JDK 27 Build 10发布；Jakarta EE 12达里程碑2；Spring各项目发布里程碑版本；Payara和Hibernate更新",
+      "hidden_signal": "",
+      "actionable": "关注JDK 26正式版发布计划(2026年3月17日)；跟踪结构化并发、向量API等预览特性进展；评估Jakarta EE 12规范更新的企业应用影响；留意Hibernate Search 8.2.2与Hibernate ORM 7.2.4的集成变化",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
         "Java",
         "JDK",
-        "版本更新"
-      ]
+        "Jakarta EE"
+      ],
+      "enriched": false
     },
     "43f80d6cff3fd94469f9533a344738c65359946e898eb8beaac09a1728697338": {
       "keep": false,
-      "score": 0.1,
-      "reason": "资源聚合性质的内容，非原创技术贡献或行业趋势信号。",
-      "core_event": "某开发者发布图形编程资源合集网站，包含学习材料和工具链接。",
-      "hidden_signal": "资源聚合性质的内容，非原创技术贡献或行业趋势信号。",
-      "actionable": "无需行动，这仅是一个图形编程资源集合页面。",
-      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "score": 0.2,
+      "reason": "资源汇总性质内容，非新闻/非信号。",
+      "core_event": "发布了图形编程资源列表网站。",
+      "hidden_signal": "资源汇总性质内容，非新闻/非信号。",
+      "actionable": "无需行动。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "图形编程",
+        "图形学",
         "学习资源"
-      ]
+      ],
+      "enriched": false
     },
     "c0213438880f6b9b8304400683b17172ced0409e9ec9041c6bea0621e198b093": {
       "keep": true,
@@ -1215,32 +1303,32 @@
       ]
     },
     "7b84c81e7d48b1d36bc206a7a50e3980f15b88be7dd08e468466bd8e5bb5815c": {
-      "keep": false,
-      "score": 0.35,
-      "reason": "AI代码编辑器正探索将产品自身用于内部支持流程，体现AI工具的元应用潜力，但内容偏向PR宣传。",
-      "core_event": "Cursor官方博客介绍其技术支持团队如何使用Cursor提升工作效率。",
-      "hidden_signal": "AI代码编辑器正探索将产品自身用于内部支持流程，体现AI工具的元应用潜力，但内容偏向PR宣传。",
-      "actionable": "关注AI辅助编程工具在企业支持场景的落地进展，但此类营销内容价值有限。",
-      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "keep": true,
+      "score": 0.78,
+      "reason": "AI 辅助编程工具正在从「代码生成」向「上下文聚合」演进，这标志着开发者生产力的范式从「搜索-复制」转向「对话-推理」，支持场景成为检验 AI 编码工具成熟度的最佳试金石。",
+      "core_event": "Cursor 团队披露其技术支持如何利用 AI 编码工具压缩代码、日志、团队知识库和历史对话到单一会话中，消除了大部分支持工作中的上下文收集瓶颈。",
+      "hidden_signal": "AI 辅助编程工具正在从「代码生成」向「上下文聚合」演进，这标志着开发者生产力的范式从「搜索-复制」转向「对话-推理」，支持场景成为检验 AI 编码工具成熟度的最佳试金石。",
+      "actionable": "工程师应评估将 AI 编码助手整合入内部技术支持工作流的可能性，尤其关注其聚合分散信息源的能力；团队知识管理策略需从文档驱动转向 AI 可消费的对话式知识库。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI编程",
-        "产品营销"
-      ]
+        "AI辅助编程",
+        "开发者工作流",
+        "技术支持"
+      ],
+      "enriched": false
     },
     "53f3cc48095725d6d60c72ae3223eabb0d1cd8d8b4fd45b633336f4639882970": {
       "keep": false,
-      "score": 0.35,
-      "reason": "轻量级文本编辑器仍有特定用户群体，但缺乏实质性技术突破，属于噪音内容。",
-      "core_event": "Textadept编辑器项目更新，开发者社区在Hacker News上引发讨论。",
-      "hidden_signal": "轻量级文本编辑器仍有特定用户群体，但缺乏实质性技术突破，属于噪音内容。",
-      "actionable": "了解Textadept编辑器的最新动态，评估其作为轻量级开发环境的潜力。",
-      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "score": 0.0,
+      "reason": "",
+      "core_event": "",
+      "hidden_signal": "",
+      "actionable": "",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
-      "tags": [
-        "编程工具",
-        "文本编辑器"
-      ]
+      "tags": [],
+      "enriched": false
     },
     "099524e2477bb1596eece2f2207a1ef3bb425b6d9cc54f5582afe177dd54e435": {
       "keep": true,
@@ -1303,17 +1391,15 @@
     },
     "96ed1cf1f0b3a0dc3d4701c858c199f9935c081efc895716a09914ce7aef3ff6": {
       "keep": false,
-      "score": 0.05,
-      "reason": "历史学术文献，不反映当前技术发展趋势。",
-      "core_event": "加州大学戴维斯分校发布1974年关于编程语言设计的学术论文PDF。",
-      "hidden_signal": "历史学术文献，不反映当前技术发展趋势。",
-      "actionable": "无需关注，1974年的学术论文距今过久，无即时技术参考价值。",
-      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "score": 0.0,
+      "reason": "",
+      "core_event": "",
+      "hidden_signal": "",
+      "actionable": "",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
-      "tags": [
-        "编程语言",
-        "学术研究"
-      ]
+      "tags": [],
+      "enriched": false
     },
     "17814b3cac7f8ed624f1271dadcb03fe75da9575a8a282fbc457928a9dd4011b": {
       "keep": true,
@@ -1450,45 +1536,46 @@
     },
     "07d6f9e914cfec016d53b65640861ef2e2580cc5478df8f1c76266147686484b": {
       "keep": false,
-      "score": 0.15,
-      "reason": "这是典型的云服务运维事件，属于正常的服务稳定性披露，不构成行业信号或技术趋势。",
-      "core_event": "Anthropic 旗下的 Claude.ai 及相关平台于 3 月 4 日发生服务中断，已于当日修复。",
-      "hidden_signal": "这是典型的云服务运维事件，属于正常的服务稳定性披露，不构成行业信号或技术趋势。",
-      "actionable": "无需工程师采取行动。此事件已解决，仅为 Claude 官方状态页的运维公告。",
-      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "score": 0.0,
+      "reason": "这是纯运营事件通报，不涉及技术范式或行业趋势，不提供情报价值",
+      "core_event": "Claude 平台在 2025年3月3日发生服务降级，已于10:18 UTC 解决",
+      "hidden_signal": "这是纯运营事件通报，不涉及技术范式或行业趋势，不提供情报价值",
+      "actionable": "无需行动——这是运营状态页面，非高价值技术信号",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "运维",
-        "云服务"
-      ]
+        "运营事件"
+      ],
+      "enriched": false
     },
     "f9b2257851caf42f87a5963306ddf974bd6aaf68efbbfd86310ff86fa1848859": {
       "keep": false,
-      "score": 0.0,
-      "reason": "版本发布记录，缺少实质信息，无分析价值。",
-      "core_event": "Claude Code v2.1.66版本发布，无更新说明。",
-      "hidden_signal": "版本发布记录，缺少实质信息，无分析价值。",
-      "actionable": "无实质内容，仅为版本标记。",
-      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "score": 0.3,
+      "reason": "版本信息不完整，无法评估价值",
+      "core_event": "Claude Code v2.1.66版本发布，无内容说明",
+      "hidden_signal": "版本信息不完整，无法评估价值",
+      "actionable": "无需行动",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "版本记录"
-      ]
+        "LLM"
+      ],
+      "enriched": false
     },
     "9964d545508ee012a049e838791c131005e9706bce6098674466857cbdc2e12c": {
       "keep": false,
-      "score": 0.4,
-      "reason": "主流AI模型服务仍存在稳定性问题，即使是头部厂商Anthropic也难以完全避免服务中断。",
-      "core_event": "Claude Opus 4.6模型在UTC时间3月14:29出现错误并已被修复。",
-      "hidden_signal": "主流AI模型服务仍存在稳定性问题，即使是头部厂商Anthropic也难以完全避免服务中断。",
-      "actionable": "此事件已解决，仅作为历史记录参考，无需进一步行动。",
-      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "score": 0.35,
+      "reason": "已解决的轻微服务事件，不构成持续性技术信号",
+      "core_event": "Claude Opus 4.6出现错误已解决",
+      "hidden_signal": "已解决的轻微服务事件，不构成持续性技术信号",
+      "actionable": "无需行动",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI服务",
-        "系统稳定性",
-        "Anthropic"
-      ]
+        "LLM",
+        "基础架构"
+      ],
+      "enriched": false
     },
     "f04333c73261b8c3e351f4ec9904dba86c59ba1049d6733c09e3ce0ddfc407ed": {
       "keep": true,
@@ -1611,16 +1698,15 @@
     },
     "2ee15f155b3c745e315a49077797fac4e0a93258748eac93932753d8565a78de": {
       "keep": false,
-      "score": 0.1,
-      "reason": "与科技行业无直接关联的纯个人内容，不包含任何可操作的行业信号。",
-      "core_event": "个人博客宣布读书会无限期暂停。",
-      "hidden_signal": "与科技行业无直接关联的纯个人内容，不包含任何可操作的行业信号。",
-      "actionable": "无技术相关行动建议。",
-      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "score": 0.0,
+      "reason": "",
+      "core_event": "",
+      "hidden_signal": "",
+      "actionable": "",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
-      "tags": [
-        "个人博客"
-      ]
+      "tags": [],
+      "enriched": false
     },
     "1678b4a3ac7de330ee77118bc5709569b52a26ca7f91def24af4820b9f9d91bb": {
       "keep": true,
@@ -1804,17 +1890,17 @@
     },
     "b15c5d288bf9996d30addb6e5f7c4c55549ab846d06a4148af769470a5555850": {
       "keep": false,
-      "score": 0.45,
-      "reason": "创意项目展示了前端可视化技术能力，但缺乏可扩展的技术创新或行业影响。",
-      "core_event": "开发者展示一个创新的堆叠式生命游戏可视化项目。",
-      "hidden_signal": "创意项目展示了前端可视化技术能力，但缺乏可扩展的技术创新或行业影响。",
-      "actionable": "可作为创意编程参考，了解元胞自动机的创新可视化方式。",
-      "ts": "2026-03-04T09:46:44.600916+00:00",
+      "score": 0.15,
+      "reason": "创意编程/可视化项目，无技术信号价值。",
+      "core_event": "开发者展示了堆叠式生命游戏项目。",
+      "hidden_signal": "创意编程/可视化项目，无技术信号价值。",
+      "actionable": "无需行动。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "创意编程",
-        "可视化"
-      ]
+        "创意编程"
+      ],
+      "enriched": false
     },
     "0fc848617c1cf3dcbeb7412d200a94f60f362c1fdca5d59f757952b888805a91": {
       "keep": false,
@@ -2211,19 +2297,20 @@
       ]
     },
     "af29f5bf2b13f2e7fcc1e45d22b4f8cacce3f633602dd6befecde021980bbb12": {
-      "keep": false,
-      "score": 0.55,
-      "reason": "AI模型提供商正通过版本分层和努力程度(effort)参数化来精细化控制用户体验和计算资源消耗，体现成本优化趋势。",
-      "core_event": "Anthropic发布Claude Code v2.1.68，将Opus 4.6设为Max和Team订阅的默认模型，并重新引入ultrathink关键词。",
-      "hidden_signal": "AI模型提供商正通过版本分层和努力程度(effort)参数化来精细化控制用户体验和计算资源消耗，体现成本优化趋势。",
-      "actionable": "关注Claude Code版本迭代策略的变化，理解其对不同订阅层级的差异化服务思路。",
-      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "keep": true,
+      "score": 0.88,
+      "reason": "LLM厂商正在精细化控制计算资源消耗与推理深度之间的平衡，ultrathink的回归表明市场对深度推理能力的需求并未减弱，而是需要用户主动触发以控制成本",
+      "core_event": "Anthropic发布Claude Code v2.1.68，Opus 4.6成为默认模型，新增ultrathink关键词支持高强度推理",
+      "hidden_signal": "LLM厂商正在精细化控制计算资源消耗与推理深度之间的平衡，ultrathink的回归表明市场对深度推理能力的需求并未减弱，而是需要用户主动触发以控制成本",
+      "actionable": "开发者在需要深度推理的任务（如复杂代码审查、数学证明、长期规划）中应使用ultrathink模式，普通任务使用默认medium effort即可平衡效率与成本",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI模型",
-        "版本更新",
-        "Anthropic"
-      ]
+        "LLM",
+        "Claude",
+        "AI工程"
+      ],
+      "enriched": false
     },
     "d64f00e627790393535865aec0fff98b12f609229105a95bbc18928ed2c654e6": {
       "keep": false,
@@ -2374,23 +2461,440 @@
     },
     "efe7ce99862caa7b0430b61ee011b975fad346ccfe4c59d16c984ce94ded7a15": {
       "keep": false,
-      "score": 0.1,
-      "reason": "消费级内容平台利用情感叙事进行内容营销的常规操作，无实质技术或商业价值。",
-      "core_event": "少数派年度征文活动中，一篇关于2025年失去至亲的个人经历分享文章。",
-      "hidden_signal": "消费级内容平台利用情感叙事进行内容营销的常规操作，无实质技术或商业价值。",
-      "actionable": "无操作建议，此为个人情感类文章，非技术情报。",
-      "ts": "2026-03-04T11:05:15.773848+00:00",
+      "score": 0.4,
+      "reason": "",
+      "core_event": "作者分享2025年父亲从确诊肝癌到去世的全过程就医经验，包括如何找好医生、读懂疾病指南、做出治疗决策等",
+      "hidden_signal": "",
+      "actionable": "面对家人重病时，先读《医生，你在想什么》和《病家属，请来一下》建立基本认知；通过默沙东诊疗手册和权威疾病指南了解诊疗规范；理性就医多问诊，结合线上工具综合判断；关注权威医学数据库和学会指南获取最新治疗信息",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "内容营销",
-        "个人叙事"
-      ]
+        "个人经历",
+        "就医经验"
+      ],
+      "enriched": false
+    },
+    "20f963858dee34569d79cc7c7a2265bd263767d54488f74c0da90cd540dd6061": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "顶级AI研究员正在从OpenAI向Anthropic迁徙，揭示了「为真理」与「为产品」的根本分歧；Scaling Law边际效益递减宣告模型参数扩张时代终结；AI行业评价标准正从「智力上限」转向「企业落地效益」；OpenAI签下五角大楼订单标志着其正式成为国家级AI基础设施供应商",
+      "core_event": "OpenAI后训练负责人、GPT-5核心推手Max Schwarzer跳槽至Anthropic，OpenAI正从纯研究机构向商业化平台转型，战略重心从「参数军备竞赛」转向「体验护城河」",
+      "hidden_signal": "顶级AI研究员正在从OpenAI向Anthropic迁徙，揭示了「为真理」与「为产品」的根本分歧；Scaling Law边际效益递减宣告模型参数扩张时代终结；AI行业评价标准正从「智力上限」转向「企业落地效益」；OpenAI签下五角大楼订单标志着其正式成为国家级AI基础设施供应商",
+      "actionable": "关注Anthropic的RL研究进展；警惕OpenAI商业化转型对模型能力边界的稀释；评估Scaling Law放缓对行业的影响；重新思考AI公司的估值逻辑从「技术卓越」转向「商业闭环」",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI行业趋势",
+        "人才流动",
+        "战略转型"
+      ],
+      "enriched": false
+    },
+    "e0ec3986ec67cfad0c6d8f3ed3493c13df2d761cca6a1b1f7270ccb5435d9c8d": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "当前LLM记忆管道的瓶颈在检索而非写入，这揭示了一个重要的范式转变：简单方法可能优于复杂方法，关键是检索质量",
+      "core_event": "研究发现LLM智能体中检索方法是性能的主导因素（20点差距），而写入策略影响较小（3-8点），raw chunks存储匹配或超越昂贵的压缩方法",
+      "hidden_signal": "当前LLM记忆管道的瓶颈在检索而非写入，这揭示了一个重要的范式转变：简单方法可能优于复杂方法，关键是检索质量",
+      "actionable": "工程师应优先优化检索质量而非过度投资复杂的记忆写入策略，在实际系统中考虑raw chunks存储方案以降低成本",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM智能体",
+        "记忆系统",
+        "信息检索"
+      ],
+      "enriched": false
+    },
+    "4b014e05fe7cf0404c38368e303b33f9be6f8a00880ec6098318107f95564b2b": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "云端记忆系统存在中心化攻击面——被污染的记忆可跨会话和用户传播。MIT开源方案证明了本地优先架构可实现隐私+安全+性能三角平衡(10.6ms延迟、零并发错误、0.90信任分离)",
+      "core_event": "SuperLocalMemory 发布——本地优先的多Agent记忆系统，通过架构隔离和Bayesian信任评分防御OWASP ASI06记忆投毒，无需云依赖或LLM推理调用",
+      "hidden_signal": "云端记忆系统存在中心化攻击面——被污染的记忆可跨会话和用户传播。MIT开源方案证明了本地优先架构可实现隐私+安全+性能三角平衡(10.6ms延迟、零并发错误、0.90信任分离)",
+      "actionable": "在多Agent系统中采用本地优先架构，使用SQLite+FTS5+知识图谱实现隐私保护记忆，集成Bayesian信任评分防御记忆投毒攻击",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "多Agent系统",
+        "内存安全",
+        "隐私保护"
+      ],
+      "enriched": false
+    },
+    "9923ee50fc036e3664bfe18dbbf464ceb65b90a28f3921b036d0d3834e485bf5": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "推理增强进入\"step-level验证\"时代，PRM比结果奖励模型更能引导深度思考的正确方向，这对AI数学推理有重要意义",
+      "core_event": "PRISM方法通过过程奖励模型引导推理群体优化，在AIME25、HMMT25、GPQA上分别达到90.0%、75.4%、71.4%准确率",
+      "hidden_signal": "推理增强进入\"step-level验证\"时代，PRM比结果奖励模型更能引导深度思考的正确方向，这对AI数学推理有重要意义",
+      "actionable": "在需要复杂推理的任务中采用PRM引导的推理方法，关注step-level验证来增强推理的可靠性",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM推理",
+        "过程奖励模型",
+        "深度思考"
+      ],
+      "enriched": false
+    },
+    "a884b7bbf7e1aebc39c944dd0aeae2cfac0cbb331c1a3fa88ec1624f8008079d": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "该工作揭示了LLM的「通用能力因子」与人类认知测试表现存在正相关但测量维度不同。当前LLM在图像输入和复杂任务上的退化揭示了其在符号抽象和适应性认知上的根本短板。",
+      "core_event": "研究者提出NeuroCognition基准测试，通过Raven's矩阵、空间工作记忆和威斯康星卡片分类测试来评估LLM的基础认知能力。",
+      "hidden_signal": "该工作揭示了LLM的「通用能力因子」与人类认知测试表现存在正相关但测量维度不同。当前LLM在图像输入和复杂任务上的退化揭示了其在符号抽象和适应性认知上的根本短板。",
+      "actionable": "在评估LLM时除标准基准外，应增加认知能力测试；对于需要强泛化能力的应用，关注模型在复杂度和跨模态场景下的表现退化问题。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM评估",
+        "认知科学",
+        "基准测试"
+      ],
+      "enriched": false
+    },
+    "e0d108df10497deae49cd204e36a77af53f7067b7488a38609e9a40e86c50e1e": {
+      "keep": true,
+      "score": 0.89,
+      "reason": "视觉编码器将处理信息与混淆因素纠缠导致标准DML失效——这是因果推断的方法论突破，证明生成式AI可服务于因果识别而不只是内容生成",
+      "core_event": "研究提出 DICE-DML (Deepfake-Informed Control Encoder for Double Machine Learning)，解决图像内处理变量与混淆因素纠缠的因果推断难题",
+      "hidden_signal": "视觉编码器将处理信息与混淆因素纠缠导致标准DML失效——这是因果推断的方法论突破，证明生成式AI可服务于因果识别而不只是内容生成",
+      "actionable": "在视觉广告因果推断中采用 DICE-DML 框架，使用deepfake生成图像对隔离处理变量，通过对抗学习去除混淆",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "因果推断",
+        "计算机视觉",
+        "方法论"
+      ],
+      "enriched": false
+    },
+    "d22c26fce53292d152159ba9977fa67d9226a24c03a8a4432d4bde41a43f6304": {
+      "keep": true,
+      "score": 0.89,
+      "reason": "符号推理与神经网络的融合正在从「增强LLM」向「可控可验证」演进。该工作揭示了32B参数是符号推理的类型安全阈值，低于此规模模型无法真正掌握类型系统。",
+      "core_event": "NeuroProlog框架通过将数学问题编译为可执行Prolog程序实现可验证推理，并提出Cocktail多任务训练策略提升LLM数学推理能力。",
+      "hidden_signal": "符号推理与神经网络的融合正在从「增强LLM」向「可控可验证」演进。该工作揭示了32B参数是符号推理的类型安全阈值，低于此规模模型无法真正掌握类型系统。",
+      "actionable": "在构建需要形式化验证的LLM应用时，优先选择>=32B参数的模型；关注多任务协同训练在符号推理任务中的正向迁移效应。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "神经符号AI",
+        "LLM推理",
+        "形式化验证"
+      ],
+      "enriched": false
+    },
+    "95729eba711f58cb74903af25a3944d71e0a1be40ea4727ff00251c40e6da3b1": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "在 AI 时代，底层系统级编程语言（F#、Rust等）正在经历复兴，因为对性能极限的追求和 AI 工具无法替代的深度系统理解能力成为差异化关键；正则引擎的极致优化揭示了传统基础组件仍有大量未被挖掘的性能空间。",
+      "core_event": "F# 开发者分享如何构建可能是 F# 生态中性能最高的正则表达式引擎 RE#，详细阐述其架构设计与优化策略。",
+      "hidden_signal": "在 AI 时代，底层系统级编程语言（F#、Rust等）正在经历复兴，因为对性能极限的追求和 AI 工具无法替代的深度系统理解能力成为差异化关键；正则引擎的极致优化揭示了传统基础组件仍有大量未被挖掘的性能空间。",
+      "actionable": "对性能敏感的工程师应关注非主流语言中成熟的高性能库；考虑在关键路径上使用经过深度优化的基础组件（如正则引擎、序列化库）以获得显著性能收益；F# 开发者可将 RE# 纳入技术栈评估。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "F#",
+        "性能优化",
+        "正则表达式"
+      ],
+      "enriched": false
+    },
+    "39c0bccc4f173cdc888cf5d21ed1ad59bbca137ea3917604b1f0ec2ee8db7a6f": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "推理阶段的联邦协作与训练阶段有本质区别——系统级行为无法从训练时联邦或传统集成方法直接继承，这是隐私约束下分布式AI的新前沿",
+      "core_event": "研究提出 Federated Inference (FI) 作为新的协同推理范式，聚焦推理时隐私保护和无数据/参数共享的模型协作",
+      "hidden_signal": "推理阶段的联邦协作与训练阶段有本质区别——系统级行为无法从训练时联邦或传统集成方法直接继承，这是隐私约束下分布式AI的新前沿",
+      "actionable": "关注隐私约束下的推理协作架构设计，探索 FI 与联邦学习的互补性，研究非IID数据下的激励机制",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "联邦学习",
+        "隐私计算",
+        "分布式系统"
+      ],
+      "enriched": false
+    },
+    "ebd2cd2fc64f130f6b71b1be5c5ceaacd097511a723457446bb7a0399f17a44b": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "RL在安全关键医疗应用中的信任问题可通过形式化验证+可解释AI的组合解决，这为RL在医疗、物流等高风险领域的落地提供了范式",
+      "core_event": "COOL-MC工具首次对血小板库存管理的RL策略进行了形式化验证和解释，达到2.9%缺货概率和1.1%浪费概率",
+      "hidden_signal": "RL在安全关键医疗应用中的信任问题可通过形式化验证+可解释AI的组合解决，这为RL在医疗、物流等高风险领域的落地提供了范式",
+      "actionable": "关注RL可解释性工具在医疗供应链中的应用，考虑采用COOL-MC框架验证关键业务中的RL策略",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "强化学习",
+        "可解释AI",
+        "医疗供应链"
+      ],
+      "enriched": false
+    },
+    "fc192564db03f67c9d9ad0ef199f5b128caf1e7d27e4395a1cfcd784607c8545": {
+      "keep": true,
+      "score": 0.87,
+      "reason": "LLM与扩散模型的协同正在成为具身智能场景生成的新范式：LLM负责语义规划和闭环推理，扩散模型负责物理真实感。该工作验证了锚点引导在保持用户意图同时提升轨迹真实性的有效性。",
+      "core_event": "AnchorDrive框架结合LLM推理与扩散模型实现安全关键自动驾驶场景的可控生成。",
+      "hidden_signal": "LLM与扩散模型的协同正在成为具身智能场景生成的新范式：LLM负责语义规划和闭环推理，扩散模型负责物理真实感。该工作验证了锚点引导在保持用户意图同时提升轨迹真实性的有效性。",
+      "actionable": "在自动驾驶仿真测试中，优先考虑LLM+扩散模型的混合架构；关注锚点提取策略对生成可控性的影响。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "自动驾驶",
+        "LLM+扩散模型",
+        "场景生成"
+      ],
+      "enriched": false
+    },
+    "4fd2eab39b400026411320cde65b6ff4ae20f5acefe2d21eb18dfa41ee2b4382": {
+      "keep": true,
+      "score": 0.86,
+      "reason": "基准测试揭示了LLM在工程推理上的明显三层结构——前沿模型( GPT-5、Claude Sonnet 4、DeepSeek V3.1)显著领先，中小型模型在研究生级问题上失败率急剧上升",
+      "core_event": "ERI benchmark 发布，包含9个工程领域、55个子域、7种意图类型、3个难度等级共57,750条记录，用于训练和评估工程类LLM和Agent",
+      "hidden_signal": "基准测试揭示了LLM在工程推理上的明显三层结构——前沿模型( GPT-5、Claude Sonnet 4、DeepSeek V3.1)显著领先，中小型模型在研究生级问题上失败率急剧上升",
+      "actionable": "使用 ERI 基准测试评估 LLMs 的工程推理能力，验证模型在研究生级问题上的表现差异，关注幻觉率控制",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM评估",
+        "基准测试",
+        "工程AI"
+      ],
+      "enriched": false
+    },
+    "d5ecfe7a7c0a79c3f7a8b6dcee2b373a0199f444351e74a91fe4b2b62688c902": {
+      "keep": true,
+      "score": 0.86,
+      "reason": "VLM正在成为多模态知识图谱的核心组件，跨模态对齐从\"附加特性\"变为\"基础设施\"",
+      "core_event": "VL-KGE框架将视觉-语言模型的跨模态对齐能力与知识图谱结构化建模结合，在多模态链接预测任务上超越传统方法",
+      "hidden_signal": "VLM正在成为多模态知识图谱的核心组件，跨模态对齐从\"附加特性\"变为\"基础设施\"",
+      "actionable": "关注VLMs与KGE结合的技术进展，在多模态知识图谱构建场景中评估VL-KGE框架的适用性",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "多模态学习",
+        "知识图谱",
+        "视觉-语言模型"
+      ],
+      "enriched": false
+    },
+    "2582934e41cfc54587307a08af391ce1a4a5c5db9e18d0608eb5de127cfc6030": {
+      "keep": true,
+      "score": 0.72,
+      "reason": "技术组织中的晋升评审机制存在系统性偏见：复杂度往往与可见度混淆，导致工程师有动机制造「必要的复杂性」而非解决根本问题，这反映了技术领导力评估的深层困境。",
+      "core_event": "一篇关于软件工程中复杂性为何被奖励而简洁性被忽视的essay，探讨技术晋升机制中的逆向激励。",
+      "hidden_signal": "技术组织中的晋升评审机制存在系统性偏见：复杂度往往与可见度混淆，导致工程师有动机制造「必要的复杂性」而非解决根本问题，这反映了技术领导力评估的深层困境。",
+      "actionable": "技术决策者在评估候选人时应区分「问题解决的复杂度」与「问题本身的复杂度」；个体工程师应记录并展示简化工作的价值，将复杂性降低作为可量化的成果呈现。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "软件工程管理",
+        "技术文化",
+        "职业发展"
+      ],
+      "enriched": false
+    },
+    "0412bf0d646a98c4d3a09d214187646f9413b891d41896c25accf419c6f1ce9a": {
+      "keep": true,
+      "score": 0.72,
+      "reason": "LLM在战略模拟和决策支持领域的应用正在从理论走向实践，这反映了AI安全研究的范式转变——从单纯的风险评估转向具身化的情景推演",
+      "core_event": "博客文章探讨使用LLM模拟核战争场景的实验",
+      "hidden_signal": "LLM在战略模拟和决策支持领域的应用正在从理论走向实践，这反映了AI安全研究的范式转变——从单纯的风险评估转向具身化的情景推演",
+      "actionable": "关注AI安全研究机构如何使用LLM进行战略情景分析，这对理解AI对齐和AI安全的实际挑战具有重要意义",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI安全",
+        "LLM应用",
+        "战略模拟"
+      ],
+      "enriched": false
+    },
+    "2791abaeb909643a0f0f28e225d0a1b33d5024e03ba51eb8b6c3b136ee75ddda": {
+      "keep": false,
+      "score": 0.72,
+      "reason": "协程调度器的调试是现代异步编程中的难题。此工具解决了生产环境中极难定位的'丢失唤醒'问题，表明异步运行时调试正在从经验猜测转向工具化精准定位。这是异步系统可观测性基础设施的一部分。",
+      "core_event": "开发者开源了一款零拷贝协程追踪工具 coroTracer，用于定位调度器中的丢失唤醒问题。",
+      "hidden_signal": "协程调度器的调试是现代异步编程中的难题。此工具解决了生产环境中极难定位的'丢失唤醒'问题，表明异步运行时调试正在从经验猜测转向工具化精准定位。这是异步系统可观测性基础设施的一部分。",
+      "actionable": "无需行动。这是展示项目而非可直接应用于生产的技术。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "异步编程",
+        "调试工具",
+        "系统编程"
+      ],
+      "enriched": false
+    },
+    "b7ca801be2802c63d775e0e8c9cd18cafb6aa27db2bdff51d17a208f54b69da3": {
+      "keep": false,
+      "score": 0.72,
+      "reason": "该工作将博弈论机制设计与社交网络干预结合，但属于理论计算机科学领域的渐进式改进，缺乏突破性的新范式。",
+      "core_event": "研究者提出在社交网络中通过揭示角色模型的正面/负面标签来帮助用户做决策的算法策略。",
+      "hidden_signal": "该工作将博弈论机制设计与社交网络干预结合，但属于理论计算机科学领域的渐进式改进，缺乏突破性的新范式。",
+      "actionable": "关注其引入的代理福利函数（proxy welfare function）设计思路，对于需要处理负面信息揭示的场景（如风控、舆论引导）有参考价值。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "算法机制设计",
+        "社交网络",
+        "计算社会科学"
+      ],
+      "enriched": false
+    },
+    "8201d9d23e013fb45329f2476fafb5b8e991d5736777c9d4c470d334678b42f4": {
+      "keep": false,
+      "score": 0.68,
+      "reason": "LLM在感知层（分类任务）的作用更多是特征增强而非端到端突破，该方向的增量改进空间有限。",
+      "core_event": "LLM-MLFFN框架利用大语言模型增强自动驾驶行为分类，通过语义描述模块将原始数据转化为高级语义特征。",
+      "hidden_signal": "LLM在感知层（分类任务）的作用更多是特征增强而非端到端突破，该方向的增量改进空间有限。",
+      "actionable": "如需提升自动驾驶行为分类精度，可考虑在特征工程阶段引入LLM语义描述模块，但需权衡推理延迟。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "自动驾驶",
+        "LLM应用",
+        "特征工程"
+      ],
+      "enriched": false
+    },
+    "c942506e7f17fed2ec1284228446f5335d73b059d96112b5aef09a4b09923b87": {
+      "keep": false,
+      "score": 0.45,
+      "reason": "作为工具类产品的常规更新，缺乏足够技术细节来评估其影响或对开发者生态的意义。",
+      "core_event": "Raycast 推出名为 Glaze 的新产品/功能。",
+      "hidden_signal": "作为工具类产品的常规更新，缺乏足够技术细节来评估其影响或对开发者生态的意义。",
+      "actionable": "关注 Raycast 后续更详细的产品公告，或等待社区反馈积累后再评估采用价值。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开发者工具",
+        "产品发布"
+      ],
+      "enriched": false
+    },
+    "10f65961ffefef64b9b71dd53dc554e4307fcd15a289397d707c3bfef0a77aaf": {
+      "keep": false,
+      "score": 0.35,
+      "reason": "",
+      "core_event": "详细科普花粉过敏的原理、症状、预防和治疗方法，包括I型超敏反应机制、主要致敏花粉分类、地区差异和用药建议",
+      "hidden_signal": "",
+      "actionable": "花粉季来临前提前准备抗组胺药物；了解所在城市主要致敏花粉类型和时间窗口；严重症状需就医进行过敏原检测；关注花粉指数预报",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "健康",
+        "医学科普"
+      ],
+      "enriched": false
+    },
+    "42ce9efabfaff5c102a6ef1d0685e0df4d5f3c7b1d557a203637db22b1fcb796": {
+      "keep": false,
+      "score": 0.35,
+      "reason": "这是一款发布近十年的经典编程练习工具的链接，不包含新的技术信息、方法论或行业趋势，属于已广泛知晓的教育资源。",
+      "core_event": "一款 2015 年的编程游戏 Elevator Saga，提供通过编写代码控制电梯的练习场景。",
+      "hidden_signal": "这是一款发布近十年的经典编程练习工具的链接，不包含新的技术信息、方法论或行业趋势，属于已广泛知晓的教育资源。",
+      "actionable": "无需关注，可作为团队新成员入门练习的参考资源留存。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "编程练习",
+        "游戏化学习"
+      ],
+      "enriched": false
+    },
+    "f2e95c2e2931db25a305b86db7bb0e281c47da0bbfddcbb59d06c796570778c8": {
+      "keep": false,
+      "score": 0.35,
+      "reason": "AI不确定性的哲学讨论虽有趣，但目前对工程实践影响有限，属于\"为理解而理解\"的范畴",
+      "core_event": "论文探讨AI系统是否能实现\"不确定\"状态，从功能主义和行为主义角度分析符号、连接主义和混合架构",
+      "hidden_signal": "AI不确定性的哲学讨论虽有趣，但目前对工程实践影响有限，属于\"为理解而理解\"的范畴",
+      "actionable": "无需采取行动 - 这是一篇纯理论性哲学论文，缺乏直接工程应用价值",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI哲学",
+        "不确定性",
+        "理论计算机科学"
+      ],
+      "enriched": false
+    },
+    "01cbe1b6d565766c2c2d56b4c8fa5fb857f0b4812ddae22f7dcb5d0138dbae58": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "纯艺术/文化类内容，不涉及技术范式或行业变革",
+      "core_event": "一个展示1950-1975年间插图的艺术档案网站上线",
+      "hidden_signal": "纯艺术/文化类内容，不涉及技术范式或行业变革",
+      "actionable": "非技术内容，无可执行行动",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "数字档案",
+        "艺术"
+      ],
+      "enriched": false
+    },
+    "c2eee8810314562268c2e1825519c7d5bed0efc412483e711b1ebe4d4c6a16b9": {
+      "keep": false,
+      "score": 0.1,
+      "reason": "典型的 YC 公司招聘营销内容，通过 Hacker News 获取曝光。",
+      "core_event": "Jiga (YC W21) 公司发布招聘公告。",
+      "hidden_signal": "典型的 YC 公司招聘营销内容，通过 Hacker News 获取曝光。",
+      "actionable": "无需行动。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "招聘"
+      ],
+      "enriched": false
+    },
+    "fe0a9d7cabd7d218ec8be015a2c3398cc07421a478860f0e9e23a685a2800ba4": {
+      "keep": false,
+      "score": 0.1,
+      "reason": "博彩类新奇项目，无技术信号价值。",
+      "core_event": "出现了博彩网站允许用户押注德国火车晚点。",
+      "hidden_signal": "博彩类新奇项目，无技术信号价值。",
+      "actionable": "无需行动。",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "博彩"
+      ],
+      "enriched": false
+    },
+    "8f7f4c320ad2e99628dd13879f54d5eb8cb26967568587e6a4ceffdd4e1006f6": {
+      "keep": false,
+      "score": 0.0,
+      "reason": "",
+      "core_event": "",
+      "hidden_signal": "",
+      "actionable": "",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [],
+      "enriched": false
+    },
+    "c8990fd23f38478f8aa742bad6bc6d9478de45def8a75ea20b11d1f77690e19c": {
+      "keep": false,
+      "score": 0.0,
+      "reason": "",
+      "core_event": "",
+      "hidden_signal": "",
+      "actionable": "",
+      "ts": "2026-03-04T13:54:07.359364+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [],
+      "enriched": false
     }
   },
   "feed_cursor": {
-    "/infoq/recommend": "2026-03-04T09:00:00+00:00",
+    "/infoq/recommend": "2026-03-04T11:05:47+00:00",
     "/juejin/trending/ai/weekly": "2026-03-02T01:12:54+00:00",
-    "/sspai/index": "2026-03-04T09:30:07+00:00",
+    "/sspai/index": "2026-03-04T12:09:04+00:00",
     "/anthropic/engineering": "2026-02-04T16:00:00+00:00",
     "/anthropic/red": "2026-02-04T16:00:00+00:00",
     "/qbitai/category/ebandeng": "2024-09-23T03:51:16+00:00",
@@ -2421,260 +2925,589 @@
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCHlNU7kIZhRgSbhHvFoy72w": "2026-03-04T10:18:44+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCBp3w4DCEC64FZr4k9ROxig": "2026-03-02T08:59:57+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCGovZyy8OfFPNlNV0i1fI1g": "2026-03-03T21:14:27+00:00",
-    "https://www.youtube.com/feeds/videos.xml?channel_id=UCn8ujwUInbJkBhffxqAPBVQ": "2026-03-03T22:22:15+00:00"
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCn8ujwUInbJkBhffxqAPBVQ": "2026-03-03T22:22:15+00:00",
+    "https://rss.arxiv.org/rss/cs.AI": "2026-03-04T05:00:00+00:00",
+    "https://rss.arxiv.org/rss/cs.LG": "2026-03-04T05:00:00+00:00",
+    "https://rss.arxiv.org/rss/cs.CL": "2026-03-04T05:00:00+00:00",
+    "https://rss.arxiv.org/rss/cs.CV": "2026-03-04T05:00:00+00:00",
+    "https://lilianweng.github.io/index.xml": "2025-05-01T00:00:00+00:00",
+    "https://simonwillison.net/atom/everything/": "2026-03-03T23:59:04+00:00",
+    "https://huyenchip.com/feed.xml": "2025-01-16T00:00:00+00:00",
+    "https://jalammar.github.io/feed.xml": "2025-03-26T00:00:00+00:00",
+    "https://eugeneyan.com/rss/": "2025-12-14T00:00:00+00:00",
+    "https://swyx.io/rss.xml": "2026-02-27T01:54:50+00:00",
+    "https://www.latent.space/feed": "2026-03-04T03:11:53+00:00",
+    "https://distill.pub/rss.xml": "2021-09-02T20:00:00+00:00",
+    "https://bair.berkeley.edu/blog/feed.xml": "2025-11-01T09:00:00+00:00",
+    "https://tinyprojects.dev/feed.xml": "2022-08-09T00:00:00+00:00",
+    "https://danieltakeshi.github.io/feed.xml": "2023-06-15T23:00:00+00:00",
+    "https://mlinproduction.com/feed": "2022-05-08T16:11:55+00:00",
+    "https://machinelearningmastery.com/feed": "2026-02-11T11:00:11+00:00"
   },
   "feed_failures": {
     "/anthropic/research": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.308969+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.732279+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.308977+00:00"
+      "updated_at": "2026-03-04T13:54:54.732286+00:00"
     },
     "/modelscope/models": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309482+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.732774+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309486+00:00"
+      "updated_at": "2026-03-04T13:54:54.732780+00:00"
     },
     "/producthunt/today": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309535+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.732899+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309538+00:00"
+      "updated_at": "2026-03-04T13:54:54.732904+00:00"
     },
     "/github/topics/llm": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309551+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.732959+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309553+00:00"
+      "updated_at": "2026-03-04T13:54:54.732964+00:00"
     },
     "/github/topics/agents": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309566+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733058+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309568+00:00"
+      "updated_at": "2026-03-04T13:54:54.733062+00:00"
     },
     "/juejin/aicoding": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309610+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733138+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309613+00:00"
+      "updated_at": "2026-03-04T13:54:54.733141+00:00"
     },
     "/twitter/user/karpathy": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309625+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733166+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309627+00:00"
+      "updated_at": "2026-03-04T13:54:54.733169+00:00"
     },
     "/twitter/user/fchollet": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309639+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733189+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309642+00:00"
+      "updated_at": "2026-03-04T13:54:54.733193+00:00"
     },
     "/twitter/user/soumithchintala": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309653+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733212+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309656+00:00"
+      "updated_at": "2026-03-04T13:54:54.733216+00:00"
     },
     "/twitter/user/rasbt": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309668+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733236+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309670+00:00"
+      "updated_at": "2026-03-04T13:54:54.733260+00:00"
     },
     "/twitter/user/ylecun": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309682+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733291+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309684+00:00"
+      "updated_at": "2026-03-04T13:54:54.733295+00:00"
     },
     "/twitter/user/demishassabis": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309696+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733315+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309698+00:00"
+      "updated_at": "2026-03-04T13:54:54.733319+00:00"
     },
     "/twitter/user/Yoshua_Bengio": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309710+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733339+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309712+00:00"
+      "updated_at": "2026-03-04T13:54:54.733343+00:00"
     },
     "/twitter/user/sama": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309726+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733367+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309728+00:00"
+      "updated_at": "2026-03-04T13:54:54.733372+00:00"
     },
     "/twitter/user/AndrewYNg": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309741+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733401+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309743+00:00"
+      "updated_at": "2026-03-04T13:54:54.733405+00:00"
     },
     "/twitter/user/JeremyHoward": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309756+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733430+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309758+00:00"
+      "updated_at": "2026-03-04T13:54:54.733434+00:00"
     },
     "/twitter/user/swyx": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309770+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733454+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309773+00:00"
+      "updated_at": "2026-03-04T13:54:54.733458+00:00"
     },
     "/twitter/user/simonw": {
-      "count": 8,
-      "cooldown_until": "2026-03-04T11:36:20.309785+00:00",
+      "count": 9,
+      "cooldown_until": "2026-03-04T14:24:54.733481+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309787+00:00"
+      "updated_at": "2026-03-04T13:54:54.733485+00:00"
     },
     "https://community.openai.com/c/announcements.rss": {
-      "count": 7,
-      "cooldown_until": "2026-03-04T11:36:20.310209+00:00",
+      "count": 8,
+      "cooldown_until": "2026-03-04T14:24:54.735319+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.310216+00:00"
+      "updated_at": "2026-03-04T13:54:54.735324+00:00"
     },
     "/bilibili/user/video/3546566589679687": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309800+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.734778+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309802+00:00"
+      "updated_at": "2026-03-04T13:54:54.734781+00:00"
     },
     "/bilibili/user/video/302188068": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309815+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.734806+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309817+00:00"
+      "updated_at": "2026-03-04T13:54:54.734810+00:00"
     },
     "/bilibili/user/video/26798384": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309830+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.734838+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309832+00:00"
+      "updated_at": "2026-03-04T13:54:54.734842+00:00"
     },
     "/bilibili/user/video/316183842": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309844+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.734866+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309846+00:00"
+      "updated_at": "2026-03-04T13:54:54.734869+00:00"
     },
     "/bilibili/user/video/14739873": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309859+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.734889+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309861+00:00"
+      "updated_at": "2026-03-04T13:54:54.734892+00:00"
     },
     "/bilibili/user/video/3493277319825652": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309873+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.734912+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309875+00:00"
+      "updated_at": "2026-03-04T13:54:54.734915+00:00"
     },
     "/bilibili/user/video/4848323": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309888+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.734935+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309890+00:00"
+      "updated_at": "2026-03-04T13:54:54.734943+00:00"
     },
     "/bilibili/user/video/346575605": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309902+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.734968+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309904+00:00"
+      "updated_at": "2026-03-04T13:54:54.734973+00:00"
     },
     "/bilibili/user/video/1316597695": {
-      "count": 2,
-      "cooldown_until": "2026-03-04T11:08:20.309916+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-04T13:58:54.735003+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309919+00:00"
-    },
-    "/infoq/recommend": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.308678+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.308691+00:00"
-    },
-    "/anthropic/news": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.308871+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.308877+00:00"
-    },
-    "/qbitai/category/ebandeng": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309108+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309116+00:00"
-    },
-    "/qbitai/category/auto": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309151+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309156+00:00"
-    },
-    "/qbitai/category/zhiku": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309186+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309195+00:00"
-    },
-    "/huggingface/blog": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309502+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309505+00:00"
-    },
-    "/hackernews": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309519+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309522+00:00"
+      "updated_at": "2026-03-04T13:54:54.735006+00:00"
     },
     "/hellogithub/volume": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309581+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T13:56:54.733082+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309583+00:00"
+      "updated_at": "2026-03-04T13:54:54.733086+00:00"
     },
     "/hellogithub/home/featured": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309596+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T13:56:54.733112+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309598+00:00"
+      "updated_at": "2026-03-04T13:54:54.733116+00:00"
     },
     "/xiaohongshu/user/68502b1a000000001b01a7ba/notes": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309931+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T13:56:54.735036+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309933+00:00"
+      "updated_at": "2026-03-04T13:54:54.735040+00:00"
     },
     "/xiaohongshu/user/5d7ece920000000001018707/notes": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309946+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T13:56:54.735064+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309948+00:00"
+      "updated_at": "2026-03-04T13:54:54.735068+00:00"
     },
     "/xiaohongshu/user/6467b1210000000010027a51/notes": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309960+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T13:56:54.735102+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309963+00:00"
+      "updated_at": "2026-03-04T13:54:54.735106+00:00"
     },
     "/xiaohongshu/user/5ec66abd0000000001006a8a/notes": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.309975+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T13:56:54.735131+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.309977+00:00"
+      "updated_at": "2026-03-04T13:54:54.735135+00:00"
     },
     "/xiaohongshu/user/6314a2cc0000000012003173/notes": {
-      "count": 1,
-      "cooldown_until": "2026-03-04T11:07:20.310020+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-04T13:56:54.735159+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-04T11:06:20.310027+00:00"
+      "updated_at": "2026-03-04T13:54:54.735163+00:00"
+    },
+    "/juejin/trending/ai/weekly": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.732043+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.732051+00:00"
+    },
+    "/github/trending/daily/python": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.732929+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.732934+00:00"
+    },
+    "/github/topics/agent": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.732985+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.732989+00:00"
+    },
+    "/github/topics/autonomous-agent": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733010+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733014+00:00"
+    },
+    "/github/topics/ai-agent": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733034+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733038+00:00"
+    },
+    "/twitter/user/drfeifei": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733506+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733510+00:00"
+    },
+    "/twitter/user/percyliang": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733531+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733534+00:00"
+    },
+    "/twitter/user/lilianweng": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733559+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733563+00:00"
+    },
+    "/twitter/user/chrmanning": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733587+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733591+00:00"
+    },
+    "/twitter/user/DrJimFan": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733612+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733615+00:00"
+    },
+    "/twitter/user/ShunyuYao12": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733641+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733645+00:00"
+    },
+    "/twitter/user/jerryjliu0": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733669+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733672+00:00"
+    },
+    "/twitter/user/hwchase17": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733692+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733696+00:00"
+    },
+    "/twitter/user/yoheinakajima": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733719+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733722+00:00"
+    },
+    "/twitter/user/hamzafarrukh": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733742+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733746+00:00"
+    },
+    "/twitter/user/amasad": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733766+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733770+00:00"
+    },
+    "/twitter/user/tobi": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733790+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733794+00:00"
+    },
+    "/twitter/user/chipro": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733817+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733821+00:00"
+    },
+    "/twitter/user/eugeneyan": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733844+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733848+00:00"
+    },
+    "/twitter/user/JayAlammar": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733869+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733873+00:00"
+    },
+    "/twitter/user/nir_diamant": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733898+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733902+00:00"
+    },
+    "/twitter/user/gdb": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733927+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733930+00:00"
+    },
+    "/twitter/user/DarioAmodei": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733950+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733954+00:00"
+    },
+    "/twitter/user/EMostaque": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733975+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.733979+00:00"
+    },
+    "/twitter/user/AravSrinivas": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.733999+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734003+00:00"
+    },
+    "/twitter/user/polynoamial": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734028+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734032+00:00"
+    },
+    "/twitter/user/ilyasut": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734057+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734066+00:00"
+    },
+    "/twitter/user/danshipper": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734091+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734094+00:00"
+    },
+    "/twitter/user/btibor91": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734119+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734123+00:00"
+    },
+    "/twitter/user/petergyang": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734142+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734146+00:00"
+    },
+    "/twitter/user/thesephist": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734166+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734170+00:00"
+    },
+    "/twitter/user/natfriedman": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734190+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734194+00:00"
+    },
+    "/twitter/user/OfficialLoganK": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734219+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734222+00:00"
+    },
+    "/twitter/user/paulg": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734262+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734267+00:00"
+    },
+    "/twitter/user/svpino": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734291+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734295+00:00"
+    },
+    "/twitter/user/aakashg0": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734317+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734322+00:00"
+    },
+    "/twitter/user/emollick": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734343+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734346+00:00"
+    },
+    "/twitter/user/op7418": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734368+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734372+00:00"
+    },
+    "/twitter/user/dotey": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734393+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734397+00:00"
+    },
+    "/twitter/user/baoyu_io": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734418+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734422+00:00"
+    },
+    "/twitter/user/wangdengke": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734443+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734447+00:00"
+    },
+    "/twitter/user/vikingmute": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734469+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734473+00:00"
+    },
+    "/twitter/user/waimaox": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734499+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734502+00:00"
+    },
+    "/twitter/user/zhwangart": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734522+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734526+00:00"
+    },
+    "/twitter/user/leiphys": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734548+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734552+00:00"
+    },
+    "/twitter/user/imian": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734581+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734585+00:00"
+    },
+    "/twitter/user/OpenAI": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734606+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734610+00:00"
+    },
+    "/twitter/user/GoogleDeepMind": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734635+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734639+00:00"
+    },
+    "/twitter/user/AnthropicAI": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734662+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734666+00:00"
+    },
+    "/twitter/user/MetaAI": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734692+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734696+00:00"
+    },
+    "/twitter/user/huggingface": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734719+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734723+00:00"
+    },
+    "/twitter/user/StabilityAI": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.734748+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.734751+00:00"
+    },
+    "https://sebastianraschka.com/rss.xml": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.735637+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.735642+00:00"
+    },
+    "https://til.simonwillison.net/feed.xml": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.735774+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.735778+00:00"
+    },
+    "https://gwern.net/rss.xml": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.735844+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.735848+00:00"
+    },
+    "https://www.inference.vc/rss.xml": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.735923+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.735927+00:00"
+    },
+    "https://thesephist.com/rss.xml": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.735984+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.735992+00:00"
+    },
+    "https://nat.org/blog/rss.xml": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.736015+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.736019+00:00"
+    },
+    "https://vitalab.github.io/rss.xml": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T13:55:54.736068+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T13:54:54.736071+00:00"
     }
   }
 }
