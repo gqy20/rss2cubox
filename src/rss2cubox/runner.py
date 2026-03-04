@@ -42,6 +42,7 @@ AI_TIMEOUT_SECONDS = sync_pipeline.env_int("AI_TIMEOUT_SECONDS", 90)
 AI_RETRY_ATTEMPTS = sync_pipeline.env_int("AI_RETRY_ATTEMPTS", 3)
 AI_RETRY_BACKOFF_SECONDS = sync_pipeline.env_float("AI_RETRY_BACKOFF_SECONDS", 1.5)
 AI_BATCH_SIZE = sync_pipeline.env_int("AI_BATCH_SIZE", 5)
+AI_MAX_WORKERS = sync_pipeline.env_int("AI_MAX_WORKERS", 3)
 AI_MAX_CANDIDATES = sync_pipeline.env_int("AI_MAX_CANDIDATES", max(MAX_ITEMS_PER_RUN * 2, 1))
 FEED_CONNECT_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_CONNECT_TIMEOUT_SECONDS", 5.0)
 FEED_READ_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_READ_TIMEOUT_SECONDS", 10.0)
@@ -178,6 +179,7 @@ def main() -> None:
         retry_attempts=AI_RETRY_ATTEMPTS,
         retry_backoff_seconds=AI_RETRY_BACKOFF_SECONDS,
         batch_size=AI_BATCH_SIZE,
+        max_workers=AI_MAX_WORKERS,
         log_event=log_event,
     )
     stats["ai_analyzed"] = len(analyses)

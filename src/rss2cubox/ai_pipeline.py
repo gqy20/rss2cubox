@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any
 
 import requests
@@ -249,6 +250,7 @@ def analyze_candidates_with_ai(
     retry_attempts: int,
     retry_backoff_seconds: float,
     batch_size: int,
+    max_workers: int = 3,
     log_event: Any,
 ) -> dict[str, dict]:
     if not candidates or not ai_analysis_enabled(auth_token, model):
@@ -257,9 +259,13 @@ def analyze_candidates_with_ai(
     size = max(1, batch_size)
     total = len(candidates)
     batches = (total + size - 1) // size
+
+    # Prepare all batches
+    batch_list: list[tuple[int, list[dict]]] = []
     for idx in range(0, total, size):
         batch = candidates[idx : idx + size]
         batch_no = idx // size + 1
+        batch_list.append((batch_no, batch))
         log_event(
             "INFO",
             "ai_batch_start",
@@ -268,7 +274,10 @@ def analyze_candidates_with_ai(
             batches=batches,
             batch_size=len(batch),
         )
-        parsed = _analyze_batch_with_ai(
+
+    # Process batches in parallel
+    def process_batch(batch_no: int, batch: list[dict]) -> dict[str, dict]:
+        return _analyze_batch_with_ai(
             batch=batch,
             stage_metrics=stage_metrics,
             auth_token=auth_token,
@@ -279,7 +288,18 @@ def analyze_candidates_with_ai(
             retry_backoff_seconds=retry_backoff_seconds,
             log_event=log_event,
         )
-        out.update(parsed)
+
+    workers = min(max(1, max_workers), len(batch_list))
+    with ThreadPoolExecutor(max_workers=workers) as executor:
+        futures = {executor.submit(process_batch, bn, b): bn for bn, b in batch_list}
+        for future in as_completed(futures):
+            try:
+                parsed = future.result()
+                out.update(parsed)
+            except Exception as exc:
+                batch_no = futures[future]
+                log_event("ERROR", "ai_batch_exception", stage="ai_analyze", batch_no=batch_no, error=str(exc))
+
     if out:
         log_event("INFO", "ai_analyze_done", stage="ai_analyze", analyzed=len(out), total=total)
     else:
