@@ -1,9 +1,15 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import os
 import time
+from threading import Lock
+from typing import Any
+
+import requests
 
 DEFAULT_RSSHUB_INSTANCES = ["https://rsshub.rssforever.com", "https://rsshub.app"]
 
@@ -15,33 +21,38 @@ class RSSHubInstancePool:
     fail_until: dict[str, float] = field(default_factory=dict)
     fail_count: dict[str, int] = field(default_factory=dict)
     success_count: dict[str, int] = field(default_factory=dict)
+    _lock: Lock = field(default_factory=Lock)
 
     def ordered_instances(self, now_ts: float | None = None) -> list[str]:
         now = now_ts or time.time()
-        available = [ins for ins in self.instances if self.fail_until.get(ins, 0.0) <= now]
-        unavailable = [ins for ins in self.instances if self.fail_until.get(ins, 0.0) > now]
-        available.sort(key=self._score, reverse=True)
-        unavailable.sort(key=self._score, reverse=True)
-        return available + unavailable
+        with self._lock:
+            available = [ins for ins in self.instances if self.fail_until.get(ins, 0.0) <= now]
+            unavailable = [ins for ins in self.instances if self.fail_until.get(ins, 0.0) > now]
+            available.sort(key=self._score, reverse=True)
+            unavailable.sort(key=self._score, reverse=True)
+            return available + unavailable
 
     def should_skip(self, instance: str, now_ts: float | None = None) -> bool:
         now = now_ts or time.time()
-        return self.fail_until.get(instance, 0.0) > now
+        with self._lock:
+            return self.fail_until.get(instance, 0.0) > now
 
     def mark_success(self, instance: str) -> None:
-        self.success_count[instance] = self.success_count.get(instance, 0) + 1
-        self.fail_until.pop(instance, None)
-        if instance in self.instances:
-            self.instances.remove(instance)
-            self.instances.insert(0, instance)
+        with self._lock:
+            self.success_count[instance] = self.success_count.get(instance, 0) + 1
+            self.fail_until.pop(instance, None)
+            if instance in self.instances:
+                self.instances.remove(instance)
+                self.instances.insert(0, instance)
 
     def mark_failure(self, instance: str, now_ts: float | None = None) -> None:
         now = now_ts or time.time()
-        self.fail_count[instance] = self.fail_count.get(instance, 0) + 1
-        self.fail_until[instance] = now + max(0, self.cooldown_seconds)
-        if instance in self.instances:
-            self.instances.remove(instance)
-            self.instances.append(instance)
+        with self._lock:
+            self.fail_count[instance] = self.fail_count.get(instance, 0) + 1
+            self.fail_until[instance] = now + max(0, self.cooldown_seconds)
+            if instance in self.instances:
+                self.instances.remove(instance)
+                self.instances.append(instance)
 
     def _score(self, instance: str) -> int:
         return self.success_count.get(instance, 0) - self.fail_count.get(instance, 0)
@@ -115,3 +126,361 @@ def resolve_feed_urls(feed_kind: str, feed_value: str, rsshub_pool: RSSHubInstan
     if not route.startswith("/"):
         route = f"/{route}"
     return [f"{base}{route}" for base in rsshub_pool.ordered_instances()]
+
+
+def fetch_and_parse_feed(
+    url: str,
+    *,
+    connect_timeout_seconds: float,
+    read_timeout_seconds: float,
+) -> Any:
+    response = requests.get(
+        url,
+        timeout=(connect_timeout_seconds, read_timeout_seconds),
+        headers={"user-agent": "rss2cubox/0.1 (+github-actions)"},
+    )
+    response.raise_for_status()
+    import feedparser
+
+    parsed = feedparser.parse(response.content)
+    if getattr(parsed, "bozo", False):
+        bozo_exc = getattr(parsed, "bozo_exception", None)
+        raise ValueError(f"invalid feed parse: {bozo_exc!r}")
+    return parsed
+
+
+def parse_feed_with_fallback(
+    feed_kind: str,
+    feed_value: str,
+    rsshub_pool: RSSHubInstancePool,
+    *,
+    fetcher: Any,
+    log_event: Any,
+) -> tuple[str | None, Any | None, int]:
+    candidates = resolve_feed_urls(feed_kind, feed_value, rsshub_pool)
+    for idx, candidate_url in enumerate(candidates, start=1):
+        instance = candidate_url.split("/", 3)[:3]
+        instance_base = "/".join(instance) if len(instance) >= 3 else candidate_url
+        if feed_kind == "rsshub" and rsshub_pool.should_skip(instance_base):
+            log_event(
+                "INFO",
+                "feed_candidate_skipped_cooldown",
+                stage="fetch",
+                feed=feed_value,
+                candidate=candidate_url,
+                attempt=idx,
+            )
+            continue
+        start = time.perf_counter()
+        try:
+            parsed = fetcher(candidate_url)
+            if feed_kind == "rsshub":
+                rsshub_pool.mark_success(instance_base)
+            duration_ms = int((time.perf_counter() - start) * 1000)
+            log_event(
+                "INFO",
+                "feed_candidate_success",
+                stage="fetch",
+                feed=feed_value,
+                candidate=candidate_url,
+                attempt=idx,
+                duration_ms=duration_ms,
+            )
+            if idx > 1:
+                log_event(
+                    "WARN",
+                    "feed_fallback_used",
+                    stage="fetch",
+                    feed=feed_value,
+                    selected=candidate_url,
+                    attempt=idx,
+                )
+            return candidate_url, parsed, idx
+        except Exception as exc:  # noqa: BLE001
+            if feed_kind == "rsshub":
+                rsshub_pool.mark_failure(instance_base)
+            duration_ms = int((time.perf_counter() - start) * 1000)
+            log_event(
+                "WARN",
+                "feed_candidate_failed",
+                stage="fetch",
+                feed=feed_value,
+                candidate=candidate_url,
+                attempt=idx,
+                duration_ms=duration_ms,
+                error=str(exc),
+            )
+    return None, None, 0
+
+
+def parse_feed_spec(
+    spec: dict[str, str],
+    sent: dict[str, Any],
+    feed_cursor: dict[str, Any],
+    rsshub_pool: RSSHubInstancePool,
+    *,
+    feed_cursor_lookback_hours: int,
+    include_keywords: list[str],
+    exclude_keywords: list[str],
+    parse_iso_datetime: Any,
+    parse_entry_timestamp: Any,
+    stable_id: Any,
+    passes_filter: Any,
+    fetcher: Any,
+    log_event: Any,
+) -> dict[str, Any]:
+    feed_kind = spec["kind"]
+    feed_url = spec["value"]
+    feed_seen = 0
+    feed_candidates = 0
+    feed_deduped = 0
+    feed_missing_link = 0
+    feed_keyword_filtered = 0
+    cursor_skipped = 0
+    feed_start = time.perf_counter()
+    feed_max_seen_ts: datetime | None = None
+
+    cursor_raw = str(feed_cursor.get(feed_url, "")).strip()
+    cursor_dt = parse_iso_datetime(cursor_raw)
+    cutoff_dt = None
+    if cursor_dt is not None:
+        cutoff_dt = cursor_dt - timedelta(hours=max(0, feed_cursor_lookback_hours))
+
+    log_event("INFO", "feed_fetch_start", stage="fetch", feed=feed_url, kind=feed_kind)
+    selected_url, parsed, selected_attempt = parse_feed_with_fallback(
+        feed_kind,
+        feed_url,
+        rsshub_pool,
+        fetcher=fetcher,
+        log_event=log_event,
+    )
+    if selected_url is None or parsed is None:
+        return {
+            "ok": False,
+            "kind": feed_kind,
+            "feed": feed_url,
+            "duration_ms": int((time.perf_counter() - feed_start) * 1000),
+            "error": "feed_invalid",
+        }
+
+    candidates: list[dict[str, Any]] = []
+    for entry in parsed.entries:
+        feed_seen += 1
+        entry_ts = parse_entry_timestamp(entry)
+        if entry_ts is not None and (feed_max_seen_ts is None or entry_ts > feed_max_seen_ts):
+            feed_max_seen_ts = entry_ts
+        if cutoff_dt is not None and entry_ts is not None and entry_ts < cutoff_dt:
+            cursor_skipped += 1
+            continue
+
+        eid = stable_id(entry)
+        if eid in sent:
+            feed_deduped += 1
+            continue
+        if not entry.get("link"):
+            feed_missing_link += 1
+            continue
+        if not passes_filter(entry, include_keywords, exclude_keywords):
+            feed_keyword_filtered += 1
+            continue
+
+        url = entry["link"]
+        title = entry.get("title", "") or ""
+        description = (entry.get("summary", "") or "").strip()
+        if len(description) > 600:
+            description = description[:600] + "..."
+        candidates.append(
+            {
+                "eid": eid,
+                "url": url,
+                "title": title,
+                "description": description,
+                "source_feed": feed_url,
+            }
+        )
+        feed_candidates += 1
+
+    feed_duration_ms = int((time.perf_counter() - feed_start) * 1000)
+    return {
+        "ok": True,
+        "kind": feed_kind,
+        "feed": feed_url,
+        "resolved_url": selected_url,
+        "selected_attempt": selected_attempt,
+        "fetched": feed_seen,
+        "candidates": feed_candidates,
+        "deduped": feed_deduped,
+        "missing_link": feed_missing_link,
+        "keyword_filtered": feed_keyword_filtered,
+        "cursor_skipped": cursor_skipped,
+        "duration_ms": feed_duration_ms,
+        "feed_max_seen_ts": feed_max_seen_ts.isoformat() if feed_max_seen_ts else "",
+        "candidate_items": candidates,
+    }
+
+
+def collect_candidates_from_feeds(
+    *,
+    feed_specs: list[dict[str, str]],
+    sent: dict[str, Any],
+    feed_cursor: dict[str, Any],
+    feed_failures: dict[str, Any],
+    rsshub_pool: RSSHubInstancePool,
+    stats: dict[str, Any],
+    stage_metrics: Any,
+    feed_fetch_concurrency: int,
+    feed_cursor_lookback_hours: int,
+    include_keywords: list[str],
+    exclude_keywords: list[str],
+    connect_timeout_seconds: float,
+    read_timeout_seconds: float,
+    feed_failure_cooldown_seconds: int,
+    feed_failure_cooldown_max_seconds: int,
+    parse_iso_datetime: Any,
+    parse_entry_timestamp: Any,
+    stable_id: Any,
+    passes_filter: Any,
+    feed_is_circuit_open: Any,
+    feed_failure_backoff_seconds: Any,
+    log_event: Any,
+    now_utc: datetime,
+) -> list[dict[str, Any]]:
+    candidates: list[dict[str, Any]] = []
+    pending_specs: list[tuple[int, dict[str, str]]] = []
+    for idx, spec in enumerate(feed_specs):
+        feed_kind = spec["kind"]
+        feed_url = spec["value"]
+        if feed_kind == "rsshub":
+            stats["rsshub_routes"] += 1
+
+        failure_state = feed_failures.get(feed_url, {})
+        is_open, remaining_seconds = feed_is_circuit_open(failure_state, now_utc)
+        if is_open:
+            stats["feeds_circuit_skipped"] += 1
+            log_event(
+                "WARN",
+                "feed_skipped_circuit_open",
+                stage="fetch",
+                feed=feed_url,
+                kind=feed_kind,
+                remaining_seconds=remaining_seconds,
+                failure_count=int(failure_state.get("count", 0)),
+            )
+            continue
+        pending_specs.append((idx, spec))
+
+    parse_results: dict[int, dict[str, Any]] = {}
+    max_workers = min(max(1, feed_fetch_concurrency), max(1, len(pending_specs)))
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        future_map = {
+            executor.submit(
+                parse_feed_spec,
+                spec,
+                sent,
+                feed_cursor,
+                rsshub_pool,
+                feed_cursor_lookback_hours=feed_cursor_lookback_hours,
+                include_keywords=include_keywords,
+                exclude_keywords=exclude_keywords,
+                parse_iso_datetime=parse_iso_datetime,
+                parse_entry_timestamp=parse_entry_timestamp,
+                stable_id=stable_id,
+                passes_filter=passes_filter,
+                fetcher=lambda url: fetch_and_parse_feed(
+                    url,
+                    connect_timeout_seconds=connect_timeout_seconds,
+                    read_timeout_seconds=read_timeout_seconds,
+                ),
+                log_event=log_event,
+            ): idx
+            for idx, spec in pending_specs
+        }
+        for future in as_completed(future_map):
+            idx = future_map[future]
+            spec = feed_specs[idx]
+            feed_url = spec["value"]
+            feed_kind = spec["kind"]
+            try:
+                parse_results[idx] = future.result()
+            except Exception as exc:  # noqa: BLE001
+                parse_results[idx] = {
+                    "ok": False,
+                    "kind": feed_kind,
+                    "feed": feed_url,
+                    "duration_ms": 0,
+                    "error": str(exc),
+                }
+
+    for idx in sorted(parse_results):
+        result = parse_results[idx]
+        feed_url = result["feed"]
+        feed_kind = result["kind"]
+        if not result.get("ok", False):
+            stats["feeds_invalid"] += 1
+            previous_count = int(feed_failures.get(feed_url, {}).get("count", 0))
+            failure_count = previous_count + 1
+            cooldown_seconds = feed_failure_backoff_seconds(
+                failure_count,
+                feed_failure_cooldown_seconds,
+                feed_failure_cooldown_max_seconds,
+            )
+            feed_failures[feed_url] = {
+                "count": failure_count,
+                "cooldown_until": (datetime.now(timezone.utc) + timedelta(seconds=cooldown_seconds)).isoformat(),
+                "last_error": str(result.get("error", "feed_invalid")),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+            }
+            log_event(
+                "WARN",
+                "feed_invalid",
+                stage="fetch",
+                feed=feed_url,
+                kind=feed_kind,
+                failure_count=failure_count,
+                cooldown_seconds=cooldown_seconds,
+            )
+            continue
+
+        selected_url = result["resolved_url"]
+        selected_attempt = int(result.get("selected_attempt", 1))
+        resolved_from_pool = selected_url != feed_url and feed_kind == "rsshub"
+        if selected_attempt > 1:
+            stats["rsshub_fallback_used"] += 1
+        if resolved_from_pool:
+            log_event(
+                "INFO",
+                "feed_resolved",
+                stage="fetch",
+                feed=feed_url,
+                kind=feed_kind,
+                resolved_url=selected_url,
+            )
+        feed_failures.pop(feed_url, None)
+
+        stats["fetched"] += int(result.get("fetched", 0))
+        stats["deduped"] += int(result.get("deduped", 0))
+        stats["missing_link"] += int(result.get("missing_link", 0))
+        stats["keyword_filtered"] += int(result.get("keyword_filtered", 0))
+        stats["cursor_skipped"] += int(result.get("cursor_skipped", 0))
+        stage_metrics.observe("fetch", int(result.get("duration_ms", 0)))
+        candidates.extend(result.get("candidate_items", []))
+
+        log_event(
+            "INFO",
+            "feed_processed",
+            stage="fetch",
+            feed=feed_url,
+            kind=feed_kind,
+            resolved_url=selected_url,
+            fetched=result.get("fetched", 0),
+            candidates=result.get("candidates", 0),
+            duration_ms=result.get("duration_ms", 0),
+        )
+
+        feed_max_seen_ts = parse_iso_datetime(str(result.get("feed_max_seen_ts", "")))
+        if feed_max_seen_ts is not None:
+            prev_dt = parse_iso_datetime(str(feed_cursor.get(feed_url, "")))
+            if prev_dt is None or feed_max_seen_ts > prev_dt:
+                feed_cursor[feed_url] = feed_max_seen_ts.isoformat()
+
+    return candidates

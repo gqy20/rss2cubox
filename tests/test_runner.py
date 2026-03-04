@@ -1,11 +1,14 @@
 import json
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 import requests
 
+from rss2cubox import ai_pipeline
 from rss2cubox import feed_sources, sync_pipeline
+from rss2cubox import metrics
 from rss2cubox import runner
 
 
@@ -50,9 +53,13 @@ def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyP
             raise RuntimeError("boom")
         return SimpleNamespace(bozo=False, entries=[{"id": "1", "link": "https://example.com/1"}])
 
-    monkeypatch.setattr(runner, "fetch_and_parse_feed", fake_fetch)
-
-    selected, parsed, attempt = runner.parse_feed_with_fallback("rsshub", "/sspai/index", pool)
+    selected, parsed, attempt = feed_sources.parse_feed_with_fallback(
+        "rsshub",
+        "/sspai/index",
+        pool,
+        fetcher=fake_fetch,
+        log_event=lambda *_args, **_kwargs: None,
+    )
     assert selected == "https://ok.rsshub.test/sspai/index"
     assert attempt == 2
     assert parsed is not None
@@ -178,10 +185,19 @@ def test_analyze_candidates_with_ai_prefers_tool_use(monkeypatch: pytest.MonkeyP
     monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
     monkeypatch.setattr(runner, "ANTHROPIC_BASE_URL", "https://api.example.com/anthropic")
     monkeypatch.setattr(runner, "AI_TIMEOUT_SECONDS", 12)
-    monkeypatch.setattr(runner.requests, "post", fake_post)
+    monkeypatch.setattr(ai_pipeline.requests, "post", fake_post)
 
-    out = runner.analyze_candidates_with_ai(
-        [{"eid": "e1", "url": "https://example.com/1", "title": "t", "description": "d"}]
+    out = ai_pipeline.analyze_candidates_with_ai(
+        candidates=[{"eid": "e1", "url": "https://example.com/1", "title": "t", "description": "d"}],
+        stage_metrics=runner.StageMetrics(),
+        auth_token=runner.ANTHROPIC_AUTH_TOKEN,
+        base_url=runner.ANTHROPIC_BASE_URL,
+        model=runner.ANTHROPIC_MODEL,
+        timeout_seconds=runner.AI_TIMEOUT_SECONDS,
+        retry_attempts=runner.AI_RETRY_ATTEMPTS,
+        retry_backoff_seconds=runner.AI_RETRY_BACKOFF_SECONDS,
+        batch_size=runner.AI_BATCH_SIZE,
+        log_event=lambda *_args, **_kwargs: None,
     )
 
     assert calls["url"] == "https://api.example.com/anthropic/v1/messages"
@@ -215,10 +231,19 @@ def test_analyze_candidates_with_ai_text_fallback(monkeypatch: pytest.MonkeyPatc
 
     monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
     monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
-    monkeypatch.setattr(runner.requests, "post", lambda *_, **__: Resp())
+    monkeypatch.setattr(ai_pipeline.requests, "post", lambda *_, **__: Resp())
 
-    out = runner.analyze_candidates_with_ai(
-        [{"eid": "e2", "url": "https://example.com/2", "title": "t2", "description": "d2"}]
+    out = ai_pipeline.analyze_candidates_with_ai(
+        candidates=[{"eid": "e2", "url": "https://example.com/2", "title": "t2", "description": "d2"}],
+        stage_metrics=runner.StageMetrics(),
+        auth_token=runner.ANTHROPIC_AUTH_TOKEN,
+        base_url=runner.ANTHROPIC_BASE_URL,
+        model=runner.ANTHROPIC_MODEL,
+        timeout_seconds=runner.AI_TIMEOUT_SECONDS,
+        retry_attempts=runner.AI_RETRY_ATTEMPTS,
+        retry_backoff_seconds=runner.AI_RETRY_BACKOFF_SECONDS,
+        batch_size=runner.AI_BATCH_SIZE,
+        log_event=lambda *_args, **_kwargs: None,
     )
     assert out["e2"]["keep"] is False
     assert out["e2"]["score"] == 0.3
@@ -265,11 +290,20 @@ def test_analyze_candidates_with_ai_retries_then_success(monkeypatch: pytest.Mon
     monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
     monkeypatch.setattr(runner, "AI_RETRY_ATTEMPTS", 2)
     monkeypatch.setattr(runner, "AI_RETRY_BACKOFF_SECONDS", 0)
-    monkeypatch.setattr(runner.requests, "post", flaky_post)
-    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+    monkeypatch.setattr(ai_pipeline.requests, "post", flaky_post)
+    monkeypatch.setattr(ai_pipeline.time, "sleep", lambda *_: None)
 
-    out = runner.analyze_candidates_with_ai(
-        [{"eid": "e3", "url": "https://example.com/3", "title": "t3", "description": "d3"}]
+    out = ai_pipeline.analyze_candidates_with_ai(
+        candidates=[{"eid": "e3", "url": "https://example.com/3", "title": "t3", "description": "d3"}],
+        stage_metrics=runner.StageMetrics(),
+        auth_token=runner.ANTHROPIC_AUTH_TOKEN,
+        base_url=runner.ANTHROPIC_BASE_URL,
+        model=runner.ANTHROPIC_MODEL,
+        timeout_seconds=runner.AI_TIMEOUT_SECONDS,
+        retry_attempts=runner.AI_RETRY_ATTEMPTS,
+        retry_backoff_seconds=runner.AI_RETRY_BACKOFF_SECONDS,
+        batch_size=runner.AI_BATCH_SIZE,
+        log_event=lambda *_args, **_kwargs: None,
     )
     assert calls["count"] == 2
     assert out["e3"]["keep"] is True
@@ -317,13 +351,24 @@ def test_analyze_candidates_with_ai_batches(monkeypatch: pytest.MonkeyPatch) -> 
     monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
     monkeypatch.setattr(runner, "AI_BATCH_SIZE", 3)
     monkeypatch.setattr(runner, "AI_RETRY_ATTEMPTS", 1)
-    monkeypatch.setattr(runner.requests, "post", fake_post)
+    monkeypatch.setattr(ai_pipeline.requests, "post", fake_post)
 
     cands = [
         {"eid": f"e{i}", "url": f"https://example.com/{i}", "title": "t", "description": "d"}
         for i in range(7)
     ]
-    out = runner.analyze_candidates_with_ai(cands)
+    out = ai_pipeline.analyze_candidates_with_ai(
+        candidates=cands,
+        stage_metrics=runner.StageMetrics(),
+        auth_token=runner.ANTHROPIC_AUTH_TOKEN,
+        base_url=runner.ANTHROPIC_BASE_URL,
+        model=runner.ANTHROPIC_MODEL,
+        timeout_seconds=runner.AI_TIMEOUT_SECONDS,
+        retry_attempts=runner.AI_RETRY_ATTEMPTS,
+        retry_backoff_seconds=runner.AI_RETRY_BACKOFF_SECONDS,
+        batch_size=runner.AI_BATCH_SIZE,
+        log_event=lambda *_args, **_kwargs: None,
+    )
     assert batch_sizes == [3, 3, 1]
     assert len(out) == 7
     assert out["e0"]["keep"] is True
@@ -359,7 +404,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
     monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
     monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
-    monkeypatch.setattr(runner, "fetch_and_parse_feed", fake_fetch)
+    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
         kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
     ))
@@ -425,7 +470,7 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
     monkeypatch.setattr(runner, "FEED_CURSOR_LOOKBACK_HOURS", 24)
     monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
     monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
-    monkeypatch.setattr(runner, "fetch_and_parse_feed", fake_fetch)
+    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
         kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
     ))
@@ -441,11 +486,55 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
     assert state["feed_cursor"][feed_url].startswith("2026-01-10T12:00:00")
 
 
+def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    feeds_file = tmp_path / "feeds.txt"
+    state_file = tmp_path / "state.json"
+    feed_a = "https://feed-a.example/rss"
+    feed_b = "https://feed-b.example/rss"
+    feeds_file.write_text(f"{feed_a}\n{feed_b}\n", encoding="utf-8")
+    state_file.write_text('{"sent":{}}', encoding="utf-8")
+
+    shared_entry = {"id": "same-id", "link": "https://example.com/shared", "title": "Shared", "summary": "A"}
+    entries_by_feed = {
+        feed_a: [shared_entry],
+        feed_b: [shared_entry],
+    }
+    pushed_urls = []
+
+    def fake_fetch(url: str):  # noqa: ANN001
+        return SimpleNamespace(bozo=False, entries=entries_by_feed[url])
+
+    def fake_save(url: str, title: str, description: str, tags, folder: str):  # noqa: ANN001
+        _ = (title, description, tags, folder)
+        pushed_urls.append(url)
+        return "ok"
+
+    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
+    monkeypatch.setattr(runner, "STATE_FILE", state_file)
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
+    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
+    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
+    monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
+    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
+    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
+    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
+        kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
+    ))
+    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+
+    runner.main()
+
+    assert pushed_urls == ["https://example.com/shared"]
+    state = sync_pipeline.load_state(state_file)
+    assert len(state["sent"]) == 1
+
+
 def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     summary_file = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))
 
-    runner.write_step_summary(
+    metrics.write_step_summary(
         {
             "feeds_total": 2,
             "feeds_invalid": 1,
@@ -465,7 +554,8 @@ def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
             "pushed": 2,
             "push_failed": 0,
             "state_size": 99,
-        }
+        },
+        str(summary_file),
     )
 
     content = summary_file.read_text(encoding="utf-8")
@@ -473,3 +563,59 @@ def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     assert "| fetched | 10 |" in content
     assert "| ai_kept | 2 |" in content
     assert "| pushed | 2 |" in content
+
+
+def test_feed_failure_backoff_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(runner, "FEED_FAILURE_COOLDOWN_SECONDS", 30)
+    monkeypatch.setattr(runner, "FEED_FAILURE_COOLDOWN_MAX_SECONDS", 120)
+
+    assert sync_pipeline.feed_failure_backoff_seconds(1, 30, 120) == 30
+    assert sync_pipeline.feed_failure_backoff_seconds(2, 30, 120) == 60
+    assert sync_pipeline.feed_failure_backoff_seconds(3, 30, 120) == 120
+    assert sync_pipeline.feed_failure_backoff_seconds(4, 30, 120) == 120
+
+
+def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    feeds_file = tmp_path / "feeds.txt"
+    state_file = tmp_path / "state.json"
+    blocked_feed = "https://blocked.example/rss"
+    ok_feed = "https://ok.example/rss"
+    feeds_file.write_text(f"{blocked_feed}\n{ok_feed}\n", encoding="utf-8")
+    cooldown_until = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
+    state_file.write_text(
+        json.dumps({"sent": {}, "feed_failures": {blocked_feed: {"count": 2, "cooldown_until": cooldown_until}}}),
+        encoding="utf-8",
+    )
+
+    fetched = []
+    pushed_urls = []
+
+    def fake_fetch(url: str):  # noqa: ANN001
+        fetched.append(url)
+        return SimpleNamespace(bozo=False, entries=[{"id": url, "link": f"{url}/1", "title": "t", "summary": "s"}])
+
+    def fake_save(url: str, title: str, description: str, tags, folder: str):  # noqa: ANN001
+        _ = (title, description, tags, folder)
+        pushed_urls.append(url)
+        return "ok"
+
+    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
+    monkeypatch.setattr(runner, "STATE_FILE", state_file)
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
+    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
+    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
+    monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
+    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
+    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
+    monkeypatch.setattr(runner, "FEED_FETCH_CONCURRENCY", 4)
+    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
+        kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
+    ))
+    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+
+    runner.main()
+
+    assert blocked_feed not in fetched
+    assert ok_feed in fetched
+    assert pushed_urls == [f"{ok_feed}/1"]

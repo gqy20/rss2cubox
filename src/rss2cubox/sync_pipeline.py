@@ -1,9 +1,36 @@
 from __future__ import annotations
 
+import calendar
 import hashlib
 import json
+import os
+import time
+from datetime import datetime, timezone
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
+
+
+def env_float(name: str, default: float) -> float:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        print(f"[WARN] invalid {name}={raw!r}, fallback to {default}", flush=True)
+        return default
+
+
+def env_int(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        return int(raw)
+    except ValueError:
+        print(f"[WARN] invalid {name}={raw!r}, fallback to {default}", flush=True)
+        return default
 
 
 def load_state(state_file: Path) -> dict:
@@ -46,6 +73,212 @@ def passes_filter(entry: dict, include_keywords: list[str], exclude_keywords: li
     if exclude_keywords and any(k.lower() in blob for k in exclude_keywords):
         return False
     return True
+
+
+def parse_entry_timestamp(entry: dict) -> datetime | None:
+    for key in ("updated_parsed", "published_parsed"):
+        ts = entry.get(key)
+        if ts:
+            try:
+                return datetime.fromtimestamp(calendar.timegm(ts), tz=timezone.utc)
+            except Exception:  # noqa: BLE001
+                pass
+    for key in ("updated", "published"):
+        raw = str(entry.get(key, "")).strip()
+        if not raw:
+            continue
+        parsed = parse_iso_datetime(raw)
+        if parsed is None:
+            try:
+                parsed = parsedate_to_datetime(raw)
+            except (TypeError, ValueError):
+                parsed = None
+        if parsed is not None:
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+    return None
+
+
+def parse_iso_datetime(value: str) -> datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    try:
+        return datetime.fromisoformat(raw.replace("Z", "+00:00")).astimezone(timezone.utc)
+    except ValueError:
+        return None
+
+
+def feed_failure_backoff_seconds(
+    failure_count: int,
+    base_seconds: int,
+    max_seconds: int,
+) -> int:
+    return min(max_seconds, base_seconds * (2 ** max(0, failure_count - 1)))
+
+
+def feed_is_circuit_open(feed_failure_state: dict[str, Any], now_utc: datetime) -> tuple[bool, int]:
+    until_dt = parse_iso_datetime(str(feed_failure_state.get("cooldown_until", "")))
+    if until_dt is None or until_dt <= now_utc:
+        return False, 0
+    remaining = max(0, int((until_dt - now_utc).total_seconds()))
+    return True, remaining
+
+
+def dedupe_run_candidates(
+    candidates: list[dict[str, Any]],
+    per_feed_drop_reasons: dict[str, dict[str, int]],
+) -> tuple[list[dict[str, Any]], int]:
+    run_seen: set[str] = set()
+    unique_candidates: list[dict[str, Any]] = []
+    run_deduped = 0
+    for item in candidates:
+        eid = str(item.get("eid", "")).strip()
+        if not eid:
+            continue
+        if eid in run_seen:
+            run_deduped += 1
+            source_feed = str(item.get("source_feed", "unknown"))
+            drop_by_feed = per_feed_drop_reasons.setdefault(source_feed, {})
+            drop_by_feed["run_deduped"] = drop_by_feed.get("run_deduped", 0) + 1
+            continue
+        run_seen.add(eid)
+        unique_candidates.append(item)
+    return unique_candidates, run_deduped
+
+
+def process_candidates_for_push(
+    *,
+    candidates_for_run: list[dict[str, Any]],
+    analyses: dict[str, dict[str, Any]],
+    stats: dict[str, Any],
+    sent: dict[str, Any],
+    ai_state: dict[str, Any],
+    now_iso: str,
+    max_items_per_run: int,
+    ai_enabled: bool,
+    ai_min_score: float,
+    ai_model: str,
+    cubox_api_url: str | None,
+    cubox_folder: str,
+    request_post: Any,
+    stage_metrics: Any,
+    log_event: Any,
+    sleep_seconds: float = 0.3,
+) -> None:
+    for item in candidates_for_run:
+        if stats["pushed"] >= max_items_per_run:
+            break
+
+        eid = item["eid"]
+        url = item["url"]
+        title = item["title"]
+        description = item["description"]
+        tags = None
+        source_feed = item.get("source_feed", "unknown")
+        if eid in sent:
+            stats["run_deduped"] += 1
+            drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+            drop_by_feed["run_deduped"] = drop_by_feed.get("run_deduped", 0) + 1
+            continue
+
+        result = analyses.get(eid)
+        if ai_enabled and analyses and not result:
+            drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+            drop_by_feed["missing_ai_result"] = drop_by_feed.get("missing_ai_result", 0) + 1
+            log_event(
+                "INFO",
+                "candidate_skipped",
+                stage="ai_decision",
+                item_id=eid,
+                url=url,
+                action="drop",
+                reason="missing_ai_result",
+            )
+            continue
+        if result:
+            keep = bool(result.get("keep", False))
+            score = float(result.get("score", 0.0))
+            reason = str(result.get("reason", ""))
+            action = "keep" if keep and score >= ai_min_score else "drop"
+            log_event(
+                "INFO",
+                "ai_item_decision",
+                stage="ai_decision",
+                item_id=eid,
+                url=url,
+                action=action,
+                keep=keep,
+                score=score,
+                threshold=ai_min_score,
+                reason=reason,
+            )
+            ai_state[eid] = {
+                "keep": keep,
+                "score": score,
+                "reason": reason,
+                "ts": now_iso,
+                "model": ai_model,
+            }
+            if not keep:
+                stats["ai_dropped_keep_false"] += 1
+                drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+                drop_by_feed["ai_keep_false"] = drop_by_feed.get("ai_keep_false", 0) + 1
+                continue
+            if score < ai_min_score:
+                stats["ai_dropped_score"] += 1
+                drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+                drop_by_feed["ai_score_below_threshold"] = drop_by_feed.get("ai_score_below_threshold", 0) + 1
+                continue
+            stats["ai_kept"] += 1
+            brief = str(result.get("brief", "")).strip()
+            if brief:
+                description = brief[:600]
+            if result.get("tags"):
+                tags = result["tags"]
+
+        stats["push_attempted"] += 1
+        push_start = time.perf_counter()
+        try:
+            cubox_save_url(
+                api_url=cubox_api_url,
+                request_post=request_post,
+                url=url,
+                title=title,
+                description=description,
+                tags=tags,
+                folder=cubox_folder,
+            )
+            sent[eid] = {"url": url, "ts": now_iso}
+            stats["pushed"] += 1
+            stats["per_feed_push_counts"][source_feed] = stats["per_feed_push_counts"].get(source_feed, 0) + 1
+            push_duration_ms = int((time.perf_counter() - push_start) * 1000)
+            stage_metrics.observe("push", push_duration_ms)
+            log_event(
+                "INFO",
+                "push_success",
+                stage="push",
+                item_id=eid,
+                url=url,
+                duration_ms=push_duration_ms,
+            )
+            time.sleep(sleep_seconds)
+        except Exception as exc:  # noqa: BLE001
+            stats["push_failed"] += 1
+            push_duration_ms = int((time.perf_counter() - push_start) * 1000)
+            stage_metrics.observe("push", push_duration_ms)
+            drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+            drop_by_feed["push_failed"] = drop_by_feed.get("push_failed", 0) + 1
+            log_event(
+                "ERROR",
+                "push_failed",
+                stage="push",
+                item_id=eid,
+                url=url,
+                duration_ms=push_duration_ms,
+                error=str(exc),
+            )
 
 
 def cubox_save_url(
