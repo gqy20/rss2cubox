@@ -69,6 +69,14 @@ def normalize_feed_kind(kind: str, raw: str) -> str:
     return "direct" if raw.startswith(("http://", "https://")) else "rsshub"
 
 
+def split_feed_value_and_label(raw: str) -> tuple[str, str]:
+    text = raw.strip()
+    if " # " not in text:
+        return text, ""
+    value, label = text.split(" # ", 1)
+    return value.strip(), label.strip()
+
+
 def load_feed_specs(path: Path) -> list[dict[str, str]]:
     specs: list[dict[str, str]] = []
     section = "auto"
@@ -84,7 +92,16 @@ def load_feed_specs(path: Path) -> list[dict[str, str]]:
             if lowered in {"[direct]", "direct:"}:
                 section = "direct"
                 continue
-            specs.append({"kind": normalize_feed_kind(section, raw), "value": raw})
+            value, label = split_feed_value_and_label(raw)
+            if not value:
+                continue
+            specs.append(
+                {
+                    "kind": normalize_feed_kind(section, value),
+                    "value": value,
+                    "label": label,
+                }
+            )
     return specs
 
 
@@ -231,6 +248,7 @@ def parse_feed_spec(
 ) -> dict[str, Any]:
     feed_kind = spec["kind"]
     feed_url = spec["value"]
+    source_label = str(spec.get("label", "")).strip()
     feed_seen = 0
     feed_candidates = 0
     feed_deduped = 0
@@ -296,6 +314,7 @@ def parse_feed_spec(
                 "title": title,
                 "description": description,
                 "source_feed": feed_url,
+                "source_label": source_label,
             }
         )
         feed_candidates += 1

@@ -1,50 +1,70 @@
 # Feed definitions
 # Use [rsshub] for RSSHub routes and [direct] for full feed URLs.
+# 可选行内别名：在 feed 后追加 ` # 别名`，前端会优先显示别名。
 
 [rsshub]
-/infoq/recommend
-/juejin/trending/ai/weekly
-/sspai/index
-/anthropic/news
-/anthropic/engineering
-/anthropic/research
-/anthropic/red
-/qbitai/category/ebandeng
-/qbitai/category/auto
-/qbitai/category/zhiku
-/qbitai/category/huodong
-/cursor/changelog
-/cursor/blog
-/cursor/blog/news
-/cursor/blog/research
-/modelscope/models
-/huggingface/blog
-/hackernews
-/producthunt/today
-/github/topics/llm
-/github/topics/agents
-/hellogithub/volume
-/hellogithub/home/featured
-/juejin/aicoding
-/twitter/user/karpathy
-/twitter/user/fchollet
-/twitter/user/soumithchintala
-/twitter/user/rasbt
-/twitter/user/ylecun
-/twitter/user/demishassabis
-/twitter/user/Yoshua_Bengio
-/twitter/user/sama
-/twitter/user/AndrewYNg
-/twitter/user/JeremyHoward
-/twitter/user/swyx
-/twitter/user/simonw
+/infoq/recommend # InfoQ 推荐
+/juejin/trending/ai/weekly # 掘金 AI 周榜
+/sspai/index # 少数派首页
+/anthropic/news # Anthropic News
+/anthropic/engineering # Anthropic Engineering
+/anthropic/research # Anthropic Research
+/anthropic/red # Anthropic RED
+/qbitai/category/ebandeng # 量子位 E 半导体
+/qbitai/category/auto # 量子位 Auto
+/qbitai/category/zhiku # 量子位 智库
+/qbitai/category/huodong # 量子位 活动
+/cursor/changelog # Cursor Changelog
+/cursor/blog # Cursor Blog
+/cursor/blog/news # Cursor Blog News
+/cursor/blog/research # Cursor Blog Research
+/modelscope/models # ModelScope 新模型
+/huggingface/blog # Hugging Face Blog（RSSHub）
+/hackernews # Hacker News
+/producthunt/today # Product Hunt 今日
+/github/topics/llm # GitHub Topic LLM
+/github/topics/agents # GitHub Topic Agents
+/hellogithub/volume # HelloGitHub 月刊
+/hellogithub/home/featured # HelloGitHub 精选
+/juejin/aicoding # 掘金 AI Coding
+/twitter/user/karpathy # X @karpathy
+/twitter/user/fchollet # X @fchollet
+/twitter/user/soumithchintala # X @soumithchintala
+/twitter/user/rasbt # X @rasbt
+/twitter/user/ylecun # X @ylecun
+/twitter/user/demishassabis # X @demishassabis
+/twitter/user/Yoshua_Bengio # X @Yoshua_Bengio
+/twitter/user/sama # X @sama
+/twitter/user/AndrewYNg # X @AndrewYNg
+/twitter/user/JeremyHoward # X @JeremyHoward
+/twitter/user/swyx # X @swyx
+/twitter/user/simonw # X @simonw
+/bilibili/user/video/3546566589679687 # 废才俱乐部Club
+/bilibili/user/video/302188068 # 小白debug
+/bilibili/user/video/26798384 # 柴知道
+/bilibili/user/video/316183842 # 技术爬爬虾
+/bilibili/user/video/14739873 # 檀东东Tango
+/bilibili/user/video/3493277319825652 # AI超元域
+/bilibili/user/video/4848323 # 数字游牧人
+/bilibili/user/video/346575605 # kate人不错
+/bilibili/user/video/1316597695 # AI学长小林
 
 [direct]
-https://imjuya.github.io/juya-ai-daily/rss.xml
-https://openai.com/news/rss.xml
-https://deepmind.google/blog/rss.xml
-https://blog.google/technology/ai/rss/
-https://community.openai.com/c/announcements.rss
-https://huggingface.co/blog/feed.xml
-https://github.com/anthropics/claude-code/releases.atom
-https://status.anthropic.com/history.rss
+https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
+https://openai.com/news/rss.xml # OpenAI News
+https://deepmind.google/blog/rss.xml # Google DeepMind News
+https://blog.google/technology/ai/rss/ # Google AI Blog
+https://community.openai.com/c/announcements.rss # OpenAI 开发者公告
+https://huggingface.co/blog/feed.xml # Hugging Face Blog（官方）
+https://github.com/anthropics/claude-code/releases.atom # Claude Code Releases
+https://status.anthropic.com/history.rss # Claude Status 历史事件
+https://www.youtube.com/feeds/videos.xml?channel_id=UCLKPca3kwwd-B59HNr-_lvA # YouTube AI Engineer
+https://www.youtube.com/feeds/videos.xml?channel_id=UCC-lyoTfSrcJzA1ab3APAgw # YouTube LangChain
+https://www.youtube.com/feeds/videos.xml?channel_id=UCeRjipR4_SsCddq9VZ2AeKg # YouTube LlamaIndex
+https://www.youtube.com/feeds/videos.xml?channel_id=UCrDwWp7EBBv4NwvScIpBDOA # YouTube Anthropic
+https://www.youtube.com/feeds/videos.xml?channel_id=UCXZCJLdBC09xxGZ6gcdrc6A # YouTube OpenAI
+https://www.youtube.com/feeds/videos.xml?channel_id=UCP7jMXSY2xbc3KCAE0MHQ-A # YouTube Google DeepMind
+https://www.youtube.com/feeds/videos.xml?channel_id=UCHlNU7kIZhRgSbhHvFoy72w # YouTube HuggingFace
+https://www.youtube.com/feeds/videos.xml?channel_id=UCBp3w4DCEC64FZr4k9ROxig # YouTube Weights & Biases
+https://www.youtube.com/feeds/videos.xml?channel_id=UCGovZyy8OfFPNlNV0i1fI1g # YouTube Temporal
+https://www.youtube.com/feeds/videos.xml?channel_id=UCn8ujwUInbJkBhffxqAPBVQ # YouTube Dave Ebbelaar

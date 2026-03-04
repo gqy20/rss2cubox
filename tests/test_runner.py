@@ -26,8 +26,19 @@ def test_load_feed_specs_supports_sections(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert feed_sources.load_feed_specs(feeds) == [
-        {"kind": "rsshub", "value": "/sspai/index"},
-        {"kind": "direct", "value": "https://example.com/feed.xml"},
+        {"kind": "rsshub", "value": "/sspai/index", "label": ""},
+        {"kind": "direct", "value": "https://example.com/feed.xml", "label": ""},
+    ]
+
+
+def test_load_feed_specs_supports_inline_label(tmp_path: Path) -> None:
+    feeds = tmp_path / "feeds.txt"
+    feeds.write_text(
+        "[rsshub]\n/bilibili/user/video/123456 # 测试UP主\n",
+        encoding="utf-8",
+    )
+    assert feed_sources.load_feed_specs(feeds) == [
+        {"kind": "rsshub", "value": "/bilibili/user/video/123456", "label": "测试UP主"},
     ]
 
 
