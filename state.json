@@ -199,7 +199,266 @@
     "b792c182746da889634e9a38d14c5eb5ac4a7c1f5203cb3dc640040f65a2d3d8": {
       "url": "https://juejin.cn/post/7610676768315342898",
       "ts": "2026-03-03T14:32:06.854171+00:00"
+    },
+    "c174f53f88ef60d48904dd5b71a4493e71f675cde1f25b016029c8c4fa582edc": {
+      "url": "https://www.infoq.cn/article/23s4CDCMmMiFvR7CcRXK",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "efd70b6fd97735617ac3e87f8342d4d38beaac9596084f979a879a1615b3d59a": {
+      "url": "https://sspai.com/post/106811",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "2399796f65714012a8b995fb051bbeb4898a0e895cab2fd14883df2af81f8f50": {
+      "url": "https://sspai.com/post/106766",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "de9f0e9d30fcd791d6c58d0c3561269f1d993542441f336441aeb80b90bf6beb": {
+      "url": "https://sspai.com/post/106454",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "9295ca1fcc9116bd036ac7eae9f50dc3f993eed04ae1ff69f21596613c43b07a": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-15/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "d03b7fefdc3bf0c8ab37dc964174ee695b065a87c8be559604310540bccb76ff": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-14/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "8cb4cad7d4631e4fda68933fca86d2aa793168042414b7833ee8f0d7e436f666": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-13/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "ead18b90e4ad67872a8914c409f5f5461b5256431084b8b298933feca422382e": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-12/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "20bd48b73161c2ed5a8f1b4afe0bbad9a0df45864406fde0b0275a3133418f0f": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-11/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "98108e7bba76fd57d5550cf0ea622e163aedf064d312bf1265a6a827405a1ddb": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-10/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "ece7529be9943dcd8cad238ab879d6c6574bf152b757bc99edbd8a56a1bbfc7f": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-9/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "40ae5ae01a9fa328266eeb496ff341bc89f2df0d9ff203ff7886cacd3a4143c4": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-8/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "37ec20c288c7d2454b8c329c6ab5d6ec7e40b9c90d7987f738858f6461d57958": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-7/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "5023c2fcfa37faedc811cdf5142c1d8b80e9ab8c166b4ad3a8600a2a839da2f3": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-6/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "ec49162b275f702b96d65148f823e0cb88b5204139a982bd23e76feb21032592": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-5/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "1f3b1eb4bbc781b9d687487840265f0138c76b4da8c1259bbce13f5dc1e621ad": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-4/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "d25ac22e02fa9e213bf6f4d297ae8ac4af654a498cfa3a68dd2134e3cfd172f9": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-3/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "fc209b080f3e23d6f85553e730465b13714632f2fc0e3ef96caedf7a40abf334": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-2/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
+    },
+    "3ef73d889ea96573ab7ed047780a8ee09c61e72c6dd6af064497992a8f0419ef": {
+      "url": "https://imjuya.github.io/juya-ai-daily/issue-1/",
+      "ts": "2026-03-04T02:02:12.271348+00:00"
     }
   },
-  "ai": {}
+  "ai": {
+    "c174f53f88ef60d48904dd5b71a4493e71f675cde1f25b016029c8c4fa582edc": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "Significant tech/business news: OpenAI entering code hosting market to compete directly with Microsoft/GitHub, with implications for their shareholder relationship. High-signal industry news.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "efd70b6fd97735617ac3e87f8342d4d38beaac9596084f979a879a1615b3d59a": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Major hardware product launch with technical specifications. Apple M5 chip announcement is significant tech news.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "1ad4c5158f8c6e0e7523cf8c4dea4865256159158a8225c6a31cb7d25383e8f3": {
+      "keep": false,
+      "score": 0.2,
+      "reason": "Community roundup/aggregation content - user submissions about what they bought. Not technical news, low-signal community content.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "a3aab793d6add7c0ff5587329c0e8355c4afb935a8918c6e0abbe24c5ec9d892": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "Cultural/entertainment analysis piece about amnesia in films. Not technical news, cultural commentary.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "3be3ca69fcc3feb4a072dc745977fc7f40c41dba807f83beaacd7542538f8e4e": {
+      "keep": false,
+      "score": 0.2,
+      "reason": "Personal experience blog post about learning programming. Not technical news, individual blog content.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "2399796f65714012a8b995fb051bbeb4898a0e895cab2fd14883df2af81f8f50": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "High-signal tech news about Apple product releases (iPhone 17e, iPad Air with M4 chip). Timely industry news with clear technical relevance.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "8d3fe3ba4b8cf07496224eb821a3f518c462c23a2b74174a5ec5b530ec2ea69c": {
+      "keep": false,
+      "score": 0.4,
+      "reason": "App roundup/review content with promotional elements. While technically-oriented, it's more of a curated list/buyer's guide rather than high-signal news or in-depth technical analysis.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "d5b8c1200b4eebb6be166d4b867eb0c122b0b05111cdbf2375aad83cfa965813": {
+      "keep": false,
+      "score": 0.35,
+      "reason": "Niche retro computing content about using Windows 8.1 on discontinued Lumia 1020. Interesting but low practical relevance and highly specialized audience.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "8af85e69b0629dc11516b233bb11d86e3ed54ab78b68ddb358a5c3777ac466a5": {
+      "keep": false,
+      "score": 0.25,
+      "reason": "Contest entry/annual essay about personal AI usage. User-generated content focused on personal narrative rather than technical news or analysis. Low information value for general tech audience.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "de9f0e9d30fcd791d6c58d0c3561269f1d993542441f336441aeb80b90bf6beb": {
+      "keep": true,
+      "score": 0.82,
+      "reason": "Practical technical tutorial on audio quality verification using spectrum analysis. Provides actionable technical knowledge for identifying fake lossless music files.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "b0971aa3f8267d84eba0ce51ee9feadeb9806310b5a77f426e27979dd0800af6": {
+      "keep": false,
+      "score": 0.15,
+      "reason": "Promotional/contest content - this is an essay competition entry rather than technical news or actionable technical content. The description explicitly states it's for a contest voting event.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "9295ca1fcc9116bd036ac7eae9f50dc3f993eed04ae1ff69f21596613c43b07a": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "High-signal technical AI news with multiple model releases, product updates, and developer ecosystem changes. Contains specific version numbers and actionable technical information.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "d03b7fefdc3bf0c8ab37dc964174ee695b065a87c8be559604310540bccb76ff": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "High-signal technical AI news with multiple open source model releases, developer tools updates. Contains specific model names, version numbers and technical details.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "8cb4cad7d4631e4fda68933fca86d2aa793168042414b7833ee8f0d7e436f666": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "High-signal technical AI news with model releases, research findings, and notable industry applications (military use). Contains specific technical details and research insights.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "ead18b90e4ad67872a8914c409f5f5461b5256431084b8b298933feca422382e": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "High-signal technical AI news with security vulnerabilities, product updates, industry dynamics, and notable government/military agreements. Contains specific security issues and product releases.",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "20bd48b73161c2ed5a8f1b4afe0bbad9a0df45864406fde0b0275a3133418f0f": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Valid AI news digest with multiple technical items including major funding news, industry conflicts, and product launches from major AI labs",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "98108e7bba76fd57d5550cf0ea622e163aedf064d312bf1265a6a827405a1ddb": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Valid AI news digest covering model releases, developer tools, and ecosystem updates from multiple AI providers",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "ece7529be9943dcd8cad238ab879d6c6574bf152b757bc99edbd8a56a1bbfc7f": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Valid AI news digest with major tech company财报, developer tools, and industry updates",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "40ae5ae01a9fa328266eeb496ff341bc89f2df0d9ff203ff7886cacd3a4143c4": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Valid AI news digest covering significant model releases and developer features from major AI labs",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "37ec20c288c7d2454b8c329c6ab5d6ec7e40b9c90d7987f738858f6461d57958": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Valid AI news digest with industry news, model updates, and notable IP/ethics conflicts",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "5023c2fcfa37faedc811cdf5142c1d8b80e9ab8c166b4ad3a8600a2a839da2f3": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "高质量AI行业新闻汇总，包含多个技术亮点：Google AI Studio新功能、AGI判定标准讨论、Stargate项目动态、OpenAI新订阅层、三星与Perplexity合作",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "ec49162b275f702b96d65148f823e0cb88b5204139a982bd23e76feb21032592": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "内容丰富的AI开发资讯汇总，包含中国AI动态(GLM/Qwen)、Claude Code更新、OpenAI API扩展、微软数据隐私、芯片技术、安全分析",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "1f3b1eb4bbc781b9d687487840265f0138c76b4da8c1259bbce13f5dc1e621ad": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "重要AI开发资讯：Claude SDK争议事件、Claude Code安全更新、高性能模型发布、中国AI公司动态、GGML团队加入Hugging Face行业整合",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "d25ac22e02fa9e213bf6f4d297ae8ac4af654a498cfa3a68dd2134e3cfd172f9": {
+      "keep": true,
+      "score": 0.87,
+      "reason": "重要技术新闻：Gemini 3.1新预览版、Claude订阅政策明确化、API缓存功能、新兴基础模型(ZUNA)、jina嵌入模型更新、开发者工具、安全事件(Cline供应链攻击)",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "fc209b080f3e23d6f85553e730465b13714632f2fc0e3ef96caedf7a40abf334": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "重磅模型发布汇总：Lyria 3音乐生成、Grok 4.20 Heavy、106B开源MoE、印度AI模型突破、多项开发者工具更新、国际AI巨头印度布局",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "3ef73d889ea96573ab7ed047780a8ee09c61e72c6dd6af064497992a8f0419ef": {
+      "keep": true,
+      "score": 0.75,
+      "reason": "该RSS条目为AI技术新闻聚合内容，列出了多个具体的AI模型发布、功能更新和技术动态，包括Anthropic、xAI、蚂蚁集团、Cohere、字节跳动、OpenAI等公司的具体产品版本号和功能特性，具有较高的技术信息价值。",
+      "ts": "2026-03-04T02:02:12.271348+00:00",
+      "model": "MiniMax-M2.5"
+    }
+  }
 }
