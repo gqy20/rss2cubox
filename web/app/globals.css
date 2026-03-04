@@ -347,6 +347,36 @@ body {
   padding-top: 16px;
 }
 
+/* 搜索框 */
+.search-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 5px 32px 5px 32px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.search-input::placeholder { color: var(--muted); }
+.search-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-glow);
+}
+
+/* 已推送 Cubox 状态徽章 */
+.status-pushed {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+  border: 1px solid rgba(52, 211, 153, 0.3);
+  letter-spacing: 0.2px;
+}
+
 /* 情报条目 AI 内容：默认折叠，hover 后展开 */
 .t-ai-content {
   max-height: 0;

@@ -66,7 +66,7 @@ async function loadData(): Promise<{
         daily_advices: asStringArray((rawInsights as Record<string, unknown>).daily_advices),
       }
     : null
-  return { rows: dedupeRows(rows), metrics, insights }
+  return { rows: dedupeRows(rows).filter(r => (r.score ?? 0) >= 0.5), metrics, insights }
 }
 
 export default async function Page() {

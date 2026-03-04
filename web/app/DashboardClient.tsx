@@ -1,11 +1,11 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell as PieCell, Legend
 } from 'recharts'
-import { ExternalLink, Activity, Filter, Radar, Zap, TrendingUp, Radio, Lightbulb } from 'lucide-react'
+import { ExternalLink, Activity, Filter, Radar, Zap, TrendingUp, Radio, Lightbulb, Search, ArrowUpDown } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 // Types
@@ -24,13 +24,18 @@ type GlobalInsights = {
   daily_advices?: string[]
 }
 
-function formatTime(value: string): string {
+function formatRelativeTime(value: string, now: Date | null): string {
   const dt = new Date(value)
   if (Number.isNaN(dt.getTime())) return value
-  return dt.toLocaleString('zh-CN', { 
-    month: 'numeric', day: 'numeric', 
-    hour: '2-digit', minute: '2-digit' 
-  })
+  // Server render or before hydration: return absolute time to avoid mismatch
+  if (!now) return dt.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  const diff = now.getTime() - dt.getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return '刚刚'
+  if (mins < 60) return `${mins}分钟前`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}小时前`
+  return `${Math.floor(hours / 24)}天前`
 }
 
 function formatShortTime(value: string): string {
@@ -52,13 +57,32 @@ const PIE_COLORS = ['#2dd4bf', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc']
 export default function DashboardClient({ rows, metrics, insights }: { rows: Row[], metrics: Metrics, insights?: GlobalInsights | null }) {
   const [filter, setFilter] = useState<'all' | 'high'>('all')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
+  const [sortBy, setSortBy] = useState<'time' | 'score'>('time')
+  const [now, setNow] = useState<Date | null>(null)
+
+  useEffect(() => {
+    setNow(new Date())
+    const timer = setInterval(() => setNow(new Date()), 60000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Derived state
   const displayedRows = useMemo(() => {
     let result = filter === 'high' ? rows.filter(r => (r.score ?? 0) >= 0.85) : rows
     if (selectedSource) result = result.filter(r => r.source === selectedSource)
+    if (search.trim()) {
+      const kw = search.trim().toLowerCase()
+      result = result.filter(r =>
+        (r.title || '').toLowerCase().includes(kw) ||
+        (r.hidden_signal || '').toLowerCase().includes(kw) ||
+        (r.core_event || '').toLowerCase().includes(kw) ||
+        (r.tags || []).some(t => t.toLowerCase().includes(kw))
+      )
+    }
+    if (sortBy === 'score') result = [...result].sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     return result
-  }, [rows, filter, selectedSource])
+  }, [rows, filter, selectedSource, search, sortBy])
 
   // Chart Data: Time Series Area Chart
   const trendData = useMemo(() => {
@@ -117,18 +141,26 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
 
         <section className="kpi" style={{ marginBottom: 24 }}>
           <article className="glass kpi-card">
-            <div className="kpi-title">总信号拦截</div>
-            <div className="kpi-value">{metrics.updates_total ?? 0}</div>
+            <div className="kpi-title">有效信号</div>
+            <div className="kpi-value">{rows.length}</div>
+          </article>
+          <article className="glass kpi-card">
+            <div className="kpi-title">高价值 (≥0.85)</div>
+            <div className="kpi-value" style={{ color: '#34d399' }}>{rows.filter(r => (r.score ?? 0) >= 0.85).length}</div>
+          </article>
+          <article className="glass kpi-card">
+            <div className="kpi-title">今日新增</div>
+            <div className="kpi-value" style={{ color: '#60a5fa' }}>
+              {rows.filter(r => {
+                const d = new Date(r.time)
+                const today = new Date()
+                return d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth() && d.getDate() === today.getDate()
+              }).length}
+            </div>
           </article>
           <article className="glass kpi-card">
             <div className="kpi-title">活跃情报源</div>
-            <div className="kpi-value" style={{ color: '#60a5fa' }}>{metrics.sources_total ?? 0}</div>
-          </article>
-          <article className="glass kpi-card">
-            <div className="kpi-title">高含金量信号 (≥0.85)</div>
-            <div className="kpi-value" style={{ color: '#34d399' }}>
-              {rows.filter(r => (r.score ?? 0) >= 0.85).length}
-            </div>
+            <div className="kpi-value" style={{ color: '#a78bfa' }}>{metrics.sources_total ?? 0}</div>
           </article>
         </section>
 
@@ -244,32 +276,61 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
       </div>
 
       <div className="dashboard-right">
-        <div className="controls-bar" style={{ borderBottom: '1px solid var(--panel-border)', paddingBottom: 16, marginBottom: 0 }}>
-          <h2 style={{ fontSize: '20px', margin: 0, fontWeight: 600 }}>实时高能情报轴</h2>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <Filter size={16} color="#8aa3be" />
-            <button 
-              className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
-              onClick={() => setFilter('all')}
-              style={{ padding: '4px 10px', fontSize: 13 }}
-            >全量</button>
-            <button 
-              className={`filter-btn ${filter === 'high' ? 'active' : ''}`}
-              onClick={() => setFilter('high')}
-              style={{ padding: '4px 10px', fontSize: 13 }}
-            >高价值</button>
-            {selectedSource && (
-              <button
-                className="filter-btn source-filter-active"
-                onClick={() => setSelectedSource(null)}
-                style={{ padding: '4px 10px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
-                title="点击清除数据源筛选"
-              >
-                <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedSource}</span>
-                <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
-              </button>
-            )}
+        <div className="controls-bar" style={{ borderBottom: '1px solid var(--panel-border)', paddingBottom: 16, marginBottom: 0, flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <h2 style={{ fontSize: '20px', margin: 0, fontWeight: 600 }}>实时高能情报轴</h2>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+              <Filter size={16} color="#8aa3be" />
+              <button 
+                className={`filter-btn ${filter === 'all' ? 'active' : ''}`}
+                onClick={() => setFilter('all')}
+                style={{ padding: '4px 10px', fontSize: 13 }}
+              >全量</button>
+              <button 
+                className={`filter-btn ${filter === 'high' ? 'active' : ''}`}
+                onClick={() => setFilter('high')}
+                style={{ padding: '4px 10px', fontSize: 13 }}
+              >高价值</button>
+              {selectedSource && (
+                <button
+                  className="filter-btn source-filter-active"
+                  onClick={() => setSelectedSource(null)}
+                  style={{ padding: '4px 10px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}
+                  title="点击清除数据源筛选"
+                >
+                  <span style={{ maxWidth: 100, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedSource}</span>
+                  <span style={{ fontSize: 16, lineHeight: 1 }}>×</span>
+                </button>
+              )}
+            </div>
           </div>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%' }}>
+            <div style={{ flex: 1, position: 'relative' }}>
+              <Search size={13} color="#8aa3be" style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+              <input
+                className="search-input"
+                placeholder="搜索标题、标签、AI分析..."
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+              />
+              {search && (
+                <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#8aa3be', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: 0 }}>×</button>
+              )}
+            </div>
+            <button
+              className={`filter-btn ${sortBy === 'score' ? 'active' : ''}`}
+              onClick={() => setSortBy(prev => prev === 'time' ? 'score' : 'time')}
+              style={{ padding: '4px 10px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
+              title="切换排序方式"
+            >
+              <ArrowUpDown size={12} />{sortBy === 'score' ? '按分数' : '按时间'}
+            </button>
+          </div>
+          {(search || selectedSource) && (
+            <div style={{ fontSize: 12, color: '#8aa3be' }}>
+              共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{displayedRows.length}</span> 条结果
+            </div>
+          )}
         </div>
 
         <div className="timeline-container">
@@ -301,7 +362,9 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                 >
                   <div className="timeline-node">
                     <div className={`node-dot ${isHigh ? 'glow-green' : isMid ? 'glow-blue' : 'glow-gray'}`}></div>
-                    <div className="node-time">{formatDay(row.time)}<br/>{formatShortTime(row.time)}</div>
+                    <div className="node-time">
+                      <span title={formatDay(row.time) + ' ' + formatShortTime(row.time)}>{formatRelativeTime(row.time, now)}</span>
+                    </div>
                   </div>
 
                   <a 
@@ -313,7 +376,9 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                   >
                     <div className="t-header" style={{ flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                        <span className="source-badge">{row.source}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span className="source-badge">{row.source}</span>
+                        </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span className={`score-badge ${isHigh ? 'score-high' : isMid ? 'score-mid' : 'score-low'}`}>
                             {s.toFixed(2)} Score
