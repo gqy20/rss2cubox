@@ -10,13 +10,27 @@ type GlobalInsights = {
   daily_advices?: string[]
 }
 
+type Row = { id: string; title: string; url: string; source: string; time: string; score?: number }
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value.map((v) => String(v)).filter((v) => v.trim().length > 0)
 }
 
+function dedupeRows(rows: Row[]): Row[] {
+  const seen = new Set<string>()
+  const out: Row[] = []
+  for (const row of rows) {
+    const key = row.id || `${row.url}|${row.time}|${row.title}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(row)
+  }
+  return out
+}
+
 async function loadData(): Promise<{
-  rows: Array<{ id: string; title: string; url: string; source: string; time: string; score?: number }>
+  rows: Row[]
   metrics: {
     generated_at?: string
     updates_total?: number
@@ -33,7 +47,7 @@ async function loadData(): Promise<{
     readFile(metricsPath, 'utf-8').catch(() => '{}'),
     readFile(insightsPath, 'utf-8').catch(() => 'null'),
   ])
-  const rows = JSON.parse(updatesRaw) as Array<{ id: string; title: string; url: string; source: string; time: string; score?: number }>
+  const rows = JSON.parse(updatesRaw) as Row[]
   const metrics = JSON.parse(metricsRaw) as {
     generated_at?: string
     updates_total?: number
@@ -50,7 +64,7 @@ async function loadData(): Promise<{
         daily_advices: asStringArray((rawInsights as Record<string, unknown>).daily_advices),
       }
     : null
-  return { rows: rows.slice(0, 60), metrics, insights }
+  return { rows: dedupeRows(rows).slice(0, 60), metrics, insights }
 }
 
 export default async function Page() {

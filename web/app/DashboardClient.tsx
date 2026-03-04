@@ -261,7 +261,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: idx * 0.03 }}
-                  key={row.id} 
+                  key={`${row.id || row.url}-${row.time}-${idx}`} 
                   className="timeline-item"
                 >
                   <div className="timeline-node">
