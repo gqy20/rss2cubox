@@ -42,12 +42,12 @@ def test_resolve_feed_urls_with_rsshub_route() -> None:
 def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyPatch) -> None:
     instances = ["https://bad.rsshub.test", "https://ok.rsshub.test"]
 
-    def fake_parse(url: str):  # noqa: ANN001
+    def fake_fetch(url: str):  # noqa: ANN001
         if url.startswith("https://bad.rsshub.test"):
-            return SimpleNamespace(bozo=True, entries=[])
+            raise RuntimeError("boom")
         return SimpleNamespace(bozo=False, entries=[{"id": "1", "link": "https://example.com/1"}])
 
-    monkeypatch.setattr(runner.feedparser, "parse", fake_parse)
+    monkeypatch.setattr(runner, "fetch_and_parse_feed", fake_fetch)
 
     selected, parsed, attempt = runner.parse_feed_with_fallback("rsshub", "/sspai/index", instances)
     assert selected == "https://ok.rsshub.test/sspai/index"
@@ -343,7 +343,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 
     pushed_urls = []
 
-    def fake_parse(url: str):  # noqa: ANN001
+    def fake_fetch(url: str):  # noqa: ANN001
         assert url == "https://feed.example/rss"
         return SimpleNamespace(bozo=False, entries=entries)
 
@@ -359,7 +359,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
     monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
     monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
-    monkeypatch.setattr(runner.feedparser, "parse", fake_parse)
+    monkeypatch.setattr(runner, "fetch_and_parse_feed", fake_fetch)
     monkeypatch.setattr(runner, "cubox_save_url", fake_save)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 

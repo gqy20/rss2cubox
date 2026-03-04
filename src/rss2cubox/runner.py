@@ -8,8 +8,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import feedparser
 import requests
+
+from rss2cubox.feed_sources import (
+    RSSHubInstancePool,
+    load_feed_specs as _load_feed_specs,
+    load_lines as _load_lines,
+    load_rsshub_instances as _load_rsshub_instances,
+    resolve_feed_urls as _resolve_feed_urls,
+)
+from rss2cubox.metrics import StageMetrics
 
 FEEDS_FILE = Path(os.getenv("FEEDS_FILE", "feeds.txt"))
 STATE_FILE = Path(os.getenv("STATE_FILE", "state.json"))
@@ -54,7 +62,9 @@ AI_RETRY_ATTEMPTS = env_int("AI_RETRY_ATTEMPTS", 3)
 AI_RETRY_BACKOFF_SECONDS = env_float("AI_RETRY_BACKOFF_SECONDS", 1.5)
 AI_BATCH_SIZE = env_int("AI_BATCH_SIZE", 5)
 AI_MAX_CANDIDATES = env_int("AI_MAX_CANDIDATES", max(MAX_ITEMS_PER_RUN * 2, 1))
-DEFAULT_RSSHUB_INSTANCES = ["https://rsshub.rssforever.com", "https://rsshub.app"]
+FEED_CONNECT_TIMEOUT_SECONDS = env_float("FEED_CONNECT_TIMEOUT_SECONDS", 5.0)
+FEED_READ_TIMEOUT_SECONDS = env_float("FEED_READ_TIMEOUT_SECONDS", 10.0)
+RSSHUB_FAILURE_COOLDOWN_SECONDS = env_int("RSSHUB_FAILURE_COOLDOWN_SECONDS", 300)
 
 
 def log_event(level: str, event: str, **fields: Any) -> None:
@@ -81,6 +91,12 @@ def write_step_summary(summary: dict[str, Any]) -> None:
         f"| rsshub_routes | {summary.get('rsshub_routes', 0)} |",
         f"| rsshub_fallback_used | {summary.get('rsshub_fallback_used', 0)} |",
         f"| rsshub_instances | {summary.get('rsshub_instances', 0)} |",
+        f"| stage_fetch_total_ms | {summary.get('stage_fetch_total_ms', 0)} |",
+        f"| stage_fetch_p95_ms | {summary.get('stage_fetch_p95_ms', 0)} |",
+        f"| stage_ai_total_ms | {summary.get('stage_ai_total_ms', 0)} |",
+        f"| stage_ai_p95_ms | {summary.get('stage_ai_p95_ms', 0)} |",
+        f"| stage_push_total_ms | {summary.get('stage_push_total_ms', 0)} |",
+        f"| stage_push_p95_ms | {summary.get('stage_push_p95_ms', 0)} |",
         f"| fetched | {summary.get('fetched', 0)} |",
         f"| deduped | {summary.get('deduped', 0)} |",
         f"| missing_link | {summary.get('missing_link', 0)} |",
@@ -97,78 +113,107 @@ def write_step_summary(summary: dict[str, Any]) -> None:
         f"| pushed | {summary.get('pushed', 0)} |",
         f"| push_failed | {summary.get('push_failed', 0)} |",
         f"| state_size | {summary.get('state_size', 0)} |",
+        "",
+        "### Runtime Context",
+        "",
+        "```json",
+        json.dumps(summary.get("runtime_context", {}), ensure_ascii=False, sort_keys=True),
+        "```",
+        "",
+        "### Config Snapshot",
+        "",
+        "```json",
+        json.dumps(summary.get("config_snapshot", {}), ensure_ascii=False, sort_keys=True),
+        "```",
+        "",
+        "### Per Feed Push Counts",
+        "",
+        "```json",
+        json.dumps(summary.get("per_feed_push_counts", {}), ensure_ascii=False, sort_keys=True),
+        "```",
+        "",
+        "### Per Feed Drop Reasons",
+        "",
+        "```json",
+        json.dumps(summary.get("per_feed_drop_reasons", {}), ensure_ascii=False, sort_keys=True),
+        "```",
     ]
     with Path(summary_path).open("a", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
 
 
-def normalize_feed_kind(kind: str, raw: str) -> str:
-    if kind in {"rsshub", "direct"}:
-        return kind
-    return "direct" if raw.startswith(("http://", "https://")) else "rsshub"
-
-
 def load_feed_specs(path: Path) -> list[dict[str, str]]:
-    specs: list[dict[str, str]] = []
-    section = "auto"
-    with path.open("r", encoding="utf-8") as f:
-        for ln in f:
-            raw = ln.strip()
-            if not raw or raw.startswith("#"):
-                continue
-            lowered = raw.lower()
-            if lowered in {"[rsshub]", "rsshub:"}:
-                section = "rsshub"
-                continue
-            if lowered in {"[direct]", "direct:"}:
-                section = "direct"
-                continue
-            specs.append({"kind": normalize_feed_kind(section, raw), "value": raw})
-    return specs
+    return _load_feed_specs(path)
 
 
-def load_rsshub_instances() -> list[str]:
-    instances: list[str] = []
-    if RSSHUB_INSTANCES_FILE.exists():
-        instances.extend(load_lines(RSSHUB_INSTANCES_FILE))
-    if not instances:
-        env_value = os.getenv("RSSHUB_INSTANCES", "").strip()
-        if env_value:
-            instances.extend(part.strip() for part in env_value.split(",") if part.strip())
-    if not instances:
-        instances = DEFAULT_RSSHUB_INSTANCES[:]
-    normalized: list[str] = []
-    seen: set[str] = set()
-    for instance in instances:
-        v = instance.strip().rstrip("/")
-        if not v or v in seen:
-            continue
-        seen.add(v)
-        normalized.append(v)
-    return normalized
+def load_lines(path: Path) -> list[str]:
+    return _load_lines(path)
+
+
+def load_rsshub_instances(path: Path | None = None) -> list[str]:
+    return _load_rsshub_instances(path or RSSHUB_INSTANCES_FILE)
 
 
 def resolve_feed_urls(feed_kind: str, feed_value: str, rsshub_instances: list[str]) -> list[str]:
-    value = feed_value.strip()
-    if not value:
-        return []
-    kind = normalize_feed_kind(feed_kind, value)
-    if kind == "direct":
-        return [value]
-    route = value
-    if value.startswith("rsshub://"):
-        route = value[len("rsshub://") :]
-    if route.startswith(("http://", "https://")):
-        return [route]
-    if not route.startswith("/"):
-        route = f"/{route}"
-    return [f"{base}{route}" for base in rsshub_instances]
+    pool = RSSHubInstancePool(instances=rsshub_instances[:], cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_SECONDS)
+    return _resolve_feed_urls(feed_kind, feed_value, pool)
 
 
-def parse_feed_with_fallback(feed_kind: str, feed_value: str, rsshub_instances: list[str]) -> tuple[str | None, Any | None, int]:
-    for idx, candidate_url in enumerate(resolve_feed_urls(feed_kind, feed_value, rsshub_instances), start=1):
-        parsed = feedparser.parse(candidate_url)
-        if not getattr(parsed, "bozo", False):
+def fetch_and_parse_feed(url: str) -> Any:
+    response = requests.get(
+        url,
+        timeout=(FEED_CONNECT_TIMEOUT_SECONDS, FEED_READ_TIMEOUT_SECONDS),
+        headers={"user-agent": "rss2cubox/0.1 (+github-actions)"},
+    )
+    response.raise_for_status()
+    import feedparser
+
+    parsed = feedparser.parse(response.content)
+    if getattr(parsed, "bozo", False):
+        bozo_exc = getattr(parsed, "bozo_exception", None)
+        raise ValueError(f"invalid feed parse: {bozo_exc!r}")
+    return parsed
+
+
+def parse_feed_with_fallback(
+    feed_kind: str,
+    feed_value: str,
+    rsshub_pool: RSSHubInstancePool | list[str],
+) -> tuple[str | None, Any | None, int]:
+    if isinstance(rsshub_pool, list):
+        rsshub_pool = RSSHubInstancePool(
+            instances=rsshub_pool[:],
+            cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_SECONDS,
+        )
+    candidates = _resolve_feed_urls(feed_kind, feed_value, rsshub_pool)
+    for idx, candidate_url in enumerate(candidates, start=1):
+        instance = candidate_url.split("/", 3)[:3]
+        instance_base = "/".join(instance) if len(instance) >= 3 else candidate_url
+        if feed_kind == "rsshub" and rsshub_pool.should_skip(instance_base):
+            log_event(
+                "INFO",
+                "feed_candidate_skipped_cooldown",
+                stage="fetch",
+                feed=feed_value,
+                candidate=candidate_url,
+                attempt=idx,
+            )
+            continue
+        start = time.perf_counter()
+        try:
+            parsed = fetch_and_parse_feed(candidate_url)
+            if feed_kind == "rsshub":
+                rsshub_pool.mark_success(instance_base)
+            duration_ms = int((time.perf_counter() - start) * 1000)
+            log_event(
+                "INFO",
+                "feed_candidate_success",
+                stage="fetch",
+                feed=feed_value,
+                candidate=candidate_url,
+                attempt=idx,
+                duration_ms=duration_ms,
+            )
             if idx > 1:
                 log_event(
                     "WARN",
@@ -179,20 +224,21 @@ def parse_feed_with_fallback(feed_kind: str, feed_value: str, rsshub_instances: 
                     attempt=idx,
                 )
             return candidate_url, parsed, idx
-        log_event(
-            "WARN",
-            "feed_candidate_failed",
-            stage="fetch",
-            feed=feed_value,
-            candidate=candidate_url,
-            attempt=idx,
-        )
+        except Exception as exc:  # noqa: BLE001
+            if feed_kind == "rsshub":
+                rsshub_pool.mark_failure(instance_base)
+            duration_ms = int((time.perf_counter() - start) * 1000)
+            log_event(
+                "WARN",
+                "feed_candidate_failed",
+                stage="fetch",
+                feed=feed_value,
+                candidate=candidate_url,
+                attempt=idx,
+                duration_ms=duration_ms,
+                error=str(exc),
+            )
     return None, None, 0
-
-
-def load_lines(path: Path) -> list[str]:
-    with path.open("r", encoding="utf-8") as f:
-        return [ln.strip() for ln in f if ln.strip() and not ln.strip().startswith("#")]
 
 
 def load_state() -> dict:
@@ -341,7 +387,7 @@ def build_ai_items(candidates: list[dict]) -> list[dict]:
     return items
 
 
-def _analyze_batch_with_ai(batch: list[dict]) -> dict[str, dict]:
+def _analyze_batch_with_ai(batch: list[dict], stage_metrics: StageMetrics) -> dict[str, dict]:
     if not batch or not ai_analysis_enabled():
         return {}
 
@@ -408,6 +454,7 @@ def _analyze_batch_with_ai(batch: list[dict]) -> dict[str, dict]:
             response.raise_for_status()
             data = response.json()
             duration_ms = int((time.perf_counter() - start) * 1000)
+            stage_metrics.observe("ai", duration_ms)
             stop_reason = data.get("stop_reason")
             block_types = [block.get("type") for block in data.get("content", []) if isinstance(block, dict)]
             usage = data.get("usage", {})
@@ -432,6 +479,7 @@ def _analyze_batch_with_ai(batch: list[dict]) -> dict[str, dict]:
             raise ValueError("empty or unrecognized AI output")
         except Exception as exc:  # noqa: BLE001
             duration_ms = int((time.perf_counter() - start) * 1000)
+            stage_metrics.observe("ai", duration_ms)
             if attempt >= max(1, AI_RETRY_ATTEMPTS):
                 log_event(
                     "WARN",
@@ -459,9 +507,10 @@ def _analyze_batch_with_ai(batch: list[dict]) -> dict[str, dict]:
     return {}
 
 
-def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
+def analyze_candidates_with_ai(candidates: list[dict], stage_metrics: StageMetrics | None = None) -> dict[str, dict]:
     if not candidates or not ai_analysis_enabled():
         return {}
+    metrics = stage_metrics or StageMetrics()
     batch_size = max(1, AI_BATCH_SIZE)
     out: dict[str, dict] = {}
     total = len(candidates)
@@ -477,7 +526,7 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
             batches=batches,
             batch_size=len(batch),
         )
-        parsed = _analyze_batch_with_ai(batch)
+        parsed = _analyze_batch_with_ai(batch, metrics)
         out.update(parsed)
     if out:
         log_event("INFO", "ai_analyze_done", stage="ai_analyze", analyzed=len(out), total=total)
@@ -488,7 +537,12 @@ def analyze_candidates_with_ai(candidates: list[dict]) -> dict[str, dict]:
 
 def main() -> None:
     feed_specs = load_feed_specs(FEEDS_FILE)
-    rsshub_instances = load_rsshub_instances()
+    rsshub_instances = load_rsshub_instances(RSSHUB_INSTANCES_FILE)
+    rsshub_pool = RSSHubInstancePool(
+        instances=rsshub_instances,
+        cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_SECONDS,
+    )
+    stage_metrics = StageMetrics()
     state = load_state()
     sent = state.get("sent", {})
     ai = state.get("ai", {})
@@ -501,6 +555,12 @@ def main() -> None:
         "rsshub_routes": 0,
         "rsshub_fallback_used": 0,
         "rsshub_instances": len(rsshub_instances),
+        "stage_fetch_total_ms": 0,
+        "stage_fetch_p95_ms": 0,
+        "stage_ai_total_ms": 0,
+        "stage_ai_p95_ms": 0,
+        "stage_push_total_ms": 0,
+        "stage_push_p95_ms": 0,
         "fetched": 0,
         "deduped": 0,
         "missing_link": 0,
@@ -517,6 +577,27 @@ def main() -> None:
         "pushed": 0,
         "push_failed": 0,
         "state_size": 0,
+        "runtime_context": {
+            "run_id": os.getenv("GITHUB_RUN_ID", ""),
+            "head_sha": os.getenv("GITHUB_SHA", ""),
+            "ref_name": os.getenv("GITHUB_REF_NAME", ""),
+            "event_name": os.getenv("GITHUB_EVENT_NAME", ""),
+        },
+        "config_snapshot": {
+            "max_items_per_run": MAX_ITEMS_PER_RUN,
+            "ai_enabled": ai_analysis_enabled(),
+            "ai_model": ANTHROPIC_MODEL if ai_analysis_enabled() else "",
+            "ai_min_score": AI_MIN_SCORE,
+            "ai_timeout_seconds": AI_TIMEOUT_SECONDS,
+            "ai_retry_attempts": AI_RETRY_ATTEMPTS,
+            "ai_batch_size": AI_BATCH_SIZE,
+            "ai_max_candidates": AI_MAX_CANDIDATES,
+            "feed_connect_timeout_seconds": FEED_CONNECT_TIMEOUT_SECONDS,
+            "feed_read_timeout_seconds": FEED_READ_TIMEOUT_SECONDS,
+            "rsshub_failure_cooldown_seconds": RSSHUB_FAILURE_COOLDOWN_SECONDS,
+        },
+        "per_feed_push_counts": {},
+        "per_feed_drop_reasons": {},
     }
     log_event(
         "INFO",
@@ -538,7 +619,7 @@ def main() -> None:
         if feed_kind == "rsshub":
             stats["rsshub_routes"] += 1
         log_event("INFO", "feed_fetch_start", stage="fetch", feed=feed_url, kind=feed_kind)
-        selected_url, parsed, selected_attempt = parse_feed_with_fallback(feed_kind, feed_url, rsshub_instances)
+        selected_url, parsed, selected_attempt = parse_feed_with_fallback(feed_kind, feed_url, rsshub_pool)
         if selected_url is None or parsed is None:
             stats["feeds_invalid"] += 1
             log_event("WARN", "feed_invalid", stage="fetch", feed=feed_url, kind=feed_kind)
@@ -581,10 +662,12 @@ def main() -> None:
                     "url": url,
                     "title": title,
                     "description": description,
+                    "source_feed": feed_url,
                 }
             )
             feed_candidates += 1
         feed_duration_ms = int((time.perf_counter() - feed_start) * 1000)
+        stage_metrics.observe("fetch", feed_duration_ms)
         log_event(
             "INFO",
             "feed_processed",
@@ -610,7 +693,7 @@ def main() -> None:
             total=len(candidates),
         )
 
-    analyses = analyze_candidates_with_ai(candidates_for_run)
+    analyses = analyze_candidates_with_ai(candidates_for_run, stage_metrics)
     stats["ai_analyzed"] = len(analyses)
     ai_enabled = stats["ai_enabled"]
     if ai_enabled and analyses:
@@ -628,9 +711,12 @@ def main() -> None:
         title = item["title"]
         description = item["description"]
         tags = None
+        source_feed = item.get("source_feed", "unknown")
 
         result = analyses.get(eid)
         if ai_enabled and analyses and not result:
+            drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+            drop_by_feed["missing_ai_result"] = drop_by_feed.get("missing_ai_result", 0) + 1
             log_event(
                 "INFO",
                 "candidate_skipped",
@@ -667,9 +753,13 @@ def main() -> None:
             }
             if not keep:
                 stats["ai_dropped_keep_false"] += 1
+                drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+                drop_by_feed["ai_keep_false"] = drop_by_feed.get("ai_keep_false", 0) + 1
                 continue
             if score < AI_MIN_SCORE:
                 stats["ai_dropped_score"] += 1
+                drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+                drop_by_feed["ai_score_below_threshold"] = drop_by_feed.get("ai_score_below_threshold", 0) + 1
                 continue
             stats["ai_kept"] += 1
             brief = str(result.get("brief", "")).strip()
@@ -690,30 +780,43 @@ def main() -> None:
             )
             sent[eid] = {"url": url, "ts": now}
             stats["pushed"] += 1
+            stats["per_feed_push_counts"][source_feed] = stats["per_feed_push_counts"].get(source_feed, 0) + 1
+            push_duration_ms = int((time.perf_counter() - push_start) * 1000)
+            stage_metrics.observe("push", push_duration_ms)
             log_event(
                 "INFO",
                 "push_success",
                 stage="push",
                 item_id=eid,
                 url=url,
-                duration_ms=int((time.perf_counter() - push_start) * 1000),
+                duration_ms=push_duration_ms,
             )
             time.sleep(0.3)
         except Exception as exc:  # noqa: BLE001
             stats["push_failed"] += 1
+            push_duration_ms = int((time.perf_counter() - push_start) * 1000)
+            stage_metrics.observe("push", push_duration_ms)
+            drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
+            drop_by_feed["push_failed"] = drop_by_feed.get("push_failed", 0) + 1
             log_event(
                 "ERROR",
                 "push_failed",
                 stage="push",
                 item_id=eid,
                 url=url,
-                duration_ms=int((time.perf_counter() - push_start) * 1000),
+                duration_ms=push_duration_ms,
                 error=str(exc),
             )
 
     state["sent"] = sent
     state["ai"] = ai
     save_state(state)
+    stats["stage_fetch_total_ms"] = stage_metrics.total_ms("fetch")
+    stats["stage_fetch_p95_ms"] = stage_metrics.p95_ms("fetch")
+    stats["stage_ai_total_ms"] = stage_metrics.total_ms("ai")
+    stats["stage_ai_p95_ms"] = stage_metrics.p95_ms("ai")
+    stats["stage_push_total_ms"] = stage_metrics.total_ms("push")
+    stats["stage_push_p95_ms"] = stage_metrics.p95_ms("push")
     stats["state_size"] = len(sent)
     write_step_summary(stats)
     log_event("INFO", "run_summary", stage="summary", **stats)

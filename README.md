@@ -39,6 +39,9 @@ export AI_RETRY_BACKOFF_SECONDS="1.5"
 export AI_BATCH_SIZE="5"
 export AI_MAX_CANDIDATES="40"
 export RSSHUB_INSTANCES_FILE="rsshub_instances.txt"
+export FEED_CONNECT_TIMEOUT_SECONDS="5"
+export FEED_READ_TIMEOUT_SECONDS="10"
+export RSSHUB_FAILURE_COOLDOWN_SECONDS="300"
 
 rss2cubox
 ```
@@ -55,6 +58,9 @@ rss2cubox
 - `RSSHUB_INSTANCES_FILE`（可选，默认 `rsshub_instances.txt`）：
   RSSHub 公共实例池文件路径，每行一个实例 URL。
 - `RSSHUB_INSTANCES`（可选）：当实例池文件缺失或为空时，回退使用该环境变量（逗号分隔）。
+- `FEED_CONNECT_TIMEOUT_SECONDS`（可选，默认 `5`）：拉取 feed 的连接超时（秒）。
+- `FEED_READ_TIMEOUT_SECONDS`（可选，默认 `10`）：拉取 feed 的读取超时（秒）。
+- `RSSHUB_FAILURE_COOLDOWN_SECONDS`（可选，默认 `300`）：RSSHub 实例失败后冷却时间（秒），冷却期间会被跳过。
 - `ANTHROPIC_AUTH_TOKEN`（可选）：Anthropic 认证令牌；有值且配置了模型时启用 AI 分析。
 - `ANTHROPIC_BASE_URL`（可选，默认 `https://api.anthropic.com`）：Anthropic/兼容网关地址。
 - `ANTHROPIC_MODEL`（可选）：模型名，如你的本地值 `MiniMax-M2.5`。
@@ -94,6 +100,7 @@ rss2cubox
 可在 `.github/workflows/rss_to_cubox.yml` 调整 `cron`。
 
 每次 workflow 运行会上传 `rss2cubox.log` 到 GitHub Actions artifacts，便于排查 AI 分析与推送日志。
+同时会在 `Step Summary` 输出阶段耗时（fetch/ai/push total + p95）、每源推送数、每源丢弃原因、运行上下文和配置快照。
 
 ## 测试
 
