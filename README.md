@@ -42,6 +42,7 @@ export RSSHUB_INSTANCES_FILE="rsshub_instances.txt"
 export FEED_CONNECT_TIMEOUT_SECONDS="5"
 export FEED_READ_TIMEOUT_SECONDS="10"
 export RSSHUB_FAILURE_COOLDOWN_SECONDS="300"
+export FEED_CURSOR_LOOKBACK_HOURS="24"
 
 rss2cubox
 ```
@@ -61,6 +62,8 @@ rss2cubox
 - `FEED_CONNECT_TIMEOUT_SECONDS`（可选，默认 `5`）：拉取 feed 的连接超时（秒）。
 - `FEED_READ_TIMEOUT_SECONDS`（可选，默认 `10`）：拉取 feed 的读取超时（秒）。
 - `RSSHUB_FAILURE_COOLDOWN_SECONDS`（可选，默认 `300`）：RSSHub 实例失败后冷却时间（秒），冷却期间会被跳过。
+- `FEED_CURSOR_LOOKBACK_HOURS`（可选，默认 `24`）：按每个 feed 的上次更新时间游标做预过滤时的回看窗口（小时）。
+  注意：这只是提速预过滤，最终防重仍以 `state.json` 的 `sent` 去重为准。
 - `ANTHROPIC_AUTH_TOKEN`（可选）：Anthropic 认证令牌；有值且配置了模型时启用 AI 分析。
 - `ANTHROPIC_BASE_URL`（可选，默认 `https://api.anthropic.com`）：Anthropic/兼容网关地址。
 - `ANTHROPIC_MODEL`（可选）：模型名，如你的本地值 `MiniMax-M2.5`。
@@ -76,6 +79,8 @@ rss2cubox
 - `feeds.txt`：feed 列表，分 `[rsshub]` 和 `[direct]` 两个区块。
 - `rsshub_instances.txt`：RSSHub 公共实例池，每行一个 URL。
 - `state.json`：已推送条目的去重状态（由程序维护）。
+  - `sent`：已推送条目 ID 集（核心去重）
+  - `feed_cursor`：每个 feed 最近观测到的更新时间游标（用于预过滤提速）
 - `.github/workflows/rss_to_cubox.yml`：定时任务与状态自动提交。
 
 ## GitHub Actions 部署

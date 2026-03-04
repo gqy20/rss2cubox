@@ -373,6 +373,74 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert len(state["sent"]) == 1
 
 
+def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    feeds_file = tmp_path / "feeds.txt"
+    state_file = tmp_path / "state.json"
+    feed_url = "https://feed.example/rss"
+    feeds_file.write_text(f"{feed_url}\n", encoding="utf-8")
+    state_file.write_text(
+        json.dumps({"sent": {}, "feed_cursor": {feed_url: "2026-01-10T00:00:00+00:00"}}),
+        encoding="utf-8",
+    )
+
+    entries = [
+        {
+            "id": "old",
+            "link": "https://example.com/old",
+            "title": "Old",
+            "summary": "too old",
+            "published": "2026-01-01T00:00:00+00:00",
+        },
+        {
+            "id": "new",
+            "link": "https://example.com/new",
+            "title": "New",
+            "summary": "fresh",
+            "published": "2026-01-10T12:00:00+00:00",
+        },
+        {
+            "id": "nodate",
+            "link": "https://example.com/nodate",
+            "title": "No Date",
+            "summary": "no timestamp",
+        },
+    ]
+
+    pushed_urls = []
+
+    def fake_fetch(url: str):  # noqa: ANN001
+        assert url == feed_url
+        return SimpleNamespace(bozo=False, entries=entries)
+
+    def fake_save(url: str, title: str, description: str, tags, folder: str):  # noqa: ANN001
+        pushed_urls.append(url)
+        return "ok"
+
+    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
+    monkeypatch.setattr(runner, "STATE_FILE", state_file)
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
+    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
+    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
+    monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
+    monkeypatch.setattr(runner, "FEED_CURSOR_LOOKBACK_HOURS", 24)
+    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
+    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
+    monkeypatch.setattr(runner, "fetch_and_parse_feed", fake_fetch)
+    monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
+        kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
+    ))
+    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+
+    runner.main()
+
+    assert "https://example.com/old" not in pushed_urls
+    assert "https://example.com/new" in pushed_urls
+    assert "https://example.com/nodate" in pushed_urls
+    state = sync_pipeline.load_state(state_file)
+    assert len(state["sent"]) == 2
+    assert state["feed_cursor"][feed_url].startswith("2026-01-10T12:00:00")
+
+
 def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     summary_file = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))

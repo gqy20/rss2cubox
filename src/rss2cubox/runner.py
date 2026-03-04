@@ -2,7 +2,9 @@
 import json
 import os
 import time
-from datetime import datetime, timezone
+import calendar
+from email.utils import parsedate_to_datetime
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -65,6 +67,7 @@ AI_MAX_CANDIDATES = env_int("AI_MAX_CANDIDATES", max(MAX_ITEMS_PER_RUN * 2, 1))
 FEED_CONNECT_TIMEOUT_SECONDS = env_float("FEED_CONNECT_TIMEOUT_SECONDS", 5.0)
 FEED_READ_TIMEOUT_SECONDS = env_float("FEED_READ_TIMEOUT_SECONDS", 10.0)
 RSSHUB_FAILURE_COOLDOWN_SECONDS = env_int("RSSHUB_FAILURE_COOLDOWN_SECONDS", 300)
+FEED_CURSOR_LOOKBACK_HOURS = env_int("FEED_CURSOR_LOOKBACK_HOURS", 24)
 
 
 def log_event(level: str, event: str, **fields: Any) -> None:
@@ -75,6 +78,41 @@ def log_event(level: str, event: str, **fields: Any) -> None:
     }
     payload.update(fields)
     print(json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str), flush=True)
+
+
+def parse_entry_timestamp(entry: dict) -> datetime | None:
+    for key in ("updated_parsed", "published_parsed"):
+        ts = entry.get(key)
+        if ts:
+            try:
+                return datetime.fromtimestamp(calendar.timegm(ts), tz=timezone.utc)
+            except Exception:  # noqa: BLE001
+                pass
+    for key in ("updated", "published"):
+        raw = str(entry.get(key, "")).strip()
+        if not raw:
+            continue
+        parsed = None
+        if raw.endswith("Z"):
+            try:
+                parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+            except ValueError:
+                parsed = None
+        if parsed is None:
+            try:
+                parsed = datetime.fromisoformat(raw)
+            except ValueError:
+                parsed = None
+        if parsed is None:
+            try:
+                parsed = parsedate_to_datetime(raw)
+            except (TypeError, ValueError):
+                parsed = None
+        if parsed is not None:
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=timezone.utc)
+            return parsed.astimezone(timezone.utc)
+    return None
 
 
 def write_step_summary(summary: dict[str, Any]) -> None:
@@ -91,6 +129,7 @@ def write_step_summary(summary: dict[str, Any]) -> None:
         f"| rsshub_routes | {summary.get('rsshub_routes', 0)} |",
         f"| rsshub_fallback_used | {summary.get('rsshub_fallback_used', 0)} |",
         f"| rsshub_instances | {summary.get('rsshub_instances', 0)} |",
+        f"| cursor_skipped | {summary.get('cursor_skipped', 0)} |",
         f"| stage_fetch_total_ms | {summary.get('stage_fetch_total_ms', 0)} |",
         f"| stage_fetch_p95_ms | {summary.get('stage_fetch_p95_ms', 0)} |",
         f"| stage_ai_total_ms | {summary.get('stage_ai_total_ms', 0)} |",
@@ -341,6 +380,7 @@ def main() -> None:
     state = sync_pipeline.load_state(STATE_FILE)
     sent = state.get("sent", {})
     ai = state.get("ai", {})
+    feed_cursor = state.get("feed_cursor", {})
 
     candidates: list[dict] = []
     now = datetime.now(timezone.utc).isoformat()
@@ -350,6 +390,7 @@ def main() -> None:
         "rsshub_routes": 0,
         "rsshub_fallback_used": 0,
         "rsshub_instances": len(rsshub_instances),
+        "cursor_skipped": 0,
         "stage_fetch_total_ms": 0,
         "stage_fetch_p95_ms": 0,
         "stage_ai_total_ms": 0,
@@ -390,6 +431,7 @@ def main() -> None:
             "feed_connect_timeout_seconds": FEED_CONNECT_TIMEOUT_SECONDS,
             "feed_read_timeout_seconds": FEED_READ_TIMEOUT_SECONDS,
             "rsshub_failure_cooldown_seconds": RSSHUB_FAILURE_COOLDOWN_SECONDS,
+            "feed_cursor_lookback_hours": FEED_CURSOR_LOOKBACK_HOURS,
         },
         "per_feed_push_counts": {},
         "per_feed_drop_reasons": {},
@@ -411,6 +453,17 @@ def main() -> None:
         feed_seen = 0
         feed_candidates = 0
         feed_start = time.perf_counter()
+        feed_max_seen_ts: datetime | None = None
+        cursor_raw = str(feed_cursor.get(feed_url, "")).strip()
+        cursor_dt = None
+        if cursor_raw:
+            try:
+                cursor_dt = datetime.fromisoformat(cursor_raw.replace("Z", "+00:00")).astimezone(timezone.utc)
+            except ValueError:
+                cursor_dt = None
+        cutoff_dt = None
+        if cursor_dt is not None:
+            cutoff_dt = cursor_dt - timedelta(hours=max(0, FEED_CURSOR_LOOKBACK_HOURS))
         if feed_kind == "rsshub":
             stats["rsshub_routes"] += 1
         log_event("INFO", "feed_fetch_start", stage="fetch", feed=feed_url, kind=feed_kind)
@@ -435,6 +488,12 @@ def main() -> None:
         for entry in parsed.entries:
             feed_seen += 1
             stats["fetched"] += 1
+            entry_ts = parse_entry_timestamp(entry)
+            if entry_ts is not None and (feed_max_seen_ts is None or entry_ts > feed_max_seen_ts):
+                feed_max_seen_ts = entry_ts
+            if cutoff_dt is not None and entry_ts is not None and entry_ts < cutoff_dt:
+                stats["cursor_skipped"] += 1
+                continue
             eid = sync_pipeline.stable_id(entry)
             if eid in sent:
                 stats["deduped"] += 1
@@ -474,6 +533,16 @@ def main() -> None:
             candidates=feed_candidates,
             duration_ms=feed_duration_ms,
         )
+        if feed_max_seen_ts is not None:
+            prev = feed_cursor.get(feed_url)
+            prev_dt = None
+            if isinstance(prev, str) and prev.strip():
+                try:
+                    prev_dt = datetime.fromisoformat(prev.replace("Z", "+00:00")).astimezone(timezone.utc)
+                except ValueError:
+                    prev_dt = None
+            if prev_dt is None or feed_max_seen_ts > prev_dt:
+                feed_cursor[feed_url] = feed_max_seen_ts.isoformat()
 
     stats["candidates"] = len(candidates)
 
@@ -607,6 +676,7 @@ def main() -> None:
 
     state["sent"] = sent
     state["ai"] = ai
+    state["feed_cursor"] = feed_cursor
     sync_pipeline.save_state(STATE_FILE, state)
     stats["stage_fetch_total_ms"] = stage_metrics.total_ms("fetch")
     stats["stage_fetch_p95_ms"] = stage_metrics.p95_ms("fetch")
