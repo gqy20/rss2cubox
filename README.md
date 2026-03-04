@@ -56,6 +56,9 @@ export AI_RETRY_ATTEMPTS="3"
 export AI_RETRY_BACKOFF_SECONDS="1.5"
 export AI_BATCH_SIZE="5"
 export AI_MAX_CANDIDATES="40"
+
+# Web（Vercel）导出到 Cubox：用于加密 HttpOnly cookie
+export CUBOX_COOKIE_SECRET="replace-with-a-long-random-secret"
 ```
 
 ## 4) 运行

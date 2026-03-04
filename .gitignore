@@ -9,3 +9,9 @@ build/
 # web
 web/node_modules/
 web/.next/
+web/.env*
+!web/.env.example
+
+# local env secrets
+.env*
+!.env.example

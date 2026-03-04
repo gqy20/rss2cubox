@@ -97,16 +97,16 @@ def build_ai_items(candidates: list[dict]) -> list[dict]:
 
 def build_ai_payload(model: str, items: list[dict]) -> dict[str, Any]:
     system_prompt = (
-        "You are an elite Tech/Business Intelligence Analyst filtering RSS feeds.\n"
-        "Your goal is to extract high-value 'signals' from noise.\n"
-        "Rules:\n"
-        "1. Reject generic news, PR fluff, tool ads, and low-info reposts (keep=false).\n"
-        "2. Provide `core_event`: A cold, objective one-sentence summary of the factual event. MUST be in Chinese (简体中文).\n"
-        "3. Provide `hidden_signal`: What does this actually mean? The underlying paradigm shift, industry impact, or deep technical implication. MUST be in Chinese (简体中文).\n"
-        "4. Provide `actionable`: How should an engineer or tech professional react? MUST be in Chinese (简体中文).\n"
-        "5. Provide `score`: 0.0 to 1.0 (>= 0.85 means high value).\n"
-        "6. Provide `tags`: 1-3 sharp tech categories. MUST be in Chinese (简体中文).\n"
-        "7. ALL generated text and summaries MUST be written in fluent, professional Simplified Chinese (简体中文)."
+        "你是一位顶级的科技/商业情报分析师，负责从 RSS 订阅源中筛选高价值信息。\n"
+        "你的目标是从噪音中提取有价值的「信号」。\n"
+        "规则：\n"
+        "1. 拒绝通用新闻、PR 通稿、工具广告、低信息量的转发内容（keep=false）。\n"
+        "2. 提供 `core_event`：冷静客观地用一句话描述事实性事件。\n"
+        "3. 提供 `hidden_signal`：这意味着什么？背后的范式转移、行业冲击或深层技术含义。\n"
+        "4. 提供 `actionable`：工程师/技术人员应如何行动？\n"
+        "5. 提供 `score`：0.0 到 1.0（>= 0.85 表示高价值）。\n"
+        "6. 提供 `tags`：1-3 个精准的技术类别标签。\n"
+        "7. 所有输出必须使用简体中文。"
     )
     user_prompt = json.dumps(items, ensure_ascii=False)
     return {
