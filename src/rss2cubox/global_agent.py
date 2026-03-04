@@ -27,6 +27,17 @@ JINA_READER_BASE = "https://r.jina.ai/"
 JINA_MAX_CHARS = 8000  # 截断防止 Token 超限
 
 
+def _to_str_list(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    for item in value:
+        text = str(item).strip()
+        if text:
+            out.append(text)
+    return out
+
+
 def _build_user_prompt(high_value_items: list[dict]) -> str:
     items_json = json.dumps(
         [
@@ -162,9 +173,9 @@ def run_global_analysis(
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source_count": len(high_value),
-        "trends": result.get("trends", []),
-        "weak_signals": result.get("weak_signals", []),
-        "daily_advices": result.get("daily_advices", []),
+        "trends": _to_str_list(result.get("trends")),
+        "weak_signals": _to_str_list(result.get("weak_signals")),
+        "daily_advices": _to_str_list(result.get("daily_advices")),
     }
     output_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[global_agent] 全局分析完成，结果已写入 {output_file}", flush=True)

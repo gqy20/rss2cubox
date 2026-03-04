@@ -189,7 +189,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
 
         {insights && (
           <section style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-            {insights.trends && insights.trends.length > 0 && (
+            {Array.isArray(insights.trends) && insights.trends.length > 0 && (
               <div className="glass chart-card" style={{ padding: '16px 20px' }}>
                 <h3 className="chart-title" style={{ marginBottom: 12 }}>
                   <TrendingUp size={16} color="#2dd4bf" /> 宏观技术趋势
@@ -202,7 +202,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
               </div>
             )}
 
-            {insights.weak_signals && insights.weak_signals.length > 0 && (
+            {Array.isArray(insights.weak_signals) && insights.weak_signals.length > 0 && (
               <div className="glass chart-card" style={{ padding: '16px 20px' }}>
                 <h3 className="chart-title" style={{ marginBottom: 12 }}>
                   <Radio size={16} color="#f59e0b" /> 暗流弱信号
@@ -215,7 +215,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
               </div>
             )}
 
-            {insights.daily_advices && insights.daily_advices.length > 0 && (
+            {Array.isArray(insights.daily_advices) && insights.daily_advices.length > 0 && (
               <div className="glass chart-card" style={{ padding: '16px 20px' }}>
                 <h3 className="chart-title" style={{ marginBottom: 12 }}>
                   <Lightbulb size={16} color="#a78bfa" /> 今日行动建议

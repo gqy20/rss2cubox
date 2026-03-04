@@ -10,6 +10,11 @@ type GlobalInsights = {
   daily_advices?: string[]
 }
 
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.map((v) => String(v)).filter((v) => v.trim().length > 0)
+}
+
 async function loadData(): Promise<{
   rows: Array<{ id: string; title: string; url: string; source: string; time: string; score?: number }>
   metrics: {
@@ -35,7 +40,16 @@ async function loadData(): Promise<{
     sources_total?: number
     top_sources?: Array<{ source: string; count: number }>
   }
-  const insights = JSON.parse(insightsRaw) as GlobalInsights | null
+  const rawInsights = JSON.parse(insightsRaw) as GlobalInsights | null
+  const insights = rawInsights
+    ? {
+        generated_at: rawInsights.generated_at,
+        source_count: rawInsights.source_count,
+        trends: asStringArray((rawInsights as Record<string, unknown>).trends),
+        weak_signals: asStringArray((rawInsights as Record<string, unknown>).weak_signals),
+        daily_advices: asStringArray((rawInsights as Record<string, unknown>).daily_advices),
+      }
+    : null
   return { rows: rows.slice(0, 60), metrics, insights }
 }
 
@@ -48,4 +62,3 @@ export default async function Page() {
     </main>
   )
 }
-
