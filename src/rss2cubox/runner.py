@@ -33,7 +33,7 @@ def env_float(name: str, default: float) -> float:
     try:
         return float(raw)
     except ValueError:
-        print(f"[WARN] invalid {name}={raw!r}, fallback to {default}")
+        print(f"[WARN] invalid {name}={raw!r}, fallback to {default}", flush=True)
         return default
 
 
@@ -44,7 +44,7 @@ def env_int(name: str, default: int) -> int:
     try:
         return int(raw)
     except ValueError:
-        print(f"[WARN] invalid {name}={raw!r}, fallback to {default}")
+        print(f"[WARN] invalid {name}={raw!r}, fallback to {default}", flush=True)
         return default
 
 
@@ -64,7 +64,7 @@ def log_event(level: str, event: str, **fields: Any) -> None:
         "event": event,
     }
     payload.update(fields)
-    print(json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str))
+    print(json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str), flush=True)
 
 
 def write_step_summary(summary: dict[str, Any]) -> None:
@@ -537,6 +537,7 @@ def main() -> None:
         feed_start = time.perf_counter()
         if feed_kind == "rsshub":
             stats["rsshub_routes"] += 1
+        log_event("INFO", "feed_fetch_start", stage="fetch", feed=feed_url, kind=feed_kind)
         selected_url, parsed, selected_attempt = parse_feed_with_fallback(feed_kind, feed_url, rsshub_instances)
         if selected_url is None or parsed is None:
             stats["feeds_invalid"] += 1
@@ -716,7 +717,7 @@ def main() -> None:
     stats["state_size"] = len(sent)
     write_step_summary(stats)
     log_event("INFO", "run_summary", stage="summary", **stats)
-    print(f"Done. Pushed {stats['pushed']} items. State size={len(sent)}")
+    print(f"Done. Pushed {stats['pushed']} items. State size={len(sent)}", flush=True)
 
 
 if __name__ == "__main__":

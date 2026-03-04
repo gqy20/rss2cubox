@@ -46,6 +46,7 @@ jobs:
           AI_BATCH_SIZE: ${{ vars.AI_BATCH_SIZE }}
           AI_MAX_CANDIDATES: ${{ vars.AI_MAX_CANDIDATES }}
           RSSHUB_INSTANCES_FILE: "rsshub_instances.txt"
+          PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail
           rss2cubox 2>&1 | tee rss2cubox.log
