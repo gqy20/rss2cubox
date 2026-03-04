@@ -5,7 +5,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell as PieCell, Legend
 } from 'recharts'
-import { ExternalLink, Activity, Filter, Radar, Zap, TrendingUp, Radio, Lightbulb, Search, ArrowUpDown } from 'lucide-react'
+import { ExternalLink, Filter, Radar, Zap, TrendingUp, Radio, Lightbulb, Search, ArrowUpDown } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 // Types
@@ -225,8 +225,14 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
             <div className="muted" style={{ marginTop: 6, marginLeft: 52 }}>最后更新：{metrics.generated_at ? new Date(metrics.generated_at).toLocaleString('zh-CN') : '未知'}</div>
           </div>
           <div style={{ display: 'flex', gap: '8px' }}>
-            <div className="source-badge glow-pulse" style={{ backgroundColor: 'rgba(45, 212, 191, 0.2)', padding: '6px 12px' }}>
-              <Activity size={14} color="#2dd4bf" /> <span style={{color: '#2dd4bf', fontWeight: 600}}>实时分析监控中</span>
+            <div className="source-badge glow-pulse" style={{ backgroundColor: 'rgba(45, 212, 191, 0.15)', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div className="wave-bars">
+                <div className="wave-bar" />
+                <div className="wave-bar" />
+                <div className="wave-bar" />
+                <div className="wave-bar" />
+              </div>
+              <span style={{color: '#2dd4bf', fontWeight: 600, fontSize: 13}}>实时分析监控中</span>
             </div>
           </div>
         </div>
@@ -483,7 +489,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                     href={row.url} 
                     target="_blank" 
                     rel="noreferrer"
-                    className="glass timeline-content" 
+                    className={`glass timeline-content${isHigh ? ' timeline-high' : ''}`} 
                     style={{ display: 'block', textDecoration: 'none', cursor: 'pointer' }}
                   >
                     <div className="t-header" style={{ flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>

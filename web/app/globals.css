@@ -20,6 +20,19 @@ body {
   min-height: 100vh;
 }
 
+/* 科技网格背景 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(45, 212, 191, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(45, 212, 191, 0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
 /* Glassmorphism utility */
 .glass {
   background: var(--panel);
@@ -38,6 +51,8 @@ body {
   padding: 32px 40px;
   display: flex;
   gap: 40px;
+  position: relative;
+  z-index: 1;
 }
 
 .header-container {
@@ -255,8 +270,14 @@ body {
   bottom: 0;
   left: 60px;
   width: 1px;
-  background: linear-gradient(180deg, var(--accent), rgba(255,255,255,0.05));
+  background: linear-gradient(180deg, var(--accent), rgba(255,255,255,0.03));
   z-index: 0;
+  animation: timeline-pulse 3s ease-in-out infinite;
+}
+
+@keyframes timeline-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; box-shadow: 0 0 6px var(--accent-glow); }
 }
 
 .timeline-item {
@@ -331,7 +352,41 @@ body {
   margin: 0 0 8px 0;
   color: #fff;
   line-height: 1.4;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
+
+/* 高分信号辉光边框 */
+.timeline-high {
+  border-color: rgba(52, 211, 153, 0.45) !important;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(52, 211, 153, 0.15), inset 0 0 20px rgba(52, 211, 153, 0.03) !important;
+}
+.timeline-high:hover {
+  border-color: rgba(52, 211, 153, 0.7) !important;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6), 0 0 16px rgba(52, 211, 153, 0.25) !important;
+}
+
+/* 音频波形动画 */
+@keyframes wave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+.wave-bars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  height: 14px;
+}
+.wave-bar {
+  width: 2px;
+  height: 100%;
+  background: #2dd4bf;
+  border-radius: 1px;
+  animation: wave 1s ease-in-out infinite;
+  transform-origin: bottom;
+}
+.wave-bar:nth-child(2) { animation-delay: 0.15s; }
+.wave-bar:nth-child(3) { animation-delay: 0.3s; }
+.wave-bar:nth-child(4) { animation-delay: 0.15s; }
 
 .t-reason-preview {
   display: flex;
@@ -448,7 +503,7 @@ body {
   color: #e7edf5;
   line-height: 1.6;
   margin: 0;
-  font-family: system-ui, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
 .t-actions {
