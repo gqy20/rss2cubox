@@ -530,6 +530,27 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     assert len(state["sent"]) == 1
 
 
+def test_reorder_candidates_by_ai_score() -> None:
+    candidates = [
+        {"eid": "a", "url": "https://example.com/a"},
+        {"eid": "b", "url": "https://example.com/b"},
+        {"eid": "c", "url": "https://example.com/c"},
+    ]
+    analyses = {
+        "a": {"keep": True, "score": 0.65},
+        "b": {"keep": True, "score": 0.95},
+        "c": {"keep": False, "score": 0.99},
+    }
+
+    out = sync_pipeline.reorder_candidates_by_ai_score(
+        candidates,
+        analyses,
+        ai_enabled=True,
+        ai_min_score=0.6,
+    )
+    assert [item["eid"] for item in out] == ["b", "a", "c"]
+
+
 def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     summary_file = tmp_path / "summary.md"
     monkeypatch.setenv("GITHUB_STEP_SUMMARY", str(summary_file))

@@ -148,6 +148,38 @@ def dedupe_run_candidates(
     return unique_candidates, run_deduped
 
 
+def reorder_candidates_by_ai_score(
+    candidates_for_run: list[dict[str, Any]],
+    analyses: dict[str, dict[str, Any]],
+    *,
+    ai_enabled: bool,
+    ai_min_score: float,
+) -> list[dict[str, Any]]:
+    if not (ai_enabled and analyses):
+        return candidates_for_run
+
+    ranked: list[tuple[int, float, int, dict[str, Any]]] = []
+    for idx, item in enumerate(candidates_for_run):
+        eid = str(item.get("eid", "")).strip()
+        result = analyses.get(eid, {})
+        keep = bool(result.get("keep", False))
+        try:
+            score = float(result.get("score", 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
+
+        if keep and score >= ai_min_score:
+            priority = 2
+        elif keep:
+            priority = 1
+        else:
+            priority = 0
+        ranked.append((priority, score, idx, item))
+
+    ranked.sort(key=lambda row: (-row[0], -row[1], row[2]))
+    return [row[3] for row in ranked]
+
+
 def process_candidates_for_push(
     *,
     candidates_for_run: list[dict[str, Any]],

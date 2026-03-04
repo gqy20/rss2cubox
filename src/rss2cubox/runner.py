@@ -185,6 +185,18 @@ def main() -> None:
         stats["ai_missing"] = missing
         if missing:
             log_event("WARN", "ai_missing_results", stage="ai_analyze", missing=missing)
+        candidates_for_run = sync_pipeline.reorder_candidates_by_ai_score(
+            candidates_for_run,
+            analyses,
+            ai_enabled=ai_enabled,
+            ai_min_score=AI_MIN_SCORE,
+        )
+        log_event(
+            "INFO",
+            "candidates_reordered_by_ai_score",
+            stage="ai_decision",
+            candidates=len(candidates_for_run),
+        )
 
     sync_pipeline.process_candidates_for_push(
         candidates_for_run=candidates_for_run,
