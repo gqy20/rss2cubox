@@ -279,6 +279,86 @@
     "427d54078136b468ba70e792a0052cff48e7da189867d46f6654783b116c31c2": {
       "url": "https://www.infoq.cn/article/m8YV2acr2KKMSpskuSPj",
       "ts": "2026-03-04T02:26:21.456217+00:00"
+    },
+    "7f7a70a6764975801eea23bab1b78e6c353c5ce311b10461d278849bb098ac5d": {
+      "url": "https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "126e07cf0d684e0333f96055fcdc89f9dc6635d73bd317d2bdd91a66b1fc7b02": {
+      "url": "https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "955bc6c93f35e54adf8329941e8fde92c7c68e141d0233d36f7a452b08732f8f": {
+      "url": "https://www.anthropic.com/engineering/a-postmortem-of-three-recent-issues",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "4d418dad93eb839e23a6b89a1495583ed838ca547d8bfe9a5a29491a2537c078": {
+      "url": "https://www.anthropic.com/engineering/claude-think-tool",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "575f400a2c177a2ec2ee2476a253ffd6f7dd98cb4b554de7e69ea74a98e2826d": {
+      "url": "https://red.anthropic.com/2026/zero-days/",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "ffc229d83891918f82064b92e6624a3de7bce686fc211cb123e4eb4a0cd488f1": {
+      "url": "https://www.anthropic.com/engineering/building-effective-agents",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "33d81116743596d4b1f6f110d9adee086b122ef89e8235798a8b1dde200c002a": {
+      "url": "https://www.anthropic.com/engineering/contextual-retrieval",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "1399aec680791f782180f8a776e7df2a1df1397560aaefb199b2f5acdeedb3d1": {
+      "url": "https://www.anthropic.com/engineering/writing-tools-for-agents",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "43d7916975114d603c0922afae58525ba646635999164b9c60948a083946a62e": {
+      "url": "https://www.anthropic.com/engineering/swe-bench-sonnet",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "26580f601751d0cf56fa3cc5790df6caf761534defedc6cabab9827ffaffc67f": {
+      "url": "https://red.anthropic.com/2026/cyber-toolkits-update/",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "a3afc1e8c7c23916e7f5233b4a378e5c105ae1e76050ec2d67149a1eb4a1c512": {
+      "url": "https://www.anthropic.com/engineering/multi-agent-research-system",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "c78d84ac1a7e3d92b1c154937089c02222f1748af3b0c6ea9a587012b52948e3": {
+      "url": "https://www.anthropic.com/engineering/infrastructure-noise",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "1eba12a4a8fa384c926895a1f56eed942de137d7d64e90a026c3d5a1def07a15": {
+      "url": "https://www.anthropic.com/engineering/building-c-compiler",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "9b88bfec4a46afeb42f39164a0572a45c976260cdb46ec4a2ed6960a53e67e8f": {
+      "url": "https://www.anthropic.com/engineering/code-execution-with-mcp",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "a6038c07f885a44720c98e334c6a79650d887da6d137765dd680c2612454cd6f": {
+      "url": "https://red.anthropic.com/2026/property-based-testing/",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "6056e32f0b65aec95d4d21a5d56037f11960b729697903e47cffc5cf2b3c7054": {
+      "url": "https://red.anthropic.com/2026/critical-infrastructure-defense/",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "a2ae16d0527e8bdf26beaaa8276daf142ccbad0697e8eaa3471105b39a1cf2f1": {
+      "url": "https://www.infoq.cn/article/NDDJfG3lJCHjSI43k1I4",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "78e4a303656fc4922d10b1414b742d3cad4ded2888f466cd53b70e190d9e20ac": {
+      "url": "https://sspai.com/post/106660",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "2ab0d2c099317874ed3650202ff2fa2f2c71406e8e86c1c02533b467b56beda0": {
+      "url": "https://www.anthropic.com/engineering/AI-resistant-technical-evaluations",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
+    },
+    "6c790a16de0afd2b5fe6beb9576b591d428632f9eec4ffcb9153132bc51741c7": {
+      "url": "https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents",
+      "ts": "2026-03-04T03:39:51.342596+00:00"
     }
   },
   "ai": {
@@ -470,6 +550,297 @@
       "reason": "技术新闻：关于AI生成代码对开源生态影响的深度分析，有具体案例和数据",
       "ts": "2026-03-04T02:26:21.456217+00:00",
       "model": "MiniMax-M2.5"
+    },
+    "7f7a70a6764975801eea23bab1b78e6c353c5ce311b10461d278849bb098ac5d": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "Substantive technical article addressing a core challenge in agent development (context windows across sessions). Provides actionable engineering patterns.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "126e07cf0d684e0333f96055fcdc89f9dc6635d73bd317d2bdd91a66b1fc7b02": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "High-signal technical content on emerging discipline of context engineering. Addresses prompt engineering evolution and context configuration strategies.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "955bc6c93f35e54adf8329941e8fde92c7c68e141d0233d36f7a452b08732f8f": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "High-signal technical postmortem detailing infrastructure bugs that affected Claude's response quality. Provides concrete technical details about root causes and fixes.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "4d418dad93eb839e23a6b89a1495583ed838ca547d8bfe9a5a29491a2537c078": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "Technical deep-dive on Claude's 'think' tool for reasoning in complex tool use. Original engineering content explaining methodology.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "575f400a2c177a2ec2ee2476a253ffd6f7dd98cb4b554de7e69ea74a98e2826d": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "High-signal technical research about LLM-discovered zero-days - peer-reviewed research demonstrating AI security capabilities",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "ffc229d83891918f82064b92e6624a3de7bce686fc211cb123e4eb4a0cd488f1": {
+      "keep": true,
+      "score": 0.94,
+      "reason": "Practical engineering guidance on building LLM agents based on real customer experience. Avoids framework hype, focuses on composable patterns.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "33d81116743596d4b1f6f110d9adee086b122ef89e8235798a8b1dde200c002a": {
+      "keep": true,
+      "score": 0.93,
+      "reason": "Novel technical technique (Contextual Retrieval) for improving RAG systems with contextual embeddings. Original methodology.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "1399aec680791f782180f8a776e7df2a1df1397560aaefb199b2f5acdeedb3d1": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Substantive technical content about Model Context Protocol (MCP) and effective tool design patterns for LLM agents. Practical engineering guidance.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "43d7916975114d603c0922afae58525ba646635999164b9c60948a083946a62e": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Benchmark results with methodology - Claude 3.5 Sonnet achieving 49% on SWE-bench Verified. Technical evaluation with agent architecture details.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "26580f601751d0cf56fa3cc5790df6caf761534defedc6cabab9827ffaffc67f": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "High-signal technical content about AI cyber capabilities on realistic cyber ranges - important security research",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "a3afc1e8c7c23916e7f5233b4a378e5c105ae1e76050ec2d67149a1eb4a1c512": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "Technical architecture article about building multi-agent research system. Covers system architecture, tool design, and prompt engineering lessons from production.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "c78d84ac1a7e3d92b1c154937089c02222f1748af3b0c6ea9a587012b52948e3": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "Methodological research on infrastructure noise in agentic coding evaluations. Important for reproducibility and benchmark interpretation.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "1eba12a4a8fa384c926895a1f56eed942de137d7d64e90a026c3d5a1def07a15": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "High-signal technical content from Anthropic engineering about using multiple Claude instances in parallel to build a C compiler. Demonstrates novel AI supervision approach.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "9b88bfec4a46afeb42f39164a0572a45c976260cdb46ec4a2ed6960a53e67e8f": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "Technical article explaining MCP implementation for code execution. Covers architectural patterns for connecting agents to external systems.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "a6038c07f885a44720c98e334c6a79650d887da6d137765dd680c2612454cd6f": {
+      "keep": true,
+      "score": 0.9,
+      "reason": "High-signal technical research about AI-driven bug finding using property-based testing",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "6056e32f0b65aec95d4d21a5d56037f11960b729697903e47cffc5cf2b3c7054": {
+      "keep": true,
+      "score": 0.88,
+      "reason": "High-signal research on AI for critical infrastructure defense - important security application",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "a2ae16d0527e8bdf26beaaa8276daf142ccbad0697e8eaa3471105b39a1cf2f1": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "开源技术框架发布，解决Agent接入RL训练的实际工程难题，有技术创新和具体使用方式，非纯公司PR。",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "78e4a303656fc4922d10b1414b742d3cad4ded2888f466cd53b70e190d9e20ac": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Technical tutorial with practical automation workflow for Obsidian. High-signal productivity/Dev workflow content.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "2ab0d2c099317874ed3650202ff2fa2f2c71406e8e86c1c02533b467b56beda0": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Technical content about designing AI-resistant hiring evaluations - relevant to technical talent assessment in AI era.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    },
+    "6c790a16de0afd2b5fe6beb9576b591d428632f9eec4ffcb9153132bc51741c7": {
+      "keep": true,
+      "score": 0.85,
+      "reason": "Technical content explaining AI agent evaluations - valuable for teams building AI agents. High practical value.",
+      "ts": "2026-03-04T03:39:51.342596+00:00",
+      "model": "MiniMax-M2.5"
+    }
+  },
+  "feed_cursor": {
+    "/infoq/recommend": "2026-03-04T03:07:00+00:00",
+    "/juejin/trending/ai/weekly": "2026-03-02T01:12:54+00:00",
+    "/sspai/index": "2026-03-04T03:31:46+00:00",
+    "/anthropic/engineering": "2026-02-04T16:00:00+00:00",
+    "/anthropic/red": "2026-02-04T16:00:00+00:00",
+    "/qbitai/category/ebandeng": "2024-09-23T03:51:16+00:00",
+    "/qbitai/category/auto": "2026-02-27T09:17:38+00:00",
+    "/qbitai/category/zhiku": "2026-02-11T13:34:28+00:00",
+    "/qbitai/category/huodong": "2026-03-03T11:16:14+00:00",
+    "/cursor/changelog": "2026-03-03T00:00:00+00:00",
+    "/cursor/blog": "2026-03-02T16:00:00+00:00",
+    "/cursor/blog/research": "2026-02-17T16:00:00+00:00",
+    "/huggingface/blog": "2026-03-03T16:50:49+00:00",
+    "https://imjuya.github.io/juya-ai-daily/rss.xml": "2026-03-04T01:58:43+00:00",
+    "https://openai.com/news/rss.xml": "2026-03-03T10:00:00+00:00",
+    "https://deepmind.google/blog/rss.xml": "2026-03-03T16:35:55+00:00",
+    "https://blog.google/technology/ai/rss/": "2026-03-03T17:00:00+00:00",
+    "https://community.openai.com/c/announcements.rss": "2026-01-15T20:11:25+00:00",
+    "https://huggingface.co/blog/feed.xml": "2026-03-03T16:50:49+00:00",
+    "https://github.com/anthropics/claude-code/releases.atom": "2026-03-04T01:19:19+00:00",
+    "https://status.anthropic.com/history.rss": "2026-03-04T01:29:39+00:00"
+  },
+  "feed_failures": {
+    "/anthropic/news": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.744374+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.744399+00:00"
+    },
+    "/anthropic/research": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.744847+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.744854+00:00"
+    },
+    "/modelscope/models": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745348+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745353+00:00"
+    },
+    "/producthunt/today": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745478+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745483+00:00"
+    },
+    "/github/topics/llm": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745505+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745509+00:00"
+    },
+    "/github/topics/agents": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745530+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745534+00:00"
+    },
+    "/hellogithub/volume": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745554+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745557+00:00"
+    },
+    "/hellogithub/home/featured": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745578+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745581+00:00"
+    },
+    "/juejin/aicoding": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745601+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745605+00:00"
+    },
+    "/twitter/user/karpathy": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745625+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745630+00:00"
+    },
+    "/twitter/user/fchollet": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745650+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745653+00:00"
+    },
+    "/twitter/user/soumithchintala": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745673+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745677+00:00"
+    },
+    "/twitter/user/rasbt": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745696+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745699+00:00"
+    },
+    "/twitter/user/ylecun": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745719+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745722+00:00"
+    },
+    "/twitter/user/demishassabis": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745741+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745745+00:00"
+    },
+    "/twitter/user/Yoshua_Bengio": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745766+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745770+00:00"
+    },
+    "/twitter/user/sama": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745790+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745793+00:00"
+    },
+    "/twitter/user/AndrewYNg": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745814+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745817+00:00"
+    },
+    "/twitter/user/JeremyHoward": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745837+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745840+00:00"
+    },
+    "/twitter/user/swyx": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745859+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745863+00:00"
+    },
+    "/twitter/user/simonw": {
+      "count": 1,
+      "cooldown_until": "2026-03-04T03:41:40.745883+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-04T03:40:40.745887+00:00"
     }
   }
 }
