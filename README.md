@@ -104,8 +104,26 @@ rss2cubox
 rss2cubox-export-web
 ```
 
-## 8) 测试
+## 8) Cubox Key 保存位置（本地 / 云端）
 
-```bash
-pytest -q
-```
+当前 Web 端不会把 Cubox Key 写入数据库或服务器文件。
+
+- 保存介质：浏览器 `HttpOnly` Cookie
+  - Cookie 名：`cubox_key_v1`
+  - 过期时间：7 天
+  - 属性：`HttpOnly`、`SameSite=Lax`、`Path=/`
+  - 生产环境（HTTPS）自动带 `Secure`
+- Cookie 内不是明文，使用服务端密钥加密（AES-256-GCM）
+  - 服务端环境变量：`CUBOX_COOKIE_SECRET`（必需）
+
+云端（Vercel）行为：
+
+- Key 仍在用户浏览器 Cookie 中，不在 Vercel 数据库中持久化
+- API 请求时，Vercel 函数读取并解密 Cookie，再调用 Cubox API
+- 必须在 Vercel 项目配置 `CUBOX_COOKIE_SECRET`
+- 不同域名（如 preview/production）Cookie 不共享，需分别配置
+
+本地开发：
+
+- 在 `web/.env.local` 配置 `CUBOX_COOKIE_SECRET`
+- 修改后需重启 `npm run dev`

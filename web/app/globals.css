@@ -846,6 +846,22 @@ body {
   overflow: hidden;
 }
 
+.t-cover-wrap {
+  display: block;
+  margin: 2px 0 8px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(138, 163, 190, 0.2);
+  background: rgba(8, 16, 30, 0.48);
+}
+
+.t-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  display: block;
+}
+
 .timeline-high {
   border-color: rgba(52, 211, 153, 0.42) !important;
   background: rgba(16, 32, 38, 0.7);

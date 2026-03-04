@@ -661,6 +661,8 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
     const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
     const isHovered = hoveredRowKey === rowKey
     const hasAiContent = Boolean(row.core_event || row.actionable || row.reason)
+    const isYoutubeRow = /youtube\.com\/watch|youtu\.be\//i.test(row.url || '')
+    const hasCover = Boolean(row.cover_url) && (isYoutubeRow || /ytimg\.com\//i.test(row.cover_url || ''))
 
     return (
       <motion.div
@@ -694,6 +696,12 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
           <a href={row.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
             <h3 className="t-title">{row.title || row.hidden_signal || '未命名信号'}</h3>
           </a>
+
+          {hasCover && (
+            <a href={row.url} target="_blank" rel="noreferrer" className="t-cover-wrap" aria-label="打开原文封面">
+              <img className="t-cover" src={row.cover_url} alt={row.title || '封面图'} loading="lazy" />
+            </a>
+          )}
 
           {row.tags && row.tags.length > 0 && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
