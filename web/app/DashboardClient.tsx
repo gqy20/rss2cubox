@@ -483,7 +483,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                     href={row.url} 
                     target="_blank" 
                     rel="noreferrer"
-                    className="glass timeline-content hover-scale" 
+                    className="glass timeline-content" 
                     style={{ display: 'block', textDecoration: 'none', cursor: 'pointer' }}
                   >
                     <div className="t-header" style={{ flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>

@@ -504,6 +504,7 @@ body {
 .timeline-container {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 10px;
 }
 
