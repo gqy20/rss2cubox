@@ -5,6 +5,15 @@
 /infoq/recommend
 /juejin/trending/ai/weekly
 /sspai/index
+/anthropic/news
+/anthropic/engineering
 
 [direct]
 https://imjuya.github.io/juya-ai-daily/rss.xml
+https://openai.com/news/rss.xml
+https://deepmind.google/blog/rss.xml
+https://blog.google/technology/ai/rss/
+https://community.openai.com/c/announcements.rss
+https://huggingface.co/blog/feed.xml
+https://github.com/anthropics/claude-code/releases.atom
+https://status.anthropic.com/history.rss
