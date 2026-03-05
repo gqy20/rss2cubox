@@ -30,6 +30,24 @@ def _parse_instance_list(raw: str) -> list[str]:
     return out
 
 
+# 私有实例的 host 集合，用于日志打码（从环境变量在模块加载时计算一次）
+_PRIVATE_HOSTS: frozenset[str] = frozenset(
+    urlparse(inst).netloc
+    for inst in _parse_instance_list(os.getenv("RSSHUB_PRIVATE_INSTANCES", "").strip())
+    if inst
+)
+
+
+def _mask_url(url: str) -> str:
+    """若 URL 的 host 属于私有实例，将 host 替换为 *** 后返回，否则原样返回。"""
+    if not _PRIVATE_HOSTS:
+        return url
+    parsed = urlparse(url)
+    if parsed.netloc in _PRIVATE_HOSTS:
+        return f"{parsed.scheme}://***{parsed.path}"
+    return url
+
+
 def _env_instances(name: str, default: list[str]) -> list[str]:
     values = _parse_instance_list(os.getenv(name, "").strip())
     if not values:
@@ -324,7 +342,7 @@ def parse_feed_with_fallback(
                 "feed_candidate_skipped_cooldown",
                 stage="fetch",
                 feed=feed_value,
-                candidate=candidate_url,
+                candidate=_mask_url(candidate_url),
                 attempt=idx,
             )
             continue
@@ -341,7 +359,7 @@ def parse_feed_with_fallback(
                     "feed_candidate_success",
                     stage="fetch",
                     feed=feed_value,
-                    candidate=candidate_url,
+                    candidate=_mask_url(candidate_url),
                     attempt=idx,
                     retry_attempt=retry_attempt,
                     retry_limit=retry_limit,
@@ -353,7 +371,7 @@ def parse_feed_with_fallback(
                         "feed_fallback_used",
                         stage="fetch",
                         feed=feed_value,
-                        selected=candidate_url,
+                        selected=_mask_url(candidate_url),
                         attempt=idx,
                     )
                 return candidate_url, parsed, idx
@@ -367,7 +385,7 @@ def parse_feed_with_fallback(
                     "feed_candidate_failed",
                     stage="fetch",
                     feed=feed_value,
-                    candidate=candidate_url,
+                    candidate=_mask_url(candidate_url),
                     attempt=idx,
                     retry_attempt=retry_attempt,
                     retry_limit=retry_limit,

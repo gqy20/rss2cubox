@@ -162,14 +162,25 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         max_budget_usd=ENRICH_MAX_BUDGET_USD,
         can_use_tool=can_use_tool,
         cwd=Path.cwd(),
-        setting_sources=["user", "project"] if ENRICH_ENABLE_SKILLS else None,
+        # setting_sources=["project"] 从项目 .claude/skills/ 加载 Skills 定义。
+        # CI 环境无 ~/.claude/ 用户目录，不能指定 "user"。
+        setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
     )
 
     async with ClaudeSDKClient(options=options) as client:
         with anyio.fail_after(ENRICH_ITEM_TIMEOUT_SECONDS):
             await client.query(_build_user_prompt(item, original))
-            async for _ in client.receive_response():
-                pass
+            async for msg in client.receive_response():
+                from claude_agent_sdk import AssistantMessage, ResultMessage as _ResultMessage, TextBlock, ToolUseBlock as _ToolUseBlock  # type: ignore
+                if isinstance(msg, AssistantMessage):
+                    for block in msg.content:
+                        if isinstance(block, _ToolUseBlock):
+                            args_str = str(block.input)[:120]
+                            print(f"[enrich_agent] eid={item.get('eid','')[:8]} tool_use: {block.name} args={args_str}", flush=True)
+                elif isinstance(msg, _ResultMessage):
+                    status = "error" if msg.is_error else "ok"
+                    cost = f"${msg.total_cost_usd:.4f}" if msg.total_cost_usd else "N/A"
+                    print(f"[enrich_agent] eid={item.get('eid','')[:8]} result: status={status} turns={msg.num_turns} cost={cost}", flush=True)
 
     if result_holder:
         return result_holder, "ok"

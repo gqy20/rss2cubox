@@ -199,9 +199,11 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         allowed_tools=allowed_tools,
         mcp_servers={"insights-tools": server},
         permission_mode="acceptEdits",
-        max_turns=30,
+        max_turns=100,
         cwd=Path.cwd(),
-        setting_sources=["user", "project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
+        # setting_sources=["project"] 从项目 .claude/skills/ 加载 Skills 定义。
+        # CI 环境无 ~/.claude/ 用户目录，所以不能指定 "user"，否则无效且可能报错。
+        setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
         # 不设置 output_format，确保模型通过 submit_insights 工具调用来提交结果
         # 两者同时设置会导致模型输出裸 JSON 而不调用工具，result_holder 始终为空
     )
@@ -209,8 +211,24 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     try:
         async with ClaudeSDKClient(options=options) as client:
             await client.query(_build_user_prompt(signals_file_path, len(high_value_items)))
-            async for _ in client.receive_response():
-                pass
+            async for msg in client.receive_response():
+                from claude_agent_sdk import AssistantMessage, ResultMessage as _ResultMessage, TextBlock, ToolUseBlock as _ToolUseBlock  # type: ignore
+                if isinstance(msg, AssistantMessage):
+                    for block in msg.content:
+                        if isinstance(block, _ToolUseBlock):
+                            # 截断大参数避免日志爆炸
+                            args_str = str(block.input)[:200]
+                            print(f"[global_agent] tool_use: {block.name} args={args_str}", flush=True)
+                        elif isinstance(block, TextBlock) and block.text.strip():
+                            print(f"[global_agent] text: {block.text[:200]}", flush=True)
+                elif isinstance(msg, _ResultMessage):
+                    status = "error" if msg.is_error else "ok"
+                    cost = f"${msg.total_cost_usd:.4f}" if msg.total_cost_usd else "N/A"
+                    print(
+                        f"[global_agent] result: status={status} turns={msg.num_turns}"
+                        f" cost={cost} duration={msg.duration_ms}ms",
+                        flush=True,
+                    )
     finally:
         # 清理临时信号文件
         try:
