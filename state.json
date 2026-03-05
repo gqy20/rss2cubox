@@ -1439,6 +1439,106 @@
       "url": "https://arxiv.org/abs/2603.04057",
       "ts": "2026-03-05T06:25:17.260206+00:00",
       "title": "Sim2Sea: Sim-to-Real Policy Transfer for Maritime Vessel Navigation in Congested Waters"
+    },
+    "40170a5727d04ff476456ac192a5794ffc2c159f9f720af126b87915b80844a2": {
+      "url": "https://juejin.cn/post/7613374664555872283",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "两种 AI 工程化路线的对比：Superpowers vs Everything Claude Code (ECC)"
+    },
+    "df3f52b26dd4cf8a77f7ec2bc82d3aa67ba3ae8cd92d52d01f43d607cb732c2d": {
+      "url": "https://www.bilibili.com/video/BV1dFZCBsE5Y",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "最新旗舰模型Qwen3.5：来吧，展示！"
+    },
+    "964f6235a98845c3f049f8508d06493fe0823a2250b213c926874d5febdd4fd8": {
+      "url": "https://www.bilibili.com/video/BV14nf9ByEmm",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "Qwen3-Coder-Next 正式开源：推动小型混合模型在智能体编程上的边界"
+    },
+    "b827d9b96c748e7e361651b609382bb7af56dee82a8131dfa7cbd4328dafc513": {
+      "url": "https://www.bilibili.com/video/BV1mqigBeEkA",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "Qwen-Image-2512 正式开源发布！"
+    },
+    "bfd54e53bbc5feeff8865ba9008018d01f3f3ed6cb1759a40c04df47a71fc6f6": {
+      "url": "https://www.bilibili.com/video/BV1w6ZMB3EYr",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "【Latent Space播客】谷歌首席科学家Jeff Dean：从 Gemini 3 Deep Think 的知识蒸馏到 Flash，蒸馏技术与能效突破"
+    },
+    "322e1ce96a939386d1f17219f09e0b881fb2ab9432ef8fc34f619ad92ff2f751": {
+      "url": "https://www.bilibili.com/video/BV17eFHz6EBG",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "【红杉访谈】Pace公司 Jamie Cuffe：构建保险公司真正信任的AI智能体"
+    },
+    "2ccae648861705f939bb2dd985843251eb449b42073bb0b66e210874d55aee64": {
+      "url": "https://www.bilibili.com/video/BV1UgPNzREx2",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "OpenClaw登顶GitHub软件星标历史第一！仅用百天便超越Linux"
+    },
+    "3c73bbaa564c9c92cdd5bd8573da62f2f03044fcae493634f10369fe93bbe9c6": {
+      "url": "https://www.bilibili.com/video/BV18KP5zJET8",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "黄仁勋：电信业将是下一个被AI重塑的行业"
+    },
+    "63eb64f3c6a268fbb535f7a6846612a5562d03f84f0d5ad46fa67ce037b502a9": {
+      "url": "https://www.bilibili.com/video/BV1h5t2zqE3M",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "GPT-5发布，3分钟核心内容解读"
+    },
+    "f8d8d15c9f2d145a998144d4d8df223759e5934f26e7575097cb0104d250b922": {
+      "url": "https://www.bilibili.com/video/BV1uzfuB9Eb4",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "「实测」Gemini 3.1 Pro 突发上线：这次到底更新了什么？(前端直接起飞?)"
+    },
+    "694cfb2393dd2609f63a423d3bd4b9515d1339bfc95a6f8e1a3c5419c561e079": {
+      "url": "https://www.bilibili.com/video/BV14iiQBjEKS",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "智谱登陆港交所，“全球大模型第一股”来自中国"
+    },
+    "46899f13590a0dc02f0e6c37e3fdf4c19803b8ca33560dccaea72cea3e524985": {
+      "url": "https://sspai.com/post/106844",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "派早报：Apple 推出 MacBook Neo、Setapp 调整商业模式等"
+    },
+    "ca2da2b8526c0695af9bc36fe3bdc2aad9d5603524cfe5c12dcbbd75f2cefc13": {
+      "url": "https://www.bilibili.com/video/BV1VUqSBWEyr",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "硬核拆解：AI Agent的底层技术「沙箱」"
+    },
+    "585ac1796a4da2b529779bcd39d9b44f8f20365355383bfa9fcd166d1f8c2c2c": {
+      "url": "https://www.bilibili.com/video/BV1Yse2zHEFr",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "Qwen-Image ComfyUI本地部署教程来啦"
+    },
+    "cd1a9e261449f871c3b615262001b6128dc0be8ec675da20e6c6f927392fc136": {
+      "url": "https://www.bilibili.com/video/BV13LfYBtExt",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "Cursor创始人Aman Sanger揭秘：审查的未来不在于代码，在于程序员用实际行动证明自己的工作能力❗️"
+    },
+    "e8f34b75b2d3d40b705634fca5b95691dda45021f63313dc73cd10d5ebcf79da": {
+      "url": "https://www.bilibili.com/video/BV1YCfKBWE7p",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "OpenClaw 创始人YC访谈：80%的App很快会被Agent吞掉，只有那些真正有传感器的App可能活下来❗️"
+    },
+    "9b552885f7973d6c4134cfe755d5d17c3abfb1969020fbb2d444d4c646044437": {
+      "url": "https://www.bilibili.com/video/BV131ZCB9Eda",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "【20VC播客】SaaS 已经死亡：在 Agent 驱动的世界中，传统记录系统将被淘汰，未来属于AI代理时代"
+    },
+    "23798cb616ae6c278cbc31addbd8d3d794f4656d345758efd2e3268f0f178100": {
+      "url": "https://www.bilibili.com/video/BV1GUZ3BaEGd",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "【红杉访谈】构建强化学习环境的 GitHub 平台，从静态提示到自主进化"
+    },
+    "e8a72e10bf679d146b9f9e9f1526f6876c74b8ff5d89fc978625640bd2d729c1": {
+      "url": "https://www.bilibili.com/video/BV1eF6eBQEsh",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "霸榜硅谷热搜！ClawdBot单月破100kStars！首个7*24h员工带你1分钟速览，并完整本地部署！Agent Skills+网关系统+长短期记忆管理"
+    },
+    "c0a6ab7a6ea521bdef13e18dcfca28bb9d6ccaa59ca160d53381d407e723b388": {
+      "url": "https://www.bilibili.com/video/BV18QPzzREkh",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "title": "美考虑对中企买英伟达H200芯片“限购”，以防芯片用于军事或支撑中国建成顶级超算"
     }
   },
   "ai": {
@@ -4164,18 +4264,18 @@
       "enriched": false
     },
     "46899f13590a0dc02f0e6c37e3fdf4c19803b8ca33560dccaea72cea3e524985": {
-      "keep": false,
-      "score": 0.72,
-      "reason": "AI编程工具正从『直觉编程』向『语音编程』演进；Mac应用订阅生态出现分化；消费级AI硬件进入快速迭代期",
-      "core_event": "Apple发布MacBook Neo入门级多彩笔记本；Anthropic推出Claude Code语音模式；MacPaw调整Setapp商业模式支持单应用购买",
-      "hidden_signal": "AI编程工具正从『直觉编程』向『语音编程』演进；Mac应用订阅生态出现分化；消费级AI硬件进入快速迭代期",
-      "actionable": "关注Claude Code语音编程模式的实际效果和定价策略；评估Setapp新商业模式对Mac应用生态的影响；追踪OpenAI GPT-5.4的发布动态",
-      "ts": "2026-03-05T02:03:11.316782+00:00",
+      "keep": true,
+      "score": 0.91,
+      "reason": "AI编程工具正从'直觉编程'向'语音编程'演进，Claude Code的免费语音模式可能引发开发者工具市场新一轮竞争；Apple入门级MacBook产品线重新命名暗示其产品策略调整。",
+      "core_event": "3月4日科技简报：Apple发布MacBook Neo（4599元起）、Claude Code上线语音模式、Setapp允许单独购买应用、OpenAI确认GPT-5.4即将推出。",
+      "hidden_signal": "AI编程工具正从'直觉编程'向'语音编程'演进，Claude Code的免费语音模式可能引发开发者工具市场新一轮竞争；Apple入门级MacBook产品线重新命名暗示其产品策略调整。",
+      "actionable": "开发者可关注Claude Code语音模式的实际体验，其免费政策可能改变IDE市场的竞争格局；GPT-5.4即将发布，建议关注其多模态能力的提升。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
       "model": "MiniMax-M2.5",
       "tags": [
-        "AI编程工具",
-        "消费电子",
-        "软件生态"
+        "AI编程",
+        "Apple",
+        "开发者工具"
       ],
       "enriched": false
     },
@@ -5648,12 +5748,317 @@
         "deep-reinforcement-learning"
       ],
       "enriched": false
+    },
+    "40170a5727d04ff476456ac192a5794ffc2c159f9f720af126b87915b80844a2": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "AI 辅助编程领域正在分裂为两派：一派强调工程纪律（设计-审查流程强制执行），另一派追求技术覆盖广度（多语言/安全/开箱即用）。这种分化反映了企业级 AI 工程化从「能用」向「合规可审计」阶段过渡。",
+      "core_event": "两个开源 AI 编程辅助框架 Superpowers（68k stars）和 Everything Claude Code（57k stars）形成工程纪律与技术广度两种不同路线的对比",
+      "hidden_signal": "AI 辅助编程领域正在分裂为两派：一派强调工程纪律（设计-审查流程强制执行），另一派追求技术覆盖广度（多语言/安全/开箱即用）。这种分化反映了企业级 AI 工程化从「能用」向「合规可审计」阶段过渡。",
+      "actionable": "如需构建严肃的企业级AI辅助编程流程，建议采用 Superpowers 的 HARD-GATE 机制确保设计先行；如需快速开发或多语言支持，可采用 ECC 并关注其安全审计能力。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI工程化",
+        "开发工具",
+        "框架对比"
+      ],
+      "enriched": false
+    },
+    "df3f52b26dd4cf8a77f7ec2bc82d3aa67ba3ae8cd92d52d01f43d607cb732c2d": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "阿里Qwen3.5以397B参数、17B激活参数的规模开源，标志着我国内在大模型领域达到国际领先水平，Apache 2.0协议将加速产业落地",
+      "core_event": "",
+      "hidden_signal": "阿里Qwen3.5以397B参数、17B激活参数的规模开源，标志着我国内在大模型领域达到国际领先水平，Apache 2.0协议将加速产业落地",
+      "actionable": "开发者应立即下载Qwen3.5进行评估，重点关注其多模态理解、代码生成和Agent能力的表现",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "大语言模型",
+        "多模态",
+        "开源模型"
+      ],
+      "enriched": false
+    },
+    "964f6235a98845c3f049f8508d06493fe0823a2250b213c926874d5febdd4fd8": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "小激活参数MoE+智能体训练信号扩展的路线可能成为代码模型的新标准，突破参数规模内卷。",
+      "core_event": "阿里开源Qwen3-Coder-Next，采用80B总参数/3B激活的MoE架构，在SWE-Bench达到70%解决率。",
+      "hidden_signal": "小激活参数MoE+智能体训练信号扩展的路线可能成为代码模型的新标准，突破参数规模内卷。",
+      "actionable": "了解SWE-Agent框架与可执行任务强化学习结合的技术实现路径，探索在代码智能体训练中引入环境反馈的方法。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "代码大模型",
+        "MoE架构",
+        "AI智能体"
+      ],
+      "enriched": false
+    },
+    "b827d9b96c748e7e361651b609382bb7af56dee82a8131dfa7cbd4328dafc513": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "这是阿里在开源文生图领域的重要里程碑，2512版本在写实人像和复杂文字渲染上达到新高度，可能对Stable Diffusion生态形成竞争",
+      "core_event": "阿里开源 Qwen-Image-2512 文生图模型，实现从\"AI感\"向\"极致写实\"的重大升级",
+      "hidden_signal": "这是阿里在开源文生图领域的重要里程碑，2512版本在写实人像和复杂文字渲染上达到新高度，可能对Stable Diffusion生态形成竞争",
+      "actionable": "在 Hugging Face 或 GitHub 下载 Qwen-Image-2512 模型，体验文字渲染和写实人像生成能力",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "开源模型",
+        "文生图",
+        "Qwen系列",
+        "图像生成"
+      ],
+      "enriched": false
+    },
+    "bfd54e53bbc5feeff8865ba9008018d01f3f3ed6cb1759a40c04df47a71fc6f6": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "这标志着AI行业范式转移：从前追求模型规模转向追求推理效率。知识蒸馏技术成熟使小模型能继承大模型能力，意味着AI应用将从云端向边缘设备大规模部署。能效将成为硬件采购和模型部署的核心决策因素",
+      "core_event": "谷歌Jeff Dean透露 Gemini 采用 Pro（前沿）+ Flash（低延迟）双模型策略，通过知识蒸馏让小模型超越前代，并指出能效（皮焦耳/比特）将成为比FLOPs更重要的硬件指标，推理延迟目标为每秒1万token",
+      "hidden_signal": "这标志着AI行业范式转移：从前追求模型规模转向追求推理效率。知识蒸馏技术成熟使小模型能继承大模型能力，意味着AI应用将从云端向边缘设备大规模部署。能效将成为硬件采购和模型部署的核心决策因素",
+      "actionable": "1. 在模型设计中采用「帕累托前沿」策略，同时训练Pro和Flash两种模型\n2. 重视推理延迟优化，目标设定为每秒10000 tokens\n3. 评估模型时优先考虑能效指标（皮焦耳/比特）而非单纯FLOPs\n4. 考虑使用知识蒸馏技术训练更小更快的模型",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "模型优化",
+        "AI基础设施",
+        "能效"
+      ],
+      "enriched": false
+    },
+    "322e1ce96a939386d1f17219f09e0b881fb2ab9432ef8fc34f619ad92ff2f751": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "AI智能体正在从通用场景渗透到保守受监管行业，这是企业级AI应用的重大范式转变。保险业作为传统BPO的重度用户，将成为AI Agent的首批规模化落地场景。",
+      "core_event": "Pace公司构建面向保险行业的AI智能体，可完成邮件分流到理赔处理全流程，实现50-75%成本节省。",
+      "hidden_signal": "AI智能体正在从通用场景渗透到保守受监管行业，这是企业级AI应用的重大范式转变。保险业作为传统BPO的重度用户，将成为AI Agent的首批规模化落地场景。",
+      "actionable": "关注AI智能体在垂直行业的落地进展，特别是受监管行业如保险、金融、医疗的采用曲线。了解Pace的技术架构和信任建立机制。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI智能体",
+        "保险科技",
+        "企业级AI"
+      ],
+      "enriched": false
+    },
+    "2ccae648861705f939bb2dd985843251eb449b42073bb0b66e210874d55aee64": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "AI Agent已具备重塑操作系统的能力，开源社区进入\"情绪驱动\"新阶段。技术价值判断标准正在重构——社区热度可瞬间超越十年积累的工程价值。",
+      "core_event": "OpenClaw在GitHub星标数超越Linux登顶历史第一，仅用百天达成，开源社区驱动力从商业刚需转向AI狂热。",
+      "hidden_signal": "AI Agent已具备重塑操作系统的能力，开源社区进入\"情绪驱动\"新阶段。技术价值判断标准正在重构——社区热度可瞬间超越十年积累的工程价值。",
+      "actionable": "重新评估AI Agent在企业级OS重塑中的战略地位。重点关注AI Agent框架的系统操作能力及其对传统软件生态的颠覆性影响。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "开源",
+        "操作系统"
+      ],
+      "enriched": false
+    },
+    "3c73bbaa564c9c92cdd5bd8573da62f2f03044fcae493634f10369fe93bbe9c6": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "6G将成为\"物理AI时代\"的神经系统，NVIDIA正在将AI基础设施战略延伸至全球电信网络，这是其数据中心业务之外的下一个增长点，也预示着电信业将迎来大规模基础设施投资周期。",
+      "core_event": "NVIDIA在MWC 2025大会上宣布将联合电信与基础设施巨头，在开放安全的AI原生平台上构建下一代无线网络，使电信网络转型为AI基础设施。",
+      "hidden_signal": "6G将成为\"物理AI时代\"的神经系统，NVIDIA正在将AI基础设施战略延伸至全球电信网络，这是其数据中心业务之外的下一个增长点，也预示着电信业将迎来大规模基础设施投资周期。",
+      "actionable": "关注NVIDIA的AI基础设施战略及其对电信网络的影响；密切跟踪6G技术发展；评估与NVIDIA在电信AI领域合作的机会。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI基础设施",
+        "电信科技",
+        "6G"
+      ],
+      "enriched": false
+    },
+    "63eb64f3c6a268fbb535f7a6846612a5562d03f84f0d5ad46fa67ce037b502a9": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "GPT-5发布标志着多模态AI能力进一步整合，AI模型竞争进入新阶段；两年半开发周期反映大模型训练成本和复杂性持续上升；国内AI厂商面临更大竞争压力",
+      "core_event": "OpenAI正式发布GPT-5，练习时长两年半的新一代大模型亮相",
+      "hidden_signal": "GPT-5发布标志着多模态AI能力进一步整合，AI模型竞争进入新阶段；两年半开发周期反映大模型训练成本和复杂性持续上升；国内AI厂商面临更大竞争压力",
+      "actionable": "技术人员应：1)尽快申请API测试评估能力边界；2)评估GPT-5对现有工作流的提升点；3)关注其多模态能力对产品设计的潜在影响；4)持续跟进国内厂商的追赶策略",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "GPT-5",
+        "OpenAI",
+        "大模型"
+      ],
+      "enriched": false
+    },
+    "f8d8d15c9f2d145a998144d4d8df223759e5934f26e7575097cb0104d250b922": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "Gemini 3.1 Pro 在编程/前端开发领域的能力显著提升，标志着 LLM 在软件开发领域的实用化进一步深化。此版本可能针对代码场景进行了专项优化，对开发者生产力的提升可能是实质性的。",
+      "core_event": "Google 突发发布 Gemini 3.1 Pro，B站博主实测称「前端直接起飞」。",
+      "hidden_signal": "Gemini 3.1 Pro 在编程/前端开发领域的能力显著提升，标志着 LLM 在软件开发领域的实用化进一步深化。此版本可能针对代码场景进行了专项优化，对开发者生产力的提升可能是实质性的。",
+      "actionable": "Gemini 3.1 Pro 已发布，前端开发者应评估其在代码补全、UI 生成、调试辅助等场景的实际效果，可考虑集成到开发工作流。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "大语言模型",
+        "Google",
+        "编程辅助"
+      ],
+      "enriched": false
+    },
+    "694cfb2393dd2609f63a423d3bd4b9515d1339bfc95a6f8e1a3c5419c561e079": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "中国大模型企业率先完成资本市场验证，标志着AGI商业化进程进入新阶段，可能引发行业上市潮和估值重估",
+      "core_event": "智谱AI于2025年成功登陆港交所，成为全球首个上市的大模型公司，股票代码02513",
+      "hidden_signal": "中国大模型企业率先完成资本市场验证，标志着AGI商业化进程进入新阶段，可能引发行业上市潮和估值重估",
+      "actionable": "关注智谱上市后的技术产品迭代节奏及其在AGI领域的持续投入",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "大模型",
+        "IPO",
+        "AGI"
+      ],
+      "enriched": false
+    },
+    "ca2da2b8526c0695af9bc36fe3bdc2aad9d5603524cfe5c12dcbbd75f2cefc13": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "沙箱是AI Agent安全运行的核心基础设施，随着Agent应用普及，对沙箱技术的需求将爆发式增长，这可能催生新的安全赛道",
+      "core_event": "技术UP主深度拆解AI Agent的底层沙箱技术实现原理",
+      "hidden_signal": "沙箱是AI Agent安全运行的核心基础设施，随着Agent应用普及，对沙箱技术的需求将爆发式增长，这可能催生新的安全赛道",
+      "actionable": "深入研究AI Agent沙箱隔离机制，了解其安全防护和资源控制原理，可应用于企业级AI Agent部署",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "沙箱技术",
+        "底层架构"
+      ],
+      "enriched": false
+    },
+    "585ac1796a4da2b529779bcd39d9b44f8f20365355383bfa9fcd166d1f8c2c2c": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "开源社区正在推动端侧AI图像生成能力的普及，本地部署工作流成为中小企业的可行选择",
+      "core_event": "B站教程详细展示Qwen-Image在ComfyUI环境下的本地部署完整流程",
+      "hidden_signal": "开源社区正在推动端侧AI图像生成能力的普及，本地部署工作流成为中小企业的可行选择",
+      "actionable": "按照教程实践Qwen-Image的本地部署，搭建完整的本地AI图像生成Pipeline",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI图像生成",
+        "本地部署",
+        "开源模型"
+      ],
+      "enriched": false
+    },
+    "cd1a9e261449f871c3b615262001b6128dc0be8ec675da20e6c6f927392fc136": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "这标志着软件工程职业范式的根本性转变。AI正在消除'代码能力'作为程序员核心价值的传统认知，取而代之的是'问题定义能力'和'系统设计能力'。未来的筛选标准不再是'你会写什么代码'，而是'你能解决什么问题'。",
+      "core_event": "Cursor创始人Aman Sanger表示，AI Agent时代审查的未来不在于代码，而在于程序员证明自身工作能力的实际行动。",
+      "hidden_signal": "这标志着软件工程职业范式的根本性转变。AI正在消除'代码能力'作为程序员核心价值的传统认知，取而代之的是'问题定义能力'和'系统设计能力'。未来的筛选标准不再是'你会写什么代码'，而是'你能解决什么问题'。",
+      "actionable": "工程师应重新定位自身价值：从代码编写者转向问题解决者和架构设计者。专注于培养AI难以替代的系统思维、复杂问题分解和业务理解能力。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI编程",
+        "职业发展",
+        "软件工程"
+      ],
+      "enriched": false
+    },
+    "e8f34b75b2d3d40b705634fca5b95691dda45021f63313dc73cd10d5ebcf79da": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "AI Agent正在吞噬应用层，入口级竞争从App转向Agent。具备物理世界感知能力的App（传感器数据）将成为新的护城河，这是「具身智能」在消费应用层面的延伸。",
+      "core_event": "OpenClaw创始人在YC访谈中预测：80%的App将被AI Agent取代，只有具备传感器整合能力的App能存活。",
+      "hidden_signal": "AI Agent正在吞噬应用层，入口级竞争从App转向Agent。具备物理世界感知能力的App（传感器数据）将成为新的护城河，这是「具身智能」在消费应用层面的延伸。",
+      "actionable": "App开发者需重新思考产品策略：具备传感器数据采集能力的App将具备生存优势（IoT、可穿戴设备数据整合）。无差异化数据资产的通用App面临被AI Agent替代风险。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "App开发",
+        "YC"
+      ],
+      "enriched": false
+    },
+    "9b552885f7973d6c4134cfe755d5d17c3abfb1969020fbb2d444d4c646044437": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "Klarna CEO断言「SaaS已死」并非夸张，而是预示软件行业价值正从工具层向AI执行层迁移，传统SaaS的收入倍数将大幅压缩",
+      "core_event": "",
+      "hidden_signal": "Klarna CEO断言「SaaS已死」并非夸张，而是预示软件行业价值正从工具层向AI执行层迁移，传统SaaS的收入倍数将大幅压缩",
+      "actionable": "构建内部AI客服能力而非依赖第三方SaaS；重新评估软件供应商的技术栈是否具备AI原生架构",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI代理",
+        "SaaS终局",
+        "行业趋势"
+      ],
+      "enriched": false
+    },
+    "23798cb616ae6c278cbc31addbd8d3d794f4656d345758efd2e3268f0f178100": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "这标志着AI开发范式的根本转变：从'预训练+微调'到'环境交互+自主进化'。递归语言模型和代理强化学习代表了AI 2.0的核心特征——AI系统不再是被动工具，而是具备自主学习、上下文管理和目标导向的智能体。每家公司将成为AI研究实验室的预测暗示了未来组织形态的变化。",
+      "core_event": "红杉访谈Prime Intellect，探讨从静态提示工程向'基于环境'的AI开发转型，并介绍其Environments Hub平台，旨在普及前沿级强化学习训练环境。",
+      "hidden_signal": "这标志着AI开发范式的根本转变：从'预训练+微调'到'环境交互+自主进化'。递归语言模型和代理强化学习代表了AI 2.0的核心特征——AI系统不再是被动工具，而是具备自主学习、上下文管理和目标导向的智能体。每家公司将成为AI研究实验室的预测暗示了未来组织形态的变化。",
+      "actionable": "工程师应立即将AI Agent开发纳入技术路线图，重点关注：1) 递归上下文管理能力；2) 试错强化学习训练范式；3) 机构知识作为训练数据的合规获取。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "强化学习",
+        "开发范式转移"
+      ],
+      "enriched": false
+    },
+    "e8a72e10bf679d146b9f9e9f1526f6876c74b8ff5d89fc978625640bd2d729c1": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "开源AI Agent项目首次获得10万Stars，表明市场对「员工型AI Agent」的需求已形成明确赛道，记忆管理和持续运行能力成为核心竞争力。",
+      "core_event": "ClawdBot在GitHub获得100k Stars，采用7*24h员工架构设计，支持Agent Skills、网关系统和长短期记忆管理。",
+      "hidden_signal": "开源AI Agent项目首次获得10万Stars，表明市场对「员工型AI Agent」的需求已形成明确赛道，记忆管理和持续运行能力成为核心竞争力。",
+      "actionable": "关注ClawdBot的开源代码和架构设计，重点学习其记忆管理机制和Agent Skills实现方式。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI Agent",
+        "开源",
+        "记忆管理"
+      ],
+      "enriched": false
+    },
+    "c0a6ab7a6ea521bdef13e18dcfca28bb9d6ccaa59ca160d53381d407e723b388": {
+      "keep": true,
+      "score": 0.91,
+      "reason": "美国芯片封锁政策正在从\"技术遏制\"转向\"政治姿态\"——既无法真正阻止中国AI发展（头部企业算力储备充足），又不愿放弃对华技术出口的市场利益。这一转变意味着中国AI产业的\"战略机遇期\"正在到来。",
+      "core_event": "美国政府正考虑对单一中国企业设置仅7.5万片英伟达H200芯片购买上限，试图遏制中国AI发展，但专家称该策略已破产。",
+      "hidden_signal": "美国芯片封锁政策正在从\"技术遏制\"转向\"政治姿态\"——既无法真正阻止中国AI发展（头部企业算力储备充足），又不愿放弃对华技术出口的市场利益。这一转变意味着中国AI产业的\"战略机遇期\"正在到来。",
+      "actionable": "中国AI企业应加速推进算力自主化，在模型训练层面降低对进口高端芯片的依赖，同时在应用层面积累先发优势。政策制定者需重新评估\"卡脖子\"技术清单，将资源集中于真正具有战略意义的短板领域。",
+      "ts": "2026-03-05T06:54:16.615955+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "芯片封锁",
+        "地缘政治",
+        "AI产业"
+      ],
+      "enriched": false
     }
   },
   "feed_cursor": {
     "/infoq/recommend": "2026-03-05T06:00:00+00:00",
     "/juejin/trending/ai/weekly": "2026-03-03T07:55:13+00:00",
-    "/sspai/index": "2026-03-05T03:01:58+00:00",
+    "/sspai/index": "2026-03-05T06:32:05+00:00",
     "/anthropic/engineering": "2026-02-04T16:00:00+00:00",
     "/anthropic/red": "2026-02-04T16:00:00+00:00",
     "/qbitai/category/ebandeng": "2024-09-23T03:51:16+00:00",
@@ -5702,11 +6107,29 @@
     "https://danieltakeshi.github.io/feed.xml": "2023-06-15T23:00:00+00:00",
     "https://mlinproduction.com/feed": "2022-05-08T16:11:55+00:00",
     "https://machinelearningmastery.com/feed": "2026-02-25T11:00:05+00:00",
-    "/juejin/aicoding": "2026-03-05T04:42:42+00:00",
+    "/juejin/aicoding": "2026-03-05T06:13:41+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCFqXmQ56-Gp1rIKa-GoAJvQ": "2026-03-05T01:30:15+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UC7c3Kb6jYCRj4JOHHZTxKsQ": "2026-03-05T01:34:26+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCV03SRZXJEz-hchIAogeJOg": "2026-03-05T01:44:08+00:00",
-    "https://www.youtube.com/feeds/videos.xml?channel_id=UCsQoiOrh7jzKmE8NBofhTnQ": "2026-03-04T19:27:20+00:00"
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UCsQoiOrh7jzKmE8NBofhTnQ": "2026-03-04T19:27:20+00:00",
+    "/bilibili/user/video/3546830396721763": "2026-03-04T10:27:11+00:00",
+    "/bilibili/user/video/3546791320488658": "2026-03-02T03:07:02+00:00",
+    "/bilibili/user/video/3546585589877706": "2026-03-03T03:23:01+00:00",
+    "/bilibili/user/video/314076440": "2026-03-05T06:08:32+00:00",
+    "/bilibili/user/video/242124650": "2026-03-01T13:35:42+00:00",
+    "/bilibili/user/video/615957867": "2026-02-28T23:30:00+00:00",
+    "/bilibili/user/video/4401694": "2026-03-04T19:47:39+00:00",
+    "/bilibili/user/video/380747130": "2026-03-04T14:17:59+00:00",
+    "/bilibili/user/video/3546970691995922": "2026-03-05T06:27:06+00:00",
+    "/bilibili/user/video/65564239": "2026-03-02T10:00:00+00:00",
+    "/bilibili/user/video/46377861": "2026-03-03T15:25:18+00:00",
+    "/bilibili/user/video/3546884870244925": "2026-02-27T11:31:28+00:00",
+    "/bilibili/user/video/193580090": "2026-02-19T10:00:00+00:00",
+    "/bilibili/user/video/602010761": "2026-02-22T13:00:00+00:00",
+    "/bilibili/user/video/3546607314274766": "2026-02-17T06:00:00+00:00",
+    "/bilibili/user/video/3546878859807653": "2026-02-26T02:57:16+00:00",
+    "/bilibili/user/video/3546645734099512": "2026-02-12T02:32:47+00:00",
+    "/bilibili/user/video/52807953": "2026-03-01T13:34:58+00:00"
   },
   "feed_failures": {
     "/anthropic/research": {
@@ -6244,256 +6667,130 @@
       "updated_at": "2026-03-05T06:26:24.318528+00:00"
     },
     "/twitter/user/trq212": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.316418+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T07:25:22.900939+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.316423+00:00"
-    },
-    "/bilibili/user/video/3546830396721763": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.316851+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.316855+00:00"
+      "updated_at": "2026-03-05T06:55:22.900944+00:00"
     },
     "/bilibili/user/video/28357052": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.316880+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T07:25:22.901020+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.316884+00:00"
+      "updated_at": "2026-03-05T06:55:22.901025+00:00"
     },
     "/bilibili/user/video/3493082576193678": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.316907+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T07:25:22.901050+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.316912+00:00"
+      "updated_at": "2026-03-05T06:55:22.901055+00:00"
     },
     "/bilibili/user/video/73414544": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.316936+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T07:25:22.901078+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.316940+00:00"
-    },
-    "/bilibili/user/video/3546791320488658": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.316963+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.316966+00:00"
-    },
-    "/bilibili/user/video/3546585589877706": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.316990+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.316995+00:00"
-    },
-    "/bilibili/user/video/314076440": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317020+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317024+00:00"
-    },
-    "/bilibili/user/video/242124650": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317046+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317050+00:00"
-    },
-    "/bilibili/user/video/615957867": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317071+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317075+00:00"
-    },
-    "/bilibili/user/video/4401694": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317098+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317102+00:00"
-    },
-    "/bilibili/user/video/380747130": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317128+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317132+00:00"
-    },
-    "/bilibili/user/video/3546970691995922": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317156+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317159+00:00"
-    },
-    "/bilibili/user/video/65564239": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317182+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317187+00:00"
-    },
-    "/bilibili/user/video/46377861": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317212+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317216+00:00"
-    },
-    "/bilibili/user/video/3546884870244925": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317240+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317244+00:00"
-    },
-    "/bilibili/user/video/193580090": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317270+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317274+00:00"
-    },
-    "/bilibili/user/video/602010761": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317320+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317326+00:00"
+      "updated_at": "2026-03-05T06:55:22.901083+00:00"
     },
     "/bilibili/user/video/627947058": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317353+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T07:25:22.901770+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317357+00:00"
-    },
-    "/bilibili/user/video/3546607314274766": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317381+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317385+00:00"
-    },
-    "/bilibili/user/video/3546878859807653": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317406+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317410+00:00"
-    },
-    "/bilibili/user/video/3546645734099512": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317433+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317437+00:00"
+      "updated_at": "2026-03-05T06:55:22.901776+00:00"
     },
     "/bilibili/user/video/319759808": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317464+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T07:25:22.901979+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317471+00:00"
-    },
-    "/bilibili/user/video/52807953": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T06:42:24.317505+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.317511+00:00"
+      "updated_at": "2026-03-05T06:55:22.901984+00:00"
     },
     "/huggingface/blog": {
-      "count": 3,
-      "cooldown_until": "2026-03-05T06:30:24.314648+00:00",
+      "count": 4,
+      "cooldown_until": "2026-03-05T07:03:22.900632+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.314652+00:00"
-    },
-    "/hackernews": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.314674+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.314678+00:00"
-    },
-    "/hellogithub/volume": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.314957+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.314961+00:00"
-    },
-    "/hellogithub/home/featured": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.314981+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.314985+00:00"
-    },
-    "/juejin/aicoding": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.315006+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.315010+00:00"
+      "updated_at": "2026-03-05T06:55:22.900642+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCLKPca3kwwd-B59HNr-_lvA": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318609+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.902937+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318613+00:00"
+      "updated_at": "2026-03-05T06:55:22.902941+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCC-lyoTfSrcJzA1ab3APAgw": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318636+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.902956+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318640+00:00"
+      "updated_at": "2026-03-05T06:55:22.902958+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCeRjipR4_SsCddq9VZ2AeKg": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318664+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.902971+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318668+00:00"
+      "updated_at": "2026-03-05T06:55:22.902974+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCrDwWp7EBBv4NwvScIpBDOA": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318694+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.902987+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318697+00:00"
+      "updated_at": "2026-03-05T06:55:22.902989+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCP7jMXSY2xbc3KCAE0MHQ-A": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318749+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.903019+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318753+00:00"
+      "updated_at": "2026-03-05T06:55:22.903021+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCHlNU7kIZhRgSbhHvFoy72w": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318775+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.903034+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318778+00:00"
+      "updated_at": "2026-03-05T06:55:22.903037+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCBp3w4DCEC64FZr4k9ROxig": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318799+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.903049+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318803+00:00"
+      "updated_at": "2026-03-05T06:55:22.903052+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCn8ujwUInbJkBhffxqAPBVQ": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318859+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.903079+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318863+00:00"
+      "updated_at": "2026-03-05T06:55:22.903081+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCV03SRZXJEz-hchIAogeJOg": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318934+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.903126+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318938+00:00"
+      "updated_at": "2026-03-05T06:55:22.903128+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCsQoiOrh7jzKmE8NBofhTnQ": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T06:28:24.318964+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T06:59:22.903141+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318969+00:00"
+      "updated_at": "2026-03-05T06:55:22.903143+00:00"
     },
     "/github/trending/daily/python": {
-      "count": 1,
-      "cooldown_until": "2026-03-05T06:27:24.314795+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-05T06:57:22.900724+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.314803+00:00"
+      "updated_at": "2026-03-05T06:55:22.900730+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCGovZyy8OfFPNlNV0i1fI1g": {
-      "count": 1,
-      "cooldown_until": "2026-03-05T06:27:24.318830+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-05T06:57:22.903065+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318836+00:00"
+      "updated_at": "2026-03-05T06:55:22.903067+00:00"
     },
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCFqXmQ56-Gp1rIKa-GoAJvQ": {
-      "count": 1,
-      "cooldown_until": "2026-03-05T06:27:24.318884+00:00",
+      "count": 2,
+      "cooldown_until": "2026-03-05T06:57:22.903093+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T06:26:24.318888+00:00"
+      "updated_at": "2026-03-05T06:55:22.903096+00:00"
+    },
+    "https://www.youtube.com/feeds/videos.xml?channel_id=UC7c3Kb6jYCRj4JOHHZTxKsQ": {
+      "count": 1,
+      "cooldown_until": "2026-03-05T06:56:22.903110+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-05T06:55:22.903113+00:00"
     }
   }
 }
