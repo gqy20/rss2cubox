@@ -3,7 +3,7 @@ import pytest
 
 
 class TestGlobalAgentOutputFormat:
-    """Tests for output_format configuration."""
+    """Tests for query() + text parsing (IssueLab approach)."""
 
     def test_output_format_schema(self) -> None:
         """Verify output_format has correct schema structure."""
@@ -26,14 +26,17 @@ class TestGlobalAgentOutputFormat:
             "daily_advices",
         ]
 
-    def test_output_format_in_run_agent(self) -> None:
-        """Verify output_format is defined in _run_agent."""
+    def test_uses_query_text_parsing(self) -> None:
+        """Verify query() + text parsing is used (IssueLab approach)."""
         from rss2cubox import global_agent
         import inspect
 
         source = inspect.getsource(global_agent._run_agent)
-        assert "output_format" in source
-        assert "structured_output" in source
+        # 新方案：使用 query() + _extract_json_from_text
+        assert "query" in source
+        assert "_extract_json_from_text" in source
+        # 不再使用 output_format 和 structured_output
+        assert "output_format" not in source
 
 
 class TestGlobalAgentTools:

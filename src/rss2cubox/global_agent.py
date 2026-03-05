@@ -28,7 +28,7 @@ SYSTEM_PROMPT = (
 )
 
 JINA_READER_BASE = "https://r.jina.ai/"
-JINA_MAX_CHARS = 8000  # 截断防止 Token 超限
+JINA_MAX_CHARS = 8000
 
 
 class GlobalInsightsReport(BaseModel):
@@ -50,7 +50,6 @@ def _split_text_to_items(text: str) -> list[str]:
     )
     lines = [line.strip() for line in normalized.splitlines() if line.strip()]
     if len(lines) <= 1:
-        # Fallback: split by numbered list markers in a single long line
         parts = re.split(r"\s*(?=\d+[.)、]\s*)", normalized.strip())
         lines = [part.strip() for part in parts if part.strip()]
     items: list[str] = []
@@ -79,7 +78,7 @@ def _build_user_prompt(signals_file: str, total: int) -> str:
 
 请完成以下任务：
 1. 首先调用 read_signals_file 工具读取完整信号列表。
-2. 从中挑选 3-5 条你认为最值得深挖的条目，使用 read_webpage 工具阅读原文完整内容。
+2. 从中挑选 10-20 条你认为最值得深挖的条目，使用 read_webpage 工具阅读原文完整内容。
 3. 综合所有信息后，直接输出结构化 JSON 格式的报告：
    - trends: 宏观技术/行业趋势归纳，3-5 条，每条 ≤ 80 字
    - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条 ≤ 80 字
@@ -88,19 +87,48 @@ def _build_user_prompt(signals_file: str, total: int) -> str:
 所有内容必须使用简体中文。"""
 
 
+def _extract_json_from_text(text: str) -> dict | None:
+    """从文本中提取 JSON 对象"""
+    if not text:
+        return None
+
+    # 优先匹配 JSON 代码块
+    json_block_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if json_block_match:
+        try:
+            return json.loads(json_block_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # 尝试匹配裸 JSON 对象
+    json_match = re.search(r"(\{[\s\S]*\})", text)
+    if json_match:
+        try:
+            return json.loads(json_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    return None
+
+
 async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
+    import anyio
+
     try:
         from claude_agent_sdk import (  # type: ignore
+            AssistantMessage,
             ClaudeAgentOptions,
-            ClaudeSDKClient,
+            TextBlock,
+            ToolUseBlock,
             create_sdk_mcp_server,
+            query,
             tool,
         )
     except ImportError:
         print("[global_agent] claude-agent-sdk 未安装，跳过全局分析", flush=True)
         return None
 
-    # 将信号数据写入临时文件，避免大量数据直接塞入 prompt
+    # 将信号数据写入临时文件
     signals_data = [
         {
             "url": r["url"],
@@ -165,17 +193,6 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     if GLOBAL_AGENT_ENABLE_SKILLS:
         allowed_tools.append("Skill")
 
-    # 使用 output_format 直接获取结构化输出，避免依赖 result_holder 闭包
-    output_format = {
-        "type": "object",
-        "properties": {
-            "trends": {"type": "array", "items": {"type": "string"}},
-            "weak_signals": {"type": "array", "items": {"type": "string"}},
-            "daily_advices": {"type": "array", "items": {"type": "string"}},
-        },
-        "required": ["trends", "weak_signals", "daily_advices"],
-    }
-
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
         allowed_tools=allowed_tools,
@@ -183,47 +200,43 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         permission_mode="acceptEdits",
         max_turns=100,
         cwd=Path.cwd(),
-        # setting_sources=["project"] 从项目 .claude/skills/ 加载 Skills 定义。
-        # CI 环境无 ~/.claude/ 用户目录，所以不能指定 "user"，否则无效且可能报错。
         setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
-        output_format=output_format,
     )
 
-    structured_result: dict[str, Any] | None = None
+    full_response: list[str] = []
 
     try:
-        async with ClaudeSDKClient(options=options) as client:
-            await client.query(_build_user_prompt(signals_file_path, len(high_value_items)))
-            async for msg in client.receive_response():
-                from claude_agent_sdk import AssistantMessage, ResultMessage as _ResultMessage, TextBlock, ToolUseBlock as _ToolUseBlock  # type: ignore
-                if isinstance(msg, AssistantMessage):
-                    for block in msg.content:
-                        if isinstance(block, _ToolUseBlock):
-                            # 截断大参数避免日志爆炸
-                            args_str = str(block.input)[:200]
-                            print(f"[global_agent] tool_use: {block.name} args={args_str}", flush=True)
-                        elif isinstance(block, TextBlock) and block.text.strip():
-                            print(f"[global_agent] text: {block.text[:200]}", flush=True)
-                elif isinstance(msg, _ResultMessage):
-                    status = "error" if msg.is_error else "ok"
-                    cost = f"${msg.total_cost_usd:.4f}" if msg.total_cost_usd else "N/A"
-                    print(
-                        f"[global_agent] result: status={status} turns={msg.num_turns}"
-                        f" cost={cost} duration={msg.duration_ms}ms",
-                        flush=True,
-                    )
-                    # 优先从 structured_output 获取结果（output_format 模式）
-                    if msg.structured_output:
-                        print(f"[global_agent] structured_output: {str(msg.structured_output)[:200]}", flush=True)
-                        structured_result = msg.structured_output
+        async for message in query(prompt=_build_user_prompt(signals_file_path, len(high_value_items)), options=options):
+            if isinstance(message, AssistantMessage):
+                for block in message.content:
+                    if isinstance(block, ToolUseBlock):
+                        args_str = str(block.input)[:200]
+                        print(f"[global_agent] tool_use: {block.name} args={args_str}", flush=True)
+                    elif isinstance(block, TextBlock) and block.text.strip():
+                        full_response.append(block.text)
+                        print(f"[global_agent] text: {block.text[:200]}", flush=True)
     finally:
-        # 清理临时信号文件
         try:
             Path(signals_file_path).unlink(missing_ok=True)
         except Exception:
             pass
 
-    return structured_result
+    # 解析 JSON 结果并用 pydantic 校验
+    if full_response:
+        full_text = "\n".join(full_response)
+        parsed = _extract_json_from_text(full_text)
+        if parsed:
+            try:
+                validated = GlobalInsightsReport.model_validate(parsed)
+                result = validated.model_dump()
+                if result.get("trends") or result.get("weak_signals") or result.get("daily_advices"):
+                    print(f"[global_agent] validated: ok", flush=True)
+                    return result
+            except ValidationError as e:
+                print(f"[global_agent] validation_error: {e}", flush=True)
+
+    print(f"[global_agent] parse_failed: no_valid_json", flush=True)
+    return None
 
 
 def run_global_analysis(
@@ -255,7 +268,7 @@ def run_global_analysis(
         print("[global_agent] 无高价值情报，跳过全局分析", flush=True)
         return
 
-    # 按 score 降序，文件注入无 token 限制，取前 200 条覆盖更多趋势
+    # 按 score 降序，取前 200 条
     high_value.sort(key=lambda x: x["score"], reverse=True)
     high_value = high_value[:200]
 
@@ -267,30 +280,12 @@ def run_global_analysis(
         print("[global_agent] Agent 未返回有效报告", flush=True)
         return
 
-    try:
-        parsed_report = GlobalInsightsReport.model_validate(result)
-    except ValidationError as e:
-        print(f"[global_agent] 报告格式校验失败: {e}", flush=True)
-        return
-
-    trends = parsed_report.trends
-    weak_signals = parsed_report.weak_signals
-    daily_advices = parsed_report.daily_advices
-    if not trends and not weak_signals and not daily_advices:
-        print(
-            "[global_agent] 报告字段为空（可能返回了不兼容格式）",
-            f"types={{trends:{type(result.get('trends')).__name__}, "
-            f"weak_signals:{type(result.get('weak_signals')).__name__}, "
-            f"daily_advices:{type(result.get('daily_advices')).__name__}}}",
-            flush=True,
-        )
-
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source_count": len(high_value),
-        "trends": trends,
-        "weak_signals": weak_signals,
-        "daily_advices": daily_advices,
+        "trends": result.get("trends", []),
+        "weak_signals": result.get("weak_signals", []),
+        "daily_advices": result.get("daily_advices", []),
     }
     neon_url = os.getenv("NEON_DATABASE_URL", "").strip()
     if neon_url:

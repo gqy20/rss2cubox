@@ -3,7 +3,7 @@ import pytest
 
 
 class TestEnrichAgentOutputFormat:
-    """Tests for output_format configuration."""
+    """Tests for query() + text parsing (IssueLab approach)."""
 
     def test_output_format_schema(self) -> None:
         """Verify output_format has correct schema structure."""
@@ -29,16 +29,18 @@ class TestEnrichAgentOutputFormat:
             "score",
         ]
 
-    def test_output_format_constants(self) -> None:
-        """Verify output_format is defined as constant."""
+    def test_uses_query_text_parsing(self) -> None:
+        """Verify query() + text parsing is used (IssueLab approach)."""
         from rss2cubox import enrich_agent
 
-        # 验证函数中存在 output_format 定义
-        # 通过检查源代码确认 output_format 被使用
+        # 验证函数使用 query() 而非 output_format
         import inspect
         source = inspect.getsource(enrich_agent._enrich_one)
-        assert "output_format" in source
-        assert "structured_output" in source
+        # 新方案：使用 query() + _extract_json_from_text
+        assert "query" in source
+        assert "_extract_json_from_text" in source
+        # 不再使用 output_format 和 structured_output
+        assert "output_format" not in source
 
 
 class TestEnrichAgentTools:

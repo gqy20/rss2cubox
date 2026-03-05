@@ -12,16 +12,19 @@
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel, Field, field_validator
+
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
-ENRICH_MIN_SCORE = float(os.getenv("ENRICH_MIN_SCORE", "0.7"))  # 只深化高于此分的条目
-ENRICH_MAX_ITEMS = int(os.getenv("ENRICH_MAX_ITEMS", "15"))     # 最多深化条数，防止超时
+ENRICH_MIN_SCORE = float(os.getenv("ENRICH_MIN_SCORE", "0.7"))
+ENRICH_MAX_ITEMS = int(os.getenv("ENRICH_MAX_ITEMS", "15"))
 ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "90")))
-ENRICH_ALLOW_WEBFETCH_FALLBACK = os.getenv("ENRICH_ALLOW_WEBFETCH_FALLBACK", "false").lower() in ("1", "true", "yes")
 ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
 JINA_MAX_CHARS = max(1000, int(os.getenv("JINA_MAX_CHARS", "10000")))
@@ -31,17 +34,32 @@ try:
 except ValueError:
     ENRICH_MAX_BUDGET_USD = None
 
+
+class EnrichedResult(BaseModel):
+    core_event: str = ""
+    hidden_signal: str = ""
+    actionable: str = ""
+    score: float = 0.0
+
+    @field_validator("score", mode="before")
+    @classmethod
+    def _coerce_score(cls, v: Any) -> float:
+        try:
+            return float(v)
+        except (TypeError, ValueError):
+            return 0.0
+
+
 SYSTEM_PROMPT = (
     "你是一位顶级科技产业分析师，正在对一篇已通过初筛的高价值文章进行深度精读。\n"
     "你已拥有文章的标题与初步摘要，现在优先通过 read_webpage_jina 工具获取原文全文。\n"
-    "阅读完全文后，调用 submit_enriched 工具提交深化后的分析结果。\n"
-    "若 read_webpage_jina 失败且系统允许，可改用 WebFetch 作为兜底。\n"
-    "要求：\n"
+    "阅读完毕后，直接以 JSON 格式输出分析结果（不要调用任何提交工具）：\n"
+    "字段要求：\n"
     "- core_event：冷静客观地用一句话描述事实（≤60字）\n"
     "- hidden_signal：这意味着什么？背后的范式转移、行业冲击或深层技术含义（≤100字）\n"
     "- actionable：工程师/独立开发者应如何行动？（≤60字）\n"
     "- score：在原始分基础上，基于全文内容重新评估 0.0-1.0\n"
-    "所有输出必须使用简体中文。如果读取网页失败，请基于已有信息尽力输出。"
+    "所有输出必须使用简体中文。如果读取网页失败，请基于已有标题和摘要尽力输出。"
 )
 
 
@@ -54,9 +72,34 @@ def _build_user_prompt(item: dict, original: dict) -> str:
         f"初步核心事件：{original.get('core_event', '')}\n\n"
         "步骤：\n"
         "1. 调用 read_webpage_jina 读取原文（传入上方原文链接）。\n"
-        "2. 无论读取是否成功，必须调用 submit_enriched 提交分析结果。\n"
-        "   如果读取失败，基于已有标题、摘要和初步分析完成 submit_enriched 调用。"
+        "2. 无论读取是否成功，直接以 JSON 格式输出分析结果，包含：\n"
+        "   core_event、hidden_signal、actionable、score 四个字段。\n"
+        "   如果读取失败，基于已有标题、摘要和初步分析直接输出 JSON。"
     )
+
+
+def _extract_json_from_text(text: str) -> dict | None:
+    """从文本中提取 JSON 对象"""
+    if not text:
+        return None
+
+    # 优先匹配 JSON 代码块
+    json_block_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if json_block_match:
+        try:
+            return json.loads(json_block_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # 尝试匹配裸 JSON 对象
+    json_match = re.search(r"(\{[\s\S]*\})", text)
+    if json_match:
+        try:
+            return json.loads(json_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    return None
 
 
 async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
@@ -64,11 +107,12 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
 
     try:
         from claude_agent_sdk import (  # type: ignore
+            AssistantMessage,
             ClaudeAgentOptions,
-            ClaudeSDKClient,
-            PermissionResultAllow,
-            PermissionResultDeny,
+            TextBlock,
+            ToolUseBlock,
             create_sdk_mcp_server,
+            query,
             tool,
         )
     except ImportError:
@@ -84,7 +128,6 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         {"url": str},
     )
     async def read_webpage_jina(args: dict) -> dict:
-        # 始终抓取 expected_url，避免模型传入的 URL 细微差异（trailing slash 等）导致不必要的拒绝
         def _fetch() -> tuple[bool, str]:
             import requests
             try:
@@ -99,7 +142,6 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
                 return False, f"jina_fetch_failed: {e}"
 
         ok, payload = await anyio.to_thread.run_sync(_fetch)
-        # 即使抓取失败也返回错误信息而非 is_error，让模型继续调用 submit_enriched
         return {"content": [{"type": "text", "text": payload if ok else f"[网页读取失败，请基于已有标题和摘要完成分析] {payload}"}]}
 
     server = create_sdk_mcp_server(
@@ -108,73 +150,51 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         tools=[read_webpage_jina],
     )
 
-    async def can_use_tool(tool_name: str, tool_input: dict[str, Any], _ctx: Any) -> Any:
-        if tool_name != "WebFetch":
-            return PermissionResultAllow()
-        if not ENRICH_ALLOW_WEBFETCH_FALLBACK:
-            return PermissionResultDeny(message="WebFetch fallback disabled")
-        requested = str(tool_input.get("url", "")).strip() if isinstance(tool_input, dict) else ""
-        if requested == expected_url:
-            return PermissionResultAllow()
-        return PermissionResultDeny(
-            message=f"只允许抓取当前文章 URL。expected={expected_url}, got={requested}",
-        )
-
-    allowed_tools = [
-        "mcp__enrich-tools__read_webpage_jina",
-    ]
+    allowed_tools = ["mcp__enrich-tools__read_webpage_jina"]
     if ENRICH_ENABLE_SKILLS:
         allowed_tools.append("Skill")
-    if ENRICH_ALLOW_WEBFETCH_FALLBACK:
-        allowed_tools.append("WebFetch")
-
-    # 使用 output_format 直接获取结构化输出，避免依赖 result_holder 闭包
-    output_format = {
-        "type": "object",
-        "properties": {
-            "core_event": {"type": "string"},
-            "hidden_signal": {"type": "string"},
-            "actionable": {"type": "string"},
-            "score": {"type": "number"},
-        },
-        "required": ["core_event", "hidden_signal", "actionable", "score"],
-    }
 
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
         allowed_tools=allowed_tools,
         mcp_servers={"enrich-tools": server},
         permission_mode="acceptEdits",
-        max_turns=8,  # Jina 读取 + 可选兜底 + submit_enriched
+        max_turns=6,
         max_budget_usd=ENRICH_MAX_BUDGET_USD,
-        can_use_tool=can_use_tool,
         cwd=Path.cwd(),
-        # setting_sources=["project"] 从项目 .claude/skills/ 加载 Skills 定义。
-        # CI 环境无 ~/.claude/ 用户目录，不能指定 "user"。
         setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
-        output_format=output_format,
     )
 
-    async with ClaudeSDKClient(options=options) as client:
-        with anyio.fail_after(ENRICH_ITEM_TIMEOUT_SECONDS):
-            await client.query(_build_user_prompt(item, original))
-            async for msg in client.receive_response():
-                from claude_agent_sdk import AssistantMessage, ResultMessage as _ResultMessage, TextBlock, ToolUseBlock as _ToolUseBlock  # type: ignore
-                if isinstance(msg, AssistantMessage):
-                    for block in msg.content:
-                        if isinstance(block, _ToolUseBlock):
-                            args_str = str(block.input)[:120]
-                            print(f"[enrich_agent] eid={item.get('eid','')[:8]} tool_use: {block.name} args={args_str}", flush=True)
-                elif isinstance(msg, _ResultMessage):
-                    status = "error" if msg.is_error else "ok"
-                    cost = f"${msg.total_cost_usd:.4f}" if msg.total_cost_usd else "N/A"
-                    print(f"[enrich_agent] eid={item.get('eid','')[:8]} result: status={status} turns={msg.num_turns} cost={cost}", flush=True)
-                    # 优先从 structured_output 获取结果（output_format 模式）
-                    if msg.structured_output:
-                        print(f"[enrich_agent] eid={item.get('eid','')[:8]} structured_output: {str(msg.structured_output)[:200]}", flush=True)
-                        return msg.structured_output, "ok"
+    full_response: list[str] = []
 
-    return None, "no_structured_output"
+    try:
+        with anyio.fail_after(ENRICH_ITEM_TIMEOUT_SECONDS):
+            async for message in query(prompt=_build_user_prompt(item, original), options=options):
+                if isinstance(message, AssistantMessage):
+                    for block in message.content:
+                        if isinstance(block, ToolUseBlock):
+                            print(f"[enrich_agent] eid={item.get('eid', '')[:8]} tool_use: {block.name}", flush=True)
+                        elif isinstance(block, TextBlock):
+                            full_response.append(block.text or "")
+    except Exception as e:
+        print(f"[enrich_agent] eid={item.get('eid', '')[:8]} query_error: {e}", flush=True)
+
+    # 解析 JSON 结果并用 pydantic 校验
+    if full_response:
+        full_text = "\n".join(full_response)
+        parsed = _extract_json_from_text(full_text)
+        if parsed:
+            try:
+                validated = EnrichedResult.model_validate(parsed)
+                result = validated.model_dump()
+                if result.get("core_event") or result.get("hidden_signal"):
+                    print(f"[enrich_agent] eid={item.get('eid', '')[:8]} validated: ok", flush=True)
+                    return result, "ok"
+            except Exception as e:
+                print(f"[enrich_agent] eid={item.get('eid', '')[:8]} validation_error: {e}", flush=True)
+
+    print(f"[enrich_agent] eid={item.get('eid', '')[:8]} parse_failed: no_valid_json", flush=True)
+    return None, "parse_failed"
 
 
 async def _enrich_all(
@@ -202,7 +222,6 @@ async def _enrich_all(
             try:
                 enriched, reason = await _enrich_one(item, original)
                 if enriched:
-                    # 合并：保留原始字段，覆盖深化后的核心字段
                     merged = {**original}
                     for key in ("core_event", "hidden_signal", "actionable"):
                         val = str(enriched.get(key, "")).strip()
@@ -220,13 +239,7 @@ async def _enrich_all(
                               score=merged.get("score"), hidden_signal=merged.get("hidden_signal", "")[:40])
                 else:
                     stats["empty"] += 1
-                    log_event(
-                        "WARN",
-                        "enrich_failed",
-                        stage="enrich",
-                        eid=eid,
-                        error=f"no_result:{reason}",
-                    )
+                    log_event("WARN", "enrich_failed", stage="enrich", eid=eid, error=f"no_result:{reason}")
             except Exception as e:
                 stats["failed"] += 1
                 log_event("WARN", "enrich_failed", stage="enrich", eid=eid, error=str(e))
@@ -244,17 +257,13 @@ def run_enrich_analysis(
     ai_min_score: float | None = None,
     log_event: Any,
 ) -> None:
-    """
-    对 analyses 中 score >= ENRICH_MIN_SCORE 的条目进行全文深化，
-    结果直接更新 analyses dict（原地修改）。
-    """
+    """对 analyses 中 score >= ENRICH_MIN_SCORE 的条目进行全文深化，结果直接更新 analyses dict。"""
     if not ENRICH_AGENT_ENABLED:
         log_event("INFO", "enrich_skipped", stage="enrich", reason="ENRICH_AGENT_ENABLED=false")
         return
 
     threshold = ai_min_score if ai_min_score is not None else ENRICH_MIN_SCORE
 
-    # 筛选需要深化的条目，按 score 降序，取前 ENRICH_MAX_ITEMS 条
     to_enrich: list[tuple[dict, dict]] = []
     for c in candidates:
         eid = c.get("eid", "")
@@ -272,8 +281,7 @@ def run_enrich_analysis(
         log_event("INFO", "enrich_skipped", stage="enrich", reason="no_eligible_items")
         return
 
-    log_event("INFO", "enrich_start", stage="enrich", count=len(to_enrich),
-              max_workers=ENRICH_MAX_WORKERS)
+    log_event("INFO", "enrich_start", stage="enrich", count=len(to_enrich), max_workers=ENRICH_MAX_WORKERS)
 
     try:
         import anyio
