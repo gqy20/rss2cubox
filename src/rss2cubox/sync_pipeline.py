@@ -256,6 +256,20 @@ def process_candidates_for_push(
             "enriched": False,
         }
         if stats["pushed"] >= max_items_per_run:
+            # 填入 AI 分析结果（如有），供前端展示——即使不推 Cubox 也保留高分候选
+            _result = analyses.get(eid)
+            if _result:
+                try:
+                    event["score"] = float(_result.get("score", 0.0))
+                except (TypeError, ValueError):
+                    pass
+                event["keep"] = bool(_result.get("keep", False))
+                event["tags"] = _result.get("tags", []) if isinstance(_result.get("tags", []), list) else []
+                event["core_event"] = str(_result.get("core_event", ""))
+                event["hidden_signal"] = str(_result.get("hidden_signal", ""))
+                event["actionable"] = str(_result.get("actionable", ""))
+                event["reason"] = str(_result.get("reason", ""))
+                event["enriched"] = bool(_result.get("enriched", False))
             event["status"] = "dropped"
             event["drop_reason"] = "max_items_per_run_reached"
             drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})

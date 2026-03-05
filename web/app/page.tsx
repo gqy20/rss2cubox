@@ -18,6 +18,7 @@ type Row = {
   time: string
   score?: number
   enriched?: boolean
+  pushed?: boolean
   status?: string
   tags?: string[]
   core_event?: string
@@ -81,7 +82,7 @@ async function loadData(): Promise<{
         daily_advices: asStringArray((rawInsights as Record<string, unknown>).daily_advices),
       }
     : null
-  return { rows: dedupeRows(rows).filter(r => (r.score ?? 0) >= 0.5), metrics, insights }
+  return { rows: dedupeRows(rows).filter(r => (r.score ?? 0) >= 0.6 || r.pushed), metrics, insights }
 }
 
 export default async function Page() {
