@@ -1,7 +1,7 @@
 import DashboardClient from './DashboardClient'
 import { loadGlobalInsights, loadRunEvents } from '../lib/neonDb'
 
-export const dynamic = 'force-dynamic'
+export const revalidate = 1800 // 30 minutes; GitHub Actions triggers on-demand revalidation after each sync
 
 type GlobalInsights = {
   generated_at?: string

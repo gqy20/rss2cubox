@@ -58,7 +58,6 @@ jobs:
           RSSHUB_BILIBILI_RETRY_ATTEMPTS: "3"
           RSSHUB_TWITTER_RETRY_ATTEMPTS: "2"
           RSSHUB_INSTANCES_FILE: "rsshub_instances.txt"
-          RUN_EVENTS_FILE: "run_events.jsonl"
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           PYTHONUNBUFFERED: "1"
         run: |
@@ -72,4 +71,10 @@ jobs:
           name: rss2cubox-log-${{ github.run_id }}
           path: rss2cubox.log
           if-no-files-found: warn
+
+      - name: Trigger Vercel revalidation
+        if: success() && secrets.VERCEL_REVALIDATE_SECRET != ''
+        run: |
+          curl -sf "${{ vars.VERCEL_PRODUCTION_URL }}/api/revalidate?secret=${{ secrets.VERCEL_REVALIDATE_SECRET }}" \
+            -o /dev/null && echo "Revalidation triggered" || echo "Revalidation skipped (non-fatal)"
 
