@@ -17,7 +17,6 @@ from typing import Any
 import requests as _requests
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
-GLOBAL_INSIGHTS_FILE = Path(os.getenv("WEB_INSIGHTS_FILE", "web/public/data/global_insights.json"))
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 
 SYSTEM_PROMPT = (
@@ -242,11 +241,10 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
 def run_global_analysis(
     analyses: dict[str, dict],
     candidates: list[dict],
-    output_file: Path = GLOBAL_INSIGHTS_FILE,
 ) -> None:
     """
     从本次 pipeline 的分析结果中筛出高价值条目，
-    驱动 Claude Agent 进行二次深度分析并写入 global_insights.json。
+    驱动 Claude Agent 进行二次深度分析并写入 Neon DB。
     """
     import anyio
 
@@ -281,7 +279,6 @@ def run_global_analysis(
         print("[global_agent] Agent 未返回有效报告", flush=True)
         return
 
-    output_file.parent.mkdir(parents=True, exist_ok=True)
     try:
         parsed_report = GlobalInsightsReport.model_validate(result)
     except ValidationError as e:
@@ -307,14 +304,13 @@ def run_global_analysis(
         "weak_signals": weak_signals,
         "daily_advices": daily_advices,
     }
-    output_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
-    print(f"[global_agent] 全局分析完成，结果已写入 {output_file}", flush=True)
-
     neon_url = os.getenv("NEON_DATABASE_URL", "").strip()
     if neon_url:
         try:
             from rss2cubox.db import save_global_insights
             save_global_insights(neon_url, payload)
-            print("[global_agent] insights 已写入 Neon DB", flush=True)
+            print("[global_agent] 全局分析完成，insights 已写入 Neon DB", flush=True)
         except Exception as e:
             print(f"[global_agent] Neon DB 写入失败: {e}", flush=True)
+    else:
+        print("[global_agent] 全局分析完成，但未配置 NEON_DATABASE_URL，结果未保存", flush=True)

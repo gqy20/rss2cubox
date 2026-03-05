@@ -26,10 +26,8 @@ from rss2cubox.metrics import (
 )
 
 FEEDS_FILE = Path(os.getenv("FEEDS_FILE", "feeds.txt"))
-STATE_FILE = Path(os.getenv("STATE_FILE", "state.json"))
 NEON_DATABASE_URL = os.getenv("NEON_DATABASE_URL", "").strip()
 RSSHUB_INSTANCES_FILE = Path(os.getenv("RSSHUB_INSTANCES_FILE", "rsshub_instances.txt"))
-RUN_EVENTS_FILE = Path(os.getenv("RUN_EVENTS_FILE", "run_events.jsonl"))
 
 CUBOX_API_URL = os.getenv("CUBOX_API_URL")
 CUBOX_FOLDER = os.getenv("CUBOX_FOLDER", "RSS Inbox")
@@ -77,7 +75,7 @@ def main() -> None:
         cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_SECONDS,
     )
     stage_metrics = StageMetrics()
-    state = db.load_state(NEON_DATABASE_URL) if NEON_DATABASE_URL else sync_pipeline.load_state(STATE_FILE)
+    state = db.load_state(NEON_DATABASE_URL)
     sent = state.get("sent", {})
     ai = state.get("ai", {})
     feed_cursor = state.get("feed_cursor", {})
@@ -234,7 +232,6 @@ def main() -> None:
         event.setdefault("head_sha", runtime_context.get("head_sha", ""))
         event.setdefault("ref_name", runtime_context.get("ref_name", ""))
         event.setdefault("event_name", runtime_context.get("event_name", ""))
-    sync_pipeline.save_jsonl(RUN_EVENTS_FILE, run_events)
     if NEON_DATABASE_URL and run_events:
         try:
             db.save_run_events(NEON_DATABASE_URL, run_events)
@@ -251,10 +248,7 @@ def main() -> None:
     state["ai"] = ai
     state["feed_cursor"] = feed_cursor
     state["feed_failures"] = feed_failures
-    if NEON_DATABASE_URL:
-        db.save_state(NEON_DATABASE_URL, state)
-    else:
-        sync_pipeline.save_state(STATE_FILE, state)
+    db.save_state(NEON_DATABASE_URL, state)
     apply_stage_metrics(stats, stage_metrics)
     stats["state_size"] = len(sent)
     write_step_summary(stats, os.getenv("GITHUB_STEP_SUMMARY", "").strip())

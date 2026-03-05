@@ -1,5 +1,3 @@
-import { readFile } from 'node:fs/promises'
-import path from 'node:path'
 import DashboardClient from './DashboardClient'
 import { loadGlobalInsights, loadRunEvents } from '../lib/neonDb'
 
@@ -111,49 +109,8 @@ async function loadFromDb(): Promise<{
   return { rows, metrics: buildMetrics(rows), insights }
 }
 
-async function loadFromFiles(): Promise<{
-  rows: Row[]
-  metrics: {
-    generated_at?: string
-    updates_total?: number
-    sources_total?: number
-    top_sources?: Array<{ source: string; count: number }>
-  }
-  insights: GlobalInsights | null
-}> {
-  const updatesPath = path.join(process.cwd(), 'public', 'data', 'updates.json')
-  const metricsPath = path.join(process.cwd(), 'public', 'data', 'metrics.json')
-  const insightsPath = path.join(process.cwd(), 'public', 'data', 'global_insights.json')
-  const [updatesRaw, metricsRaw, insightsRaw] = await Promise.all([
-    readFile(updatesPath, 'utf-8').catch(() => '[]'),
-    readFile(metricsPath, 'utf-8').catch(() => '{}'),
-    readFile(insightsPath, 'utf-8').catch(() => 'null'),
-  ])
-  const rows = JSON.parse(updatesRaw) as Row[]
-  const metrics = JSON.parse(metricsRaw) as {
-    generated_at?: string
-    updates_total?: number
-    pushed_total?: number
-    dropped_total?: number
-    sources_total?: number
-    top_sources?: Array<{ source: string; count: number }>
-  }
-  const rawInsights = JSON.parse(insightsRaw) as GlobalInsights | null
-  const insights = rawInsights
-    ? {
-        generated_at: rawInsights.generated_at,
-        source_count: rawInsights.source_count,
-        trends: asStringArray((rawInsights as Record<string, unknown>).trends),
-        weak_signals: asStringArray((rawInsights as Record<string, unknown>).weak_signals),
-        daily_advices: asStringArray((rawInsights as Record<string, unknown>).daily_advices),
-      }
-    : null
-  return { rows: dedupeRows(rows).filter((r) => (r.score ?? 0) >= 0.6 || r.pushed), metrics, insights }
-}
-
 export default async function Page() {
-  const useDb = Boolean(process.env.NEON_DATABASE_URL)
-  const { rows, metrics: data, insights } = useDb ? await loadFromDb() : await loadFromFiles()
+  const { rows, metrics: data, insights } = await loadFromDb()
 
   return (
     <main className="main">
