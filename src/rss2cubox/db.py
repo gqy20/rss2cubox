@@ -87,7 +87,7 @@ def _migrate_global_insights_table(conn: psycopg.Connection) -> None:
             if old_row:
                 cur.execute(
                     "INSERT INTO global_insights (generated_at, data) VALUES (%s, %s)",
-                    (old_row[0], old_row[1])
+                    (old_row[0], json.dumps(old_row[1], ensure_ascii=False))
                 )
 
 

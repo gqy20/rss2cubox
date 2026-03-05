@@ -3,6 +3,21 @@
 import { useState, useEffect } from 'react'
 import type { Row } from './types'
 
+const CN_TZ = 'Asia/Shanghai'
+
+function formatDayKeyInCnTz(dt: Date): string {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: CN_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(dt)
+  const y = parts.find((p) => p.type === 'year')?.value || '1970'
+  const m = parts.find((p) => p.type === 'month')?.value || '01'
+  const d = parts.find((p) => p.type === 'day')?.value || '01'
+  return `${y}-${m}-${d}`
+}
+
 export const PIE_COLORS = ['#2dd4bf', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc']
 
 export const SOURCE_DOMAIN_MAP: Array<[string, string]> = [
@@ -29,7 +44,7 @@ export const SOURCE_DOMAIN_MAP: Array<[string, string]> = [
 export function formatRelativeTime(value: string, now: Date | null): string {
   const dt = new Date(value)
   if (Number.isNaN(dt.getTime())) return value
-  if (!now) return dt.toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  if (!now) return dt.toLocaleString('zh-CN', { timeZone: CN_TZ, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   const diff = now.getTime() - dt.getTime()
   const mins = Math.floor(diff / 60000)
   if (mins < 1) return '刚刚'
@@ -42,28 +57,25 @@ export function formatRelativeTime(value: string, now: Date | null): string {
 export function formatShortTime(value: string): string {
   const dt = new Date(value)
   if (Number.isNaN(dt.getTime())) return value
-  return dt.toLocaleString('zh-CN', { hour: '2-digit', minute: '2-digit' })
+  return dt.toLocaleString('zh-CN', { timeZone: CN_TZ, hour: '2-digit', minute: '2-digit' })
 }
 
 export function getDayKey(value: string | Date): string {
   const dt = value instanceof Date ? value : new Date(value)
   if (Number.isNaN(dt.getTime())) return ''
-  const y = dt.getFullYear()
-  const m = `${dt.getMonth() + 1}`.padStart(2, '0')
-  const d = `${dt.getDate()}`.padStart(2, '0')
-  return `${y}-${m}-${d}`
+  return formatDayKeyInCnTz(dt)
 }
 
 export function formatAxisDay(value: Date): string {
-  return value.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' })
+  return value.toLocaleDateString('zh-CN', { timeZone: CN_TZ, month: 'numeric', day: 'numeric' })
 }
 
 export function formatGroupTitle(dayKey: string, todayKey: string, yesterdayKey: string): string {
   if (dayKey === todayKey) return '今天'
   if (dayKey === yesterdayKey) return '昨天'
-  const dt = new Date(dayKey)
+  const dt = new Date(`${dayKey}T00:00:00+08:00`)
   if (Number.isNaN(dt.getTime())) return dayKey
-  return dt.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric', weekday: 'short' })
+  return dt.toLocaleDateString('zh-CN', { timeZone: CN_TZ, month: 'numeric', day: 'numeric', weekday: 'short' })
 }
 
 export function formatKpiDelta(current: number, previous: number): { text: string; trend: 'up' | 'down' | 'flat' } {

@@ -62,6 +62,22 @@ type Props = {
 const SEARCH_PAGE_SIZE = 50
 
 export default function DashboardClient({ initialRows, totalCount, metrics, insights, serverTime }: Props) {
+  const formatGeneratedAt = (value?: string) => {
+    if (!value) return '未知'
+    const dt = new Date(value)
+    if (Number.isNaN(dt.getTime())) return '未知'
+    return dt.toLocaleString('zh-CN', {
+      timeZone: 'Asia/Shanghai',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false,
+    })
+  }
+
   // 按日期分组的数据状态
   const [groupData, setGroupData] = useState<Record<string, GroupData>>({})
   const [loadingMore, setLoadingMore] = useState(false)
@@ -551,7 +567,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               <h1 className="h1">RSS 信号控制台</h1>
             </div>
             <div className="muted" style={{ marginTop: 6, marginLeft: 52 }}>
-              最后更新：{metrics.generated_at ? new Date(metrics.generated_at).toLocaleString('zh-CN') : '未知'}
+              <span suppressHydrationWarning>最后更新：{formatGeneratedAt(metrics.generated_at)}</span>
             </div>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
