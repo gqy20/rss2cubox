@@ -106,9 +106,23 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     @tool(
         "submit_enriched",
         "提交基于全文精读后的深化分析结果",
-        {"core_event": str, "hidden_signal": str, "actionable": str, "score": float},
+        {
+            "type": "object",
+            "properties": {
+                "core_event": {"type": "string"},
+                "hidden_signal": {"type": "string"},
+                "actionable": {"type": "string"},
+                "score": {"type": "number"},
+            },
+            "required": ["core_event", "hidden_signal", "actionable", "score"],
+        },
     )
     async def submit_enriched(args: dict) -> dict:
+        # 显式 coerce score，防止模型返回整数（如 1）被 Python 严格 isinstance 拒绝
+        try:
+            args["score"] = float(args.get("score", 0))
+        except (TypeError, ValueError):
+            args["score"] = 0.0
         result_holder.update(args)
         return {"content": [{"type": "text", "text": "深化分析已收到。"}]}
 

@@ -173,9 +173,9 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         try:
             parsed = GlobalInsightsReport.model_validate(args)
         except ValidationError as e:
+            # 不返回 is_error: True，避免模型停止重试；让模型根据错误提示重新调用
             return {
-                "content": [{"type": "text", "text": f"submit_insights 参数格式错误，请按数组字符串重提：{e}"}],
-                "is_error": True,
+                "content": [{"type": "text", "text": f"参数格式错误，请修正后重新调用 submit_insights：{e}"}],
             }
         result_holder.update(parsed.model_dump())
         return {"content": [{"type": "text", "text": "报告已收到，分析完毕。"}]}
