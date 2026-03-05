@@ -186,10 +186,15 @@ const SOURCE_DOMAIN_MAP: Array<[string, string]> = [
   ['huggingface', 'huggingface.co'],
   ['arxiv', 'arxiv.org'],
   ['bair', 'bair.berkeley.edu'],
+  ['bilibili', 'bilibili.com'],
 ]
 
 function getFaviconUrl(row: Row): string {
   const feed = row.source_feed || ''
+  // RSSHub Bilibili routes start with "/bilibili/"
+  if (feed.startsWith('/bilibili/') || /bilibili\.com/i.test(row.url || '')) {
+    return `https://www.google.com/s2/favicons?domain=bilibili.com&sz=16`
+  }
   if (feed.startsWith('http')) {
     try {
       let host = new URL(feed).hostname
@@ -717,7 +722,14 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
     const isHovered = hoveredRowKey === rowKey
     const hasAiContent = Boolean(row.core_event || row.actionable || row.reason)
     const isYoutubeRow = /youtube\.com\/watch|youtu\.be\//i.test(row.url || '')
-    const hasCover = Boolean(row.cover_url) && (isYoutubeRow || /ytimg\.com\//i.test(row.cover_url || ''))
+    const isBiliRow = /bilibili\.com\/video\//i.test(row.url || '')
+    const bvMatch = isBiliRow ? /bilibili\.com\/video\/(BV[A-Za-z0-9]+)/i.exec(row.url || '') : null
+    const coverUrl = row.cover_url || (bvMatch ? `/api/bili-cover?bvid=${bvMatch[1]}` : '')
+    const hasCover = Boolean(coverUrl) && (
+      isYoutubeRow || isBiliRow ||
+      /ytimg\.com\//i.test(coverUrl) ||
+      /hdslb\.com\//i.test(coverUrl)
+    )
 
     return (
       <motion.div
@@ -777,7 +789,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
 
           {hasCover && (
             <a href={row.url} target="_blank" rel="noreferrer" className="t-cover-wrap" aria-label="打开原文封面">
-              <img className="t-cover" src={row.cover_url} alt={row.title || '封面图'} loading="lazy" />
+              <img className="t-cover" src={coverUrl} alt={row.title || '封面图'} loading="lazy" />
             </a>
           )}
 

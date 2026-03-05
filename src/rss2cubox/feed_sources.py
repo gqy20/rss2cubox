@@ -321,6 +321,21 @@ def extract_cover_url(entry: Any, url: str) -> str:
     if yt_video_id and re.fullmatch(r"[A-Za-z0-9_-]{6,20}", yt_video_id):
         return f"https://i.ytimg.com/vi/{yt_video_id}/hqdefault.jpg"
 
+    # Bilibili: cover is often embedded in the summary/description HTML.
+    if "bilibili.com/video/" in url:
+        for field in ("summary", "description"):
+            val = entry.get(field)
+            if isinstance(val, list) and val:
+                val = val[0].get("value", "") if isinstance(val[0], dict) else ""
+            if isinstance(val, str) and val.strip():
+                img_match = re.search(
+                    r'<img[^>]+src=["\']([^"\']*hdslb\.com[^"\']*)["\']',
+                    val,
+                    re.IGNORECASE,
+                )
+                if img_match:
+                    return img_match.group(1)
+
     return ""
 
 
