@@ -167,6 +167,59 @@ function AnimatedNumber({ value }: { value: number }) {
   return <>{display}</>
 }
 
+const SOURCE_DOMAIN_MAP: Array<[string, string]> = [
+  ['hacker news', 'news.ycombinator.com'],
+  ['hackernews', 'news.ycombinator.com'],
+  ['infoq', 'infoq.cn'],
+  ['anthropic', 'anthropic.com'],
+  ['openai', 'openai.com'],
+  ['cursor', 'cursor.sh'],
+  ['youtube', 'youtube.com'],
+  ['掘金', 'juejin.cn'],
+  ['少数派', 'sspai.com'],
+  ['量子位', 'qbitai.com'],
+  ['橘鸦', 'juejin.cn'],
+  ['github', 'github.com'],
+  ['google', 'google.com'],
+  ['hugging face', 'huggingface.co'],
+  ['huggingface', 'huggingface.co'],
+  ['arxiv', 'arxiv.org'],
+  ['bair', 'bair.berkeley.edu'],
+]
+
+function getFaviconUrl(row: Row): string {
+  const feed = row.source_feed || ''
+  if (feed.startsWith('http')) {
+    try {
+      let host = new URL(feed).hostname
+      host = host.replace(/^(rss|feeds?|www)\./i, '')
+      return `https://www.google.com/s2/favicons?domain=${host}&sz=16`
+    } catch {}
+  }
+  const label = (row.source_label || row.source || '').toLowerCase()
+  for (const [key, domain] of SOURCE_DOMAIN_MAP) {
+    if (label.includes(key)) {
+      return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`
+    }
+  }
+  return ''
+}
+
+function SourceLogo({ row }: { row: Row }) {
+  const url = getFaviconUrl(row)
+  if (!url) return null
+  return (
+    <img
+      src={url}
+      alt=""
+      width={14}
+      height={14}
+      style={{ borderRadius: 2, flexShrink: 0, display: 'block' }}
+      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+    />
+  )
+}
+
 function ScoreBar({ score }: { score: number }) {
   const color = score >= 0.85 ? '#34d399' : score >= 0.7 ? '#60a5fa' : '#9ca3af'
   return (
@@ -680,7 +733,10 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
         >
           <div className="t-header" style={{ marginBottom: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-              <span className="source-badge">{row.source}</span>
+              <span className="source-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <SourceLogo row={row} />
+                {row.source}
+              </span>
               {row.enriched && (
                 <span
                   title="已完成全文深化分析"
