@@ -1117,3 +1117,25 @@ body {
     padding: 11px 12px;
   }
 }
+
+/* Performance optimization: skip rendering off-screen content */
+.timeline-item {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 200px;
+}
+
+/* Performance optimization: reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .timeline-item {
+    transition: none;
+    animation: none;
+  }
+  
+  .timeline-content {
+    transition: none;
+  }
+  
+  .t-ai-content {
+    transition: none;
+  }
+}

@@ -11,28 +11,46 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const page = parseInt(searchParams.get('page') || '1')
   const limit = parseInt(searchParams.get('limit') || '50')
+  const search = searchParams.get('search')?.trim() || ''
+  const date = searchParams.get('date')?.trim() || ''
 
   const sql = getSql()
 
-  // 先获取总数
-  const countResult = await sql`
-    SELECT COUNT(*) as total FROM run_events
-    WHERE (data->>'score')::float >= 0.6 OR (data->>'pushed') = 'true'
-  `
-  const total = Number(countResult[0]?.total || 0)
+  // 基础条件
+  const baseCondition = "(data->>'score')::float >= 0.6 OR (data->>'pushed') = 'true'"
+  
+  // 日期条件：使用北京时间筛选
+  let dateCondition = ''
+  if (date) {
+    // 转换为北京时间日期范围
+    dateCondition = `AND DATE(data->>'time'::timestamptz AT TIME ZONE 'Asia/Shanghai') = '${date}'`
+  }
+  
+  let whereClause = baseCondition + dateCondition
 
-  // 获取分页数据
-  const offset = (page - 1) * limit
-  const rows = await sql`
-    SELECT data FROM run_events
-    WHERE (data->>'score')::float >= 0.6
-       OR (data->>'pushed') = 'true'
-    ORDER BY event_time DESC NULLS LAST
-    LIMIT ${limit}
-    OFFSET ${offset}
-  `
+  if (search) {
+    const escaped = search.replace(/'/g, "''")
+    const pattern = `%${escaped}%`
+    const searchCondition = `(data->>'title' ILIKE '${pattern}' 
+      OR data->>'source' ILIKE '${pattern}'
+      OR data->>'source_label' ILIKE '${pattern}'
+      OR data->>'hidden_signal' ILIKE '${pattern}'
+      OR data->>'core_event' ILIKE '${pattern}'
+      OR data->>'reason' ILIKE '${pattern}'
+      OR data->>'actionable' ILIKE '${pattern}'
+      OR data->>'url' ILIKE '${pattern}')`
+    whereClause = `(${baseCondition}) AND ${searchCondition}${dateCondition}`
+  }
 
-  const events = rows.map((r) => r.data)
+  // 构建 SQL 查询
+  const countSql = `SELECT COUNT(*) as total FROM run_events WHERE ${whereClause}`
+  const dataSql = `SELECT data FROM run_events WHERE ${whereClause} ORDER BY event_time DESC NULLS LAST LIMIT ${limit} OFFSET ${(page - 1) * limit}`
+
+  const countResult = await sql.query(countSql) as any
+  const total = countResult[0]?.total || 0
+
+  const rowsResult = await sql.query(dataSql) as any
+  const events = rowsResult.map((r: any) => r.data)
 
   // 处理数据去重和格式化
   const seen = new Set<string>()
@@ -63,7 +81,7 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const formatted = deduped.map((e) => ({
+  const formatted = deduped.map((e: any) => ({
     id: e.id,
     title: e.title,
     url: e.url,
@@ -85,6 +103,6 @@ export async function GET(request: NextRequest) {
     data: formatted,
     total,
     page,
-    hasMore: offset + formatted.length < total,
+    hasMore: (page - 1) * limit + formatted.length < total,
   })
 }

@@ -45,13 +45,14 @@ import { ExportModal, SettingsModal } from './Modals'
 import type { Row, Metrics, GlobalInsights, InsightKey, ExportScope, PendingExport } from './types'
 
 type Props = {
+  serverTime?: string
   initialRows: Row[]
   totalCount: number
   metrics: Metrics
   insights?: GlobalInsights | null
 }
 
-export default function DashboardClient({ initialRows, totalCount, metrics, insights }: Props) {
+export default function DashboardClient({ initialRows, totalCount, metrics, insights, serverTime }: Props) {
   const [rows, setRows] = useState<Row[]>(initialRows)
   const [hasMore, setHasMore] = useState(totalCount > initialRows.length)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -77,7 +78,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [cuboxBusy, setCuboxBusy] = useState(false)
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
-  const [now, setNow] = useState<Date | null>(null)
+  const [now, setNow] = useState<Date | null>(serverTime ? new Date(serverTime) : null)
   const searchRef = useRef<HTMLInputElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
   const hoverCloseTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
@@ -217,33 +218,18 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     return result.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
   }, [rows, filter, timeScope, selectedSource, selectedTag, search, sortBy, todayKey, topSourceNames])
 
-  const trendData = useMemo(() => {
-    const dayMap = new Map<string, { name: string; total: number; high: number }>()
-    const base = new Date()
-    base.setHours(0, 0, 0, 0)
-    for (let i = 6; i >= 0; i--) {
-      const d = new Date(base)
-      d.setDate(base.getDate() - i)
-      dayMap.set(getDayKey(d), { name: formatAxisDay(d), total: 0, high: 0 })
-    }
-    rows.forEach((r) => {
-      const slot = dayMap.get(getDayKey(r.time))
-      if (!slot) return
-      slot.total++
-      if ((r.score ?? 0) >= 0.85) slot.high++
-    })
-    return Array.from(dayMap.values())
-  }, [rows])
+  // 趋势数据来自服务端（基于全部数据）
+  const trendData = metrics.trend_data || []
 
+  // 情报源分布来自服务端（基于全部数据）
   const sourceData = useMemo(() => {
-    const counts: Record<string, number> = {}
-    rows.forEach((r) => { counts[r.source || 'unknown'] = (counts[r.source || 'unknown'] || 0) + 1 })
-    const rawData = Object.entries(counts).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+    const topSources = metrics.top_sources || []
+    const rawData = topSources.map((s: { source: string; count: number }) => ({ name: s.source, value: s.count }))
     const top5 = rawData.slice(0, 5)
     const others = rawData.slice(5)
     if (others.length > 0) top5.push({ name: '其他', value: others.reduce((sum, item) => sum + item.value, 0) })
     return top5
-  }, [rows])
+  }, [metrics.top_sources])
 
   const groupedRows = useMemo(() => {
     const map = new Map<string, Row[]>()
@@ -268,11 +254,12 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     [insights]
   )
 
+  // KPI 使用服务端计算的完整数据
   const kpis = [
-    { key: 'all', title: '有效信号', value: baselineStats.totalAll, tone: 'var(--accent)', delta: formatKpiDelta(baselineStats.totalToday, baselineStats.totalYesterday), onClick: () => { setFilter('all'); setTimeScope('all') } },
-    { key: 'high', title: '高价值 (≥0.85)', value: baselineStats.highAll, tone: '#34d399', delta: formatKpiDelta(baselineStats.highToday, baselineStats.highYesterday), onClick: () => { setFilter('high'); setTimeScope('all') } },
-    { key: 'today', title: '今日新增', value: baselineStats.totalToday, tone: '#60a5fa', delta: formatKpiDelta(baselineStats.totalToday, baselineStats.totalYesterday), onClick: () => { setFilter('all'); setTimeScope('today') } },
-    { key: 'source', title: '活跃情报源', value: baselineStats.activeSources, tone: '#a78bfa', delta: formatKpiDelta(baselineStats.sourceToday, baselineStats.sourceYesterday), onClick: () => setSelectedSource(null) },
+    { key: 'all', title: '有效信号', value: metrics.updates_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setTimeScope('all') } },
+    { key: 'high', title: '高价值 (≥0.85)', value: metrics.high_all ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('high'); setTimeScope('all') } },
+    { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setTimeScope('today') } },
+    { key: 'source', title: '活跃情报源', value: metrics.sources_total ?? 0, tone: '#a78bfa', delta: null, onClick: () => setSelectedSource(null) },
   ] as const
 
   // Handlers
@@ -467,7 +454,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               <div className="kpi-value" style={{ color: item.tone }}>
                 <AnimatedNumber value={item.value} />
               </div>
-              <div className={`kpi-delta ${item.delta.trend}`}>{item.delta.text}</div>
+              {item.delta && <div className={`kpi-delta ${item.delta.trend}`}>{item.delta.text}</div>}
             </button>
           ))}
         </section>

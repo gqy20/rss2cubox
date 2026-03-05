@@ -74,7 +74,7 @@ export function formatKpiDelta(current: number, previous: number): { text: strin
   }
   const percent = Math.round((Math.abs(diff) / previous) * 100)
   return {
-    text: `${diff > 0 ? '↑' : '↓'} ${diff > 0 ? '+' : ''}${percent}% vs 昨日`,
+    text: `${diff > 0 ? '↑' : '↓'} ${percent}% vs 昨日`,
     trend: diff > 0 ? 'up' : 'down',
   }
 }

@@ -22,6 +22,19 @@ export type Metrics = {
   updates_total?: number
   sources_total?: number
   top_sources?: Array<{ source: string; count: number }>
+  // KPI 数据（服务端计算）
+  total_all?: number
+  high_all?: number
+  total_today?: number
+  total_yesterday?: number
+  high_today?: number
+  high_yesterday?: number
+  sources_today?: number
+  sources_yesterday?: number
+  // 趋势数据
+  trend_data?: Array<{ name: string; total: number; high: number }>
+  // 每日数据量（用于右侧分组显示总数）
+  daily_counts?: Record<string, number>
 }
 
 export type GlobalInsights = {

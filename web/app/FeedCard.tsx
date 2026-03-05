@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { ExternalLink } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, useReducedMotion } from 'framer-motion'
 import { SourceLogo, ScoreBar, formatRelativeTime, formatShortTime } from './utils'
 import type { Row } from './types'
 
@@ -45,14 +45,17 @@ const FeedCard = React.memo(function FeedCard({
     /hdslb\.com\//i.test(coverUrl)
   )
 
+  // 动画优化：检测是否应减少动画
+  const shouldReduceMotion = useReducedMotion()
+
   // suppress unused groupId lint warning — used externally as key
   void groupId
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: Math.min(idx * 0.02, 0.15) }}
+      initial={shouldReduceMotion ? undefined : { opacity: 0, y: 10 }}
+      animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+      transition={shouldReduceMotion ? { duration: 0 } : { delay: Math.min(idx * 0.02, 0.15) }}
       className="timeline-item"
     >
       <article
@@ -86,7 +89,7 @@ const FeedCard = React.memo(function FeedCard({
                 Enriched
               </span>
             )}
-            <span className="node-time" title={`${row.time} ${formatShortTime(row.time)}`}>
+            <span suppressHydrationWarning className="node-time" title={`${row.time} ${formatShortTime(row.time)}`}>
               {formatRelativeTime(row.time, now)}
             </span>
           </div>
