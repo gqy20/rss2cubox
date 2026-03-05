@@ -1,34 +1,38 @@
 {
-  "generated_at": "2026-03-05T02:11:33.346506+00:00",
-  "updates_total": 315,
-  "pushed_total": 127,
-  "dropped_total": 188,
+  "generated_at": "2026-03-05T04:20:16.787630+00:00",
+  "updates_total": 815,
+  "pushed_total": 147,
+  "dropped_total": 668,
   "failed_total": 0,
-  "sources_total": 32,
+  "sources_total": 33,
   "top_sources": [
     {
+      "source": "arXiv cs.AI",
+      "count": 309
+    },
+    {
+      "source": "arXiv cs.LG",
+      "count": 176
+    },
+    {
       "source": "Hacker News",
-      "count": 133
+      "count": 150
     },
     {
       "source": "InfoQ 推荐",
-      "count": 29
+      "count": 31
     },
     {
       "source": "Claude Status 历史事件",
-      "count": 24
+      "count": 27
     },
     {
       "source": "少数派首页",
-      "count": 18
-    },
-    {
-      "source": "arXiv cs.AI",
-      "count": 16
+      "count": 22
     },
     {
       "source": "Claude Code Releases",
-      "count": 10
+      "count": 11
     },
     {
       "source": "Cursor Blog",
@@ -43,15 +47,19 @@
       "count": 10
     },
     {
+      "source": "OpenAI News",
+      "count": 7
+    },
+    {
       "source": "GitHub Trending Python（日）",
       "count": 6
     },
     {
-      "source": "OpenAI News",
+      "source": "Google AI Blog",
       "count": 5
     },
     {
-      "source": "Google AI Blog",
+      "source": "掘金 AI 周榜",
       "count": 4
     },
     {
@@ -71,30 +79,22 @@
       "count": 3
     },
     {
-      "source": "掘金 AI 周榜",
-      "count": 3
-    },
-    {
       "source": "YouTube Anthropic",
       "count": 2
     },
     {
       "source": "YouTube HuggingFace",
       "count": 2
-    },
-    {
-      "source": "YouTube OpenAI",
-      "count": 2
     }
   ],
   "top_drop_reasons": [
     {
-      "reason": "ai_keep_false",
-      "count": 165
+      "reason": "max_items_per_run_reached",
+      "count": 500
     },
     {
-      "reason": "max_items_per_run_reached",
-      "count": 20
+      "reason": "ai_keep_false",
+      "count": 165
     },
     {
       "reason": "ai_score_below_threshold",
