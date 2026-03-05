@@ -132,7 +132,7 @@ def main() -> None:
 
     candidates = feed_sources.collect_candidates_from_feeds(
         feed_specs=feed_specs,
-        sent=sent,
+        analyzed={**sent, **ai},
         feed_cursor=feed_cursor,
         feed_failures=feed_failures,
         rsshub_pool=rsshub_pool,

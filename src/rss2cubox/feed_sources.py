@@ -399,7 +399,7 @@ def parse_feed_with_fallback(
 
 def parse_feed_spec(
     spec: dict[str, str],
-    sent: dict[str, Any],
+    analyzed: dict[str, Any],
     feed_cursor: dict[str, Any],
     rsshub_pool: RSSHubInstancePool,
     *,
@@ -459,7 +459,7 @@ def parse_feed_spec(
             continue
 
         eid = stable_id(entry)
-        if eid in sent:
+        if eid in analyzed:
             feed_deduped += 1
             continue
         if not entry.get("link"):
@@ -510,7 +510,7 @@ def parse_feed_spec(
 def collect_candidates_from_feeds(
     *,
     feed_specs: list[dict[str, str]],
-    sent: dict[str, Any],
+    analyzed: dict[str, Any],
     feed_cursor: dict[str, Any],
     feed_failures: dict[str, Any],
     rsshub_pool: RSSHubInstancePool,
@@ -564,7 +564,7 @@ def collect_candidates_from_feeds(
             executor.submit(
                 parse_feed_spec,
                 spec,
-                sent,
+                analyzed,
                 feed_cursor,
                 rsshub_pool,
                 feed_cursor_lookback_hours=feed_cursor_lookback_hours,
