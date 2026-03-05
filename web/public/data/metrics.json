@@ -1,42 +1,34 @@
 {
-  "generated_at": "2026-03-05T06:00:11.927546+00:00",
-  "updates_total": 1815,
-  "pushed_total": 187,
-  "dropped_total": 1628,
+  "generated_at": "2026-03-05T06:48:05.246873+00:00",
+  "updates_total": 2000,
+  "pushed_total": 80,
+  "dropped_total": 1920,
   "failed_total": 0,
-  "sources_total": 36,
+  "sources_total": 14,
   "top_sources": [
     {
       "source": "arXiv cs.AI",
-      "count": 931
+      "count": 1245
     },
     {
       "source": "arXiv cs.LG",
-      "count": 473
+      "count": 630
     },
     {
       "source": "Hacker News",
-      "count": 166
-    },
-    {
-      "source": "Claude Status 历史事件",
       "count": 33
     },
     {
       "source": "GitHub Trending Python（日）",
-      "count": 32
-    },
-    {
-      "source": "InfoQ 推荐",
-      "count": 32
+      "count": 26
     },
     {
       "source": "少数派首页",
-      "count": 30
+      "count": 15
     },
     {
-      "source": "Claude Code Releases",
-      "count": 13
+      "source": "Claude Status 历史事件",
+      "count": 12
     },
     {
       "source": "掘金 AI Coding",
@@ -44,65 +36,37 @@
     },
     {
       "source": "OpenAI News",
-      "count": 11
-    },
-    {
-      "source": "Cursor Blog",
-      "count": 10
-    },
-    {
-      "source": "Cursor Blog News",
-      "count": 10
-    },
-    {
-      "source": "Anthropic News",
-      "count": 10
-    },
-    {
-      "source": "Google AI Blog",
-      "count": 7
+      "count": 8
     },
     {
       "source": "掘金 AI 周榜",
-      "count": 6
+      "count": 5
     },
     {
-      "source": "YouTube Google DeepMind",
+      "source": "InfoQ 推荐",
       "count": 4
     },
     {
-      "source": "YouTube Temporal",
+      "source": "Google AI Blog",
       "count": 4
     },
     {
-      "source": "量子位 活动",
+      "source": "Claude Code Releases",
       "count": 4
     },
     {
-      "source": "Cursor Changelog",
-      "count": 3
+      "source": "HelloGitHub 精选",
+      "count": 1
     },
     {
-      "source": "YouTube Anthropic",
-      "count": 2
+      "source": "HelloGitHub 月刊",
+      "count": 1
     }
   ],
   "top_drop_reasons": [
     {
       "reason": "max_items_per_run_reached",
-      "count": 1460
-    },
-    {
-      "reason": "ai_keep_false",
-      "count": 165
-    },
-    {
-      "reason": "ai_score_below_threshold",
-      "count": 2
-    },
-    {
-      "reason": "missing_ai_result",
-      "count": 1
+      "count": 1920
     }
   ]
 }
