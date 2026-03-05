@@ -77,8 +77,15 @@ jobs:
           if-no-files-found: warn
 
       - name: Trigger Vercel revalidation
-        if: success() && secrets.VERCEL_REVALIDATE_SECRET != ''
+        if: success()
+        env:
+          REVALIDATE_SECRET: ${{ secrets.VERCEL_REVALIDATE_SECRET }}
+          VERCEL_PRODUCTION_URL: ${{ vars.VERCEL_PRODUCTION_URL }}
         run: |
-          curl -sf "${{ vars.VERCEL_PRODUCTION_URL }}/api/revalidate?secret=${{ secrets.VERCEL_REVALIDATE_SECRET }}" \
-            -o /dev/null && echo "Revalidation triggered" || echo "Revalidation skipped (non-fatal)"
+          if [ -n "$REVALIDATE_SECRET" ]; then
+            curl -sf "$VERCEL_PRODUCTION_URL/api/revalidate?secret=$REVALIDATE_SECRET" \
+              -o /dev/null && echo "Revalidation triggered" || echo "Revalidation skipped (non-fatal)"
+          else
+            echo "Revalidation skipped (no secret configured)"
+          fi
 
