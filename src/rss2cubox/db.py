@@ -4,8 +4,9 @@ Neon (PostgreSQL) 后端。
 接口：
   load_state / save_state   — 替换 state.json 读写
   save_run_events           — 写入本次运行事件
-  save_global_insights      — 写入全局 Agent 分析结果
+  save_global_insights      — 写入全局 Agent 分析结果（保留历史）
   load_global_insights      — 读取最新全局分析
+  load_all_global_insights  — 读取所有历史全局分析
 """
 
 from __future__ import annotations
@@ -45,15 +46,49 @@ CREATE TABLE IF NOT EXISTS run_events (
 );
 
 CREATE TABLE IF NOT EXISTS global_insights (
-    singleton    BOOLEAN PRIMARY KEY DEFAULT TRUE,
+    id           SERIAL PRIMARY KEY,
     generated_at TIMESTAMPTZ NOT NULL,
     data         JSONB NOT NULL
 );
+
+CREATE INDEX IF NOT EXISTS idx_global_insights_generated_at ON global_insights(generated_at DESC);
 """
 
 
 def _ensure_schema(conn: psycopg.Connection) -> None:
     conn.execute(DDL)  # type: ignore[arg-type]
+    _migrate_global_insights_table(conn)
+
+
+def _migrate_global_insights_table(conn: psycopg.Connection) -> None:
+    """迁移旧的 global_insights 表结构（singleton -> id）"""
+    with conn.cursor() as cur:
+        # 检查是否存在 singleton 列（旧表结构）
+        cur.execute("""
+            SELECT column_name FROM information_schema.columns
+            WHERE table_name = 'global_insights' AND column_name = 'singleton'
+        """)
+        if cur.fetchone():
+            # 旧表存在，需要迁移
+            cur.execute("SELECT generated_at, data FROM global_insights LIMIT 1")
+            old_row = cur.fetchone()
+            # 删除旧表
+            cur.execute("DROP TABLE global_insights")
+            # 创建新表
+            cur.execute("""
+                CREATE TABLE global_insights (
+                    id           SERIAL PRIMARY KEY,
+                    generated_at TIMESTAMPTZ NOT NULL,
+                    data         JSONB NOT NULL
+                )
+            """)
+            cur.execute("CREATE INDEX idx_global_insights_generated_at ON global_insights(generated_at DESC)")
+            # 如果有旧数据，迁移到新表
+            if old_row:
+                cur.execute(
+                    "INSERT INTO global_insights (generated_at, data) VALUES (%s, %s)",
+                    (old_row[0], old_row[1])
+                )
 
 
 def load_state(db_url: str) -> dict[str, Any]:
@@ -172,16 +207,14 @@ def save_run_events(db_url: str, events: list[dict[str, Any]]) -> None:
 
 
 def save_global_insights(db_url: str, payload: dict[str, Any]) -> None:
+    """保存全局分析结果（保留历史，不覆盖）"""
     with psycopg.connect(db_url) as conn:
         _ensure_schema(conn)
         with conn.cursor() as cur:
             cur.execute(
                 """
-                INSERT INTO global_insights (singleton, generated_at, data)
-                VALUES (TRUE, %s::timestamptz, %s)
-                ON CONFLICT (singleton) DO UPDATE
-                  SET generated_at = EXCLUDED.generated_at,
-                      data = EXCLUDED.data
+                INSERT INTO global_insights (generated_at, data)
+                VALUES (%s::timestamptz, %s)
                 """,
                 (payload.get("generated_at"), json.dumps(payload, ensure_ascii=False)),
             )
@@ -189,9 +222,30 @@ def save_global_insights(db_url: str, payload: dict[str, Any]) -> None:
 
 
 def load_global_insights(db_url: str) -> dict[str, Any] | None:
+    """读取最新全局分析"""
     with psycopg.connect(db_url) as conn:
         _ensure_schema(conn)
         with conn.cursor() as cur:
-            cur.execute("SELECT data FROM global_insights WHERE singleton = TRUE LIMIT 1")
+            cur.execute("SELECT data FROM global_insights ORDER BY generated_at DESC LIMIT 1")
             row = cur.fetchone()
     return row[0] if row else None
+
+
+def load_all_global_insights(db_url: str, limit: int = 30) -> list[dict[str, Any]]:
+    """读取所有历史全局分析（按时间倒序）"""
+    with psycopg.connect(db_url) as conn:
+        _ensure_schema(conn)
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, generated_at, data FROM global_insights ORDER BY generated_at DESC LIMIT %s",
+                (limit,),
+            )
+            rows = cur.fetchall()
+    return [
+        {
+            "id": row[0],
+            "generated_at": row[1].isoformat() if hasattr(row[1], "isoformat") else str(row[1]),
+            **row[2],
+        }
+        for row in rows
+    ]
