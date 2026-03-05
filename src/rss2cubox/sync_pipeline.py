@@ -393,6 +393,7 @@ def process_candidates_for_push(
                 stage="push",
                 item_id=eid,
                 url=url,
+                title=title,
                 duration_ms=push_duration_ms,
             )
             time.sleep(sleep_seconds)

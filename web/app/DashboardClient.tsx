@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useEffect, useRef } from 'react'
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import {
   AreaChart,
   Area,
@@ -44,6 +44,13 @@ import FeedCard from './FeedCard'
 import { ExportModal, SettingsModal } from './Modals'
 import type { Row, Metrics, GlobalInsights, InsightKey, ExportScope, PendingExport } from './types'
 
+type GroupData = {
+  loading: boolean
+  loaded: boolean
+  items: Row[]
+  hasMore: boolean
+}
+
 type Props = {
   serverTime?: string
   initialRows: Row[]
@@ -52,16 +59,23 @@ type Props = {
   insights?: GlobalInsights | null
 }
 
+const SEARCH_PAGE_SIZE = 50
+
 export default function DashboardClient({ initialRows, totalCount, metrics, insights, serverTime }: Props) {
-  const [rows, setRows] = useState<Row[]>(initialRows)
-  const [hasMore, setHasMore] = useState(totalCount > initialRows.length)
+  // 按日期分组的数据状态
+  const [groupData, setGroupData] = useState<Record<string, GroupData>>({})
   const [loadingMore, setLoadingMore] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
   const [filter, setFilter] = useState<'all' | 'high'>('all')
   const [timeScope, setTimeScope] = useState<'all' | 'today'>('all')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [searchRows, setSearchRows] = useState<Row[]>([])
+  const [searchPage, setSearchPage] = useState(1)
+  const [searchTotal, setSearchTotal] = useState(0)
+  const [searchHasMore, setSearchHasMore] = useState(false)
+  const [searchLoading, setSearchLoading] = useState(false)
   const [sortBy, setSortBy] = useState<'time' | 'score'>('time')
 
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
@@ -79,8 +93,27 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   const [now, setNow] = useState<Date | null>(serverTime ? new Date(serverTime) : null)
+  
+  // 初始化：只加载今天的 20 条数据
+  useEffect(() => {
+    const now = new Date()
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const todayItems = initialRows.filter((r) => getDayKey(r.time) === today)
+    const todayCount = metrics.daily_counts?.[today] || 0
+    setGroupData({
+      [today]: {
+        loading: false,
+        loaded: true,
+        items: todayItems,
+        hasMore: todayCount > todayItems.length,
+      }
+    })
+  }, [initialRows, metrics.daily_counts])
+  
   const searchRef = useRef<HTMLInputElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
+  const loadMoreRef = useRef<HTMLDivElement>(null)
+  const searchAbortRef = useRef<AbortController | null>(null)
   const hoverCloseTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   // Side Effects
@@ -94,6 +127,11 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   useEffect(() => {
     timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [filter, timeScope, selectedSource, selectedTag, search, sortBy])
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 280)
+    return () => clearTimeout(timer)
+  }, [search])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -119,6 +157,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   useEffect(() => {
     return () => {
       Object.values(hoverCloseTimers.current).forEach((timer) => clearTimeout(timer))
+      searchAbortRef.current?.abort()
     }
   }, [])
 
@@ -139,56 +178,31 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   // Derived State
 
   const todayKey = useMemo(() => getDayKey(now ?? new Date()), [now])
+  const isSearchMode = search.trim().length > 0
   const yesterdayKey = useMemo(() => {
     const d = new Date(now ?? new Date())
     d.setDate(d.getDate() - 1)
     return getDayKey(d)
   }, [now])
 
-  const baselineStats = useMemo(() => {
-    const current = new Date()
-    const today = getDayKey(current)
-    const yd = new Date(current)
-    yd.setDate(current.getDate() - 1)
-    const yesterday = getDayKey(yd)
-
-    let totalToday = 0, totalYesterday = 0, highToday = 0, highYesterday = 0
-    const sourceToday = new Set<string>()
-    const sourceYesterday = new Set<string>()
-
-    rows.forEach((r) => {
-      const key = getDayKey(r.time)
-      if (!key) return
-      if (key === today) {
-        totalToday++
-        if ((r.score ?? 0) >= 0.85) highToday++
-        sourceToday.add(r.source || 'unknown')
-      }
-      if (key === yesterday) {
-        totalYesterday++
-        if ((r.score ?? 0) >= 0.85) highYesterday++
-        sourceYesterday.add(r.source || 'unknown')
-      }
-    })
-
-    return {
-      totalAll: rows.length,
-      highAll: rows.filter((r) => (r.score ?? 0) >= 0.85).length,
-      totalToday, totalYesterday, highToday, highYesterday,
-      sourceToday: sourceToday.size,
-      sourceYesterday: sourceYesterday.size,
-      activeSources: new Set(rows.map((r) => r.source || 'unknown')).size,
-    }
-  }, [rows])
-
+  // 情报源列表（用于筛选）
   const topSourceNames = useMemo(() => {
-    const counts: Record<string, number> = {}
-    rows.forEach((r) => { counts[r.source || 'unknown'] = (counts[r.source || 'unknown'] || 0) + 1 })
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([name]) => name)
-  }, [rows])
+    const sources = metrics.top_sources || []
+    return sources.slice(0, 5).map((s: { source: string }) => s.source)
+  }, [metrics.top_sources])
 
+  const loadedRows = useMemo(() => {
+    const allItems: Row[] = []
+    Object.values(groupData).forEach((group) => {
+      if (group.loaded) allItems.push(...group.items)
+    })
+    return allItems
+  }, [groupData])
+
+  // 展示数据：搜索模式使用后端检索结果，非搜索模式使用已加载分组
   const displayedRows = useMemo(() => {
-    let result = filter === 'high' ? rows.filter((r) => (r.score ?? 0) >= 0.85) : [...rows]
+    const baseRows = isSearchMode ? searchRows : loadedRows
+    let result = filter === 'high' ? baseRows.filter((r) => (r.score ?? 0) >= 0.85) : [...baseRows]
     if (timeScope === 'today') result = result.filter((r) => getDayKey(r.time) === todayKey)
     if (selectedSource) {
       if (selectedSource === '__others__') {
@@ -199,24 +213,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       }
     }
     if (selectedTag) result = result.filter((r) => (r.tags || []).includes(selectedTag))
-    if (search.trim()) {
-      const kw = search.trim().toLowerCase()
-      result = result.filter((r) =>
-        (r.title || '').toLowerCase().includes(kw) ||
-        (r.source || '').toLowerCase().includes(kw) ||
-        (r.source_label || '').toLowerCase().includes(kw) ||
-        (r.source_feed || '').toLowerCase().includes(kw) ||
-        (r.hidden_signal || '').toLowerCase().includes(kw) ||
-        (r.core_event || '').toLowerCase().includes(kw) ||
-        (r.reason || '').toLowerCase().includes(kw) ||
-        (r.actionable || '').toLowerCase().includes(kw) ||
-        (r.url || '').toLowerCase().includes(kw) ||
-        (r.tags || []).some((t) => t.toLowerCase().includes(kw))
-      )
-    }
     if (sortBy === 'score') return result.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     return result.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-  }, [rows, filter, timeScope, selectedSource, selectedTag, search, sortBy, todayKey, topSourceNames])
+  }, [isSearchMode, searchRows, loadedRows, filter, timeScope, selectedSource, selectedTag, sortBy, todayKey, topSourceNames])
 
   // 趋势数据来自服务端（基于全部数据）
   const trendData = metrics.trend_data || []
@@ -231,19 +230,40 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     return top5
   }, [metrics.top_sources])
 
+  // 所有日期列表（从服务端获取）
+  const allDates = useMemo(() => {
+    return Object.keys(metrics.daily_counts || {}).sort((a, b) => b.localeCompare(a))
+  }, [metrics.daily_counts])
+
+  // 按日期分组：搜索模式仅显示命中日期，非搜索模式显示所有日期并懒加载
   const groupedRows = useMemo(() => {
-    const map = new Map<string, Row[]>()
+    const dateMap = new Map<string, Row[]>()
     for (const row of displayedRows) {
       const key = getDayKey(row.time)
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)?.push(row)
+      if (!dateMap.has(key)) dateMap.set(key, [])
+      dateMap.get(key)?.push(row)
     }
-    return Array.from(map.entries()).map(([dayKey, items]) => ({
+
+    if (isSearchMode) {
+      return Array.from(dateMap.keys())
+        .sort((a, b) => b.localeCompare(a))
+        .map((dayKey) => ({
+          id: dayKey,
+          title: formatGroupTitle(dayKey, todayKey, yesterdayKey),
+          items: dateMap.get(dayKey) || [],
+          total: (dateMap.get(dayKey) || []).length,
+          loaded: true,
+        }))
+    }
+
+    return allDates.map((dayKey) => ({
       id: dayKey,
       title: formatGroupTitle(dayKey, todayKey, yesterdayKey),
-      items,
+      items: dateMap.get(dayKey) || [],
+      total: metrics.daily_counts?.[dayKey] || 0,
+      loaded: !!dateMap.get(dayKey)?.length,
     }))
-  }, [displayedRows, todayKey, yesterdayKey])
+  }, [isSearchMode, allDates, displayedRows, todayKey, yesterdayKey, metrics.daily_counts])
 
   const insightPanels = useMemo(
     () => [
@@ -264,26 +284,124 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   // Handlers
 
-  const loadMore = async () => {
-    if (loadingMore || !hasMore) return
-    setLoadingMore(true)
-    const nextPage = currentPage + 1
+  const fetchSearchPage = useCallback(async (page: number, append: boolean) => {
+    const keyword = debouncedSearch.trim()
+    if (!keyword) return
+
+    searchAbortRef.current?.abort()
+    const controller = new AbortController()
+    searchAbortRef.current = controller
+
+    if (append) setLoadingMore(true)
+    else setSearchLoading(true)
+
     try {
-      const res = await fetch(`/api/signals?page=${nextPage}&limit=50`)
+      const res = await fetch(
+        `/api/signals?page=${page}&limit=${SEARCH_PAGE_SIZE}&search=${encodeURIComponent(keyword)}`,
+        { signal: controller.signal },
+      )
       const data = await res.json()
-      if (data.data && data.data.length > 0) {
-        setRows((prev) => [...prev, ...data.data])
-        setCurrentPage(nextPage)
-        setHasMore(data.hasMore)
-      } else {
-        setHasMore(false)
-      }
+      if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')
+
+      const rows = data.data as Row[]
+      setSearchRows((prev) => (append ? [...prev, ...rows] : rows))
+      setSearchPage(page)
+      setSearchTotal(Number(data.total || 0))
+      setSearchHasMore(Boolean(data.hasMore))
     } catch (error) {
-      console.error('Failed to load more:', error)
+      if (error instanceof Error && error.name === 'AbortError') return
+      console.error('Failed to search signals:', error)
+      if (!append) {
+        setSearchRows([])
+        setSearchTotal(0)
+      }
+      setSearchHasMore(false)
     } finally {
+      setSearchLoading(false)
       setLoadingMore(false)
     }
-  }
+  }, [debouncedSearch])
+
+  useEffect(() => {
+    if (!debouncedSearch.trim()) {
+      searchAbortRef.current?.abort()
+      setSearchRows([])
+      setSearchPage(1)
+      setSearchTotal(0)
+      setSearchHasMore(false)
+      setSearchLoading(false)
+      return
+    }
+    void fetchSearchPage(1, false)
+  }, [debouncedSearch, fetchSearchPage])
+
+  // 加载指定日期的数据
+  const loadGroupData = useCallback(async (dayKey: string) => {
+    const current = groupData[dayKey]
+    if (current?.loading || current?.loaded) return
+
+    setGroupData((prev) => ({
+      ...prev,
+      [dayKey]: { loading: true, loaded: false, items: [], hasMore: false },
+    }))
+
+    try {
+      const res = await fetch(`/api/signals?page=1&limit=50&date=${dayKey}`)
+      const data = await res.json()
+      if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')
+      setGroupData((prev) => ({
+        ...prev,
+        [dayKey]: {
+          loading: false,
+          loaded: true,
+          items: data.data,
+          hasMore: data.hasMore,
+        },
+      }))
+    } catch (error) {
+      console.error('Failed to load group:', error)
+      setGroupData((prev) => ({
+        ...prev,
+        [dayKey]: { loading: false, loaded: false, items: [], hasMore: false },
+      }))
+    }
+  }, [groupData])
+
+  const nextUnloadedDate = useMemo(() => {
+    if (isSearchMode) return null
+    for (const dayKey of allDates) {
+      const group = groupData[dayKey]
+      if (!group?.loaded && !group?.loading) return dayKey
+    }
+    return null
+  }, [isSearchMode, allDates, groupData])
+
+  useEffect(() => {
+    const root = timelineRef.current
+    const target = loadMoreRef.current
+    if (!root || !target) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const first = entries[0]
+        if (!first?.isIntersecting || loadingMore) return
+
+        if (isSearchMode) {
+          if (!searchHasMore || searchLoading) return
+          void fetchSearchPage(searchPage + 1, true)
+          return
+        }
+
+        if (!nextUnloadedDate) return
+        setLoadingMore(true)
+        void loadGroupData(nextUnloadedDate).finally(() => setLoadingMore(false))
+      },
+      { root, rootMargin: '0px 0px 240px 0px', threshold: 0.01 },
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [isSearchMode, searchHasMore, searchLoading, searchPage, fetchSearchPage, loadGroupData, loadingMore, nextUnloadedDate])
 
   const clearAllFilters = () => {
     setSearch(''); setSelectedSource(null); setSelectedTag(null); setFilter('all'); setTimeScope('all')
@@ -465,7 +583,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               <Zap size={18} color="#2dd4bf" /> 信号爆发趋势 (最近7天)
             </h3>
             <div style={{ width: '100%', height: 250, marginTop: 14 }}>
-              <ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
                 <AreaChart data={trendData} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorHigh" x1="0" y1="0" x2="0" y2="1">
@@ -494,7 +612,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               <Radar size={18} color="#60a5fa" /> 情报源分布
             </h3>
             <div style={{ width: '100%', height: 250 }}>
-              <ResponsiveContainer>
+              <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
                 <PieChart>
                   <Pie
                     data={sourceData}
@@ -600,7 +718,8 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
           </div>
 
           <div style={{ fontSize: 12, color: '#8aa3be', width: '100%' }}>
-            共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{displayedRows.length}</span> 条结果
+            共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{displayedRows.length}</span>
+            {isSearchMode && <span> / {searchTotal}</span>} 条结果
           </div>
         </div>
 
@@ -621,15 +740,30 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               )
             })()}
 
-            {groupedRows.map((group) => (
+            {groupedRows.map((group) => {
+              const groupState = groupData[group.id]
+              const isLoading = isSearchMode ? false : (groupState?.loading ?? false)
+              const isLoaded = isSearchMode ? true : (groupState?.loaded ?? false)
+              return (
               <div key={group.id} className="feed-group">
-                <button className="feed-group-head" onClick={() => setCollapsedGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))}>
+                <button className="feed-group-head" onClick={() => {
+                  // 如果分组未加载，点击时加载数据
+                  if (!isSearchMode && !isLoaded && !isLoading) {
+                    void loadGroupData(group.id)
+                    setCollapsedGroups((prev) => ({ ...prev, [group.id]: false }))
+                    return
+                  }
+                  setCollapsedGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))
+                }}>
                   <span className="feed-group-title">{group.title}</span>
-                  <span className="feed-group-meta">{group.items.length} 条</span>
+                  <span className="feed-group-meta">{group.total} 条</span>
                   {collapsedGroups[group.id] ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
                 </button>
                 {!collapsedGroups[group.id] && (
                   <div className="feed-group-body">
+                    {isLoading && group.items.length === 0 && (
+                      <div style={{ color: '#8aa3be', fontSize: 12, padding: '8px 2px 10px' }}>正在加载...</div>
+                    )}
                     {group.items.map((row, idx) => {
                       const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
                       return (
@@ -650,13 +784,19 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
 
-            {hasMore && (
-              <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
-                <button className="filter-btn active" onClick={loadMore} disabled={loadingMore} style={{ minWidth: 160 }}>
-                  {loadingMore ? '加载中...' : `加载更多 (${totalCount - rows.length} 条)`}
-                </button>
+            {/* 无限滚动触发器 */}
+            <div ref={loadMoreRef} style={{ height: 1 }} />
+            {searchLoading && isSearchMode && (
+              <div style={{ textAlign: 'center', fontSize: 12, color: '#8aa3be', padding: '8px 0 14px' }}>
+                正在检索全量数据...
+              </div>
+            )}
+            {loadingMore && (
+              <div style={{ textAlign: 'center', fontSize: 12, color: '#8aa3be', padding: '8px 0 14px' }}>
+                正在加载更多...
               </div>
             )}
           </section>

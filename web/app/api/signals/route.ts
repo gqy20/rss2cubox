@@ -9,47 +9,59 @@ function getSql() {
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '50')
+  const rawPage = parseInt(searchParams.get('page') || '1', 10)
+  const rawLimit = parseInt(searchParams.get('limit') || '50', 10)
+  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1
+  const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 50
   const search = searchParams.get('search')?.trim() || ''
   const date = searchParams.get('date')?.trim() || ''
 
+  if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return NextResponse.json({ error: 'Invalid date format, expected YYYY-MM-DD' }, { status: 400 })
+  }
+
   const sql = getSql()
 
-  // 基础条件
-  const baseCondition = "(data->>'score')::float >= 0.6 OR (data->>'pushed') = 'true'"
-  
-  // 日期条件：使用北京时间筛选
-  let dateCondition = ''
+  const whereClauses: string[] = ["((data->>'score')::float >= 0.6 OR (data->>'pushed') = 'true')"]
+  const params: Array<string | number> = []
+
   if (date) {
-    // 转换为北京时间日期范围
-    dateCondition = `AND DATE(data->>'time'::timestamptz AT TIME ZONE 'Asia/Shanghai') = '${date}'`
+    params.push(date)
+    whereClauses.push(`DATE(event_time AT TIME ZONE 'Asia/Shanghai') = $${params.length}`)
   }
-  
-  let whereClause = baseCondition + dateCondition
 
   if (search) {
-    const escaped = search.replace(/'/g, "''")
-    const pattern = `%${escaped}%`
-    const searchCondition = `(data->>'title' ILIKE '${pattern}' 
-      OR data->>'source' ILIKE '${pattern}'
-      OR data->>'source_label' ILIKE '${pattern}'
-      OR data->>'hidden_signal' ILIKE '${pattern}'
-      OR data->>'core_event' ILIKE '${pattern}'
-      OR data->>'reason' ILIKE '${pattern}'
-      OR data->>'actionable' ILIKE '${pattern}'
-      OR data->>'url' ILIKE '${pattern}')`
-    whereClause = `(${baseCondition}) AND ${searchCondition}${dateCondition}`
+    params.push(`%${search}%`)
+    const patternIdx = params.length
+    whereClauses.push(`(data->>'title' ILIKE $${patternIdx}
+      OR data->>'source' ILIKE $${patternIdx}
+      OR data->>'source_label' ILIKE $${patternIdx}
+      OR data->>'source_feed' ILIKE $${patternIdx}
+      OR data->>'hidden_signal' ILIKE $${patternIdx}
+      OR data->>'core_event' ILIKE $${patternIdx}
+      OR data->>'reason' ILIKE $${patternIdx}
+      OR data->>'actionable' ILIKE $${patternIdx}
+      OR data->>'url' ILIKE $${patternIdx}
+      OR data->>'status' ILIKE $${patternIdx}
+      OR data->>'cover_url' ILIKE $${patternIdx}
+      OR data->>'time' ILIKE $${patternIdx}
+      OR EXISTS (
+        SELECT 1
+        FROM jsonb_array_elements_text(COALESCE(data->'tags', '[]'::jsonb)) AS tag
+        WHERE tag ILIKE $${patternIdx}
+      ))`)
   }
 
-  // 构建 SQL 查询
+  const whereClause = whereClauses.join(' AND ')
+  const offset = (page - 1) * limit
+
   const countSql = `SELECT COUNT(*) as total FROM run_events WHERE ${whereClause}`
-  const dataSql = `SELECT data FROM run_events WHERE ${whereClause} ORDER BY event_time DESC NULLS LAST LIMIT ${limit} OFFSET ${(page - 1) * limit}`
+  const dataSql = `SELECT data FROM run_events WHERE ${whereClause} ORDER BY event_time DESC NULLS LAST LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
 
-  const countResult = await sql.query(countSql) as any
-  const total = countResult[0]?.total || 0
+  const countResult = await sql.query(countSql, params) as any
+  const total = Number(countResult[0]?.total || 0)
 
-  const rowsResult = await sql.query(dataSql) as any
+  const rowsResult = await sql.query(dataSql, [...params, limit, offset]) as any
   const events = rowsResult.map((r: any) => r.data)
 
   // 处理数据去重和格式化

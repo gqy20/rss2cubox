@@ -57,6 +57,7 @@ jobs:
           RSSHUB_BILIBILI_RETRY_ATTEMPTS: "3"
           RSSHUB_TWITTER_RETRY_ATTEMPTS: "2"
           RSSHUB_INSTANCES_FILE: "rsshub_instances.txt"
+          RSSHUB_FAILURE_COOLDOWN_SECONDS: "60"
           NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           PYTHONUNBUFFERED: "1"
         run: |
