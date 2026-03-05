@@ -89,6 +89,7 @@
 /twitter/user/zhwangart # X @zhwangart（王喆）
 /twitter/user/leiphys # X @leiphys（雷涛）
 /twitter/user/imian # X @imian（陈冕）
+/twitter/user/trq212 # X @trq212
 # AI 公司官方账号
 /twitter/user/OpenAI # X @OpenAI
 /twitter/user/GoogleDeepMind # X @GoogleDeepMind
@@ -105,6 +106,29 @@
 /bilibili/user/video/4848323 # 数字游牧人
 /bilibili/user/video/346575605 # kate人不错
 /bilibili/user/video/1316597695 # AI学长小林
+/bilibili/user/video/3546830396721763 # 第四种黑猩猩CHIMP
+/bilibili/user/video/28357052 # 沧海九粟
+/bilibili/user/video/3493082576193678 # infinite灵感港
+/bilibili/user/video/73414544 # 机器之心官方
+/bilibili/user/video/3546791320488658 # 千问大模型
+/bilibili/user/video/3546585589877706 # 通义实验室
+/bilibili/user/video/314076440 # 鱼C-小甲鱼
+/bilibili/user/video/242124650 # KrillinAI小林
+/bilibili/user/video/615957867 # 五里墩茶社
+/bilibili/user/video/4401694 # 林亦LYi
+/bilibili/user/video/380747130 # 赋范课堂
+/bilibili/user/video/3546970691995922 # 道可云科技
+/bilibili/user/video/65564239 # IT咖啡馆
+/bilibili/user/video/46377861 # 神烦老狗
+/bilibili/user/video/3546884870244925 # 杰森的效率工坊
+/bilibili/user/video/193580090 # 御风大世界
+/bilibili/user/video/602010761 # JeffSu杰夫
+/bilibili/user/video/627947058 # 红衣大叔周鸿祎
+/bilibili/user/video/3546607314274766 # Kimi智能助手
+/bilibili/user/video/3546878859807653 # MiniMax_稀宇极智
+/bilibili/user/video/3546645734099512 # 智谱AI
+/bilibili/user/video/319759808 # 神秘的鱼仔
+/bilibili/user/video/52807953 # 创哥的AI实验室
 # 小红书（RSSHub）
 # 路由：/xiaohongshu/user/:user_id/notes
 # 说明：:user_id 为 24 位，需从小红书用户主页 URL 中提取
@@ -162,3 +186,7 @@ https://www.youtube.com/feeds/videos.xml?channel_id=UCHlNU7kIZhRgSbhHvFoy72w # Y
 https://www.youtube.com/feeds/videos.xml?channel_id=UCBp3w4DCEC64FZr4k9ROxig # YouTube Weights & Biases
 https://www.youtube.com/feeds/videos.xml?channel_id=UCGovZyy8OfFPNlNV0i1fI1g # YouTube Temporal
 https://www.youtube.com/feeds/videos.xml?channel_id=UCn8ujwUInbJkBhffxqAPBVQ # YouTube Dave Ebbelaar
+https://www.youtube.com/feeds/videos.xml?channel_id=UCFqXmQ56-Gp1rIKa-GoAJvQ # YouTube @DrAndyStapleton
+https://www.youtube.com/feeds/videos.xml?channel_id=UC7c3Kb6jYCRj4JOHHZTxKsQ # YouTube @GitHub
+https://www.youtube.com/feeds/videos.xml?channel_id=UCV03SRZXJEz-hchIAogeJOg # YouTube @claude
+https://www.youtube.com/feeds/videos.xml?channel_id=UCsQoiOrh7jzKmE8NBofhTnQ # YouTube @VarunMayya

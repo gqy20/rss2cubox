@@ -2,7 +2,7 @@ name: RSS to Cubox
 
 on:
   schedule:
-    - cron: "0 22 * * *"
+    - cron: "0 */3 * * *"
   workflow_dispatch:
     inputs:
       push_to_cubox:
