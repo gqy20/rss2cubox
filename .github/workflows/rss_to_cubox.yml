@@ -50,8 +50,13 @@ jobs:
           AI_RETRY_ATTEMPTS: ${{ vars.AI_RETRY_ATTEMPTS }}
           AI_RETRY_BACKOFF_SECONDS: ${{ vars.AI_RETRY_BACKOFF_SECONDS }}
           AI_BATCH_SIZE: ${{ vars.AI_BATCH_SIZE }}
-          AI_MAX_CANDIDATES: "200"
+          AI_MAX_CANDIDATES: "500"
           ENRICH_MAX_ITEMS: "200"
+          RSSHUB_PRIVATE_INSTANCES: ${{ secrets.RSSHUB_PRIVATE_INSTANCES }}
+          RSSHUB_BILIBILI_INSTANCES: ${{ secrets.RSSHUB_BILIBILI_INSTANCES || 'https://rss.spriple.org' }}
+          RSSHUB_TWITTER_INSTANCES: ${{ secrets.RSSHUB_TWITTER_INSTANCES }}
+          RSSHUB_BILIBILI_RETRY_ATTEMPTS: "3"
+          RSSHUB_TWITTER_RETRY_ATTEMPTS: "2"
           RSSHUB_INSTANCES_FILE: "rsshub_instances.txt"
           RUN_EVENTS_FILE: "run_events.jsonl"
           PYTHONUNBUFFERED: "1"

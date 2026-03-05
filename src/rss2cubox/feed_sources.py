@@ -14,6 +14,58 @@ from urllib.parse import parse_qs, urlparse
 import requests
 
 DEFAULT_RSSHUB_INSTANCES = ["https://rsshub.rssforever.com", "https://rsshub.app"]
+DEFAULT_BILIBILI_SPECIAL_INSTANCES = ["https://rss.spriple.org"]
+DEFAULT_TWITTER_SPECIAL_INSTANCES: list[str] = []
+
+
+def _parse_instance_list(raw: str) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for part in str(raw or "").split(","):
+        value = part.strip().rstrip("/")
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        out.append(value)
+    return out
+
+
+def _env_instances(name: str, default: list[str]) -> list[str]:
+    values = _parse_instance_list(os.getenv(name, "").strip())
+    if not values:
+        return default[:]
+    return values
+
+
+def _route_bucket(route: str) -> str:
+    text = str(route or "").strip()
+    if text.startswith("/bilibili/user/video/"):
+        return "bilibili_user_video"
+    if text.startswith("/twitter/user/"):
+        return "twitter_user"
+    return "default"
+
+
+def _route_special_instances(route: str) -> list[str]:
+    bucket = _route_bucket(route)
+    if bucket == "bilibili_user_video":
+        return _env_instances("RSSHUB_BILIBILI_INSTANCES", DEFAULT_BILIBILI_SPECIAL_INSTANCES)
+    if bucket == "twitter_user":
+        return _env_instances("RSSHUB_TWITTER_INSTANCES", DEFAULT_TWITTER_SPECIAL_INSTANCES)
+    return []
+
+
+def _candidate_retry_limit(route: str, instance_base: str) -> int:
+    bucket = _route_bucket(route)
+    if bucket == "bilibili_user_video":
+        special = set(_route_special_instances(route))
+        if instance_base in special:
+            return max(1, int(os.getenv("RSSHUB_BILIBILI_RETRY_ATTEMPTS", "3")))
+    if bucket == "twitter_user":
+        special = set(_route_special_instances(route))
+        if instance_base in special:
+            return max(1, int(os.getenv("RSSHUB_TWITTER_RETRY_ATTEMPTS", "2")))
+    return 1
 
 
 @dataclass
@@ -109,12 +161,13 @@ def load_feed_specs(path: Path) -> list[dict[str, str]]:
 
 def load_rsshub_instances(path: Path, env_name: str = "RSSHUB_INSTANCES") -> list[str]:
     instances: list[str] = []
+    # Private instances from secrets are preferred and always loaded first.
+    instances.extend(_parse_instance_list(os.getenv("RSSHUB_PRIVATE_INSTANCES", "").strip()))
     if path.exists():
         instances.extend(load_lines(path))
-    if not instances:
-        env_value = os.getenv(env_name, "").strip()
-        if env_value:
-            instances.extend(part.strip() for part in env_value.split(",") if part.strip())
+    env_value = os.getenv(env_name, "").strip()
+    if env_value:
+        instances.extend(_parse_instance_list(env_value))
     if not instances:
         instances = DEFAULT_RSSHUB_INSTANCES[:]
 
@@ -144,7 +197,17 @@ def resolve_feed_urls(feed_kind: str, feed_value: str, rsshub_pool: RSSHubInstan
         return [route]
     if not route.startswith("/"):
         route = f"/{route}"
-    return [f"{base}{route}" for base in rsshub_pool.ordered_instances()]
+    ordered = rsshub_pool.ordered_instances()
+    special = _route_special_instances(route)
+    merged: list[str] = []
+    seen: set[str] = set()
+    for base in special + ordered:
+        value = str(base or "").strip().rstrip("/")
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        merged.append(value)
+    return [f"{base}{route}" for base in merged]
 
 
 def fetch_and_parse_feed(
@@ -265,45 +328,54 @@ def parse_feed_with_fallback(
                 attempt=idx,
             )
             continue
-        start = time.perf_counter()
-        try:
-            parsed = fetcher(candidate_url)
-            if feed_kind == "rsshub":
-                rsshub_pool.mark_success(instance_base)
-            duration_ms = int((time.perf_counter() - start) * 1000)
-            log_event(
-                "INFO",
-                "feed_candidate_success",
-                stage="fetch",
-                feed=feed_value,
-                candidate=candidate_url,
-                attempt=idx,
-                duration_ms=duration_ms,
-            )
-            if idx > 1:
+        retry_limit = _candidate_retry_limit(feed_value, instance_base)
+        for retry_attempt in range(1, retry_limit + 1):
+            start = time.perf_counter()
+            try:
+                parsed = fetcher(candidate_url)
+                if feed_kind == "rsshub":
+                    rsshub_pool.mark_success(instance_base)
+                duration_ms = int((time.perf_counter() - start) * 1000)
                 log_event(
-                    "WARN",
-                    "feed_fallback_used",
+                    "INFO",
+                    "feed_candidate_success",
                     stage="fetch",
                     feed=feed_value,
-                    selected=candidate_url,
+                    candidate=candidate_url,
                     attempt=idx,
+                    retry_attempt=retry_attempt,
+                    retry_limit=retry_limit,
+                    duration_ms=duration_ms,
                 )
-            return candidate_url, parsed, idx
-        except Exception as exc:  # noqa: BLE001
-            if feed_kind == "rsshub":
-                rsshub_pool.mark_failure(instance_base)
-            duration_ms = int((time.perf_counter() - start) * 1000)
-            log_event(
-                "WARN",
-                "feed_candidate_failed",
-                stage="fetch",
-                feed=feed_value,
-                candidate=candidate_url,
-                attempt=idx,
-                duration_ms=duration_ms,
-                error=str(exc),
-            )
+                if idx > 1:
+                    log_event(
+                        "WARN",
+                        "feed_fallback_used",
+                        stage="fetch",
+                        feed=feed_value,
+                        selected=candidate_url,
+                        attempt=idx,
+                    )
+                return candidate_url, parsed, idx
+            except Exception as exc:  # noqa: BLE001
+                duration_ms = int((time.perf_counter() - start) * 1000)
+                is_last = retry_attempt >= retry_limit
+                if is_last and feed_kind == "rsshub":
+                    rsshub_pool.mark_failure(instance_base)
+                log_event(
+                    "WARN",
+                    "feed_candidate_failed",
+                    stage="fetch",
+                    feed=feed_value,
+                    candidate=candidate_url,
+                    attempt=idx,
+                    retry_attempt=retry_attempt,
+                    retry_limit=retry_limit,
+                    duration_ms=duration_ms,
+                    error=str(exc),
+                )
+                if not is_last:
+                    time.sleep(min(1.5, 0.35 * retry_attempt))
     return None, None, 0
 
 
