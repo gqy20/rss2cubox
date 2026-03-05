@@ -713,7 +713,6 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
     const s = row.score ?? 0
     const isHigh = s >= 0.85
     const isMid = s >= 0.7 && s < 0.85
-    const isPushed = Boolean(row.pushed)
     const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
     const isHovered = hoveredRowKey === rowKey
     const hasAiContent = Boolean(row.core_event || row.actionable || row.reason)
@@ -739,26 +738,6 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                 <SourceLogo row={row} />
                 {row.source}
               </span>
-              {isPushed && (
-                <span
-                  title="已推送至 Cubox"
-                  style={{
-                    fontSize: 10,
-                    fontWeight: 800,
-                    letterSpacing: 0.5,
-                    textTransform: 'uppercase',
-                    color: '#60a5fa',
-                    border: '1px solid rgba(96, 165, 250, 0.4)',
-                    background: 'rgba(96, 165, 250, 0.08)',
-                    padding: '2px 6px',
-                    borderRadius: 999,
-                    lineHeight: 1.2,
-                    flexShrink: 0,
-                  }}
-                >
-                  Cubox
-                </span>
-              )}
               {row.enriched && (
                 <span
                   title="已完成全文深化分析"
