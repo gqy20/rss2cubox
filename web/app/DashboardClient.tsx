@@ -58,6 +58,10 @@ type GroupData = {
   hasMore: boolean
 }
 
+type GroupPaging = {
+  page: number
+}
+
 type Props = {
   serverTime?: string
   initialRows: Row[]
@@ -124,6 +128,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   // 按日期分组的数据状态
   const [groupData, setGroupData] = useState<Record<string, GroupData>>({})
+  const [groupPaging, setGroupPaging] = useState<Record<string, GroupPaging>>({})
   const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState<'all' | 'high'>('all')
   const [timeScope, setTimeScope] = useState<'all' | 'today'>('all')
@@ -168,12 +173,16 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
         hasMore: todayCount > todayItems.length,
       }
     })
+    setGroupPaging({
+      [today]: { page: 1 },
+    })
   }, [initialRows, metrics.daily_counts])
   
   const searchRef = useRef<HTMLInputElement>(null)
   const chartsTriggerRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
+  const groupRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const searchAbortRef = useRef<AbortController | null>(null)
   const hoverCloseTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
@@ -437,6 +446,10 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
           hasMore: data.hasMore,
         },
       }))
+      setGroupPaging((prev) => ({
+        ...prev,
+        [dayKey]: { page: 1 },
+      }))
     } catch (error) {
       console.error('Failed to load group:', error)
       setGroupData((prev) => ({
@@ -445,6 +458,55 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       }))
     }
   }, [groupData])
+
+  const loadMoreForGroup = useCallback(async (dayKey: string) => {
+    const current = groupData[dayKey]
+    if (!current?.loaded || current.loading || !current.hasMore) return
+
+    const currentPage = groupPaging[dayKey]?.page || 1
+    const nextPage = currentPage + 1
+
+    setGroupData((prev) => ({
+      ...prev,
+      [dayKey]: {
+        ...(prev[dayKey] || { loaded: true, items: [], hasMore: false }),
+        loading: true,
+      },
+    }))
+
+    try {
+      const res = await fetch(`/api/signals?page=${nextPage}&limit=50&date=${dayKey}`)
+      const data = await res.json()
+      if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')
+
+      setGroupData((prev) => {
+        const prevItems = prev[dayKey]?.items || []
+        const merged = [...prevItems, ...(data.data as Row[])]
+        return {
+          ...prev,
+          [dayKey]: {
+            loading: false,
+            loaded: true,
+            items: merged,
+            hasMore: Boolean(data.hasMore),
+          },
+        }
+      })
+      setGroupPaging((prev) => ({
+        ...prev,
+        [dayKey]: { page: nextPage },
+      }))
+    } catch (error) {
+      console.error('Failed to load more group data:', error)
+      setGroupData((prev) => ({
+        ...prev,
+        [dayKey]: {
+          ...(prev[dayKey] || { loaded: true, items: [], hasMore: false }),
+          loading: false,
+        },
+      }))
+    }
+  }, [groupData, groupPaging])
 
   const nextUnloadedDate = useMemo(() => {
     if (isSearchMode) return null
@@ -455,6 +517,27 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     return null
   }, [isSearchMode, allDates, groupData])
 
+  const maybeLoadMore = useCallback(() => {
+    if (loadingMore) return
+
+    if (isSearchMode) {
+      if (!searchHasMore || searchLoading) return
+      void fetchSearchPage(searchPage + 1, true)
+      return
+    }
+
+    const todayGroup = groupData[todayKey]
+    if (todayGroup?.loaded && !todayGroup.loading && todayGroup.hasMore) {
+      setLoadingMore(true)
+      void loadMoreForGroup(todayKey).finally(() => setLoadingMore(false))
+      return
+    }
+
+    if (!nextUnloadedDate) return
+    setLoadingMore(true)
+    void loadGroupData(nextUnloadedDate).finally(() => setLoadingMore(false))
+  }, [loadingMore, isSearchMode, searchHasMore, searchLoading, fetchSearchPage, searchPage, groupData, todayKey, loadMoreForGroup, nextUnloadedDate, loadGroupData])
+
   useEffect(() => {
     const root = timelineRef.current
     const target = loadMoreRef.current
@@ -463,28 +546,57 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     const observer = new IntersectionObserver(
       (entries) => {
         const first = entries[0]
-        if (!first?.isIntersecting || loadingMore) return
-
-        if (isSearchMode) {
-          if (!searchHasMore || searchLoading) return
-          void fetchSearchPage(searchPage + 1, true)
-          return
-        }
-
-        if (!nextUnloadedDate) return
-        setLoadingMore(true)
-        void loadGroupData(nextUnloadedDate).finally(() => setLoadingMore(false))
+        if (!first?.isIntersecting) return
+        maybeLoadMore()
       },
       { root, rootMargin: '0px 0px 240px 0px', threshold: 0.01 },
     )
 
     observer.observe(target)
     return () => observer.disconnect()
-  }, [isSearchMode, searchHasMore, searchLoading, searchPage, fetchSearchPage, loadGroupData, loadingMore, nextUnloadedDate])
+  }, [maybeLoadMore])
+
+  useEffect(() => {
+    const root = timelineRef.current
+    if (!root) return
+
+    const onScroll = () => {
+      const remaining = root.scrollHeight - root.scrollTop - root.clientHeight
+      if (remaining <= 240) maybeLoadMore()
+    }
+
+    root.addEventListener('scroll', onScroll, { passive: true })
+    // If content is initially short and sentinel stays visible, proactively trigger loading.
+    onScroll()
+    return () => root.removeEventListener('scroll', onScroll)
+  }, [maybeLoadMore])
 
   const clearAllFilters = () => {
     setSearch(''); setSelectedSource(null); setSelectedTag(null); setFilter('all'); setTimeScope('all')
   }
+
+  const jumpToTodayGroup = useCallback(() => {
+    if (isSearchMode) {
+      setSearch('')
+      return
+    }
+
+    const todayGroupRef = groupRefs.current[todayKey]
+    if (todayGroupRef) {
+      setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false }))
+      todayGroupRef.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+
+    if (!groupData[todayKey]?.loaded && !groupData[todayKey]?.loading) {
+      void loadGroupData(todayKey).then(() => {
+        setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false }))
+        requestAnimationFrame(() => {
+          groupRefs.current[todayKey]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
+      })
+    }
+  }, [isSearchMode, todayKey, groupData, loadGroupData])
 
   const openRowHover = (key: string) => {
     const timer = hoverCloseTimers.current[key]
@@ -748,6 +860,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>全量</button>
             <button className={`filter-btn ${filter === 'high' ? 'active' : ''}`} onClick={() => setFilter('high')}>高价值</button>
             <button className={`filter-btn ${timeScope === 'today' ? 'active' : ''}`} onClick={() => setTimeScope((prev) => (prev === 'today' ? 'all' : 'today'))}>今日</button>
+            <button className="filter-btn" onClick={jumpToTodayGroup}>定位今天</button>
             <button className="filter-btn" onClick={() => openExportByScope('current')} disabled={cuboxBusy}>
               <Send size={13} /> 导出
             </button>
@@ -784,7 +897,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               const isLoading = isSearchMode ? false : (groupState?.loading ?? false)
               const isLoaded = isSearchMode ? true : (groupState?.loaded ?? false)
               return (
-              <div key={group.id} className="feed-group">
+              <div key={group.id} className="feed-group" ref={(el) => { groupRefs.current[group.id] = el }}>
                 <button className="feed-group-head" onClick={() => {
                   // 如果分组未加载，点击时加载数据
                   if (!isSearchMode && !isLoaded && !isLoading) {
