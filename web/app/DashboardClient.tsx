@@ -789,7 +789,7 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
 
           {hasCover && (
             <a href={row.url} target="_blank" rel="noreferrer" className="t-cover-wrap" aria-label="打开原文封面">
-              <img className="t-cover" src={coverUrl} alt={row.title || '封面图'} loading="lazy" />
+              <img className="t-cover" src={coverUrl} alt={row.title || '封面图'} loading="lazy" width={480} height={270} />
             </a>
           )}
 
