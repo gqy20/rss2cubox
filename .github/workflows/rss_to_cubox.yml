@@ -42,6 +42,7 @@ jobs:
           KEYWORDS_EXCLUDE: ""
           MAX_ITEMS_PER_RUN: "20"
           ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
           AI_MIN_SCORE: ${{ vars.AI_MIN_SCORE }}
@@ -49,7 +50,8 @@ jobs:
           AI_RETRY_ATTEMPTS: ${{ vars.AI_RETRY_ATTEMPTS }}
           AI_RETRY_BACKOFF_SECONDS: ${{ vars.AI_RETRY_BACKOFF_SECONDS }}
           AI_BATCH_SIZE: ${{ vars.AI_BATCH_SIZE }}
-          AI_MAX_CANDIDATES: ${{ vars.AI_MAX_CANDIDATES }}
+          AI_MAX_CANDIDATES: "200"
+          ENRICH_MAX_ITEMS: "200"
           RSSHUB_INSTANCES_FILE: "rsshub_instances.txt"
           RUN_EVENTS_FILE: "run_events.jsonl"
           PYTHONUNBUFFERED: "1"

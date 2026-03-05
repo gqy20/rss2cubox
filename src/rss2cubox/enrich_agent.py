@@ -56,7 +56,7 @@ def _build_user_prompt(item: dict, original: dict) -> str:
     )
 
 
-async def _enrich_one(item: dict, original: dict) -> dict | None:
+async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     import anyio
 
     try:
@@ -69,12 +69,12 @@ async def _enrich_one(item: dict, original: dict) -> dict | None:
             tool,
         )
     except ImportError:
-        return None
+        return None, "claude_agent_sdk_import_error"
 
     result_holder: dict[str, Any] = {}
     expected_url = str(item.get("url", "")).strip()
     if not expected_url:
-        return None
+        return None, "missing_url"
 
     @tool(
         "read_webpage_jina",
@@ -160,23 +160,35 @@ async def _enrich_one(item: dict, original: dict) -> dict | None:
             async for _ in client.receive_response():
                 pass
 
-    return result_holder if result_holder else None
+    if result_holder:
+        return result_holder, "ok"
+    return None, "empty_submit_enriched"
 
 
 async def _enrich_all(
     items_to_enrich: list[tuple[dict, dict]],
     analyses: dict[str, dict],
     log_event: Any,
-) -> None:
+) -> dict[str, int]:
     import anyio
 
     semaphore = anyio.Semaphore(ENRICH_MAX_WORKERS)
+    stats = {"started": 0, "succeeded": 0, "failed": 0, "empty": 0}
 
     async def run_one(item: dict, original: dict) -> None:
         eid = item["eid"]
         async with semaphore:
+            stats["started"] += 1
+            log_event(
+                "INFO",
+                "enrich_item_start",
+                stage="enrich",
+                eid=eid,
+                url=str(item.get("url", "")).strip(),
+                score=original.get("score", 0),
+            )
             try:
-                enriched = await _enrich_one(item, original)
+                enriched, reason = await _enrich_one(item, original)
                 if enriched:
                     # 合并：保留原始字段，覆盖深化后的核心字段
                     merged = {**original}
@@ -191,14 +203,26 @@ async def _enrich_all(
                         pass
                     merged["enriched"] = True
                     analyses[eid] = merged
+                    stats["succeeded"] += 1
                     log_event("INFO", "enrich_done", stage="enrich", eid=eid,
                               score=merged.get("score"), hidden_signal=merged.get("hidden_signal", "")[:40])
+                else:
+                    stats["empty"] += 1
+                    log_event(
+                        "WARN",
+                        "enrich_failed",
+                        stage="enrich",
+                        eid=eid,
+                        error=f"no_result:{reason}",
+                    )
             except Exception as e:
+                stats["failed"] += 1
                 log_event("WARN", "enrich_failed", stage="enrich", eid=eid, error=str(e))
 
     async with anyio.create_task_group() as tg:
         for item, original in items_to_enrich:
             tg.start_soon(run_one, item, original)
+    return stats
 
 
 def run_enrich_analysis(
@@ -241,8 +265,11 @@ def run_enrich_analysis(
 
     try:
         import anyio
-        anyio.run(_enrich_all, to_enrich, analyses, log_event)
+        enrich_stats = anyio.run(_enrich_all, to_enrich, analyses, log_event)
         log_event("INFO", "enrich_complete", stage="enrich",
-                  enriched=sum(1 for a in analyses.values() if a.get("enriched")))
+                  enriched=enrich_stats.get("succeeded", 0),
+                  failed=enrich_stats.get("failed", 0),
+                  empty=enrich_stats.get("empty", 0),
+                  started=enrich_stats.get("started", len(to_enrich)))
     except Exception as e:
         log_event("WARN", "enrich_error", stage="enrich", error=str(e))
