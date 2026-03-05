@@ -235,6 +235,7 @@ def process_candidates_for_push(
     stats: dict[str, Any],
     sent: dict[str, Any],
     ai_state: dict[str, Any],
+    processed_state: dict[str, Any] | None,
     now_iso: str,
     max_items_per_run: int,
     ai_enabled: bool,
@@ -249,6 +250,9 @@ def process_candidates_for_push(
     sleep_seconds: float = 0.3,
 ) -> None:
     def emit_event(event: dict[str, Any]) -> None:
+        if processed_state is not None:
+            # Persist latest processing result for every candidate, regardless of push outcome.
+            processed_state[str(event.get("id", ""))] = dict(event)
         if event_sink is not None:
             event_sink.append(event)
 

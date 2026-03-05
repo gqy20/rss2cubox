@@ -78,6 +78,7 @@ def main() -> None:
     state = db.load_state(NEON_DATABASE_URL)
     sent = state.get("sent", {})
     ai = state.get("ai", {})
+    processed = state.get("processed", {})
     feed_cursor = state.get("feed_cursor", {})
     feed_failures = state.get("feed_failures", {})
     if not isinstance(feed_failures, dict):
@@ -215,6 +216,7 @@ def main() -> None:
         stats=stats,
         sent=sent,
         ai_state=ai,
+        processed_state=processed,
         now_iso=now,
         max_items_per_run=MAX_ITEMS_PER_RUN,
         ai_enabled=ai_enabled,
@@ -246,6 +248,7 @@ def main() -> None:
 
     state["sent"] = sent
     state["ai"] = ai
+    state["processed"] = processed
     state["feed_cursor"] = feed_cursor
     state["feed_failures"] = feed_failures
     db.save_state(NEON_DATABASE_URL, state)

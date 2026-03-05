@@ -29,6 +29,11 @@ CREATE TABLE IF NOT EXISTS ai_results (
     data JSONB NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS processed_items (
+    id   TEXT PRIMARY KEY,
+    data JSONB NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS feed_cursors (
     feed_key  TEXT PRIMARY KEY,
     cursor_at TEXT NOT NULL
@@ -107,6 +112,12 @@ def load_state(db_url: str) -> dict[str, Any]:
             for row in cur.fetchall():
                 ai[row[0]] = row[1]
 
+        processed: dict[str, Any] = {}
+        with conn.cursor() as cur:
+            cur.execute("SELECT id, data FROM processed_items")
+            for row in cur.fetchall():
+                processed[row[0]] = row[1]
+
         feed_cursor: dict[str, Any] = {}
         with conn.cursor() as cur:
             cur.execute("SELECT feed_key, cursor_at FROM feed_cursors")
@@ -122,6 +133,7 @@ def load_state(db_url: str) -> dict[str, Any]:
     return {
         "sent": sent,
         "ai": ai,
+        "processed": processed,
         "feed_cursor": feed_cursor,
         "feed_failures": feed_failures,
     }
@@ -130,6 +142,7 @@ def load_state(db_url: str) -> dict[str, Any]:
 def save_state(db_url: str, state: dict[str, Any]) -> None:
     sent: dict[str, Any] = state.get("sent", {})
     ai: dict[str, Any] = state.get("ai", {})
+    processed: dict[str, Any] = state.get("processed", {})
     feed_cursor: dict[str, Any] = state.get("feed_cursor", {})
     feed_failures: dict[str, Any] = state.get("feed_failures", {})
 
@@ -157,6 +170,17 @@ def save_state(db_url: str, state: dict[str, Any]) -> None:
                     ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data
                     """,
                     [(k, json.dumps(v, ensure_ascii=False)) for k, v in ai.items()],
+                )
+
+            # processed_items
+            if processed:
+                cur.executemany(
+                    """
+                    INSERT INTO processed_items (id, data)
+                    VALUES (%s, %s)
+                    ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data
+                    """,
+                    [(k, json.dumps(v, ensure_ascii=False)) for k, v in processed.items()],
                 )
 
             # feed_cursors
