@@ -306,6 +306,27 @@ body {
   min-height: 280px;
 }
 
+.chart-deferred-card {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.chart-deferred-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #d7e6f8;
+}
+
+.chart-deferred-copy {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .chart-title {
   font-size: 15px;
   font-weight: 680;
@@ -747,6 +768,22 @@ body {
   display: block;
 }
 
+.timeline-item-enter {
+  animation: timeline-fade-up 320ms ease both;
+}
+
+@keyframes timeline-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .feed-group {
   display: flex;
   flex-direction: column;
@@ -1128,6 +1165,10 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .timeline-item {
     transition: none;
+    animation: none;
+  }
+
+  .timeline-item-enter {
     animation: none;
   }
   

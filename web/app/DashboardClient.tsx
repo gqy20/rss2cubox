@@ -1,23 +1,9 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell as PieCell,
-  Legend,
-} from 'recharts'
+import dynamic from 'next/dynamic'
 import {
   Filter,
-  Radar,
-  Zap,
   TrendingUp,
   Radio,
   Lightbulb,
@@ -34,15 +20,36 @@ import {
 import {
   Logo,
   AnimatedNumber,
-  PIE_COLORS,
   getDayKey,
-  formatAxisDay,
   formatGroupTitle,
   formatKpiDelta,
 } from './utils'
 import FeedCard from './FeedCard'
-import { ExportModal, SettingsModal } from './Modals'
 import type { Row, Metrics, GlobalInsights, InsightKey, ExportScope, PendingExport } from './types'
+
+type ChartsSectionProps = {
+  trendData: Array<{ name: string; total: number; high: number }>
+  sourceData: Array<{ name: string; value: number }>
+  selectedSource: string | null
+  onSelectSource: (source: string | null | ((prev: string | null) => string | null)) => void
+}
+
+const ChartsSection = dynamic<ChartsSectionProps>(() => import('./charts-section').then((m) => m.default), {
+  ssr: false,
+  loading: () => (
+    <section className="charts-grid" style={{ marginBottom: 18 }}>
+      <div className="glass chart-card" style={{ display: 'grid', placeItems: 'center', minHeight: 280, color: '#8aa3be' }}>
+        图表加载中...
+      </div>
+      <div className="glass chart-card" style={{ display: 'grid', placeItems: 'center', minHeight: 280, color: '#8aa3be' }}>
+        图表加载中...
+      </div>
+    </section>
+  ),
+})
+
+const ExportModal = dynamic(() => import('./Modals').then((m) => m.ExportModal), { ssr: false })
+const SettingsModal = dynamic(() => import('./Modals').then((m) => m.SettingsModal), { ssr: false })
 
 type GroupData = {
   loading: boolean
@@ -107,6 +114,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [selectedExportKeys, setSelectedExportKeys] = useState<string[]>([])
   const [cuboxBusy, setCuboxBusy] = useState(false)
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [shouldLoadCharts, setShouldLoadCharts] = useState(false)
 
   const [now, setNow] = useState<Date | null>(serverTime ? new Date(serverTime) : null)
   
@@ -127,6 +135,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   }, [initialRows, metrics.daily_counts])
   
   const searchRef = useRef<HTMLInputElement>(null)
+  const chartsTriggerRef = useRef<HTMLDivElement>(null)
   const timelineRef = useRef<HTMLDivElement>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const searchAbortRef = useRef<AbortController | null>(null)
@@ -190,6 +199,24 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     }
     void checkCuboxKey()
   }, [])
+
+  useEffect(() => {
+    const target = chartsTriggerRef.current
+    if (!target || shouldLoadCharts) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setShouldLoadCharts(true)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '200px 0px' },
+    )
+
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [shouldLoadCharts])
 
   // Derived State
 
@@ -593,73 +620,24 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
           ))}
         </section>
 
-        <section className="charts-grid" style={{ marginBottom: 18 }}>
-          <div className="glass chart-card">
-            <h3 className="chart-title">
-              <Zap size={18} color="#2dd4bf" /> 信号爆发趋势 (最近7天)
-            </h3>
-            <div style={{ width: '100%', height: 250, marginTop: 14 }}>
-              <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
-                <AreaChart data={trendData} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorHigh" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#34d399" stopOpacity={0.7} />
-                      <stop offset="95%" stopColor="#34d399" stopOpacity={0.03} />
-                    </linearGradient>
-                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.45} />
-                      <stop offset="95%" stopColor="#60a5fa" stopOpacity={0.04} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-                  <XAxis dataKey="name" stroke="#8aa3be" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#8aa3be" fontSize={12} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ backgroundColor: 'rgba(13, 27, 42, 0.96)', border: '1px solid #1f3550', borderRadius: '8px', color: '#fff' }} itemStyle={{ color: '#e7edf5' }} />
-                  <Legend verticalAlign="top" height={28} iconType="circle" wrapperStyle={{ fontSize: 12, color: '#8aa3be' }} />
-                  <Area type="monotone" dataKey="total" name="总数" stroke="#60a5fa" fillOpacity={1} fill="url(#colorTotal)" />
-                  <Area type="monotone" dataKey="high" name="优质" stroke="#34d399" fillOpacity={1} fill="url(#colorHigh)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          <div className="glass chart-card">
-            <h3 className="chart-title">
-              <Radar size={18} color="#60a5fa" /> 情报源分布
-            </h3>
-            <div style={{ width: '100%', height: 250 }}>
-              <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
-                <PieChart>
-                  <Pie
-                    data={sourceData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={68}
-                    outerRadius={88}
-                    paddingAngle={4}
-                    dataKey="value"
-                    stroke="none"
-                    style={{ cursor: 'pointer' }}
-                    onClick={(_, index) => {
-                      const src = sourceData[index]?.name
-                      if (!src) return
-                      if (src === '其他') { setSelectedSource((prev) => (prev === '__others__' ? null : '__others__')); return }
-                      setSelectedSource((prev) => (prev === src ? null : src))
-                    }}
-                  >
-                    {sourceData.map((entry, index) => {
-                      const selectedName = selectedSource === '__others__' ? '其他' : selectedSource
-                      const dimmed = Boolean(selectedName && entry.name !== selectedName)
-                      return <PieCell key={`cell-${entry.name}`} fill={PIE_COLORS[index % PIE_COLORS.length]} opacity={dimmed ? 0.25 : 1} />
-                    })}
-                  </Pie>
-                  <Tooltip contentStyle={{ backgroundColor: 'rgba(13, 27, 42, 0.96)', border: '1px solid #1f3550', borderRadius: '8px', color: '#fff' }} itemStyle={{ color: '#fff' }} />
-                  <Legend verticalAlign="bottom" height={32} wrapperStyle={{ fontSize: 12, color: '#8aa3be' }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </section>
+        <div ref={chartsTriggerRef}>
+          {shouldLoadCharts ? (
+            <ChartsSection trendData={trendData} sourceData={sourceData} selectedSource={selectedSource} onSelectSource={setSelectedSource} />
+          ) : (
+            <section className="charts-grid" style={{ marginBottom: 18 }}>
+              <div className="glass chart-card chart-deferred-card">
+                <div className="chart-deferred-title">趋势图按需加载</div>
+                <p className="chart-deferred-copy">滚动到此区域时再加载图表脚本，以减少首屏 JS。</p>
+                <button className="filter-btn" onClick={() => setShouldLoadCharts(true)}>立即加载图表</button>
+              </div>
+              <div className="glass chart-card chart-deferred-card">
+                <div className="chart-deferred-title">来源分布图按需加载</div>
+                <p className="chart-deferred-copy">你也可以点击按钮手动加载，不影响核心数据阅读。</p>
+                <button className="filter-btn" onClick={() => setShouldLoadCharts(true)}>立即加载图表</button>
+              </div>
+            </section>
+          )}
+        </div>
 
         {actionMessage && (
           <div className={`action-message ${actionMessage.type === 'success' ? 'success' : 'error'}`}>

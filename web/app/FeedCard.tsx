@@ -2,7 +2,6 @@
 
 import React from 'react'
 import { ExternalLink } from 'lucide-react'
-import { motion, useReducedMotion } from 'framer-motion'
 import { SourceLogo, ScoreBar, formatRelativeTime, formatShortTime } from './utils'
 import type { Row } from './types'
 
@@ -45,19 +44,11 @@ const FeedCard = React.memo(function FeedCard({
     /hdslb\.com\//i.test(coverUrl)
   )
 
-  // 动画优化：检测是否应减少动画
-  const shouldReduceMotion = useReducedMotion()
-
   // suppress unused groupId lint warning — used externally as key
   void groupId
 
   return (
-    <motion.div
-      initial={shouldReduceMotion ? undefined : { opacity: 0, y: 10 }}
-      animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-      transition={shouldReduceMotion ? { duration: 0 } : { delay: Math.min(idx * 0.02, 0.15) }}
-      className="timeline-item"
-    >
+    <div className="timeline-item timeline-item-enter" style={{ animationDelay: `${Math.min(idx * 0.02, 0.15)}s` }}>
       <article
         className={`glass timeline-content timeline-compact${isHigh ? ' timeline-high' : ''}${isHovered ? ' hover-open' : ''}`}
         onMouseEnter={() => onHoverEnter(rowKey)}
@@ -165,7 +156,7 @@ const FeedCard = React.memo(function FeedCard({
           )}
         </div>
       </article>
-    </motion.div>
+    </div>
   )
 })
 
