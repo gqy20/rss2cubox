@@ -1,38 +1,46 @@
 {
-  "generated_at": "2026-03-05T04:20:16.787630+00:00",
-  "updates_total": 815,
-  "pushed_total": 147,
-  "dropped_total": 668,
+  "generated_at": "2026-03-05T05:07:05.069564+00:00",
+  "updates_total": 1315,
+  "pushed_total": 167,
+  "dropped_total": 1148,
   "failed_total": 0,
-  "sources_total": 33,
+  "sources_total": 36,
   "top_sources": [
     {
       "source": "arXiv cs.AI",
-      "count": 309
+      "count": 585
     },
     {
       "source": "arXiv cs.LG",
-      "count": 176
+      "count": 343
     },
     {
       "source": "Hacker News",
-      "count": 150
+      "count": 166
     },
     {
       "source": "InfoQ 推荐",
-      "count": 31
+      "count": 32
     },
     {
       "source": "Claude Status 历史事件",
-      "count": 27
+      "count": 30
     },
     {
       "source": "少数派首页",
-      "count": 22
+      "count": 26
+    },
+    {
+      "source": "GitHub Trending Python（日）",
+      "count": 20
+    },
+    {
+      "source": "掘金 AI Coding",
+      "count": 12
     },
     {
       "source": "Claude Code Releases",
-      "count": 11
+      "count": 12
     },
     {
       "source": "Cursor Blog",
@@ -48,19 +56,15 @@
     },
     {
       "source": "OpenAI News",
-      "count": 7
-    },
-    {
-      "source": "GitHub Trending Python（日）",
-      "count": 6
+      "count": 9
     },
     {
       "source": "Google AI Blog",
-      "count": 5
+      "count": 6
     },
     {
       "source": "掘金 AI 周榜",
-      "count": 4
+      "count": 5
     },
     {
       "source": "YouTube Google DeepMind",
@@ -81,16 +85,12 @@
     {
       "source": "YouTube Anthropic",
       "count": 2
-    },
-    {
-      "source": "YouTube HuggingFace",
-      "count": 2
     }
   ],
   "top_drop_reasons": [
     {
       "reason": "max_items_per_run_reached",
-      "count": 500
+      "count": 980
     },
     {
       "reason": "ai_keep_false",

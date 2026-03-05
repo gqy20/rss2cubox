@@ -1139,6 +1139,106 @@
       "url": "https://arxiv.org/abs/2603.03190",
       "ts": "2026-03-05T04:01:29.130806+00:00",
       "title": "Expectation and Acoustic Neural Network Representations Enhance Music Identification from Brain Activity"
+    },
+    "f7e41467f32bf5907760b756c3b5ab6e41158d35e96fcafea8da046b4c44e6aa": {
+      "url": "https://arxiv.org/abs/2603.02277",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "Quantifying Frontier LLM Capabilities for Container Sandbox Escape"
+    },
+    "2e4a69bd7afad4814b6a1ed3db41be85c0ca2c1e6e9f847db9a9371387ba9400": {
+      "url": "https://arxiv.org/abs/2603.03180",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "Type-Aware Retrieval-Augmented Generation with Dependency Closure for Solver-Executable Industrial Optimization Modeling"
+    },
+    "a40758f801545873c039bf6e00a40ec3113910b7872a6a22250b0dc8f708fa5c": {
+      "url": "https://arxiv.org/abs/2509.23202",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "Bridging the Gap Between Promise and Performance for Microscaling FP4 Quantization"
+    },
+    "72389fa2d1bd992145952734549ed3ae4856dd225c0cac8d0e50ca1b4d58825f": {
+      "url": "https://arxiv.org/abs/2510.09160",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "Efficient Resource-Constrained Training of Transformers via Subspace Optimization"
+    },
+    "a32f04f8b7b368776cf15bc1074ce0f8bfdb98a4d5a47f09feb6b81756ab1f19": {
+      "url": "https://arxiv.org/abs/2602.00130",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "On the Relationship Between Representation Geometry and Generalization in Deep Neural Networks"
+    },
+    "1d301130afa8f18c55034f3558b05b45d65feefa2d8afbdcf4c98a16b547f415": {
+      "url": "https://arxiv.org/abs/2603.02222",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "MedCalc-Bench Doesn't Measure What You Think: A Benchmark Audit and the Case for Open-Book Evaluation"
+    },
+    "d06c93deb673209318b8b1ef6efee522e8964692d2a6c462bdf35d23b17fb989": {
+      "url": "https://arxiv.org/abs/2505.13909",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "Efficient Agent Training for Computer Use"
+    },
+    "c4268b4bd4cc5b23d28a60474d26775a900a3d54a10e79aa2c37d416586f49e7": {
+      "url": "https://arxiv.org/abs/2511.08939",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "TransactionGPT"
+    },
+    "355fc922082ab310703eaba4edc212364a3db8848a8a340144cfc4785f6dd88b": {
+      "url": "https://www.infoq.cn/article/gryFJTax0f58Ghw4GisF",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "Sora 浪潮下的视频内容安全：深度伪造检测与水印对抗技术解析"
+    },
+    "e8ba7172314e48e96a3e9a885705e1f753008632feef22736a817007ef8782f7": {
+      "url": "https://github.com/vllm-project/vllm",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "vllm-project/vllm"
+    },
+    "649cf5d453accde4464aba05d5c46e10a1ecb17be24f7f11c2c32880e3e67de5": {
+      "url": "https://github.com/openai/gpt-oss",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "openai/gpt-oss"
+    },
+    "50278acfe09082fe22b466999705f41b67de31e06fd6594fbe1f841e557100ba": {
+      "url": "https://juejin.cn/post/7613374664555347995",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "资产类型转移：面向意图编程与AI时代的组织重构"
+    },
+    "79c6d6972169db6d7d489e24598528cea2b7e1a689ed33cafd21428d21b80466": {
+      "url": "https://juejin.cn/post/7613374664555216923",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "[译]Claude: 2026智能编程趋势报告"
+    },
+    "54ea61fda3fbac31233288f0094490fbf3cf9bd58c9e2809b8c529c01f0e9772": {
+      "url": "https://arxiv.org/abs/2603.02365",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "Can machines be uncertain?"
+    },
+    "61334874dc5de3f0e498a31081dce84dde8bea9d3417466b21bc6f045317b2a7": {
+      "url": "https://arxiv.org/abs/2603.02599",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "SUN: Shared Use of Next-token Prediction for Efficient Multi-LLM Disaggregated Serving"
+    },
+    "fbe343f9e6c1d6f0ae0515516660503333e8f38a4876f742f8db7a03b4d2c96a": {
+      "url": "https://arxiv.org/abs/2603.03002",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "SpatialText: A Pure-Text Cognitive Benchmark for Spatial Understanding in Large Language Models"
+    },
+    "4036c0ae9a312f6e8635183d8298610c694782b1a915c63cb3257f4a57146734": {
+      "url": "https://arxiv.org/abs/2603.03119",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "AI Space Physics: Constitutive boundary semantics for open AI institutions"
+    },
+    "58fcb5b984c18ec54ec9342a92ae3f088808f7747b45329583a3b3fd77378031": {
+      "url": "https://arxiv.org/abs/2603.03203",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "No Memorization, No Detection: Output Distribution-Based Contamination Detection in Small Language Models"
+    },
+    "20f26bcc201ef47e81d81ab1425aac62f57a743516767e339b62f8627e4dde74": {
+      "url": "https://arxiv.org/abs/2603.03258",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "Inherited Goal Drift: Contextual Pressure Can Undermine Agentic Goals"
+    },
+    "1803b59a5bb080b0228b70dba24368cfb696af115f1471ae4f5a10c386e3666c": {
+      "url": "https://arxiv.org/abs/2603.02215",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "title": "RxnNano:Training Compact LLMs for Chemical Reaction and Retrosynthesis Prediction via Hierarchical Curriculum Learning"
     }
   },
   "ai": {
@@ -4388,6 +4488,326 @@
         "神经编码"
       ],
       "enriched": false
+    },
+    "f7e41467f32bf5907760b756c3b5ab6e41158d35e96fcafea8da046b4c44e6aa": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "关键安全信号：LLM作为自主agent时，传统的沙箱隔离范式正在失效；需要重新定义AI安全边界，从\"限制能力\"转向\"内置约束\"；高能力模型的安全评估必须包含逃逸能力测试",
+      "core_event": "发布SANDBOXESCAPEBENCH基准测试，评估LLM突破Docker/OCI容器沙箱的能力，揭示当前沙箱机制在面对对抗性自主agent时的安全漏洞",
+      "hidden_signal": "关键安全信号：LLM作为自主agent时，传统的沙箱隔离范式正在失效；需要重新定义AI安全边界，从\"限制能力\"转向\"内置约束\"；高能力模型的安全评估必须包含逃逸能力测试",
+      "actionable": "在LLM agent部署中实施多层沙箱隔离；将sandbox escape能力纳入模型安全评估流程；监控容器运行时配置和权限配置以防止特权升级",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI安全",
+        "LLM agent",
+        "沙箱隔离"
+      ],
+      "enriched": false
+    },
+    "2e4a69bd7afad4814b6a1ed3db41be85c0ca2c1e6e9f847db9a9371387ba9400": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "LLM生成不可执行代码是工业部署的核心障碍；typed依赖闭包方法从根本上解决了结构幻觉问题；这标志着RAG从 unstructured text indexing 向结构化符号推理的关键范式转变。",
+      "core_event": "作者提出type-aware RAG方法，通过构建typed领域知识库和依赖图计算最小依赖闭包，在电池生产需求响应优化和柔性作业车间调度两个工业场景中生成可执行的求解器模型。",
+      "hidden_signal": "LLM生成不可执行代码是工业部署的核心障碍；typed依赖闭包方法从根本上解决了结构幻觉问题；这标志着RAG从 unstructured text indexing 向结构化符号推理的关键范式转变。",
+      "actionable": "工业优化工程师应在LLM代码生成pipeline中引入typed知识库和依赖闭包检查；构建领域特定知识图谱实现最小依赖上下文检索；此方法可扩展到任何需要生成可执行代码的LLM应用。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM应用",
+        "工业优化",
+        "知识图谱"
+      ],
+      "enriched": false
+    },
+    "a40758f801545873c039bf6e00a40ec3113910b7872a6a22250b0dc8f708fa5c": {
+      "keep": true,
+      "score": 0.95,
+      "reason": "FP4量化不会自动优于INT4，硬件支持只是必要条件而非充分条件；这标志着LLM量化研究从通用方法转向格式专用优化的范式转变。",
+      "core_event": "首次全面研究显示硬件加速的FP4量化格式实际性能与预期存在显著差距，提出专用算法MR-GPTQ在B200上实现3.6倍、RTX5090上实现6倍的层间加速。",
+      "hidden_signal": "FP4量化不会自动优于INT4，硬件支持只是必要条件而非充分条件；这标志着LLM量化研究从通用方法转向格式专用优化的范式转变。",
+      "actionable": "在LLM推理部署中考虑使用FP4量化时，应优先选择格式专用方法如MR-GPTQ而非通用INT4量化方案；关注NVIDIA B200和RTX5090等支持FP4的硬件平台；针对NVFP4和MXFP4需采用不同的优化策略。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM",
+        "量化",
+        "GPU"
+      ],
+      "enriched": false
+    },
+    "72389fa2d1bd992145952734549ed3ae4856dd225c0cac8d0e50ca1b4d58825f": {
+      "keep": true,
+      "score": 0.94,
+      "reason": "子空间训练从CNN扩展到Transformer标志着该范式的成熟；62倍内存降低意味着在消费级设备上训练真正的大模型首次变得可行，这将加速边缘AI的民主化。",
+      "core_event": "WASI提出权重-激活子空间迭代方法，将Transformer训练限制在固定子空间，在保持精度的同时内存降低62倍、FLOPs降低2倍，树莓派5上训练推理速度提升1.4倍。",
+      "hidden_signal": "子空间训练从CNN扩展到Transformer标志着该范式的成熟；62倍内存降低意味着在消费级设备上训练真正的大模型首次变得可行，这将加速边缘AI的民主化。",
+      "actionable": "在资源受限设备上训练Transformer时，优先评估WASI的子空间训练方法；树莓派5上的实验表明确认部署可行性，可考虑在IoT/嵌入式场景中试点。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "边缘AI",
+        "Transformer训练",
+        "子空间优化"
+      ],
+      "enriched": false
+    },
+    "a32f04f8b7b368776cf15bc1074ce0f8bfdb98a4d5a47f09feb6b81756ab1f19": {
+      "keep": true,
+      "score": 0.94,
+      "reason": "模型性能由表示几何结构决定而非规模，有效维度是领域无关的泛化预测指标，这为无监督模型评估提供了新范式",
+      "core_event": "分析 52 个 ImageNet 预训练模型和多种 NLP 模型，证明有效维度强预测准确率（r=0.75），并建立双向因果关系",
+      "hidden_signal": "模型性能由表示几何结构决定而非规模，有效维度是领域无关的泛化预测指标，这为无监督模型评估提供了新范式",
+      "actionable": "使用有效维度作为无监督指标评估模型泛化能力；在模型选择和压缩中优先考虑有效维度而非单纯增大模型容量",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "表示学习",
+        "模型评估",
+        "深度学习理论"
+      ],
+      "enriched": false
+    },
+    "1d301130afa8f18c55034f3558b05b45d65feefa2d8afbdcf4c98a16b547f415": {
+      "keep": true,
+      "score": 0.93,
+      "reason": "当前LLM医学基准可能普遍存在「伪挑战」——测试的是记忆而非推理。open-book方法的高效性揭示了评估设计与实际临床能力之间的严重错位。",
+      "core_event": "审计发现MedCalc-Bench存在20+错误，open-book提示使GLM-4.6V/4.7准确率从52%提升至81-85%，暗示该基准主要测公式记忆而非临床推理。",
+      "hidden_signal": "当前LLM医学基准可能普遍存在「伪挑战」——测试的是记忆而非推理。open-book方法的高效性揭示了评估设计与实际临床能力之间的严重错位。",
+      "actionable": "基准设计师应重新审视 MedCalc-Bench 的评估目标——若意图是测评论证能力则需重构。开发者可在推理时提供计算公式规范（open-book），简单方法即可显著提升性能。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI评估",
+        "医疗LLM",
+        "基准测试"
+      ],
+      "enriched": false
+    },
+    "d06c93deb673209318b8b1ef6efee522e8964692d2a6c462bdf35d23b17fb989": {
+      "keep": true,
+      "score": 0.93,
+      "reason": "训练数据效率瓶颈是计算机使用agent的核心挑战；该工作证明AI可作为\"数据合成器\"而非仅作为\"蒸馏教师\"，为\"人在环+AI增强\"的agent训练范式提供了可行路径",
+      "core_event": "",
+      "hidden_signal": "训练数据效率瓶颈是计算机使用agent的核心挑战；该工作证明AI可作为\"数据合成器\"而非仅作为\"蒸馏教师\"，为\"人在环+AI增强\"的agent训练范式提供了可行路径",
+      "actionable": "采用\"少量人类演示+AI数据增强\"的混合训练范式构建计算机使用agent；关注WindowsAgentArena-V2作为评估基准以衡量真实环境性能",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "agent训练",
+        "计算机使用",
+        "数据增强"
+      ],
+      "enriched": false
+    },
+    "c4268b4bd4cc5b23d28a60474d26775a900a3d54a10e79aa2c37d416586f49e7": {
+      "keep": true,
+      "score": 0.93,
+      "reason": "金融领域基础模型的出现标志着传统金融ML工作流的范式转变；3D-Transformer为处理时序+商户+金额等多模态交易数据提供了新架构范式",
+      "core_event": "推出TransactionGPT，一个在数十亿真实交易数据上训练的交易数据基础模型，显著提升异常交易检测性能",
+      "hidden_signal": "金融领域基础模型的出现标志着传统金融ML工作流的范式转变；3D-Transformer为处理时序+商户+金额等多模态交易数据提供了新架构范式",
+      "actionable": "在处理金融交易数据时考虑使用专门的3D-Transformer架构；可探索将LLM嵌入与交易数据结合以提升异常检测等下游任务性能；关注其在大规模真实交易数据上的训练和推理效率优势",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "金融AI",
+        "基础模型",
+        "异常检测"
+      ],
+      "enriched": false
+    },
+    "355fc922082ab310703eaba4edc212364a3db8848a8a340144cfc4785f6dd88b": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "视频后处理技术正从「像素修补」范式转向「生成式重构」范式。这不仅是算法升级，更意味着：1）水印检测与去除的军备竞赛进入新阶段；2）平台内容治理的底层逻辑需要重构；3）GPU推理服务化成为工程关键瓶颈。AIGC视频的爆发将催生新型基础设施需求。",
+      "core_event": "生成式视频模型（如Sora）降低了视频生产门槛，传统视频修复技术（Inpainting）在复杂场景下失效，业界正转向扩散模型驱动的生成式重构方案。",
+      "hidden_signal": "视频后处理技术正从「像素修补」范式转向「生成式重构」范式。这不仅是算法升级，更意味着：1）水印检测与去除的军备竞赛进入新阶段；2）平台内容治理的底层逻辑需要重构；3）GPU推理服务化成为工程关键瓶颈。AIGC视频的爆发将催生新型基础设施需求。",
+      "actionable": "1）视频平台工程师应评估将扩散模型纳入内容审核pipeline；2）GPU推理服务需要围绕窗口级批处理、显存保护、降级策略重新设计；3）关注时序一致性（滑动窗口策略）在生产级视频修复中的应用；4）内容安全团队需建立对抗性测试能力，验证生成式修复对水印检测的威胁。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AIGC安全",
+        "视频处理",
+        "扩散模型"
+      ],
+      "enriched": false
+    },
+    "e8ba7172314e48e96a3e9a885705e1f753008632feef22736a817007ef8782f7": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "LLM推理引擎已从「能工作」演进到「高吞吐+低延迟」的性能竞争阶段。vLLM的PagedAttention等技术正在重新定义生产级LLM部署的成本结构。",
+      "core_event": "vLLM项目 star 数突破 72041，成为 LLM 推理服务领域的标杆开源项目",
+      "hidden_signal": "LLM推理引擎已从「能工作」演进到「高吞吐+低延迟」的性能竞争阶段。vLLM的PagedAttention等技术正在重新定义生产级LLM部署的成本结构。",
+      "actionable": "关注vLLM的持续更新，特别是在多模态模型支持和推理优化方面的进展。对于需要大规模LLM部署的团队，vLLM已成为事实标准。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM推理",
+        "MLOps",
+        "高性能计算"
+      ],
+      "enriched": false
+    },
+    "649cf5d453accde4464aba05d5c46e10a1ecb17be24f7f11c2c32880e3e67de5": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "",
+      "core_event": "OpenAI首次发布开源权重语言模型gpt-oss-120b和gpt-oss-20b",
+      "hidden_signal": "",
+      "actionable": "研究其模型架构和权重许可条款，评估本地部署可行性",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Open-Source-LLM",
+        "OpenAI",
+        "Model-Deployment"
+      ],
+      "enriched": false
+    },
+    "50278acfe09082fe22b466999705f41b67de31e06fd6594fbe1f841e557100ba": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "这是对软件开发范式根本性变革的深度思考。代码作为核心资产的范式正在动摇，意图与约束将成为新型生产资料，可能催生全新的技术组织和开发流程。",
+      "core_event": "文章提出面向意图编程(IOP)范式，认为AI时代核心资产将从代码转向意图与约束，这将导致组织围绕新资产重构生产关系",
+      "hidden_signal": "这是对软件开发范式根本性变革的深度思考。代码作为核心资产的范式正在动摇，意图与约束将成为新型生产资料，可能催生全新的技术组织和开发流程。",
+      "actionable": "技术领导者应关注IOP理念；评估本组织开发流程中哪些环节可引入意图驱动；思考AI时代技术团队的重新定位。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "Paradigm-Shift",
+        "AI-Development",
+        "Organization"
+      ],
+      "enriched": false
+    },
+    "79c6d6972169db6d7d489e24598528cea2b7e1a689ed33cafd21428d21b80466": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "这是主流AI厂商首次系统性阐述智能编程的演进路线图，标志着AI编程从辅助工具向完整开发流程替代者的转变已获得行业认可，2026年将成为AI编程规模落地的元年。",
+      "core_event": "Anthropic发布2026智能编程趋势报告，预测编程智能体将从实验性工具发展为可交付生产功能的生产系统，并列出八大关键趋势。",
+      "hidden_signal": "这是主流AI厂商首次系统性阐述智能编程的演进路线图，标志着AI编程从辅助工具向完整开发流程替代者的转变已获得行业认可，2026年将成为AI编程规模落地的元年。",
+      "actionable": "工程团队应：1) 关注Agent协调团队(趋势2)和长时运行Agent(趋势3)的技术准备；2) 重新评估2026年的开发团队规模配置；3) 关注安全攻防两端的技术演进(趋势8)。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI编程",
+        "行业趋势",
+        "Anthropic"
+      ],
+      "enriched": false
+    },
+    "54ea61fda3fbac31233288f0094490fbf3cf9bd58c9e2809b8c529c01f0e9772": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "神经符号AI正在突破LLM数学推理不可靠的瓶颈，通过形式化方法实现可验证的逐步推理。这代表从\"流利但不可靠\"到\"可验证正确\"的范式转变，32B模型展现的96%可修复错误率暗示了 scaling law 的新维度。",
+      "core_event": "arXiv发布NeuroProlog论文，提出神经符号框架通过编译数学问题为可执行Prolog程序实现可验证推理，在3B-32B参数规模的GSM8K数据集上取得显著提升。",
+      "hidden_signal": "神经符号AI正在突破LLM数学推理不可靠的瓶颈，通过形式化方法实现可验证的逐步推理。这代表从\"流利但不可靠\"到\"可验证正确\"的范式转变，32B模型展现的96%可修复错误率暗示了 scaling law 的新维度。",
+      "actionable": "关注神经符号AI在数学推理领域的发展，特别是NeuroProlog的Cocktail训练策略与程序修复机制。建议在需要形式化验证的数学推理场景中评估其可行性。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "神经符号AI",
+        "数学推理",
+        "形式化验证"
+      ],
+      "enriched": false
+    },
+    "61334874dc5de3f0e498a31081dce84dde8bea9d3417466b21bc6f045317b2a7": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "这是LLM serving架构的重要范式转变——从模型独占GPU资源到跨模型共享计算核心。decode作为内存密集型操作，其共享潜力被低估；此方法可能重塑云端LLM服务的资源调度范式",
+      "core_event": "SUN论文提出在disaggregated多模型LLM serving中共享冻结的decode模块，仅微调prefill模块，实现2倍吞吐量提升且TPOT误差控制在5%内",
+      "hidden_signal": "这是LLM serving架构的重要范式转变——从模型独占GPU资源到跨模型共享计算核心。decode作为内存密集型操作，其共享潜力被低估；此方法可能重塑云端LLM服务的资源调度范式",
+      "actionable": "在设计多模型LLM服务架构时，优先考虑prefill-decode分离方案；评估将decode模块作为共享资源的可行性；对于高吞吐量场景，探索quantized decoding (QSUN) 进一步优化",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM系统",
+        "分布式架构",
+        "模型服务化"
+      ],
+      "enriched": false
+    },
+    "fbe343f9e6c1d6f0ae0515516660503333e8f38a4876f742f8db7a03b4d2c96a": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "当前LLM在空间推理方面存在根本性缺陷：虽然能处理全局坐标系统，但在自我中心视角转换和局部空间推理上系统性失败，说明模型并未构建可验证的内部空间表征，仅在学习语言表层的空间关联。",
+      "core_event": "arXiv发布SpatialText基准，专门用于诊断LLM是否构建了真正的空间心理模型而非依赖语言共现统计规律。",
+      "hidden_signal": "当前LLM在空间推理方面存在根本性缺陷：虽然能处理全局坐标系统，但在自我中心视角转换和局部空间推理上系统性失败，说明模型并未构建可验证的内部空间表征，仅在学习语言表层的空间关联。",
+      "actionable": "在模型评估中加入SpatialText基准，重点测试自我中心视角变换和局部参考框架推理能力，这两类是当前LLM的空间推理薄弱环节。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "空间智能",
+        "基准测试",
+        "认知诊断"
+      ],
+      "enriched": false
+    },
+    "4036c0ae9a312f6e8635183d8298610c694782b1a915c63cb3257f4a57146734": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "这是AI治理范式的转变：从关注「AI做了什么」到关注「AI能做什么的扩展」。标志着AI系统正从被动工具向主动机构演进，治理框架必须适应这种本体论变化",
+      "core_event": "论文提出AI Space Physics框架，将AI机构权限扩展重新定义为需见证的一阶边界事件，即使无即时外部影响",
+      "hidden_signal": "这是AI治理范式的转变：从关注「AI做了什么」到关注「AI能做什么的扩展」。标志着AI系统正从被动工具向主动机构演进，治理框架必须适应这种本体论变化",
+      "actionable": "AI安全研究者应关注边界扩展事件的形式化建模，将权限扩张视为需见证的治理事件，而非仅关注最终外部影响",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI治理",
+        "形式化语义",
+        "AI安全"
+      ],
+      "enriched": false
+    },
+    "58fcb5b984c18ec54ec9342a92ae3f088808f7747b45329583a3b3fd77378031": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "这一发现揭示了当前污染检测范式的根本性局限：参数高效微调技术（如LoRA）创造了一种「隐性污染」，传统检测手段无法识别，可能导致基准测试结果被系统性污染。",
+      "core_event": "研究发现使用低秩适配（LoRA）微调的小语言模型可以在不产生逐字记忆的情况下学习受污染数据，导致基于输出分布的污染检测方法（CDD）完全失效。",
+      "hidden_signal": "这一发现揭示了当前污染检测范式的根本性局限：参数高效微调技术（如LoRA）创造了一种「隐性污染」，传统检测手段无法识别，可能导致基准测试结果被系统性污染。",
+      "actionable": "工程师应重新评估小模型的基准测试结果可靠性；在评估流程中纳入LoRA/Adapter等参数高效方法的污染检测；考虑开发新的检测范式而非依赖输出分布分析。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "大语言模型",
+        "数据污染检测",
+        "参数高效微调"
+      ],
+      "enriched": false
+    },
+    "20f26bcc201ef47e81d81ab1425aac62f57a743516767e339b62f8627e4dde74": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "当前主流评估只测试模型对直接对抗性压力的响应，忽略了通过预填充上下文间接引入的漂移——这可能是生产环境中更难检测的隐患",
+      "core_event": "现代LLM代理在继承弱代理轨迹时会继承目标漂移，即使模型本身表现出较强的抗漂移能力",
+      "hidden_signal": "当前主流评估只测试模型对直接对抗性压力的响应，忽略了通过预填充上下文间接引入的漂移——这可能是生产环境中更难检测的隐患",
+      "actionable": "工程师应在LLM代理系统中加入轨迹来源验证，避免直接使用弱代理的预填充轨迹；评估新模型时应专门测试目标漂移抗性",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "LLM代理",
+        "AI安全",
+        "目标漂移"
+      ],
+      "enriched": false
+    },
+    "1803b59a5bb080b0228b70dba24368cfb696af115f1471ae4f5a10c386e3666c": {
+      "keep": true,
+      "score": 0.92,
+      "reason": "LLM竞赛进入\"化学先验优于参数Scale\"的新范式。当前主流化学LLM盲目堆参数，RxnNano证明注入领域归纳偏置（可逆性约束、原子映射拓扑不变性）比增大模型更有效。这是AI4Science从\"大数据大模型\"转向\"高质量先验知识\"的信号。",
+      "core_event": "RxnNano用0.5B参数模型通过化学一致性目标和分层认知课程，在化学反应预测任务上超越7B+参数的微调LLM，Top-1准确率提升23.5%。",
+      "hidden_signal": "LLM竞赛进入\"化学先验优于参数Scale\"的新范式。当前主流化学LLM盲目堆参数，RxnNano证明注入领域归纳偏置（可逆性约束、原子映射拓扑不变性）比增大模型更有效。这是AI4Science从\"大数据大模型\"转向\"高质量先验知识\"的信号。",
+      "actionable": "化学LLM研究者应关注：1）将latent manifold思想引入反应预测；2）采用hierarchical curriculum训练策略；3）考虑atom-map permutation invariance设计多任务学习。在资源受限场景下，小模型+化学先验可能优于盲目scale。",
+      "ts": "2026-03-05T04:45:17.101418+00:00",
+      "model": "MiniMax-M2.5",
+      "tags": [
+        "AI4Science",
+        "Chemical-LLM",
+        "Model-Compression"
+      ],
+      "enriched": false
     }
   },
   "feed_cursor": {
@@ -4441,8 +4861,8 @@
     "https://tinyprojects.dev/feed.xml": "2022-08-09T00:00:00+00:00",
     "https://danieltakeshi.github.io/feed.xml": "2023-06-15T23:00:00+00:00",
     "https://mlinproduction.com/feed": "2022-05-08T16:11:55+00:00",
-    "https://machinelearningmastery.com/feed": "2026-02-12T11:00:01+00:00",
-    "/juejin/aicoding": "2026-03-04T15:48:45+00:00",
+    "https://machinelearningmastery.com/feed": "2026-02-19T11:00:18+00:00",
+    "/juejin/aicoding": "2026-03-05T04:42:42+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCFqXmQ56-Gp1rIKa-GoAJvQ": "2026-03-05T01:30:15+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UC7c3Kb6jYCRj4JOHHZTxKsQ": "2026-03-05T01:34:26+00:00",
     "https://www.youtube.com/feeds/videos.xml?channel_id=UCV03SRZXJEz-hchIAogeJOg": "2026-03-05T01:44:08+00:00",
@@ -4450,706 +4870,688 @@
   },
   "feed_failures": {
     "/anthropic/research": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.592182+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.015656+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592190+00:00"
+      "updated_at": "2026-03-05T04:46:56.015664+00:00"
     },
     "/modelscope/models": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.592642+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016090+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592648+00:00"
+      "updated_at": "2026-03-05T04:46:56.016096+00:00"
     },
     "/producthunt/today": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.592753+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016202+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592758+00:00"
+      "updated_at": "2026-03-05T04:46:56.016206+00:00"
     },
     "/github/topics/llm": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.592806+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016275+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592811+00:00"
+      "updated_at": "2026-03-05T04:46:56.016280+00:00"
     },
     "/github/topics/agents": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.592926+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016417+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592930+00:00"
+      "updated_at": "2026-03-05T04:46:56.016426+00:00"
     },
     "/twitter/user/karpathy": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593029+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016612+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593033+00:00"
+      "updated_at": "2026-03-05T04:46:56.016618+00:00"
     },
     "/twitter/user/fchollet": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593060+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016641+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593064+00:00"
+      "updated_at": "2026-03-05T04:46:56.016646+00:00"
     },
     "/twitter/user/soumithchintala": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593087+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016667+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593091+00:00"
+      "updated_at": "2026-03-05T04:46:56.016671+00:00"
     },
     "/twitter/user/rasbt": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593116+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016692+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593121+00:00"
+      "updated_at": "2026-03-05T04:46:56.016696+00:00"
     },
     "/twitter/user/ylecun": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593145+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016717+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593149+00:00"
+      "updated_at": "2026-03-05T04:46:56.016721+00:00"
     },
     "/twitter/user/demishassabis": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593170+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016741+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593174+00:00"
+      "updated_at": "2026-03-05T04:46:56.016745+00:00"
     },
     "/twitter/user/Yoshua_Bengio": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593194+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016765+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593198+00:00"
+      "updated_at": "2026-03-05T04:46:56.016768+00:00"
     },
     "/twitter/user/sama": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593220+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016794+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593224+00:00"
+      "updated_at": "2026-03-05T04:46:56.016799+00:00"
     },
     "/twitter/user/AndrewYNg": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593244+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016820+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593248+00:00"
+      "updated_at": "2026-03-05T04:46:56.016824+00:00"
     },
     "/twitter/user/JeremyHoward": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593272+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016845+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593276+00:00"
+      "updated_at": "2026-03-05T04:46:56.016849+00:00"
     },
     "/twitter/user/swyx": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593320+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016869+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593324+00:00"
+      "updated_at": "2026-03-05T04:46:56.016873+00:00"
     },
     "/twitter/user/simonw": {
-      "count": 12,
-      "cooldown_until": "2026-03-05T04:32:23.593347+00:00",
+      "count": 13,
+      "cooldown_until": "2026-03-05T05:16:56.016893+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593351+00:00"
+      "updated_at": "2026-03-05T04:46:56.016897+00:00"
     },
     "https://community.openai.com/c/announcements.rss": {
-      "count": 11,
-      "cooldown_until": "2026-03-05T04:32:23.595618+00:00",
+      "count": 12,
+      "cooldown_until": "2026-03-05T05:16:56.019383+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595622+00:00"
+      "updated_at": "2026-03-05T04:46:56.019387+00:00"
     },
     "/bilibili/user/video/3546566589679687": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594609+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018308+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594613+00:00"
+      "updated_at": "2026-03-05T04:46:56.018312+00:00"
     },
     "/bilibili/user/video/302188068": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594633+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018332+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594637+00:00"
+      "updated_at": "2026-03-05T04:46:56.018336+00:00"
     },
     "/bilibili/user/video/26798384": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594657+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018361+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594661+00:00"
+      "updated_at": "2026-03-05T04:46:56.018365+00:00"
     },
     "/bilibili/user/video/316183842": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594680+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018391+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594684+00:00"
+      "updated_at": "2026-03-05T04:46:56.018395+00:00"
     },
     "/bilibili/user/video/14739873": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594704+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018414+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594708+00:00"
+      "updated_at": "2026-03-05T04:46:56.018418+00:00"
     },
     "/bilibili/user/video/3493277319825652": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594729+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018438+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594733+00:00"
+      "updated_at": "2026-03-05T04:46:56.018442+00:00"
     },
     "/bilibili/user/video/4848323": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594753+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018463+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594757+00:00"
+      "updated_at": "2026-03-05T04:46:56.018485+00:00"
     },
     "/bilibili/user/video/346575605": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594777+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018513+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594780+00:00"
+      "updated_at": "2026-03-05T04:46:56.018519+00:00"
     },
     "/bilibili/user/video/1316597695": {
-      "count": 6,
-      "cooldown_until": "2026-03-05T04:32:23.594799+00:00",
+      "count": 7,
+      "cooldown_until": "2026-03-05T05:16:56.018542+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594803+00:00"
+      "updated_at": "2026-03-05T04:46:56.018546+00:00"
     },
     "/xiaohongshu/user/68502b1a000000001b01a7ba/notes": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T04:18:23.595398+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T05:16:56.019161+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595403+00:00"
+      "updated_at": "2026-03-05T04:46:56.019165+00:00"
     },
     "/xiaohongshu/user/5d7ece920000000001018707/notes": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T04:18:23.595424+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T05:16:56.019185+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595427+00:00"
+      "updated_at": "2026-03-05T04:46:56.019189+00:00"
     },
     "/xiaohongshu/user/6467b1210000000010027a51/notes": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T04:18:23.595448+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T05:16:56.019208+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595451+00:00"
+      "updated_at": "2026-03-05T04:46:56.019212+00:00"
     },
     "/xiaohongshu/user/5ec66abd0000000001006a8a/notes": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T04:18:23.595471+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T05:16:56.019232+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595475+00:00"
+      "updated_at": "2026-03-05T04:46:56.019235+00:00"
     },
     "/xiaohongshu/user/6314a2cc0000000012003173/notes": {
-      "count": 5,
-      "cooldown_until": "2026-03-05T04:18:23.595495+00:00",
+      "count": 6,
+      "cooldown_until": "2026-03-05T05:16:56.019255+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595499+00:00"
+      "updated_at": "2026-03-05T04:46:56.019259+00:00"
     },
     "/github/topics/agent": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.592839+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.016301+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592844+00:00"
+      "updated_at": "2026-03-05T04:46:56.016305+00:00"
     },
     "/github/topics/autonomous-agent": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.592869+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.016326+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592873+00:00"
+      "updated_at": "2026-03-05T04:46:56.016330+00:00"
     },
     "/github/topics/ai-agent": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.592895+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.016358+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592899+00:00"
+      "updated_at": "2026-03-05T04:46:56.016362+00:00"
     },
     "/twitter/user/drfeifei": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593376+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.016918+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593380+00:00"
+      "updated_at": "2026-03-05T04:46:56.016922+00:00"
     },
     "/twitter/user/percyliang": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593400+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.016942+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593404+00:00"
+      "updated_at": "2026-03-05T04:46:56.016946+00:00"
     },
     "/twitter/user/lilianweng": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593424+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.016967+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593428+00:00"
+      "updated_at": "2026-03-05T04:46:56.016971+00:00"
     },
     "/twitter/user/chrmanning": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593447+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.016991+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593451+00:00"
+      "updated_at": "2026-03-05T04:46:56.016995+00:00"
     },
     "/twitter/user/DrJimFan": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593471+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017015+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593476+00:00"
+      "updated_at": "2026-03-05T04:46:56.017019+00:00"
     },
     "/twitter/user/ShunyuYao12": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593498+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017038+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593502+00:00"
+      "updated_at": "2026-03-05T04:46:56.017042+00:00"
     },
     "/twitter/user/jerryjliu0": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593522+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017062+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593526+00:00"
+      "updated_at": "2026-03-05T04:46:56.017066+00:00"
     },
     "/twitter/user/hwchase17": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593549+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017086+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593553+00:00"
+      "updated_at": "2026-03-05T04:46:56.017089+00:00"
     },
     "/twitter/user/yoheinakajima": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593573+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017110+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593577+00:00"
+      "updated_at": "2026-03-05T04:46:56.017114+00:00"
     },
     "/twitter/user/hamzafarrukh": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593600+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017134+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593604+00:00"
+      "updated_at": "2026-03-05T04:46:56.017138+00:00"
     },
     "/twitter/user/amasad": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593625+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017157+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593629+00:00"
+      "updated_at": "2026-03-05T04:46:56.017161+00:00"
     },
     "/twitter/user/tobi": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593649+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017180+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593653+00:00"
+      "updated_at": "2026-03-05T04:46:56.017184+00:00"
     },
     "/twitter/user/chipro": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593673+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017204+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593676+00:00"
+      "updated_at": "2026-03-05T04:46:56.017208+00:00"
     },
     "/twitter/user/eugeneyan": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593700+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017228+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593704+00:00"
+      "updated_at": "2026-03-05T04:46:56.017232+00:00"
     },
     "/twitter/user/JayAlammar": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593724+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017252+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593728+00:00"
+      "updated_at": "2026-03-05T04:46:56.017255+00:00"
     },
     "/twitter/user/nir_diamant": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593748+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017275+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593751+00:00"
+      "updated_at": "2026-03-05T04:46:56.017278+00:00"
     },
     "/twitter/user/gdb": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593775+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017298+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593779+00:00"
+      "updated_at": "2026-03-05T04:46:56.017302+00:00"
     },
     "/twitter/user/DarioAmodei": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593803+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017322+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593807+00:00"
+      "updated_at": "2026-03-05T04:46:56.017326+00:00"
     },
     "/twitter/user/EMostaque": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593831+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017346+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593835+00:00"
+      "updated_at": "2026-03-05T04:46:56.017350+00:00"
     },
     "/twitter/user/AravSrinivas": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593856+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017369+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593860+00:00"
+      "updated_at": "2026-03-05T04:46:56.017373+00:00"
     },
     "/twitter/user/polynoamial": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593914+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017393+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593921+00:00"
+      "updated_at": "2026-03-05T04:46:56.017397+00:00"
     },
     "/twitter/user/ilyasut": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593947+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017417+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593951+00:00"
+      "updated_at": "2026-03-05T04:46:56.017421+00:00"
     },
     "/twitter/user/danshipper": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593971+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017441+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593975+00:00"
+      "updated_at": "2026-03-05T04:46:56.017445+00:00"
     },
     "/twitter/user/btibor91": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.593995+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017466+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593998+00:00"
+      "updated_at": "2026-03-05T04:46:56.017535+00:00"
     },
     "/twitter/user/petergyang": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594018+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017604+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594022+00:00"
+      "updated_at": "2026-03-05T04:46:56.017611+00:00"
     },
     "/twitter/user/thesephist": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594041+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017673+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594046+00:00"
+      "updated_at": "2026-03-05T04:46:56.017679+00:00"
     },
     "/twitter/user/natfriedman": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594067+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017732+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594070+00:00"
+      "updated_at": "2026-03-05T04:46:56.017738+00:00"
     },
     "/twitter/user/OfficialLoganK": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594090+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017766+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594093+00:00"
+      "updated_at": "2026-03-05T04:46:56.017770+00:00"
     },
     "/twitter/user/paulg": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594113+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017791+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594116+00:00"
+      "updated_at": "2026-03-05T04:46:56.017795+00:00"
     },
     "/twitter/user/svpino": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594136+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017818+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594139+00:00"
+      "updated_at": "2026-03-05T04:46:56.017822+00:00"
     },
     "/twitter/user/aakashg0": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594159+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017843+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594162+00:00"
+      "updated_at": "2026-03-05T04:46:56.017847+00:00"
     },
     "/twitter/user/emollick": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594182+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017872+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594186+00:00"
+      "updated_at": "2026-03-05T04:46:56.017876+00:00"
     },
     "/twitter/user/op7418": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594206+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017896+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594210+00:00"
+      "updated_at": "2026-03-05T04:46:56.017900+00:00"
     },
     "/twitter/user/dotey": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594231+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017919+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594235+00:00"
+      "updated_at": "2026-03-05T04:46:56.017923+00:00"
     },
     "/twitter/user/baoyu_io": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594255+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017942+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594258+00:00"
+      "updated_at": "2026-03-05T04:46:56.017946+00:00"
     },
     "/twitter/user/wangdengke": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594277+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017966+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594299+00:00"
+      "updated_at": "2026-03-05T04:46:56.017970+00:00"
     },
     "/twitter/user/vikingmute": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594321+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.017995+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594325+00:00"
+      "updated_at": "2026-03-05T04:46:56.018000+00:00"
     },
     "/twitter/user/waimaox": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594345+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018023+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594348+00:00"
+      "updated_at": "2026-03-05T04:46:56.018027+00:00"
     },
     "/twitter/user/zhwangart": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594368+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018051+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594372+00:00"
+      "updated_at": "2026-03-05T04:46:56.018055+00:00"
     },
     "/twitter/user/leiphys": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594392+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018075+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594396+00:00"
+      "updated_at": "2026-03-05T04:46:56.018079+00:00"
     },
     "/twitter/user/imian": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594416+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018099+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594420+00:00"
+      "updated_at": "2026-03-05T04:46:56.018102+00:00"
     },
     "/twitter/user/OpenAI": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594465+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018147+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594469+00:00"
+      "updated_at": "2026-03-05T04:46:56.018151+00:00"
     },
     "/twitter/user/GoogleDeepMind": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594489+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018175+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594494+00:00"
+      "updated_at": "2026-03-05T04:46:56.018180+00:00"
     },
     "/twitter/user/AnthropicAI": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594515+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018205+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594519+00:00"
+      "updated_at": "2026-03-05T04:46:56.018209+00:00"
     },
     "/twitter/user/MetaAI": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594538+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018234+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594542+00:00"
+      "updated_at": "2026-03-05T04:46:56.018239+00:00"
     },
     "/twitter/user/huggingface": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594561+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018260+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594565+00:00"
+      "updated_at": "2026-03-05T04:46:56.018264+00:00"
     },
     "/twitter/user/StabilityAI": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.594584+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.018284+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594588+00:00"
+      "updated_at": "2026-03-05T04:46:56.018287+00:00"
     },
     "https://sebastianraschka.com/rss.xml": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.595899+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.019704+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595903+00:00"
+      "updated_at": "2026-03-05T04:46:56.019708+00:00"
     },
     "https://til.simonwillison.net/feed.xml": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.595992+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.019825+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595996+00:00"
+      "updated_at": "2026-03-05T04:46:56.019831+00:00"
     },
     "https://gwern.net/rss.xml": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.596042+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.019879+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.596046+00:00"
+      "updated_at": "2026-03-05T04:46:56.019883+00:00"
     },
     "https://www.inference.vc/rss.xml": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.596113+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.019947+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.596116+00:00"
+      "updated_at": "2026-03-05T04:46:56.019951+00:00"
     },
     "https://thesephist.com/rss.xml": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.596161+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.019994+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.596165+00:00"
+      "updated_at": "2026-03-05T04:46:56.019998+00:00"
     },
     "https://nat.org/blog/rss.xml": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.596186+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.020019+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.596190+00:00"
+      "updated_at": "2026-03-05T04:46:56.020022+00:00"
     },
     "https://vitalab.github.io/rss.xml": {
-      "count": 4,
-      "cooldown_until": "2026-03-05T04:10:23.596232+00:00",
+      "count": 5,
+      "cooldown_until": "2026-03-05T05:02:56.020064+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.596236+00:00"
-    },
-    "/github/trending/daily/python": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.592779+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592783+00:00"
-    },
-    "/hellogithub/volume": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.592956+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592960+00:00"
-    },
-    "/hellogithub/home/featured": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.592981+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.592985+00:00"
-    },
-    "/juejin/aicoding": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.593005+00:00",
-      "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.593009+00:00"
+      "updated_at": "2026-03-05T04:46:56.020068+00:00"
     },
     "/twitter/user/trq212": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594441+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018122+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594445+00:00"
+      "updated_at": "2026-03-05T04:46:56.018126+00:00"
     },
     "/bilibili/user/video/3546830396721763": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594823+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018576+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594827+00:00"
+      "updated_at": "2026-03-05T04:46:56.018580+00:00"
     },
     "/bilibili/user/video/28357052": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594847+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018601+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594851+00:00"
+      "updated_at": "2026-03-05T04:46:56.018604+00:00"
     },
     "/bilibili/user/video/3493082576193678": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594872+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018629+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594875+00:00"
+      "updated_at": "2026-03-05T04:46:56.018633+00:00"
     },
     "/bilibili/user/video/73414544": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594897+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018654+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594900+00:00"
+      "updated_at": "2026-03-05T04:46:56.018658+00:00"
     },
     "/bilibili/user/video/3546791320488658": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594920+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018679+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594924+00:00"
+      "updated_at": "2026-03-05T04:46:56.018683+00:00"
     },
     "/bilibili/user/video/3546585589877706": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594944+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018704+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594948+00:00"
+      "updated_at": "2026-03-05T04:46:56.018708+00:00"
     },
     "/bilibili/user/video/314076440": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594968+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018728+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594972+00:00"
+      "updated_at": "2026-03-05T04:46:56.018732+00:00"
     },
     "/bilibili/user/video/242124650": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.594993+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018753+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.594996+00:00"
+      "updated_at": "2026-03-05T04:46:56.018757+00:00"
     },
     "/bilibili/user/video/615957867": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595016+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018780+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595020+00:00"
+      "updated_at": "2026-03-05T04:46:56.018784+00:00"
     },
     "/bilibili/user/video/4401694": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595039+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018807+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595043+00:00"
+      "updated_at": "2026-03-05T04:46:56.018811+00:00"
     },
     "/bilibili/user/video/380747130": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595063+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018832+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595066+00:00"
+      "updated_at": "2026-03-05T04:46:56.018836+00:00"
     },
     "/bilibili/user/video/3546970691995922": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595087+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018855+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595091+00:00"
+      "updated_at": "2026-03-05T04:46:56.018859+00:00"
     },
     "/bilibili/user/video/65564239": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595112+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018880+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595115+00:00"
+      "updated_at": "2026-03-05T04:46:56.018884+00:00"
     },
     "/bilibili/user/video/46377861": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595135+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018911+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595138+00:00"
+      "updated_at": "2026-03-05T04:46:56.018916+00:00"
     },
     "/bilibili/user/video/3546884870244925": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595158+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018941+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595161+00:00"
+      "updated_at": "2026-03-05T04:46:56.018945+00:00"
     },
     "/bilibili/user/video/193580090": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595182+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018965+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595186+00:00"
+      "updated_at": "2026-03-05T04:46:56.018968+00:00"
     },
     "/bilibili/user/video/602010761": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595206+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.018991+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595210+00:00"
+      "updated_at": "2026-03-05T04:46:56.018995+00:00"
     },
     "/bilibili/user/video/627947058": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595232+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.019019+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595236+00:00"
+      "updated_at": "2026-03-05T04:46:56.019023+00:00"
     },
     "/bilibili/user/video/3546607314274766": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595255+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.019044+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595259+00:00"
+      "updated_at": "2026-03-05T04:46:56.019048+00:00"
     },
     "/bilibili/user/video/3546878859807653": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595278+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.019067+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595301+00:00"
+      "updated_at": "2026-03-05T04:46:56.019071+00:00"
     },
     "/bilibili/user/video/3546645734099512": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595324+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.019091+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595328+00:00"
+      "updated_at": "2026-03-05T04:46:56.019094+00:00"
     },
     "/bilibili/user/video/319759808": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595348+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.019114+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595352+00:00"
+      "updated_at": "2026-03-05T04:46:56.019118+00:00"
     },
     "/bilibili/user/video/52807953": {
-      "count": 2,
-      "cooldown_until": "2026-03-05T04:04:23.595373+00:00",
+      "count": 3,
+      "cooldown_until": "2026-03-05T04:50:56.019137+00:00",
       "last_error": "feed_invalid",
-      "updated_at": "2026-03-05T04:02:23.595377+00:00"
+      "updated_at": "2026-03-05T04:46:56.019140+00:00"
+    },
+    "/huggingface/blog": {
+      "count": 1,
+      "cooldown_until": "2026-03-05T04:47:56.016124+00:00",
+      "last_error": "feed_invalid",
+      "updated_at": "2026-03-05T04:46:56.016129+00:00"
     }
   }
 }
