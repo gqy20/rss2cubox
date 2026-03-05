@@ -5,6 +5,12 @@ import { ExternalLink } from 'lucide-react'
 import { SourceLogo, ScoreBar, formatRelativeTime, formatShortTime } from './utils'
 import type { Row } from './types'
 
+function extractBvid(value: string): string {
+  const text = String(value || '')
+  const match = text.match(/BV[A-Za-z0-9]{8,}/i)
+  return match ? match[0].toUpperCase() : ''
+}
+
 type FeedCardProps = {
   row: Row
   idx: number
@@ -35,11 +41,15 @@ const FeedCard = React.memo(function FeedCard({
   const isHovered = hoveredRowKey === rowKey
   const hasAiContent = Boolean(row.core_event || row.actionable || row.reason)
   const isYoutubeRow = /youtube\.com\/watch|youtu\.be\//i.test(row.url || '')
-  const isBiliRow = /bilibili\.com\/video\//i.test(row.url || '')
-  const bvMatch = isBiliRow ? /bilibili\.com\/video\/(BV[A-Za-z0-9]+)/i.exec(row.url || '') : null
-  const coverUrl = row.cover_url || (bvMatch ? `/api/bili-cover?bvid=${bvMatch[1]}` : '')
+  const isBiliRow = /(?:bilibili\.com|b23\.tv)\//i.test(row.url || '')
+  const bvid = extractBvid(row.url || '')
+  const directCoverUrl = String(row.cover_url || '').replace(/^http:\/\//i, 'https://')
+  // Keep old stable priority: direct cover first, proxy only when missing.
+  const proxyCoverUrl = bvid ? `/api/bili-cover?bvid=${encodeURIComponent(bvid)}` : ''
+  const coverUrl = directCoverUrl || proxyCoverUrl
   const hasCover = Boolean(coverUrl) && (
     isYoutubeRow || isBiliRow ||
+    /^\/api\/bili-cover\?/i.test(coverUrl) ||
     /ytimg\.com\//i.test(coverUrl) ||
     /hdslb\.com\//i.test(coverUrl)
   )
@@ -99,7 +109,25 @@ const FeedCard = React.memo(function FeedCard({
 
         {hasCover && (
           <a href={row.url} target="_blank" rel="noreferrer" className="t-cover-wrap" aria-label="打开原文封面">
-            <img className="t-cover" src={coverUrl} alt={row.title || '封面图'} loading="lazy" width={480} height={270} />
+            <img
+              className="t-cover"
+              src={coverUrl}
+              alt={row.title || '封面图'}
+              loading="lazy"
+              width={480}
+              height={270}
+              onError={(e) => {
+                // Fallback to proxy when direct cover fails (e.g. anti-hotlink), and vice versa.
+                const current = e.currentTarget.getAttribute('src') || ''
+                if (proxyCoverUrl && current !== proxyCoverUrl) {
+                  e.currentTarget.setAttribute('src', proxyCoverUrl)
+                  return
+                }
+                if (directCoverUrl && current !== directCoverUrl) {
+                  e.currentTarget.setAttribute('src', directCoverUrl)
+                }
+              }}
+            />
           </a>
         )}
 

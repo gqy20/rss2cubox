@@ -322,7 +322,7 @@ def extract_cover_url(entry: Any, url: str) -> str:
         return f"https://i.ytimg.com/vi/{yt_video_id}/hqdefault.jpg"
 
     # Bilibili: cover is often embedded in the summary/description HTML.
-    if "bilibili.com/video/" in url:
+    if "bilibili.com/video/" in url or "b23.tv/" in url:
         for field in ("summary", "description"):
             val = entry.get(field)
             if isinstance(val, list) and val:

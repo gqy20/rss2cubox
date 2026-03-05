@@ -339,9 +339,10 @@ body {
 
 .insight-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 14px;
   margin-top: 12px;
+  align-items: stretch;
 }
 
 .insight-toolbar {
@@ -640,36 +641,57 @@ body {
 }
 
 .insight-panel-card {
-  padding: 14px;
+  padding: 16px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: clamp(360px, 38vh, 520px);
+  max-height: clamp(360px, 46vh, 560px);
+  overflow: hidden;
 }
 
 .insight-panel-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
-  margin-bottom: 10px;
-  flex-wrap: wrap;
+  margin-bottom: 12px;
+  flex-wrap: nowrap;
+  min-height: 38px;
+}
+
+.insight-panel-title {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+  padding-top: 2px;
 }
 
 .insight-panel-actions {
   display: flex;
   align-items: center;
   gap: 6px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 .insight-panel-actions .filter-btn {
-  padding: 5px 10px;
+  padding: 4px 9px;
+  border-color: rgba(138, 163, 190, 0.2);
+  background: rgba(138, 163, 190, 0.09);
 }
 
 .icon-only-btn {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   padding: 0 !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.insight-panel-body {
+  min-height: 0;
+  height: 100%;
 }
 
 .insight-list {
@@ -677,7 +699,29 @@ body {
   padding: 0 0 0 18px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+  padding-right: 8px;
+}
+
+.insight-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.insight-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+
+.insight-list::-webkit-scrollbar-thumb {
+  background: rgba(138, 163, 190, 0.34);
+  border-radius: 4px;
+}
+
+.insight-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(138, 163, 190, 0.56);
 }
 
 .insight-list li {
@@ -690,14 +734,16 @@ body {
   font-size: 13px;
   font-weight: 700;
   color: #e7edf5;
-  line-height: 1.5;
+  line-height: 1.6;
+  max-width: 66ch;
 }
 
 .insight-item-content {
   margin-top: 4px;
   color: #9fb4cc;
   font-size: 12px;
-  line-height: 1.7;
+  line-height: 1.75;
+  max-width: 66ch;
 }
 
 .controls-bar {
@@ -1077,6 +1123,11 @@ body {
   .insight-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .insight-panel-card {
+    min-height: 340px;
+    max-height: 460px;
+  }
 }
 
 @media (max-width: 920px) {
@@ -1132,6 +1183,7 @@ body {
 
   .insight-panel-head {
     align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .cubox-editor-row {

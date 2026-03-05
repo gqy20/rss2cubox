@@ -90,6 +90,12 @@ function parseInsightString(raw: string): ParsedInsightItem {
     return { title, content }
   }
 
+  // Compatible with Python-like payload strings: {'id': 1, 'content': '...'}
+  const pyContentMatch = text.match(/['"]content['"]\s*:\s*['"]([\s\S]*?)['"]\s*(,|})/)
+  if (pyContentMatch?.[1]) {
+    return { title: pyContentMatch[1].trim() }
+  }
+
   return { title: text }
 }
 
@@ -102,6 +108,7 @@ function normalizeInsightItems(items: unknown[]): ParsedInsightItem[] {
         const title = String(value.title || '').trim()
         const content = String(value.content || '').trim()
         if (title) return { title, content: content || undefined }
+        if (content) return { title: content }
         return { title: JSON.stringify(item) }
       }
       return { title: String(item ?? '').trim() }
@@ -145,7 +152,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
-  const [insightCollapsed, setInsightCollapsed] = useState<Record<InsightKey, boolean>>({ trends: false, weak_signals: false, daily_advices: false })
 
   const [cuboxConfigured, setCuboxConfigured] = useState(false)
   const [cuboxKeyInput, setCuboxKeyInput] = useState('')
@@ -739,15 +745,38 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   }
 
   const copyInsightText = async (title: string, items: ParsedInsightItem[]) => {
+    const text = `${title}\n\n${items
+      .map((item, i) => `${i + 1}. ${item.title}${item.content ? `\n   ${item.content}` : ''}`)
+      .join('\n')}`
+
+    const fallbackCopy = () => {
+      const ta = document.createElement('textarea')
+      ta.value = text
+      ta.setAttribute('readonly', 'true')
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      ta.style.pointerEvents = 'none'
+      document.body.appendChild(ta)
+      ta.focus()
+      ta.select()
+      const ok = document.execCommand('copy')
+      document.body.removeChild(ta)
+      return ok
+    }
+
     try {
-      await navigator.clipboard.writeText(
-        `${title}\n\n${items
-          .map((item, i) => `${i + 1}. ${item.title}${item.content ? `\n   ${item.content}` : ''}`)
-          .join('\n')}`,
-      )
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(text)
+      } else if (!fallbackCopy()) {
+        throw new Error('copy_failed')
+      }
       setMessage('success', `${title} 已复制`)
     } catch {
-      setMessage('error', '复制失败')
+      if (fallbackCopy()) {
+        setMessage('success', `${title} 已复制`)
+      } else {
+        setMessage('error', '复制失败')
+      }
     }
   }
 
@@ -837,22 +866,14 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               .map((panel) => (
                 <div key={panel.key} className="glass chart-card tertiary-card insight-panel-card">
                   <div className="insight-panel-head">
-                    <h3 className="chart-title" style={{ margin: 0 }}>{panel.icon} {panel.title}</h3>
+                    <h3 className="chart-title insight-panel-title" style={{ margin: 0 }}>{panel.icon} {panel.title}</h3>
                     <div className="insight-panel-actions">
-                      <button
-                        className="filter-btn icon-only-btn"
-                        onClick={() => setInsightCollapsed((prev) => ({ ...prev, [panel.key]: !prev[panel.key] }))}
-                        title={insightCollapsed[panel.key] ? '展开' : '收起'}
-                        aria-label={insightCollapsed[panel.key] ? '展开' : '收起'}
-                      >
-                        {insightCollapsed[panel.key] ? <ChevronDown size={13} /> : <ChevronUp size={13} />}
-                      </button>
                       <button className="filter-btn icon-only-btn" onClick={() => copyInsightText(panel.title, panel.items)} title="复制" aria-label="复制">
                         <Copy size={13} />
                       </button>
                     </div>
                   </div>
-                  {!insightCollapsed[panel.key] && (
+                  <div className="insight-panel-body">
                     <ul className="insight-list">
                       {panel.items.map((item, i) => (
                         <li key={`${panel.key}-${i}-${item.title}`}>
@@ -861,7 +882,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
                         </li>
                       ))}
                     </ul>
-                  )}
+                  </div>
                 </div>
               ))}
           </section>
