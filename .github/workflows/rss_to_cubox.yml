@@ -36,7 +36,6 @@ jobs:
 
       - name: Run sync
         env:
-          CUBOX_API_URL: ${{ (github.event_name == 'schedule' || inputs.push_to_cubox == 'true') && secrets.CUBOX_API_URL || 'skip' }}
           CUBOX_FOLDER: "RSS Inbox"
           KEYWORDS_INCLUDE: ""
           KEYWORDS_EXCLUDE: ""
@@ -62,6 +61,11 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail
+          if [[ "${{ github.event_name }}" == "schedule" || "${{ inputs.push_to_cubox }}" == "true" ]]; then
+            export CUBOX_API_URL="${{ secrets.CUBOX_API_URL }}"
+          else
+            export CUBOX_API_URL="skip"
+          fi
           rss2cubox 2>&1 | tee rss2cubox.log
 
       - name: Upload run log artifact

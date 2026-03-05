@@ -2,7 +2,7 @@
 全局情报深度分析 Agent
 使用 Claude Agent SDK 驱动 claude CLI 进程，对高价值情报进行二次深度分析。
 Agent 通过 read_signals_file 工具读取信号文件，通过 Jina Reader API (r.jina.ai) 抓取原文，
-最终以结构化 JSON 通过 submit_insights 工具提交分析报告。
+最终以结构化 JSON 格式输出分析报告。
 """
 from __future__ import annotations
 
@@ -23,7 +23,7 @@ SYSTEM_PROMPT = (
     "你是一位顶级科技产业与投资分析师，专注从海量 RSS 信息流中提炼宏观趋势与深层弱信号。"
     "你拥有 read_webpage 工具，可随时获取任何 URL 的完整干净正文（由 Jina Reader 处理，格式为 Markdown）。"
     "对于值得深挖的情报，主动调用 read_webpage 阅读原文，不要仅凭摘要做判断。"
-    "完成所有分析后，你必须调用 submit_insights 工具输出结构化报告。"
+    "完成所有分析后，直接输出结构化 JSON 格式的报告。"
     "所有输出文字必须使用简体中文，语言专业、精炼，不要废话。"
 )
 
@@ -80,7 +80,7 @@ def _build_user_prompt(signals_file: str, total: int) -> str:
 请完成以下任务：
 1. 首先调用 read_signals_file 工具读取完整信号列表。
 2. 从中挑选 3-5 条你认为最值得深挖的条目，使用 read_webpage 工具阅读原文完整内容。
-3. 综合所有信息后，调用 submit_insights 提交最终报告：
+3. 综合所有信息后，直接输出结构化 JSON 格式的报告：
    - trends: 宏观技术/行业趋势归纳，3-5 条，每条 ≤ 80 字
    - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条 ≤ 80 字
    - daily_advices: 给工程师/独立开发者的今日行动建议，2-4 条，每条 ≤ 60 字
@@ -99,8 +99,6 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     except ImportError:
         print("[global_agent] claude-agent-sdk 未安装，跳过全局分析", flush=True)
         return None
-
-    result_holder: dict[str, Any] = {}
 
     # 将信号数据写入临时文件，避免大量数据直接塞入 prompt
     signals_data = [
@@ -154,44 +152,29 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
             content = f"[读取失败: {e}]"
         return {"content": [{"type": "text", "text": content}]}
 
-    @tool(
-        "submit_insights",
-        "分析完成后，调用此工具提交最终结构化情报报告",
-        {
-            "type": "object",
-            "properties": {
-                "trends": {"type": "array", "items": {"type": "string"}},
-                "weak_signals": {"type": "array", "items": {"type": "string"}},
-                "daily_advices": {"type": "array", "items": {"type": "string"}},
-            },
-            "required": ["trends", "weak_signals", "daily_advices"],
-            "additionalProperties": False,
-        },
-    )
-    async def submit_insights(args: dict) -> dict:
-        try:
-            parsed = GlobalInsightsReport.model_validate(args)
-        except ValidationError as e:
-            # 不返回 is_error: True，避免模型停止重试；让模型根据错误提示重新调用
-            return {
-                "content": [{"type": "text", "text": f"参数格式错误，请修正后重新调用 submit_insights：{e}"}],
-            }
-        result_holder.update(parsed.model_dump())
-        return {"content": [{"type": "text", "text": "报告已收到，分析完毕。"}]}
-
     server = create_sdk_mcp_server(
         name="insights-tools",
         version="1.0.0",
-        tools=[read_signals_file, read_webpage, submit_insights],
+        tools=[read_signals_file, read_webpage],
     )
 
     allowed_tools = [
         "mcp__insights-tools__read_signals_file",
         "mcp__insights-tools__read_webpage",
-        "mcp__insights-tools__submit_insights",
     ]
     if GLOBAL_AGENT_ENABLE_SKILLS:
         allowed_tools.append("Skill")
+
+    # 使用 output_format 直接获取结构化输出，避免依赖 result_holder 闭包
+    output_format = {
+        "type": "object",
+        "properties": {
+            "trends": {"type": "array", "items": {"type": "string"}},
+            "weak_signals": {"type": "array", "items": {"type": "string"}},
+            "daily_advices": {"type": "array", "items": {"type": "string"}},
+        },
+        "required": ["trends", "weak_signals", "daily_advices"],
+    }
 
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
@@ -203,9 +186,10 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         # setting_sources=["project"] 从项目 .claude/skills/ 加载 Skills 定义。
         # CI 环境无 ~/.claude/ 用户目录，所以不能指定 "user"，否则无效且可能报错。
         setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
-        # 不设置 output_format，确保模型通过 submit_insights 工具调用来提交结果
-        # 两者同时设置会导致模型输出裸 JSON 而不调用工具，result_holder 始终为空
+        output_format=output_format,
     )
+
+    structured_result: dict[str, Any] | None = None
 
     try:
         async with ClaudeSDKClient(options=options) as client:
@@ -228,6 +212,10 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
                         f" cost={cost} duration={msg.duration_ms}ms",
                         flush=True,
                     )
+                    # 优先从 structured_output 获取结果（output_format 模式）
+                    if msg.structured_output:
+                        print(f"[global_agent] structured_output: {str(msg.structured_output)[:200]}", flush=True)
+                        structured_result = msg.structured_output
     finally:
         # 清理临时信号文件
         try:
@@ -235,7 +223,7 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         except Exception:
             pass
 
-    return result_holder if result_holder else None
+    return structured_result
 
 
 def run_global_analysis(

@@ -74,7 +74,6 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     except ImportError:
         return None, "claude_agent_sdk_import_error"
 
-    result_holder: dict[str, Any] = {}
     expected_url = str(item.get("url", "")).strip()
     if not expected_url:
         return None, "missing_url"
@@ -103,33 +102,10 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         # 即使抓取失败也返回错误信息而非 is_error，让模型继续调用 submit_enriched
         return {"content": [{"type": "text", "text": payload if ok else f"[网页读取失败，请基于已有标题和摘要完成分析] {payload}"}]}
 
-    @tool(
-        "submit_enriched",
-        "提交基于全文精读后的深化分析结果",
-        {
-            "type": "object",
-            "properties": {
-                "core_event": {"type": "string"},
-                "hidden_signal": {"type": "string"},
-                "actionable": {"type": "string"},
-                "score": {"type": "number"},
-            },
-            "required": ["core_event", "hidden_signal", "actionable", "score"],
-        },
-    )
-    async def submit_enriched(args: dict) -> dict:
-        # 显式 coerce score，防止模型返回整数（如 1）被 Python 严格 isinstance 拒绝
-        try:
-            args["score"] = float(args.get("score", 0))
-        except (TypeError, ValueError):
-            args["score"] = 0.0
-        result_holder.update(args)
-        return {"content": [{"type": "text", "text": "深化分析已收到。"}]}
-
     server = create_sdk_mcp_server(
         name="enrich-tools",
         version="1.0.0",
-        tools=[read_webpage_jina, submit_enriched],
+        tools=[read_webpage_jina],
     )
 
     async def can_use_tool(tool_name: str, tool_input: dict[str, Any], _ctx: Any) -> Any:
@@ -146,12 +122,23 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
 
     allowed_tools = [
         "mcp__enrich-tools__read_webpage_jina",
-        "mcp__enrich-tools__submit_enriched",
     ]
     if ENRICH_ENABLE_SKILLS:
         allowed_tools.append("Skill")
     if ENRICH_ALLOW_WEBFETCH_FALLBACK:
         allowed_tools.append("WebFetch")
+
+    # 使用 output_format 直接获取结构化输出，避免依赖 result_holder 闭包
+    output_format = {
+        "type": "object",
+        "properties": {
+            "core_event": {"type": "string"},
+            "hidden_signal": {"type": "string"},
+            "actionable": {"type": "string"},
+            "score": {"type": "number"},
+        },
+        "required": ["core_event", "hidden_signal", "actionable", "score"],
+    }
 
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
@@ -165,6 +152,7 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         # setting_sources=["project"] 从项目 .claude/skills/ 加载 Skills 定义。
         # CI 环境无 ~/.claude/ 用户目录，不能指定 "user"。
         setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
+        output_format=output_format,
     )
 
     async with ClaudeSDKClient(options=options) as client:
@@ -181,10 +169,12 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
                     status = "error" if msg.is_error else "ok"
                     cost = f"${msg.total_cost_usd:.4f}" if msg.total_cost_usd else "N/A"
                     print(f"[enrich_agent] eid={item.get('eid','')[:8]} result: status={status} turns={msg.num_turns} cost={cost}", flush=True)
+                    # 优先从 structured_output 获取结果（output_format 模式）
+                    if msg.structured_output:
+                        print(f"[enrich_agent] eid={item.get('eid','')[:8]} structured_output: {str(msg.structured_output)[:200]}", flush=True)
+                        return msg.structured_output, "ok"
 
-    if result_holder:
-        return result_holder, "ok"
-    return None, "empty_submit_enriched"
+    return None, "no_structured_output"
 
 
 async def _enrich_all(

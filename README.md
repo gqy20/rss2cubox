@@ -57,6 +57,24 @@ export AI_RETRY_BACKOFF_SECONDS="1.5"
 export AI_BATCH_SIZE="5"
 export AI_MAX_CANDIDATES="40"
 
+# AI 深化分析（可选，基于 Claude Agent SDK）
+export ENRICH_AGENT_ENABLED="true"      # 启用深化分析
+export ENRICH_MIN_SCORE="0.85"          # 深化分析最低分数
+export ENRICH_MAX_ITEMS="200"           # 每批次最大条目数
+export ENRICH_MAX_WORKERS="10"          # 并发工作数
+export ENRICH_ITEM_TIMEOUT_SECONDS="90"  # 单条目超时
+export ENRICH_MAX_BUDGET_USD="0.15"     # 单条目最大预算
+export ENRICH_ALLOW_WEBFETCH_FALLBACK="false"
+
+# 全局洞察分析（可选）
+export GLOBAL_AGENT_ENABLED="true"
+export GLOBAL_AGENT_MIN_SCORE="0.85"
+export GLOBAL_AGENT_MIN_ITEMS="5"
+export GLOBAL_AGENT_MAX_TURNS="100"
+export GLOBAL_AGENT_TIMEOUT_SECONDS="600"
+export GLOBAL_AGENT_MAX_BUDGET_USD="5.0"
+export GLOBAL_AGENT_ENABLE_SKILLS="true"
+
 # Web（Vercel）导出到 Cubox：用于加密 HttpOnly cookie
 export CUBOX_COOKIE_SECRET="replace-with-a-long-random-secret"
 ```
