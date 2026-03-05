@@ -206,6 +206,28 @@ def reorder_candidates_by_ai_score(
     return [row[3] for row in ranked]
 
 
+def _update_ai_state(
+    ai_state: dict[str, Any],
+    eid: str,
+    result: dict[str, Any],
+    now_iso: str,
+    ai_model: str,
+) -> None:
+    """更新 ai_state，保存 AI 分析结果到数据库"""
+    ai_state[eid] = {
+        "keep": bool(result.get("keep", False)),
+        "score": float(result.get("score", 0.0)),
+        "reason": str(result.get("reason", "")),
+        "core_event": str(result.get("core_event", "")),
+        "hidden_signal": str(result.get("hidden_signal", "")),
+        "actionable": str(result.get("actionable", "")),
+        "ts": now_iso,
+        "model": ai_model,
+        "tags": result.get("tags", []) if isinstance(result.get("tags", []), list) else [],
+        "enriched": bool(result.get("enriched", False)),
+    }
+
+
 def process_candidates_for_push(
     *,
     candidates_for_run: list[dict[str, Any]],
@@ -257,19 +279,21 @@ def process_candidates_for_push(
         }
         if stats["pushed"] >= max_items_per_run:
             # 填入 AI 分析结果（如有），供前端展示——即使不推 Cubox 也保留高分候选
-            _result = analyses.get(eid)
-            if _result:
+            result = analyses.get(eid)
+            if result:
                 try:
-                    event["score"] = float(_result.get("score", 0.0))
+                    event["score"] = float(result.get("score", 0.0))
                 except (TypeError, ValueError):
                     pass
-                event["keep"] = bool(_result.get("keep", False))
-                event["tags"] = _result.get("tags", []) if isinstance(_result.get("tags", []), list) else []
-                event["core_event"] = str(_result.get("core_event", ""))
-                event["hidden_signal"] = str(_result.get("hidden_signal", ""))
-                event["actionable"] = str(_result.get("actionable", ""))
-                event["reason"] = str(_result.get("reason", ""))
-                event["enriched"] = bool(_result.get("enriched", False))
+                event["keep"] = bool(result.get("keep", False))
+                event["tags"] = result.get("tags", []) if isinstance(result.get("tags", []), list) else []
+                event["core_event"] = str(result.get("core_event", ""))
+                event["hidden_signal"] = str(result.get("hidden_signal", ""))
+                event["actionable"] = str(result.get("actionable", ""))
+                event["reason"] = str(result.get("reason", ""))
+                event["enriched"] = bool(result.get("enriched", False))
+                # 保存 AI 分析结果到 ai_state（即使不推送）
+                _update_ai_state(ai_state, eid, result, now_iso, ai_model)
             event["status"] = "dropped"
             event["drop_reason"] = "max_items_per_run_reached"
             drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
@@ -332,18 +356,8 @@ def process_candidates_for_push(
                 threshold=ai_min_score,
                 reason=reason,
             )
-            ai_state[eid] = {
-                "keep": keep,
-                "score": score,
-                "reason": reason,
-                "core_event": core_event,
-                "hidden_signal": hidden_signal,
-                "actionable": actionable,
-                "ts": now_iso,
-                "model": ai_model,
-                "tags": event["tags"],
-                "enriched": enriched,
-            }
+            # 保存 AI 分析结果到 ai_state（无论是否推送）
+            _update_ai_state(ai_state, eid, result, now_iso, ai_model)
             if not keep:
                 stats["ai_dropped_keep_false"] += 1
                 drop_by_feed = stats["per_feed_drop_reasons"].setdefault(source_feed, {})
