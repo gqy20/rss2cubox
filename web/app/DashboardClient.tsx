@@ -517,6 +517,28 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     return null
   }, [isSearchMode, allDates, groupData])
 
+  const getTailVisibleGroupId = useCallback((): string | null => {
+    const root = timelineRef.current
+    if (!root) return null
+
+    const rootRect = root.getBoundingClientRect()
+    let tailId: string | null = null
+    let tailTop = -Infinity
+
+    for (const group of groupedRows) {
+      const el = groupRefs.current[group.id]
+      if (!el) continue
+      const rect = el.getBoundingClientRect()
+      const inLowerViewport = rect.top <= rootRect.bottom - 24
+      if (inLowerViewport && rect.top > tailTop) {
+        tailTop = rect.top
+        tailId = group.id
+      }
+    }
+
+    return tailId
+  }, [groupedRows])
+
   const maybeLoadMore = useCallback(() => {
     if (loadingMore) return
 
@@ -526,8 +548,18 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       return
     }
 
+    const tailGroupId = getTailVisibleGroupId()
+    if (tailGroupId) {
+      const tailGroup = groupData[tailGroupId]
+      if (tailGroup?.loaded && !tailGroup.loading && tailGroup.hasMore) {
+        setLoadingMore(true)
+        void loadMoreForGroup(tailGroupId).finally(() => setLoadingMore(false))
+        return
+      }
+    }
+
     const todayGroup = groupData[todayKey]
-    if (todayGroup?.loaded && !todayGroup.loading && todayGroup.hasMore) {
+    if (todayGroup?.loaded && !todayGroup.loading && todayGroup.hasMore && tailGroupId === todayKey) {
       setLoadingMore(true)
       void loadMoreForGroup(todayKey).finally(() => setLoadingMore(false))
       return
@@ -536,7 +568,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     if (!nextUnloadedDate) return
     setLoadingMore(true)
     void loadGroupData(nextUnloadedDate).finally(() => setLoadingMore(false))
-  }, [loadingMore, isSearchMode, searchHasMore, searchLoading, fetchSearchPage, searchPage, groupData, todayKey, loadMoreForGroup, nextUnloadedDate, loadGroupData])
+  }, [loadingMore, isSearchMode, searchHasMore, searchLoading, fetchSearchPage, searchPage, getTailVisibleGroupId, groupData, todayKey, loadMoreForGroup, nextUnloadedDate, loadGroupData])
 
   useEffect(() => {
     const root = timelineRef.current
