@@ -1,13 +1,15 @@
 """
 全局情报深度分析 Agent
 使用 Claude Agent SDK 驱动 claude CLI 进程，对高价值情报进行二次深度分析。
-Agent 通过 Jina Reader API (r.jina.ai) 抓取原文 Markdown，最终以结构化 JSON 提交分析报告。
+Agent 通过 read_signals_file 工具读取信号文件，通过 Jina Reader API (r.jina.ai) 抓取原文，
+最终以结构化 JSON 通过 submit_insights 工具提交分析报告。
 """
 from __future__ import annotations
 
 import json
 import os
 import re
+import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
@@ -73,27 +75,13 @@ def _to_str_list(value: Any) -> list[str]:
     return []
 
 
-def _build_user_prompt(high_value_items: list[dict]) -> str:
-    items_json = json.dumps(
-        [
-            {
-                "url": r["url"],
-                "title": r.get("hidden_signal") or r.get("title", ""),
-                "core_event": r.get("core_event", ""),
-                "score": round(r.get("score", 0), 2),
-            }
-            for r in high_value_items
-        ],
-        ensure_ascii=False,
-        indent=2,
-    )
-    return f"""以下是今日经过初筛的高价值情报（score ≥ 0.85），共 {len(high_value_items)} 条：
-
-{items_json}
+def _build_user_prompt(signals_file: str, total: int) -> str:
+    return f"""今日高价值情报（score ≥ 0.85）共 {total} 条，已保存到文件：{signals_file}
 
 请完成以下任务：
-1. 对你认为值得深挖的条目（建议挑 3-5 条最重要的），使用 read_webpage 工具阅读原文完整内容，获得更深层理解。
-2. 综合所有信息后，调用 submit_insights 提交最终报告：
+1. 首先调用 read_signals_file 工具读取完整信号列表。
+2. 从中挑选 3-5 条你认为最值得深挖的条目，使用 read_webpage 工具阅读原文完整内容。
+3. 综合所有信息后，调用 submit_insights 提交最终报告：
    - trends: 宏观技术/行业趋势归纳，3-5 条，每条 ≤ 80 字
    - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条 ≤ 80 字
    - daily_advices: 给工程师/独立开发者的今日行动建议，2-4 条，每条 ≤ 60 字
@@ -114,6 +102,38 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         return None
 
     result_holder: dict[str, Any] = {}
+
+    # 将信号数据写入临时文件，避免大量数据直接塞入 prompt
+    signals_data = [
+        {
+            "url": r["url"],
+            "title": r.get("hidden_signal") or r.get("title", ""),
+            "core_event": r.get("core_event", ""),
+            "score": round(r.get("score", 0), 2),
+        }
+        for r in high_value_items
+    ]
+    tmp_file = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".json", delete=False, encoding="utf-8"
+    )
+    try:
+        json.dump(signals_data, tmp_file, ensure_ascii=False, indent=2)
+        tmp_file.flush()
+        signals_file_path = tmp_file.name
+    finally:
+        tmp_file.close()
+
+    @tool(
+        "read_signals_file",
+        "读取今日高价值情报信号文件，返回完整的 JSON 列表",
+        {},
+    )
+    async def read_signals_file(args: dict) -> dict:
+        try:
+            content = Path(signals_file_path).read_text(encoding="utf-8")
+        except Exception as e:
+            content = f"[读取失败: {e}]"
+        return {"content": [{"type": "text", "text": content}]}
 
     @tool(
         "read_webpage",
@@ -163,10 +183,14 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     server = create_sdk_mcp_server(
         name="insights-tools",
         version="1.0.0",
-        tools=[read_webpage, submit_insights],
+        tools=[read_signals_file, read_webpage, submit_insights],
     )
 
-    allowed_tools = ["mcp__insights-tools__read_webpage", "mcp__insights-tools__submit_insights"]
+    allowed_tools = [
+        "mcp__insights-tools__read_signals_file",
+        "mcp__insights-tools__read_webpage",
+        "mcp__insights-tools__submit_insights",
+    ]
     if GLOBAL_AGENT_ENABLE_SKILLS:
         allowed_tools.append("Skill")
 
@@ -178,24 +202,20 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         max_turns=30,
         cwd=Path.cwd(),
         setting_sources=["user", "project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
-        output_format={
-            "type": "json_schema",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "trends": {"type": "array", "items": {"type": "string"}},
-                    "weak_signals": {"type": "array", "items": {"type": "string"}},
-                    "daily_advices": {"type": "array", "items": {"type": "string"}},
-                },
-                "required": ["trends", "weak_signals", "daily_advices"],
-                "additionalProperties": False,
-            },
-        },
+        # 不设置 output_format，确保模型通过 submit_insights 工具调用来提交结果
+        # 两者同时设置会导致模型输出裸 JSON 而不调用工具，result_holder 始终为空
     )
 
-    async with ClaudeSDKClient(options=options) as client:
-        await client.query(_build_user_prompt(high_value_items))
-        async for _ in client.receive_response():
+    try:
+        async with ClaudeSDKClient(options=options) as client:
+            await client.query(_build_user_prompt(signals_file_path, len(high_value_items)))
+            async for _ in client.receive_response():
+                pass
+    finally:
+        # 清理临时信号文件
+        try:
+            Path(signals_file_path).unlink(missing_ok=True)
+        except Exception:
             pass
 
     return result_holder if result_holder else None
@@ -230,6 +250,10 @@ def run_global_analysis(
     if not high_value:
         print("[global_agent] 无高价值情报，跳过全局分析", flush=True)
         return
+
+    # 按 score 降序，取前 50 条即可覆盖全部趋势，避免文件过大
+    high_value.sort(key=lambda x: x["score"], reverse=True)
+    high_value = high_value[:50]
 
     print(f"[global_agent] 启动全局 Agent 分析，共 {len(high_value)} 条高价值情报...", flush=True)
 

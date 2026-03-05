@@ -52,7 +52,10 @@ def _build_user_prompt(item: dict, original: dict) -> str:
         f"初步摘要：{item.get('description', '')[:500]}\n"
         f"初步评分：{original.get('score', 0):.2f}\n"
         f"初步核心事件：{original.get('core_event', '')}\n\n"
-        "请先调用 read_webpage_jina(url=原文链接) 读取全文，再调用 submit_enriched 提交深化分析。"
+        "步骤：\n"
+        "1. 调用 read_webpage_jina 读取原文（传入上方原文链接）。\n"
+        "2. 无论读取是否成功，必须调用 submit_enriched 提交分析结果。\n"
+        "   如果读取失败，基于已有标题、摘要和初步分析完成 submit_enriched 调用。"
     )
 
 
@@ -82,17 +85,12 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         {"url": str},
     )
     async def read_webpage_jina(args: dict) -> dict:
-        url = str(args.get("url", "")).strip()
-        if not url:
-            return {"content": [{"type": "text", "text": "missing url"}], "is_error": True}
-        if url != expected_url:
-            return {"content": [{"type": "text", "text": f"url_not_allowed: {url}"}], "is_error": True}
-
+        # 始终抓取 expected_url，避免模型传入的 URL 细微差异（trailing slash 等）导致不必要的拒绝
         def _fetch() -> tuple[bool, str]:
             import requests
             try:
                 resp = requests.get(
-                    f"{JINA_READER_BASE}{url}",
+                    f"{JINA_READER_BASE}{expected_url}",
                     headers={"Accept": "text/plain", "x-respond-with": "markdown"},
                     timeout=20,
                 )
@@ -102,9 +100,8 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
                 return False, f"jina_fetch_failed: {e}"
 
         ok, payload = await anyio.to_thread.run_sync(_fetch)
-        if not ok:
-            return {"content": [{"type": "text", "text": payload}], "is_error": True}
-        return {"content": [{"type": "text", "text": payload}]}
+        # 即使抓取失败也返回错误信息而非 is_error，让模型继续调用 submit_enriched
+        return {"content": [{"type": "text", "text": payload if ok else f"[网页读取失败，请基于已有标题和摘要完成分析] {payload}"}]}
 
     @tool(
         "submit_enriched",
