@@ -30,6 +30,8 @@ type Row = {
   cover_url?: string
 }
 
+const BUSINESS_TZ = 'Asia/Shanghai'
+
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value.map((v) => String(v)).filter((v) => v.trim().length > 0)
@@ -59,15 +61,26 @@ function resolveSource(row: Record<string, unknown>): string {
 
 function getDayKey(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: BUSINESS_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(d)
+  const year = parts.find((p) => p.type === 'year')?.value || '1970'
+  const month = parts.find((p) => p.type === 'month')?.value || '01'
+  const day = parts.find((p) => p.type === 'day')?.value || '01'
   return `${year}-${month}-${day}`
 }
 
 function formatAxisDay(value: Date): string {
-  const m = value.getMonth() + 1
-  const d = value.getDate()
+  const parts = new Intl.DateTimeFormat('zh-CN', {
+    timeZone: BUSINESS_TZ,
+    month: 'numeric',
+    day: 'numeric',
+  }).formatToParts(value)
+  const m = parts.find((p) => p.type === 'month')?.value || ''
+  const d = parts.find((p) => p.type === 'day')?.value || ''
   return `${m}月${d}日`
 }
 

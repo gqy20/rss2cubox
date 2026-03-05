@@ -686,6 +686,20 @@ body {
   line-height: 1.72;
 }
 
+.insight-item-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e7edf5;
+  line-height: 1.5;
+}
+
+.insight-item-content {
+  margin-top: 4px;
+  color: #9fb4cc;
+  font-size: 12px;
+  line-height: 1.7;
+}
+
 .controls-bar {
   display: flex;
   align-items: center;

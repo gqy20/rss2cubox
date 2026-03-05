@@ -68,6 +68,43 @@ type Props = {
 
 const SEARCH_PAGE_SIZE = 50
 
+type ParsedInsightItem = {
+  title: string
+  content?: string
+}
+
+function parseInsightString(raw: string): ParsedInsightItem {
+  const text = raw.trim()
+  if (!text) return { title: '' }
+
+  const titleMatch = text.match(/["']title["']\s*:\s*["']([\s\S]*?)["']\s*(,|})/)
+  const contentMatch = text.match(/["']content["']\s*:\s*["']([\s\S]*?)["']\s*(,|})/)
+
+  if (titleMatch?.[1]) {
+    const title = titleMatch[1].trim()
+    const content = contentMatch?.[1]?.trim()
+    return { title, content }
+  }
+
+  return { title: text }
+}
+
+function normalizeInsightItems(items: unknown[]): ParsedInsightItem[] {
+  return items
+    .map((item) => {
+      if (typeof item === 'string') return parseInsightString(item)
+      if (item && typeof item === 'object') {
+        const value = item as Record<string, unknown>
+        const title = String(value.title || '').trim()
+        const content = String(value.content || '').trim()
+        if (title) return { title, content: content || undefined }
+        return { title: JSON.stringify(item) }
+      }
+      return { title: String(item ?? '').trim() }
+    })
+    .filter((item) => item.title.length > 0)
+}
+
 export default function DashboardClient({ initialRows, totalCount, metrics, insights, serverTime }: Props) {
   const formatGeneratedAt = (value?: string) => {
     if (!value) return '未知'
@@ -120,8 +157,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   
   // 初始化：只加载今天的 20 条数据
   useEffect(() => {
-    const now = new Date()
-    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+    const today = getDayKey(new Date())
     const todayItems = initialRows.filter((r) => getDayKey(r.time) === today)
     const todayCount = metrics.daily_counts?.[today] || 0
     setGroupData({
@@ -310,9 +346,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   const insightPanels = useMemo(
     () => [
-      { key: 'trends' as InsightKey, title: '宏观技术趋势', icon: <TrendingUp size={16} color="#2dd4bf" />, items: Array.isArray(insights?.trends) ? insights.trends : [] },
-      { key: 'weak_signals' as InsightKey, title: '暗流弱信号', icon: <Radio size={16} color="#f59e0b" />, items: Array.isArray(insights?.weak_signals) ? insights.weak_signals : [] },
-      { key: 'daily_advices' as InsightKey, title: '今日行动建议', icon: <Lightbulb size={16} color="#a78bfa" />, items: Array.isArray(insights?.daily_advices) ? insights.daily_advices : [] },
+      { key: 'trends' as InsightKey, title: '宏观技术趋势', icon: <TrendingUp size={16} color="#2dd4bf" />, items: normalizeInsightItems(Array.isArray(insights?.trends) ? insights.trends : []) },
+      { key: 'weak_signals' as InsightKey, title: '暗流弱信号', icon: <Radio size={16} color="#f59e0b" />, items: normalizeInsightItems(Array.isArray(insights?.weak_signals) ? insights.weak_signals : []) },
+      { key: 'daily_advices' as InsightKey, title: '今日行动建议', icon: <Lightbulb size={16} color="#a78bfa" />, items: normalizeInsightItems(Array.isArray(insights?.daily_advices) ? insights.daily_advices : []) },
     ],
     [insights]
   )
@@ -558,9 +594,13 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     setSelectedExportKeys(sliced.map((r, idx) => `${r.id || r.url}|${r.time}|${idx}`))
   }
 
-  const copyInsightText = async (title: string, items: string[]) => {
+  const copyInsightText = async (title: string, items: ParsedInsightItem[]) => {
     try {
-      await navigator.clipboard.writeText(`${title}\n\n${items.map((item, i) => `${i + 1}. ${item}`).join('\n')}`)
+      await navigator.clipboard.writeText(
+        `${title}\n\n${items
+          .map((item, i) => `${i + 1}. ${item.title}${item.content ? `\n   ${item.content}` : ''}`)
+          .join('\n')}`,
+      )
       setMessage('success', `${title} 已复制`)
     } catch {
       setMessage('error', '复制失败')
@@ -670,7 +710,12 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
                   </div>
                   {!insightCollapsed[panel.key] && (
                     <ul className="insight-list">
-                      {panel.items.map((item, i) => <li key={i}>{item}</li>)}
+                      {panel.items.map((item, i) => (
+                        <li key={`${panel.key}-${i}-${item.title}`}>
+                          <div className="insight-item-title">{item.title}</div>
+                          {item.content && <div className="insight-item-content">{item.content}</div>}
+                        </li>
+                      ))}
                     </ul>
                   )}
                 </div>

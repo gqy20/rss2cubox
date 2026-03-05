@@ -1,6 +1,8 @@
 import { neon } from '@neondatabase/serverless'
 import { NextRequest, NextResponse } from 'next/server'
 
+const BUSINESS_TZ = 'Asia/Shanghai'
+
 function getSql() {
   const url = process.env.NEON_DATABASE_URL
   if (!url) throw new Error('NEON_DATABASE_URL is not configured')
@@ -27,7 +29,11 @@ export async function GET(request: NextRequest) {
 
   if (date) {
     params.push(date)
-    whereClauses.push(`DATE(event_time AT TIME ZONE 'Asia/Shanghai') = $${params.length}`)
+    whereClauses.push(`(
+      NULLIF(data->>'time', '') IS NOT NULL
+      AND data->>'time' ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T'
+      AND DATE((data->>'time')::timestamptz AT TIME ZONE '${BUSINESS_TZ}') = $${params.length}
+    )`)
   }
 
   if (search) {
