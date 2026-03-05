@@ -15,3 +15,5 @@ web/.env*
 # local env secrets
 .env*
 !.env.example
+.vercel
+.env*.local

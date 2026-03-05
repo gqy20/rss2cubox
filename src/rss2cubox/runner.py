@@ -8,7 +8,7 @@ from typing import Any
 
 import requests
 
-from rss2cubox import feed_sources, sync_pipeline
+from rss2cubox import db, feed_sources, sync_pipeline
 from rss2cubox.ai_pipeline import (
     ai_analysis_enabled,
     analyze_candidates_with_ai,
@@ -27,6 +27,7 @@ from rss2cubox.metrics import (
 
 FEEDS_FILE = Path(os.getenv("FEEDS_FILE", "feeds.txt"))
 STATE_FILE = Path(os.getenv("STATE_FILE", "state.json"))
+NEON_DATABASE_URL = os.getenv("NEON_DATABASE_URL", "").strip()
 RSSHUB_INSTANCES_FILE = Path(os.getenv("RSSHUB_INSTANCES_FILE", "rsshub_instances.txt"))
 RUN_EVENTS_FILE = Path(os.getenv("RUN_EVENTS_FILE", "run_events.jsonl"))
 
@@ -76,7 +77,7 @@ def main() -> None:
         cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_SECONDS,
     )
     stage_metrics = StageMetrics()
-    state = sync_pipeline.load_state(STATE_FILE)
+    state = db.load_state(NEON_DATABASE_URL) if NEON_DATABASE_URL else sync_pipeline.load_state(STATE_FILE)
     sent = state.get("sent", {})
     ai = state.get("ai", {})
     feed_cursor = state.get("feed_cursor", {})
@@ -234,6 +235,11 @@ def main() -> None:
         event.setdefault("ref_name", runtime_context.get("ref_name", ""))
         event.setdefault("event_name", runtime_context.get("event_name", ""))
     sync_pipeline.save_jsonl(RUN_EVENTS_FILE, run_events)
+    if NEON_DATABASE_URL and run_events:
+        try:
+            db.save_run_events(NEON_DATABASE_URL, run_events)
+        except Exception as e:
+            log_event("WARN", "db_save_run_events_failed", stage="db", error=str(e))
 
     # 全局 Agent 深度分析（如失败不影响主流程）
     try:
@@ -245,7 +251,10 @@ def main() -> None:
     state["ai"] = ai
     state["feed_cursor"] = feed_cursor
     state["feed_failures"] = feed_failures
-    sync_pipeline.save_state(STATE_FILE, state)
+    if NEON_DATABASE_URL:
+        db.save_state(NEON_DATABASE_URL, state)
+    else:
+        sync_pipeline.save_state(STATE_FILE, state)
     apply_stage_metrics(stats, stage_metrics)
     stats["state_size"] = len(sent)
     write_step_summary(stats, os.getenv("GITHUB_STEP_SUMMARY", "").strip())

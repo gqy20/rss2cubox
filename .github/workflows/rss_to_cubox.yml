@@ -59,6 +59,7 @@ jobs:
           RSSHUB_TWITTER_RETRY_ATTEMPTS: "2"
           RSSHUB_INSTANCES_FILE: "rsshub_instances.txt"
           RUN_EVENTS_FILE: "run_events.jsonl"
+          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail

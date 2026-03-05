@@ -309,3 +309,12 @@ def run_global_analysis(
     }
     output_file.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     print(f"[global_agent] 全局分析完成，结果已写入 {output_file}", flush=True)
+
+    neon_url = os.getenv("NEON_DATABASE_URL", "").strip()
+    if neon_url:
+        try:
+            from rss2cubox.db import save_global_insights
+            save_global_insights(neon_url, payload)
+            print("[global_agent] insights 已写入 Neon DB", flush=True)
+        except Exception as e:
+            print(f"[global_agent] Neon DB 写入失败: {e}", flush=True)
