@@ -407,9 +407,11 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
         pushed_urls.append((url, title, description, tags, folder))
         return "ok"
 
+    captured_state = {"value": json.loads(state_file.read_text())}
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "STATE_FILE", state_file)
-    monkeypatch.setattr(runner, "RUN_EVENTS_FILE", tmp_path / "run_events.jsonl")
+    monkeypatch.setattr(runner.db, "load_state", lambda url: captured_state["value"])
+    monkeypatch.setattr(runner.db, "save_state", lambda url, s: captured_state.update({"value": s}))
+    monkeypatch.setattr(runner.db, "save_run_events", lambda url, events: None)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 1)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -427,7 +429,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 
     assert len(pushed_urls) == 1
     assert pushed_urls[0][0] == "https://example.com/1"
-    state = sync_pipeline.load_state(state_file)
+    state = captured_state["value"]
     assert len(state["sent"]) == 1
 
 
@@ -474,9 +476,11 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
         pushed_urls.append(url)
         return "ok"
 
+    captured_state = {"value": json.loads(state_file.read_text())}
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "STATE_FILE", state_file)
-    monkeypatch.setattr(runner, "RUN_EVENTS_FILE", tmp_path / "run_events.jsonl")
+    monkeypatch.setattr(runner.db, "load_state", lambda url: captured_state["value"])
+    monkeypatch.setattr(runner.db, "save_state", lambda url, s: captured_state.update({"value": s}))
+    monkeypatch.setattr(runner.db, "save_run_events", lambda url, events: None)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -496,7 +500,7 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
     assert "https://example.com/old" not in pushed_urls
     assert "https://example.com/new" in pushed_urls
     assert "https://example.com/nodate" in pushed_urls
-    state = sync_pipeline.load_state(state_file)
+    state = captured_state["value"]
     assert len(state["sent"]) == 2
     assert state["feed_cursor"][feed_url].startswith("2026-01-10T12:00:00")
 
@@ -524,9 +528,11 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
         pushed_urls.append(url)
         return "ok"
 
+    captured_state = {"value": json.loads(state_file.read_text())}
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "STATE_FILE", state_file)
-    monkeypatch.setattr(runner, "RUN_EVENTS_FILE", tmp_path / "run_events.jsonl")
+    monkeypatch.setattr(runner.db, "load_state", lambda url: captured_state["value"])
+    monkeypatch.setattr(runner.db, "save_state", lambda url, s: captured_state.update({"value": s}))
+    monkeypatch.setattr(runner.db, "save_run_events", lambda url, events: None)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -543,7 +549,7 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     runner.main()
 
     assert pushed_urls == ["https://example.com/shared"]
-    state = sync_pipeline.load_state(state_file)
+    state = captured_state["value"]
     assert len(state["sent"]) == 1
 
 
@@ -637,9 +643,11 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
         pushed_urls.append(url)
         return "ok"
 
+    captured_state = {"value": json.loads(state_file.read_text())}
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "STATE_FILE", state_file)
-    monkeypatch.setattr(runner, "RUN_EVENTS_FILE", tmp_path / "run_events.jsonl")
+    monkeypatch.setattr(runner.db, "load_state", lambda url: captured_state["value"])
+    monkeypatch.setattr(runner.db, "save_state", lambda url, s: captured_state.update({"value": s}))
+    monkeypatch.setattr(runner.db, "save_run_events", lambda url, events: None)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
