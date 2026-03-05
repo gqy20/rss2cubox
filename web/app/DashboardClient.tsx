@@ -43,6 +43,7 @@ type Row = {
   source: string
   time: string
   score?: number
+  enriched?: boolean
   reason?: string
   tags?: string[]
   core_event?: string
@@ -680,6 +681,26 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
           <div className="t-header" style={{ marginBottom: 6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
               <span className="source-badge">{row.source}</span>
+              {row.enriched && (
+                <span
+                  title="已完成全文深化分析"
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 800,
+                    letterSpacing: 0.5,
+                    textTransform: 'uppercase',
+                    color: '#34d399',
+                    border: '1px solid rgba(52, 211, 153, 0.4)',
+                    background: 'rgba(52, 211, 153, 0.08)',
+                    padding: '2px 6px',
+                    borderRadius: 999,
+                    lineHeight: 1.2,
+                    flexShrink: 0,
+                  }}
+                >
+                  Enriched
+                </span>
+              )}
               <span className="node-time" title={`${row.time} ${formatShortTime(row.time)}`}>
                 {formatRelativeTime(row.time, now)}
               </span>

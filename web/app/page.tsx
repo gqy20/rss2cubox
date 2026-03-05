@@ -17,6 +17,7 @@ type Row = {
   source: string
   time: string
   score?: number
+  enriched?: boolean
   status?: string
   tags?: string[]
   core_event?: string
