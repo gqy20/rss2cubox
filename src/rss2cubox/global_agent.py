@@ -251,9 +251,9 @@ def run_global_analysis(
         print("[global_agent] 无高价值情报，跳过全局分析", flush=True)
         return
 
-    # 按 score 降序，取前 50 条即可覆盖全部趋势，避免文件过大
+    # 按 score 降序，文件注入无 token 限制，取前 200 条覆盖更多趋势
     high_value.sort(key=lambda x: x["score"], reverse=True)
-    high_value = high_value[:50]
+    high_value = high_value[:200]
 
     print(f"[global_agent] 启动全局 Agent 分析，共 {len(high_value)} 条高价值情报...", flush=True)
 
