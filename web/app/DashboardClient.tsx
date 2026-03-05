@@ -245,13 +245,46 @@ function ScoreBar({ score }: { score: number }) {
   )
 }
 
-export default function DashboardClient({ rows, metrics, insights }: { rows: Row[]; metrics: Metrics; insights?: GlobalInsights | null }) {
+type Props = {
+  initialRows: Row[]
+  totalCount: number
+  metrics: Metrics
+  insights?: GlobalInsights | null
+}
+
+export default function DashboardClient({ initialRows, totalCount, metrics, insights }: Props) {
+  const [rows, setRows] = useState<Row[]>(initialRows)
+  const [hasMore, setHasMore] = useState(totalCount > initialRows.length)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
   const [filter, setFilter] = useState<'all' | 'high'>('all')
   const [timeScope, setTimeScope] = useState<'all' | 'today'>('all')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'time' | 'score'>('time')
+
+  // 加载更多数据
+  const loadMore = async () => {
+    if (loadingMore || !hasMore) return
+    setLoadingMore(true)
+    const nextPage = currentPage + 1
+    try {
+      const res = await fetch(`/api/signals?page=${nextPage}&limit=50`)
+      const data = await res.json()
+      if (data.data && data.data.length > 0) {
+        setRows((prev) => [...prev, ...data.data])
+        setCurrentPage(nextPage)
+        setHasMore(data.hasMore)
+      } else {
+        setHasMore(false)
+      }
+    } catch (error) {
+      console.error('Failed to load more:', error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
@@ -1085,6 +1118,20 @@ export default function DashboardClient({ rows, metrics, insights }: { rows: Row
                 )}
               </div>
             ))}
+
+            {/* 加载更多按钮 */}
+            {hasMore && (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}>
+                <button
+                  className="filter-btn active"
+                  onClick={loadMore}
+                  disabled={loadingMore}
+                  style={{ minWidth: 160 }}
+                >
+                  {loadingMore ? '加载中...' : `加载更多 (${totalCount - rows.length} 条)`}
+                </button>
+              </div>
+            )}
           </section>
         </div>
       </div>

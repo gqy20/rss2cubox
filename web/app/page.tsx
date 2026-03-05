@@ -109,12 +109,22 @@ async function loadFromDb(): Promise<{
   return { rows, metrics: buildMetrics(rows), insights }
 }
 
+export const PAGE_SIZE = 50
+
 export default async function Page() {
   const { rows, metrics: data, insights } = await loadFromDb()
 
+  // 只传递第一页数据，减少初始页面体积
+  const paginatedRows = rows.slice(0, PAGE_SIZE)
+
   return (
     <main className="main">
-      <DashboardClient rows={rows} metrics={data} insights={insights} />
+      <DashboardClient
+        initialRows={paginatedRows}
+        totalCount={rows.length}
+        metrics={data}
+        insights={insights}
+      />
     </main>
   )
 }
