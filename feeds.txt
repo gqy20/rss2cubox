@@ -149,6 +149,17 @@ https://werss.gqy25.top/feed/MP_WXS_3934419561.rss # 赛博禅心
 https://werss.gqy25.top/feed/MP_WXS_3233423537.rss # 字节笔记本
 https://werss.gqy25.top/feed/MP_WXS_3231445360.rss # AI变革指南
 https://werss.gqy25.top/feed/MP_WXS_3223096120.rss # 数字生命卡兹克
+https://werss.gqy25.top/feed/MP_WXS_3905207779.rss # 火山引擎Agent社区
+https://werss.gqy25.top/feed/MP_WXS_3540975510.rss # 歸藏的AI工具箱
+https://werss.gqy25.top/feed/MP_WXS_2398114060.rss # 智猩猩AI
+https://werss.gqy25.top/feed/MP_WXS_3089095027.rss # 源见卓识
+https://werss.gqy25.top/feed/MP_WXS_3871912638.rss # AI寒武纪
+https://werss.gqy25.top/feed/MP_WXS_3943641304.rss # 扣子Coze
+https://werss.gqy25.top/feed/MP_WXS_3274664830.rss # 悠哉AGI
+https://werss.gqy25.top/feed/MP_WXS_3091215681.rss # AI工程化
+https://werss.gqy25.top/feed/MP_WXS_3198754609.rss # Alex AI自动化
+https://werss.gqy25.top/feed/MP_WXS_3867641939.rss # 数字开物
+https://werss.gqy25.top/feed/MP_WXS_3908759862.rss # ShowHN Today
 
 [direct]
 https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
