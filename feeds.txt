@@ -169,6 +169,10 @@ https://gwern.net/rss.xml # Gwern Blog
 https://distill.pub/rss.xml # Distill
 https://bair.berkeley.edu/blog/feed.xml # BAIR Blog
 https://www.inference.vc/rss.xml # Inference Blog
+# AI 新闻 / 技术媒体
+https://developer.nvidia.com/blog/feed # NVIDIA Developer Blog
+https://www.marktechpost.com/feed/ # MarkTechPost
+https://gradientflow.substack.com/feed # Gradient Flow
 # AI Builder / Hacker 博客
 https://tinyprojects.dev/feed.xml # Tiny Projects
 https://thesephist.com/rss.xml # thesephist Blog
