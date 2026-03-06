@@ -97,6 +97,16 @@ def _migrate_global_insights_table(conn: psycopg.Connection) -> None:
 
 
 def load_state(db_url: str) -> dict[str, Any]:
+    # 不使用数据库时返回空状态
+    if not db_url:
+        return {
+            "sent": {},
+            "ai": {},
+            "processed": {},
+            "feed_cursor": {},
+            "feed_failures": {},
+        }
+
     with psycopg.connect(db_url) as conn:
         _ensure_schema(conn)
 
@@ -140,6 +150,10 @@ def load_state(db_url: str) -> dict[str, Any]:
 
 
 def save_state(db_url: str, state: dict[str, Any]) -> None:
+    # 不使用数据库时直接返回
+    if not db_url:
+        return
+
     sent: dict[str, Any] = state.get("sent", {})
     ai: dict[str, Any] = state.get("ai", {})
     processed: dict[str, Any] = state.get("processed", {})
