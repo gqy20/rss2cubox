@@ -6,19 +6,17 @@
 
 设计原则：
 - 只精读通过粗筛的条目，不处理所有候选，控制时间和成本
-- 有限并发（ENRICH_MAX_WORKERS），默认 3
+- 有限并发（ENRICH_MAX_WORKERS），默认 10
+- 使用 output_format 让 CLI 自动验证 JSON Schema（内置重试）
+- 应用层仅对 timeout/网络错误重试（ENRICH_APP_MAX_RETRIES）
 - 单条失败静默回退到原始粗筛结果
 - 可通过 ENRICH_AGENT_ENABLED=false 关闭
 """
 from __future__ import annotations
 
-import json
 import os
-import re
 from pathlib import Path
 from typing import Any
-
-from pydantic import BaseModel, Field, field_validator
 
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
@@ -33,27 +31,27 @@ try:
     ENRICH_MAX_BUDGET_USD = float(_enrich_max_budget_raw) if _enrich_max_budget_raw else None
 except ValueError:
     ENRICH_MAX_BUDGET_USD = None
+# 应用层重试配置（仅针对 timeout/网络错误）
+ENRICH_APP_MAX_RETRIES = int(os.getenv("ENRICH_APP_MAX_RETRIES", "2"))
+ENRICH_RETRY_DELAY_BASE = float(os.getenv("ENRICH_RETRY_DELAY_BASE", "1.0"))
 
-
-class EnrichedResult(BaseModel):
-    core_event: str = ""
-    hidden_signal: str = ""
-    actionable: str = ""
-    score: float = 0.0
-
-    @field_validator("score", mode="before")
-    @classmethod
-    def _coerce_score(cls, v: Any) -> float:
-        try:
-            return float(v)
-        except (TypeError, ValueError):
-            return 0.0
+# JSON Schema 用于 output_format（CLI 层自动验证）
+ENRICH_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "core_event": {"type": "string", "maxLength": 100},
+        "hidden_signal": {"type": "string", "maxLength": 200},
+        "actionable": {"type": "string", "maxLength": 100},
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+    },
+    "required": ["core_event", "hidden_signal", "actionable", "score"],
+}
 
 
 SYSTEM_PROMPT = (
     "你是一位顶级科技产业分析师，正在对一篇已通过初筛的高价值文章进行深度精读。\n"
     "你已拥有文章的标题与初步摘要，现在优先通过 read_webpage_jina 工具获取原文全文。\n"
-    "阅读完毕后，直接以 JSON 格式输出分析结果（不要调用任何提交工具）：\n"
+    "阅读完毕后，直接以 JSON 格式输出分析结果。\n"
     "字段要求：\n"
     "- core_event：冷静客观地用一句话描述事实（≤60字）\n"
     "- hidden_signal：这意味着什么？背后的范式转移、行业冲击或深层技术含义（≤100字）\n"
@@ -72,45 +70,22 @@ def _build_user_prompt(item: dict, original: dict) -> str:
         f"初步核心事件：{original.get('core_event', '')}\n\n"
         "步骤：\n"
         "1. 调用 read_webpage_jina 读取原文（传入上方原文链接）。\n"
-        "2. 无论读取是否成功，直接以 JSON 格式输出分析结果，包含：\n"
-        "   core_event、hidden_signal、actionable、score 四个字段。\n"
-        "   如果读取失败，基于已有标题、摘要和初步分析直接输出 JSON。"
+        "2. 无论读取是否成功，直接输出 JSON 格式的分析结果。\n"
+        "   如果读取失败，基于已有标题、摘要和初步分析输出 JSON。"
     )
 
 
-def _extract_json_from_text(text: str) -> dict | None:
-    """从文本中提取 JSON 对象"""
-    if not text:
-        return None
-
-    # 优先匹配 JSON 代码块
-    json_block_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
-    if json_block_match:
-        try:
-            return json.loads(json_block_match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    # 尝试匹配裸 JSON 对象
-    json_match = re.search(r"(\{[\s\S]*\})", text)
-    if json_match:
-        try:
-            return json.loads(json_match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    return None
-
-
 async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
+    """
+    使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
+    应用层仅对 timeout/网络错误进行有限重试。
+    """
     import anyio
 
     try:
         from claude_agent_sdk import (  # type: ignore
-            AssistantMessage,
             ClaudeAgentOptions,
-            TextBlock,
-            ToolUseBlock,
+            ResultMessage,
             create_sdk_mcp_server,
             query,
             tool,
@@ -163,38 +138,53 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         max_budget_usd=ENRICH_MAX_BUDGET_USD,
         cwd=Path.cwd(),
         setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
+        # 使用 output_format 让 CLI 自动验证 JSON Schema（CLI 内置重试）
+        output_format={"type": "json_schema", "schema": ENRICH_OUTPUT_SCHEMA},
     )
 
-    full_response: list[str] = []
+    eid_short = item.get("eid", "")[:8]
+    last_error = "no_result"
 
-    try:
-        with anyio.fail_after(ENRICH_ITEM_TIMEOUT_SECONDS):
-            async for message in query(prompt=_build_user_prompt(item, original), options=options):
-                if isinstance(message, AssistantMessage):
-                    for block in message.content:
-                        if isinstance(block, ToolUseBlock):
-                            print(f"[enrich_agent] eid={item.get('eid', '')[:8]} tool_use: {block.name}", flush=True)
-                        elif isinstance(block, TextBlock):
-                            full_response.append(block.text or "")
-    except Exception as e:
-        print(f"[enrich_agent] eid={item.get('eid', '')[:8]} query_error: {e}", flush=True)
+    # 应用层重试：仅针对 timeout 和网络错误
+    for attempt in range(ENRICH_APP_MAX_RETRIES + 1):
+        try:
+            with anyio.fail_after(ENRICH_ITEM_TIMEOUT_SECONDS):
+                async for message in query(prompt=_build_user_prompt(item, original), options=options):
+                    if isinstance(message, ResultMessage):
+                        # CLI 层 JSON Schema 验证成功
+                        if message.structured_output:
+                            result = message.structured_output
+                            if result.get("core_event") or result.get("hidden_signal"):
+                                print(f"[enrich_agent] eid={eid_short} validated: ok", flush=True)
+                                return result, "ok"
+                            else:
+                                last_error = "empty_fields"
+                        # CLI 层重试耗尽
+                        elif message.subtype == "error_max_structured_output_retries":
+                            last_error = "cli_retry_exhausted"
+                        # 其他错误
+                        elif message.is_error:
+                            last_error = f"subtype:{message.subtype}"
+                        else:
+                            last_error = "no_structured_output"
+        except TimeoutError:
+            last_error = "timeout"
+            # timeout 可以重试
+        except Exception as e:
+            last_error = f"error:{type(e).__name__}"
+            # 某些网络错误可以重试
 
-    # 解析 JSON 结果并用 pydantic 校验
-    if full_response:
-        full_text = "\n".join(full_response)
-        parsed = _extract_json_from_text(full_text)
-        if parsed:
-            try:
-                validated = EnrichedResult.model_validate(parsed)
-                result = validated.model_dump()
-                if result.get("core_event") or result.get("hidden_signal"):
-                    print(f"[enrich_agent] eid={item.get('eid', '')[:8]} validated: ok", flush=True)
-                    return result, "ok"
-            except Exception as e:
-                print(f"[enrich_agent] eid={item.get('eid', '')[:8]} validation_error: {e}", flush=True)
+        # 指数退避重试（最后一次不等待）
+        if attempt < ENRICH_APP_MAX_RETRIES and last_error in ("timeout", "error:ConnectionError", "error:HTTPError"):
+            delay = ENRICH_RETRY_DELAY_BASE * (2 ** attempt)
+            print(f"[enrich_agent] eid={eid_short} retry {attempt + 1}, wait {delay}s, reason={last_error}", flush=True)
+            await anyio.sleep(delay)
+        else:
+            # 其他错误不重试
+            break
 
-    print(f"[enrich_agent] eid={item.get('eid', '')[:8]} parse_failed: no_valid_json", flush=True)
-    return None, "parse_failed"
+    print(f"[enrich_agent] eid={eid_short} failed: {last_error}", flush=True)
+    return None, last_error
 
 
 async def _enrich_all(

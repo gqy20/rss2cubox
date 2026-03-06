@@ -3,21 +3,48 @@
 使用 Claude Agent SDK 驱动 claude CLI 进程，对高价值情报进行二次深度分析。
 Agent 通过 read_signals_file 工具读取信号文件，通过 Jina Reader API (r.jina.ai) 抓取原文，
 最终以结构化 JSON 格式输出分析报告。
+
+设计原则：
+- 使用 output_format 让 CLI 自动验证 JSON Schema（CLI 内置重试）
+- 应用层仅对 timeout/网络错误重试
+- 单条失败静默跳过
+- 可通过 GLOBAL_AGENT_ENABLED=false 关闭
 """
 from __future__ import annotations
 
-import json
 import os
-import re
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 import requests as _requests
-from pydantic import BaseModel, Field, ValidationError, field_validator
 
+GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
+GLOBAL_AGENT_TIMEOUT_SECONDS = max(60, int(os.getenv("GLOBAL_AGENT_TIMEOUT_SECONDS", "300")))
+GLOBAL_AGENT_APP_MAX_RETRIES = int(os.getenv("GLOBAL_AGENT_APP_MAX_RETRIES", "2"))
+GLOBAL_AGENT_RETRY_DELAY_BASE = float(os.getenv("GLOBAL_AGENT_RETRY_DELAY_BASE", "2.0"))
+
+# JSON Schema 用于 output_format（CLI 层自动验证）
+GLOBAL_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "trends": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        "weak_signals": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        "daily_advices": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+    },
+    "required": ["trends", "weak_signals", "daily_advices"],
+}
 
 SYSTEM_PROMPT = (
     "你是一位顶级科技产业与投资分析师，专注从海量 RSS 信息流中提炼宏观趋势与深层弱信号。"
@@ -29,48 +56,6 @@ SYSTEM_PROMPT = (
 
 JINA_READER_BASE = "https://r.jina.ai/"
 JINA_MAX_CHARS = 8000
-
-
-class GlobalInsightsReport(BaseModel):
-    trends: list[str] = Field(default_factory=list)
-    weak_signals: list[str] = Field(default_factory=list)
-    daily_advices: list[str] = Field(default_factory=list)
-
-    @field_validator("trends", "weak_signals", "daily_advices", mode="before")
-    @classmethod
-    def _coerce_items(cls, value: Any) -> list[str]:
-        return _to_str_list(value)
-
-
-def _split_text_to_items(text: str) -> list[str]:
-    normalized = (
-        text.replace("<br/>", "\n")
-        .replace("<br />", "\n")
-        .replace("<br>", "\n")
-    )
-    lines = [line.strip() for line in normalized.splitlines() if line.strip()]
-    if len(lines) <= 1:
-        parts = re.split(r"\s*(?=\d+[.)、]\s*)", normalized.strip())
-        lines = [part.strip() for part in parts if part.strip()]
-    items: list[str] = []
-    for line in lines:
-        cleaned = re.sub(r"^\d+[.)、]\s*", "", line).strip()
-        if cleaned:
-            items.append(cleaned)
-    return items
-
-
-def _to_str_list(value: Any) -> list[str]:
-    if isinstance(value, list):
-        out: list[str] = []
-        for item in value:
-            text = str(item).strip()
-            if text:
-                out.append(text)
-        return out
-    if isinstance(value, str):
-        return _split_text_to_items(value)
-    return []
 
 
 def _build_user_prompt(signals_file: str, total: int) -> str:
@@ -87,39 +72,19 @@ def _build_user_prompt(signals_file: str, total: int) -> str:
 所有内容必须使用简体中文。"""
 
 
-def _extract_json_from_text(text: str) -> dict | None:
-    """从文本中提取 JSON 对象"""
-    if not text:
-        return None
-
-    # 优先匹配 JSON 代码块
-    json_block_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
-    if json_block_match:
-        try:
-            return json.loads(json_block_match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    # 尝试匹配裸 JSON 对象
-    json_match = re.search(r"(\{[\s\S]*\})", text)
-    if json_match:
-        try:
-            return json.loads(json_match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    return None
-
-
 async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
+    """
+    使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
+    应用层仅对 timeout/网络错误进行有限重试。
+    """
+    import json
+
     import anyio
 
     try:
         from claude_agent_sdk import (  # type: ignore
-            AssistantMessage,
             ClaudeAgentOptions,
-            TextBlock,
-            ToolUseBlock,
+            ResultMessage,
             create_sdk_mcp_server,
             query,
             tool,
@@ -168,16 +133,22 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     async def read_webpage(args: dict) -> dict:
         url = args["url"]
         jina_url = f"{JINA_READER_BASE}{url}"
-        try:
-            resp = _requests.get(
-                jina_url,
-                headers={"Accept": "text/plain", "x-respond-with": "markdown"},
-                timeout=20,
-            )
-            resp.raise_for_status()
-            content = resp.text[:JINA_MAX_CHARS]
-        except Exception as e:
-            content = f"[读取失败: {e}]"
+
+        def _fetch() -> tuple[bool, str]:
+            try:
+                resp = _requests.get(
+                    jina_url,
+                    headers={"Accept": "text/plain", "x-respond-with": "markdown"},
+                    timeout=20,
+                )
+                resp.raise_for_status()
+                return True, resp.text[:JINA_MAX_CHARS]
+            except Exception as e:
+                return False, f"[读取失败: {e}]"
+
+        ok, content = await anyio.to_thread.run_sync(_fetch)
+        if not ok:
+            content = f"[网页读取失败] {content}"
         return {"content": [{"type": "text", "text": content}]}
 
     server = create_sdk_mcp_server(
@@ -201,41 +172,62 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         max_turns=100,
         cwd=Path.cwd(),
         setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
+        # 使用 output_format 让 CLI 自动验证 JSON Schema（CLI 内置重试）
+        output_format={"type": "json_schema", "schema": GLOBAL_OUTPUT_SCHEMA},
     )
 
-    full_response: list[str] = []
+    last_error = "no_result"
 
-    try:
-        async for message in query(prompt=_build_user_prompt(signals_file_path, len(high_value_items)), options=options):
-            if isinstance(message, AssistantMessage):
-                for block in message.content:
-                    if isinstance(block, ToolUseBlock):
-                        args_str = str(block.input)[:200]
-                        print(f"[global_agent] tool_use: {block.name} args={args_str}", flush=True)
-                    elif isinstance(block, TextBlock) and block.text.strip():
-                        full_response.append(block.text)
-                        print(f"[global_agent] text: {block.text[:200]}", flush=True)
-    finally:
+    # 应用层重试：仅针对 timeout 和网络错误
+    for attempt in range(GLOBAL_AGENT_APP_MAX_RETRIES + 1):
         try:
-            Path(signals_file_path).unlink(missing_ok=True)
-        except Exception:
-            pass
+            with anyio.fail_after(GLOBAL_AGENT_TIMEOUT_SECONDS):
+                async for message in query(prompt=_build_user_prompt(signals_file_path, len(high_value_items)), options=options):
+                    if isinstance(message, ResultMessage):
+                        # CLI 层 JSON Schema 验证成功
+                        if message.structured_output:
+                            result = message.structured_output
+                            if result.get("trends") or result.get("weak_signals") or result.get("daily_advices"):
+                                print("[global_agent] validated: ok", flush=True)
+                                # 清理临时文件
+                                try:
+                                    Path(signals_file_path).unlink(missing_ok=True)
+                                except Exception:
+                                    pass
+                                return result
+                            else:
+                                last_error = "empty_fields"
+                        # CLI 层重试耗尽
+                        elif message.subtype == "error_max_structured_output_retries":
+                            last_error = "cli_retry_exhausted"
+                        # 其他错误
+                        elif message.is_error:
+                            last_error = f"subtype:{message.subtype}"
+                        else:
+                            last_error = "no_structured_output"
+        except TimeoutError:
+            last_error = "timeout"
+            # timeout 可以重试
+        except Exception as e:
+            last_error = f"error:{type(e).__name__}"
+            # 某些网络错误可以重试
 
-    # 解析 JSON 结果并用 pydantic 校验
-    if full_response:
-        full_text = "\n".join(full_response)
-        parsed = _extract_json_from_text(full_text)
-        if parsed:
-            try:
-                validated = GlobalInsightsReport.model_validate(parsed)
-                result = validated.model_dump()
-                if result.get("trends") or result.get("weak_signals") or result.get("daily_advices"):
-                    print(f"[global_agent] validated: ok", flush=True)
-                    return result
-            except ValidationError as e:
-                print(f"[global_agent] validation_error: {e}", flush=True)
+        # 指数退避重试（最后一次不等待）
+        if attempt < GLOBAL_AGENT_APP_MAX_RETRIES and last_error in ("timeout", "error:ConnectionError", "error:HTTPError"):
+            delay = GLOBAL_AGENT_RETRY_DELAY_BASE * (2 ** attempt)
+            print(f"[global_agent] retry {attempt + 1}, wait {delay}s, reason={last_error}", flush=True)
+            await anyio.sleep(delay)
+        else:
+            # 其他错误不重试
+            break
 
-    print(f"[global_agent] parse_failed: no_valid_json", flush=True)
+    # 清理临时文件
+    try:
+        Path(signals_file_path).unlink(missing_ok=True)
+    except Exception:
+        pass
+
+    print(f"[global_agent] failed: {last_error}", flush=True)
     return None
 
 
@@ -248,6 +240,10 @@ def run_global_analysis(
     驱动 Claude Agent 进行二次深度分析并写入 Neon DB。
     """
     import anyio
+
+    if not GLOBAL_AGENT_ENABLED:
+        print("[global_agent] GLOBAL_AGENT_ENABLED=false，跳过全局分析", flush=True)
+        return
 
     # 拼装高价值条目 (score >= 0.85)
     high_value: list[dict] = []
