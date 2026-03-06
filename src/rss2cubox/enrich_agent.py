@@ -28,7 +28,7 @@ ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS
 ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
 JINA_MAX_CHARS = max(1000, int(os.getenv("JINA_MAX_CHARS", "10000")))
-_enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "0.03").strip()
+_enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "1.5").strip()
 try:
     ENRICH_MAX_BUDGET_USD = float(_enrich_max_budget_raw) if _enrich_max_budget_raw else None
 except ValueError:
