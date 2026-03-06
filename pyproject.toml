@@ -37,3 +37,7 @@ where = ["src"]
 dev = [
     "pytest>=9.0.2",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# scripts/test_agents.py 是集成测试，需要 ANTHROPIC_API_KEY，不在 CI 中运行
