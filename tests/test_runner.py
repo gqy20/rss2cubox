@@ -94,10 +94,21 @@ def test_state_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> No
     assert sync_pipeline.load_state(state_file) == payload
 
 
-def test_stable_id_prefers_entry_id() -> None:
-    entry_a = {"id": "same", "link": "https://a", "title": "A"}
-    entry_b = {"id": "same", "link": "https://b", "title": "B"}
+def test_stable_id_prefers_url() -> None:
+    # 相同 URL 生成相同的 stable_id（即使 id 不同）
+    entry_a = {"id": "v1", "link": "https://arxiv.org/abs/2603.03992", "title": "A"}
+    entry_b = {"id": "v2", "link": "https://arxiv.org/abs/2603.03992", "title": "B"}
     assert sync_pipeline.stable_id(entry_a) == sync_pipeline.stable_id(entry_b)
+
+    # 没有 URL 时，回退到 id/guid
+    entry_c = {"id": "same-id", "title": "C"}
+    entry_d = {"id": "same-id", "title": "D"}
+    assert sync_pipeline.stable_id(entry_c) == sync_pipeline.stable_id(entry_d)
+
+    # 没有 URL 和 id 时，回退到 title
+    entry_e = {"title": "same-title"}
+    entry_f = {"title": "same-title"}
+    assert sync_pipeline.stable_id(entry_e) == sync_pipeline.stable_id(entry_f)
 
 
 def test_passes_filter_include_exclude(monkeypatch: pytest.MonkeyPatch) -> None:
