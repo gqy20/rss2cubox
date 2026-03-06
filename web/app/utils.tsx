@@ -42,6 +42,12 @@ export const SOURCE_DOMAIN_MAP: Array<[string, string]> = [
   ['bilibili', 'bilibili.com'],
   ['微信', 'weixin.qq.com'],
   ['werss', 'weixin.qq.com'],
+  ['nvidia', 'nvidia.com'],
+  ['marktechpost', 'marktechpost.com'],
+  ['gradientflow', 'substack.com'],
+  ['deepmind', 'deepmind.google'],
+  ['latent space', 'latent.space'],
+  ['distill', 'distill.pub'],
 ]
 
 export function formatRelativeTime(value: string, now: Date | null): string {
@@ -102,6 +108,10 @@ export function getFaviconUrl(row: Row): string {
   // 微信/WeRsS 处理
   if (/werss\.gqy25\.top/i.test(feed) || /weixin\.qq\.com/i.test(feed) || /weixin\.qq\.com/i.test(row.url || '')) {
     return `https://www.google.com/s2/favicons?domain=weixin.qq.com&sz=16`
+  }
+  // NVIDIA 处理
+  if (/nvidia\.com/i.test(feed) || /nvidia\.com/i.test(row.url || '')) {
+    return `https://www.google.com/s2/favicons?domain=nvidia.com&sz=16`
   }
   if (feed.startsWith('http')) {
     try {
