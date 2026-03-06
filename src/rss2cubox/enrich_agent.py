@@ -14,7 +14,9 @@
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
@@ -73,6 +75,30 @@ def _build_user_prompt(item: dict, original: dict) -> str:
         "2. 无论读取是否成功，直接输出 JSON 格式的分析结果。\n"
         "   如果读取失败，基于已有标题、摘要和初步分析输出 JSON。"
     )
+
+
+def _extract_json_from_text(text: str) -> dict | None:
+    """从文本中提取 JSON 对象（回退解析用）"""
+    if not text:
+        return None
+
+    # 优先匹配 JSON 代码块
+    json_block_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if json_block_match:
+        try:
+            return json.loads(json_block_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # 尝试匹配裸 JSON 对象
+    json_match = re.search(r"(\{[\s\S]*\})", text)
+    if json_match:
+        try:
+            return json.loads(json_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    return None
 
 
 async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
@@ -165,8 +191,19 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
                         # 其他错误
                         elif message.is_error:
                             last_error = f"subtype:{message.subtype}"
+                            print(f"[enrich_agent] eid={eid_short} error: subtype={message.subtype}", flush=True)
+                        # structured_output 为空但有 result，尝试手动解析 JSON
+                        elif message.result:
+                            parsed = _extract_json_from_text(message.result)
+                            if parsed and (parsed.get("core_event") or parsed.get("hidden_signal")):
+                                print(f"[enrich_agent] eid={eid_short} parsed_from_result: ok", flush=True)
+                                return parsed, "ok"
+                            else:
+                                last_error = "no_structured_output"
+                                print(f"[enrich_agent] eid={eid_short} no_structured_output, result preview: {message.result[:200] if message.result else 'None'}", flush=True)
                         else:
                             last_error = "no_structured_output"
+                            print(f"[enrich_agent] eid={eid_short} no_structured_output: subtype={message.subtype}", flush=True)
         except TimeoutError:
             last_error = "timeout"
             # timeout 可以重试

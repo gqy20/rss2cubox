@@ -12,7 +12,9 @@ Agent 通过 read_signals_file 工具读取信号文件，通过 Jina Reader API
 """
 from __future__ import annotations
 
+import json
 import os
+import re
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -70,6 +72,30 @@ def _build_user_prompt(signals_file: str, total: int) -> str:
    - daily_advices: 给工程师/独立开发者的今日行动建议，2-4 条，每条 ≤ 60 字
 
 所有内容必须使用简体中文。"""
+
+
+def _extract_json_from_text(text: str) -> dict | None:
+    """从文本中提取 JSON 对象（回退解析用）"""
+    if not text:
+        return None
+
+    # 优先匹配 JSON 代码块
+    json_block_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
+    if json_block_match:
+        try:
+            return json.loads(json_block_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    # 尝试匹配裸 JSON 对象
+    json_match = re.search(r"(\{[\s\S]*\})", text)
+    if json_match:
+        try:
+            return json.loads(json_match.group(1))
+        except json.JSONDecodeError:
+            pass
+
+    return None
 
 
 async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
@@ -203,8 +229,23 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
                         # 其他错误
                         elif message.is_error:
                             last_error = f"subtype:{message.subtype}"
+                            print(f"[global_agent] error: subtype={message.subtype}", flush=True)
+                        # structured_output 为空但有 result，尝试手动解析 JSON
+                        elif message.result:
+                            parsed = _extract_json_from_text(message.result)
+                            if parsed and (parsed.get("trends") or parsed.get("weak_signals") or parsed.get("daily_advices")):
+                                print("[global_agent] parsed_from_result: ok", flush=True)
+                                try:
+                                    Path(signals_file_path).unlink(missing_ok=True)
+                                except Exception:
+                                    pass
+                                return parsed
+                            else:
+                                last_error = "no_structured_output"
+                                print(f"[global_agent] no_structured_output, result preview: {message.result[:200] if message.result else 'None'}", flush=True)
                         else:
                             last_error = "no_structured_output"
+                            print(f"[global_agent] no_structured_output: subtype={message.subtype}", flush=True)
         except TimeoutError:
             last_error = "timeout"
             # timeout 可以重试
