@@ -4,11 +4,13 @@ import calendar
 import hashlib
 import json
 import os
+import re
 import time
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
 
 
 def env_float(name: str, default: float) -> float:
@@ -72,12 +74,65 @@ def save_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
             f.write("\n")
 
 
+def _normalize_url(url: str) -> str:
+    """清理 URL，移除常见的追踪参数和 fragment"""
+    if not url:
+        return ""
+
+    try:
+        parsed = urlparse(url)
+        # 移除追踪参数
+        tracking_params = {
+            "utm_source",
+            "utm_medium",
+            "utm_campaign",
+            "utm_term",
+            "utm_content",
+            "fbclid",
+            "gclid",
+            "ref",
+            "referrer",
+            "source_id",
+            "_ga",
+            "_gl",
+            "mc_cid",
+            "mc_eid",
+        }
+        query = parse_qs(parsed.query, keep_blank_values=True)
+        query = {k: v for k, v in query.items() if k.lower() not in tracking_params}
+
+        # 移除 fragment
+        normalized = urlunparse(
+            (
+                parsed.scheme,
+                parsed.netloc,
+                parsed.path,
+                parsed.params,
+                urlencode(query, doseq=True) if query else "",
+                "",
+            )
+        )
+        return normalized
+    except Exception:  # noqa: BLE001
+        return url
+
+
 def stable_id(entry: dict) -> str:
+    # 优先使用清理后的 URL
+    link = entry.get("link", "").strip()
+    if link:
+        normalized = _normalize_url(link)
+        if normalized:
+            return hashlib.sha256(normalized.encode("utf-8")).hexdigest()
+
+    # 降级：使用 id/guid
     identifier = entry.get("id") or entry.get("guid")
     if identifier:
         raw = str(identifier)
     else:
-        raw = (entry.get("link") or "") + "|" + (entry.get("title") or "")
+        # 最后的降级方案
+        raw = entry.get("title") or ""
+
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 

@@ -40,6 +40,8 @@ export const SOURCE_DOMAIN_MAP: Array<[string, string]> = [
   ['arxiv', 'arxiv.org'],
   ['bair', 'bair.berkeley.edu'],
   ['bilibili', 'bilibili.com'],
+  ['微信', 'weixin.qq.com'],
+  ['werss', 'weixin.qq.com'],
 ]
 
 export function formatRelativeTime(value: string, now: Date | null): string {
@@ -96,6 +98,10 @@ export function getFaviconUrl(row: Row): string {
   const feed = row.source_feed || ''
   if (feed.startsWith('/bilibili/') || /bilibili\.com/i.test(row.url || '')) {
     return `https://www.google.com/s2/favicons?domain=bilibili.com&sz=16`
+  }
+  // 微信/WeRsS 处理
+  if (/werss\.gqy25\.top/i.test(feed) || /weixin\.qq\.com/i.test(feed) || /weixin\.qq\.com/i.test(row.url || '')) {
+    return `https://www.google.com/s2/favicons?domain=weixin.qq.com&sz=16`
   }
   if (feed.startsWith('http')) {
     try {
