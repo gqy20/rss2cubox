@@ -211,6 +211,7 @@ https://gradientflow.substack.com/feed # Gradient Flow
 https://tinyprojects.dev/feed.xml # Tiny Projects
 https://thesephist.com/rss.xml # thesephist Blog
 https://nat.org/blog/rss.xml # Nat Friedman Blog
+https://www.artificialintelligencemadesimple.com/feed # Artificial Intelligence Made Simple
 # AI 论文与研究综述博客
 https://danieltakeshi.github.io/feed.xml # Seita's Place
 https://www.johndcook.com/blog/feed # John Cook Blog
