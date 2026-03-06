@@ -98,6 +98,8 @@
 /twitter/user/huggingface # X @huggingface
 /twitter/user/StabilityAI # X @StabilityAI
 /bilibili/user/video/3546566589679687 # 废才俱乐部Club
+/bilibili/user/video/3546572358945017 # 是花子呀_
+/bilibili/user/video/14848367 # Xuan_酱
 /bilibili/user/video/302188068 # 小白debug
 /bilibili/user/video/26798384 # 柴知道
 /bilibili/user/video/316183842 # 技术爬爬虾
