@@ -61,12 +61,14 @@ JINA_MAX_CHARS = 8000
 
 
 def _build_user_prompt(signals_file: str, total: int) -> str:
+    deep_read_target = min(max(total, 1), 8)
     return f"""今日高价值情报（score ≥ 0.85）共 {total} 条，已保存到文件：{signals_file}
 
 请完成以下任务：
 1. 首先调用 read_signals_file 工具读取完整信号列表。
-2. 从中挑选 10-20 条你认为最值得深挖的条目，使用 read_webpage 工具阅读原文完整内容。
-3. 综合所有信息后，直接输出结构化 JSON 格式的报告：
+2. 从中挑选最值得深挖的 {deep_read_target} 条左右条目，使用 read_webpage 工具阅读原文完整内容。
+3. 优先使用 read_signals_file 与 read_webpage 两个工具完成任务；如无必要，不要扩展到其他动作。
+4. 综合所有信息后，直接输出结构化 JSON 格式的报告：
    - trends: 宏观技术/行业趋势归纳，3-5 条，每条 ≤ 80 字
    - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条 ≤ 80 字
    - daily_advices: 给工程师/独立开发者的今日行动建议，2-4 条，每条 ≤ 60 字
@@ -98,6 +100,64 @@ def _extract_json_from_text(text: str) -> dict | None:
     return None
 
 
+def _make_stderr_logger(prefix: str, limit: int = 80) -> tuple[list[str], Any]:
+    lines: list[str] = []
+
+    def _log(line: str) -> None:
+        text = str(line).strip()
+        if not text:
+            return
+        lines.append(text)
+        if len(lines) > limit:
+            del lines[: len(lines) - limit]
+        print(f"[{prefix}] cli_stderr: {text}", flush=True)
+
+    return lines, _log
+
+
+def _normalize_text_list(value: Any, key_hint: str) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    out: list[str] = []
+    for item in value:
+        text = ""
+        if isinstance(item, str):
+            text = item.strip()
+        elif isinstance(item, dict):
+            preferred = item.get(key_hint)
+            if isinstance(preferred, str):
+                text = preferred.strip()
+            else:
+                for v in item.values():
+                    if isinstance(v, str) and v.strip():
+                        text = v.strip()
+                        break
+        else:
+            text = str(item).strip()
+        if text:
+            out.append(text)
+    return out
+
+
+def _normalize_global_payload(payload: dict[str, Any]) -> dict[str, list[str]]:
+    return {
+        "trends": _normalize_text_list(payload.get("trends", []), "trend"),
+        "weak_signals": _normalize_text_list(payload.get("weak_signals", []), "signal"),
+        "daily_advices": _normalize_text_list(payload.get("daily_advices", []), "advice"),
+    }
+
+
+def _has_global_content(payload: dict[str, Any] | None) -> bool:
+    return bool(
+        payload
+        and (
+            payload.get("trends")
+            or payload.get("weak_signals")
+            or payload.get("daily_advices")
+        )
+    )
+
+
 async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
@@ -109,8 +169,10 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
 
     try:
         from claude_agent_sdk import (  # type: ignore
+            AssistantMessage,
             ClaudeAgentOptions,
             ResultMessage,
+            TextBlock,
             create_sdk_mcp_server,
             query,
             tool,
@@ -123,7 +185,8 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     signals_data = [
         {
             "url": r["url"],
-            "title": r.get("hidden_signal") or r.get("title", ""),
+            "title": r.get("title", ""),
+            "hidden_signal": r.get("hidden_signal", ""),
             "core_event": r.get("core_event", ""),
             "score": round(r.get("score", 0), 2),
         }
@@ -190,6 +253,8 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     if GLOBAL_AGENT_ENABLE_SKILLS:
         allowed_tools.append("Skill")
 
+    stderr_lines, stderr_logger = _make_stderr_logger("global_agent")
+
     options = ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
         allowed_tools=allowed_tools,
@@ -198,6 +263,7 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         max_turns=100,
         cwd=Path.cwd(),
         setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
+        stderr=stderr_logger,
         # 使用 output_format 让 CLI 自动验证 JSON Schema（CLI 内置重试）
         output_format={"type": "json_schema", "schema": GLOBAL_OUTPUT_SCHEMA},
     )
@@ -206,23 +272,27 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
 
     # 应用层重试：仅针对 timeout 和网络错误
     for attempt in range(GLOBAL_AGENT_APP_MAX_RETRIES + 1):
+        final_result: dict[str, Any] | None = None
+        result_text: str | None = None
+        assistant_chunks: list[str] = []
         try:
             with anyio.fail_after(GLOBAL_AGENT_TIMEOUT_SECONDS):
                 async for message in query(prompt=_build_user_prompt(signals_file_path, len(high_value_items)), options=options):
-                    if isinstance(message, ResultMessage):
+                    if isinstance(message, AssistantMessage):
+                        for block in message.content:
+                            if isinstance(block, TextBlock) and block.text:
+                                assistant_chunks.append(block.text)
+                    elif isinstance(message, ResultMessage):
                         # CLI 层 JSON Schema 验证成功
                         if message.structured_output:
                             result = message.structured_output
-                            if result.get("trends") or result.get("weak_signals") or result.get("daily_advices"):
-                                print("[global_agent] validated: ok", flush=True)
-                                # 清理临时文件
-                                try:
-                                    Path(signals_file_path).unlink(missing_ok=True)
-                                except Exception:
-                                    pass
-                                return result
+                            if _has_global_content(result):
+                                final_result = result
+                                last_error = "ok"
                             else:
                                 last_error = "empty_fields"
+                        elif message.subtype == "error_max_budget_usd":
+                            last_error = "error_max_budget_usd"
                         # CLI 层重试耗尽
                         elif message.subtype == "error_max_structured_output_retries":
                             last_error = "cli_retry_exhausted"
@@ -232,17 +302,17 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
                             print(f"[global_agent] error: subtype={message.subtype}", flush=True)
                         # structured_output 为空但有 result，尝试手动解析 JSON
                         elif message.result:
+                            result_text = message.result
                             parsed = _extract_json_from_text(message.result)
-                            if parsed and (parsed.get("trends") or parsed.get("weak_signals") or parsed.get("daily_advices")):
-                                print("[global_agent] parsed_from_result: ok", flush=True)
-                                try:
-                                    Path(signals_file_path).unlink(missing_ok=True)
-                                except Exception:
-                                    pass
-                                return parsed
+                            if _has_global_content(parsed):
+                                final_result = parsed
+                                last_error = "ok"
                             else:
                                 last_error = "no_structured_output"
                                 print(f"[global_agent] no_structured_output, result preview: {message.result[:200] if message.result else 'None'}", flush=True)
+                        elif message.subtype and message.subtype not in ("success", "completed_end_turn"):
+                            last_error = f"subtype:{message.subtype}"
+                            print(f"[global_agent] no_structured_output: subtype={message.subtype}", flush=True)
                         else:
                             last_error = "no_structured_output"
                             print(f"[global_agent] no_structured_output: subtype={message.subtype}", flush=True)
@@ -250,11 +320,46 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
             last_error = "timeout"
             # timeout 可以重试
         except Exception as e:
-            last_error = f"error:{type(e).__name__}"
+            last_error = f"error:{type(e).__name__}:{e}"
+            if stderr_lines:
+                print(f"[global_agent] recent_cli_stderr: {' | '.join(stderr_lines[-8:])}", flush=True)
             # 某些网络错误可以重试
 
+        if final_result:
+            final_result = _normalize_global_payload(final_result)
+            print("[global_agent] validated: ok", flush=True)
+            try:
+                Path(signals_file_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+            return final_result
+        if assistant_chunks:
+            parsed = _extract_json_from_text("\n".join(assistant_chunks))
+            if _has_global_content(parsed):
+                parsed = _normalize_global_payload(parsed)
+                print("[global_agent] parsed_from_assistant: ok", flush=True)
+                try:
+                    Path(signals_file_path).unlink(missing_ok=True)
+                except Exception:
+                    pass
+                return parsed
+        if result_text:
+            parsed = _extract_json_from_text(result_text)
+            if _has_global_content(parsed):
+                parsed = _normalize_global_payload(parsed)
+                print("[global_agent] parsed_from_result: ok", flush=True)
+                try:
+                    Path(signals_file_path).unlink(missing_ok=True)
+                except Exception:
+                    pass
+                return parsed
+
         # 指数退避重试（最后一次不等待）
-        if attempt < GLOBAL_AGENT_APP_MAX_RETRIES and last_error in ("timeout", "error:ConnectionError", "error:HTTPError"):
+        if attempt < GLOBAL_AGENT_APP_MAX_RETRIES and (
+            last_error == "timeout"
+            or last_error.startswith("error:ConnectionError")
+            or last_error.startswith("error:HTTPError")
+        ):
             delay = GLOBAL_AGENT_RETRY_DELAY_BASE * (2 ** attempt)
             print(f"[global_agent] retry {attempt + 1}, wait {delay}s, reason={last_error}", flush=True)
             await anyio.sleep(delay)
