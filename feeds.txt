@@ -213,6 +213,9 @@ https://thesephist.com/rss.xml # thesephist Blog
 https://nat.org/blog/rss.xml # Nat Friedman Blog
 # AI 论文与研究综述博客
 https://danieltakeshi.github.io/feed.xml # Seita's Place
+https://www.johndcook.com/blog/feed # John Cook Blog
+https://www.getrevue.co/profile/seungjaeryanlee?format=rss # RL Weekly
+https://danieltakeshi.github.io/feed.xml # Seita's Place
 https://vitalab.github.io/rss.xml # VITALab
 https://mlinproduction.com/feed # ML in Production
 https://machinelearningmastery.com/feed # Machine Learning Mastery
