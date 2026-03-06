@@ -160,6 +160,19 @@ https://werss.gqy25.top/feed/MP_WXS_3091215681.rss # AI工程化
 https://werss.gqy25.top/feed/MP_WXS_3198754609.rss # Alex AI自动化
 https://werss.gqy25.top/feed/MP_WXS_3867641939.rss # 数字开物
 https://werss.gqy25.top/feed/MP_WXS_3908759862.rss # ShowHN Today
+https://werss.gqy25.top/feed/MP_WXS_3873892677.rss # AIGC开放社区
+https://werss.gqy25.top/feed/MP_WXS_3554086560.rss # AI前线
+https://werss.gqy25.top/feed/MP_WXS_3884405249.rss # AI科技大本营
+https://werss.gqy25.top/feed/MP_WXS_3098132220.rss # AI科技评论
+https://werss.gqy25.top/feed/MP_WXS_2392024520.rss # APPSO
+https://werss.gqy25.top/feed/MP_WXS_3075228534.rss # DeepTech深科技
+https://werss.gqy25.top/feed/MP_WXS_3941633310.rss # PaperAgent
+https://werss.gqy25.top/feed/MP_WXS_3082518302.rss # 光子星球
+https://werss.gqy25.top/feed/MP_WXS_3900464567.rss # 智能涌现
+https://werss.gqy25.top/feed/MP_WXS_1304308441.rss # 极客公园
+https://werss.gqy25.top/feed/MP_WXS_3214834875.rss # 深度学习与NLP
+https://werss.gqy25.top/feed/MP_WXS_3599245772.rss # 甲子光年
+https://werss.gqy25.top/feed/MP_WXS_3876614989.rss # 超有 AI
 
 [direct]
 https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
