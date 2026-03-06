@@ -58,7 +58,7 @@ jobs:
           RSSHUB_TWITTER_RETRY_ATTEMPTS: "2"
           RSSHUB_INSTANCES_FILE: "rsshub_instances.txt"
           RSSHUB_FAILURE_COOLDOWN_SECONDS: "60"
-          NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+          # 不写入数据库，仅测试分析流程
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail
