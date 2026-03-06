@@ -21,6 +21,7 @@
 /modelscope/models # ModelScope 新模型
 /huggingface/blog # Hugging Face Blog（RSSHub）
 /hackernews # Hacker News
+/reddit/r/MachineLearning # Reddit r/MachineLearning
 /producthunt/today # Product Hunt 今日
 /github/trending/daily/python # GitHub Trending Python（日）
 /github/topics/llm # GitHub Topic LLM
@@ -173,6 +174,9 @@ https://werss.gqy25.top/feed/MP_WXS_1304308441.rss # 极客公园
 https://werss.gqy25.top/feed/MP_WXS_3214834875.rss # 深度学习与NLP
 https://werss.gqy25.top/feed/MP_WXS_3599245772.rss # 甲子光年
 https://werss.gqy25.top/feed/MP_WXS_3876614989.rss # 超有 AI
+
+https://duanyytop.github.io/agents-radar/feed.xml # agents-radar AI CLI/Agents 生态日报
+https://chrbailey.github.io/deeptrend/feed.xml # deeptrend AI 趋势情报
 
 [direct]
 https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
