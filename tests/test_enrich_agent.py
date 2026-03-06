@@ -29,18 +29,18 @@ class TestEnrichAgentOutputFormat:
             "score",
         ]
 
-    def test_uses_query_text_parsing(self) -> None:
-        """Verify query() + text parsing is used (IssueLab approach)."""
+    def test_uses_query_output_format(self) -> None:
+        """Verify query() + output_format is used for JSON Schema validation."""
         from rss2cubox import enrich_agent
 
-        # 验证函数使用 query() 而非 output_format
+        # 验证函数使用 query() + output_format + structured_output
         import inspect
         source = inspect.getsource(enrich_agent._enrich_one)
-        # 新方案：使用 query() + _extract_json_from_text
+        # 新方案：使用 query() + output_format + ResultMessage.structured_output
         assert "query" in source
-        assert "_extract_json_from_text" in source
-        # 不再使用 output_format 和 structured_output
-        assert "output_format" not in source
+        assert "output_format" in source
+        assert "structured_output" in source
+        assert "ResultMessage" in source
 
 
 class TestEnrichAgentTools:
