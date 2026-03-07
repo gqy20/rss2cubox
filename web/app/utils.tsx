@@ -113,6 +113,10 @@ export function getFaviconUrl(row: Row): string {
   if (/nvidia\.com/i.test(feed) || /nvidia\.com/i.test(row.url || '')) {
     return `https://www.google.com/s2/favicons?domain=nvidia.com&sz=16`
   }
+  // 掘金处理
+  if (feed.startsWith('/juejin/') || /juejin\.cn/i.test(feed) || /juejin\.cn/i.test(row.url || '')) {
+    return `https://www.google.com/s2/favicons?domain=juejin.cn&sz=16`
+  }
   if (feed.startsWith('http')) {
     try {
       let host = new URL(feed).hostname
