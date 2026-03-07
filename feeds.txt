@@ -5,6 +5,13 @@
 [rsshub]
 /infoq/recommend # InfoQ 推荐
 /juejin/trending/ai/weekly # 掘金 AI 周榜
+/juejin/posts/2444938365386621 # 程序员鱼皮
+/juejin/posts/3782764966460398 # Moment
+/juejin/posts/2858385963484488 # 量子位
+/juejin/posts/4212984287073895 # 孟健AI编程
+/juejin/posts/2250051536050763 # 阿星AI工作室
+/juejin/posts/712139266070296 # 王若风
+/juejin/posts/3713472747818076 # 大模型开发
 /sspai/index # 少数派首页
 /anthropic/news # Anthropic News
 /anthropic/engineering # Anthropic Engineering
@@ -123,6 +130,7 @@
 /bilibili/user/video/3546970691995922 # 道可云科技
 /bilibili/user/video/65564239 # IT咖啡馆
 /bilibili/user/video/46377861 # 神烦老狗
+/bilibili/user/video/491787323 # 叫我小苏就好啊
 /bilibili/user/video/3546884870244925 # 杰森的效率工坊
 /bilibili/user/video/193580090 # 御风大世界
 /bilibili/user/video/602010761 # JeffSu杰夫
