@@ -136,7 +136,7 @@ def load_lines(path: Path) -> list[str]:
 
 
 def normalize_feed_kind(kind: str, raw: str) -> str:
-    if kind in {"rsshub", "direct"}:
+    if kind in {"rsshub", "direct", "werss"}:
         return kind
     return "direct" if raw.startswith(("http://", "https://")) else "rsshub"
 
@@ -163,6 +163,9 @@ def load_feed_specs(path: Path) -> list[dict[str, str]]:
                 continue
             if lowered in {"[direct]", "direct:"}:
                 section = "direct"
+                continue
+            if lowered in {"[werss]", "werss:"}:
+                section = "werss"
                 continue
             value, label = split_feed_value_and_label(raw)
             if not value:
@@ -207,6 +210,14 @@ def resolve_feed_urls(feed_kind: str, feed_value: str, rsshub_pool: RSSHubInstan
     kind = normalize_feed_kind(feed_kind, value)
     if kind == "direct":
         return [value]
+    if kind == "werss":
+        if value.startswith(("http://", "https://")):
+            return [value]
+        base = os.getenv("WERSS_BASE_URL", "").strip().rstrip("/")
+        if not base:
+            return []
+        path = value if value.startswith("/") else f"/{value}"
+        return [f"{base}{path}"]
 
     route = value
     if value.startswith("rsshub://"):

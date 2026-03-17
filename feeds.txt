@@ -150,44 +150,51 @@
 /xiaohongshu/user/6314a2cc0000000012003173/notes # Aaron-OpenOnion（小红书）
 
 [werss]
-https://werss.gqy25.top/feed/MP_WXS_3903186594.rss # 袋鼠帝AI客栈
-https://werss.gqy25.top/feed/MP_WXS_3903631794.rss # AI信息Gap
-https://werss.gqy25.top/feed/MP_WXS_2398296760.rss # 51CTO技术栈
-https://werss.gqy25.top/feed/MP_WXS_3271041950.rss # 新智元
-https://werss.gqy25.top/feed/MP_WXS_3934419561.rss # 赛博禅心
-https://werss.gqy25.top/feed/MP_WXS_3233423537.rss # 字节笔记本
-https://werss.gqy25.top/feed/MP_WXS_3231445360.rss # AI变革指南
-https://werss.gqy25.top/feed/MP_WXS_3223096120.rss # 数字生命卡兹克
-https://werss.gqy25.top/feed/MP_WXS_3905207779.rss # 火山引擎Agent社区
-https://werss.gqy25.top/feed/MP_WXS_3540975510.rss # 歸藏的AI工具箱
-https://werss.gqy25.top/feed/MP_WXS_2398114060.rss # 智猩猩AI
-https://werss.gqy25.top/feed/MP_WXS_3089095027.rss # 源见卓识
-https://werss.gqy25.top/feed/MP_WXS_3871912638.rss # AI寒武纪
-https://werss.gqy25.top/feed/MP_WXS_3943641304.rss # 扣子Coze
-https://werss.gqy25.top/feed/MP_WXS_3274664830.rss # 悠哉AGI
-https://werss.gqy25.top/feed/MP_WXS_3091215681.rss # AI工程化
-https://werss.gqy25.top/feed/MP_WXS_3198754609.rss # Alex AI自动化
-https://werss.gqy25.top/feed/MP_WXS_3867641939.rss # 数字开物
-https://werss.gqy25.top/feed/MP_WXS_3908759862.rss # ShowHN Today
-https://werss.gqy25.top/feed/MP_WXS_3873892677.rss # AIGC开放社区
-https://werss.gqy25.top/feed/MP_WXS_3554086560.rss # AI前线
-https://werss.gqy25.top/feed/MP_WXS_3884405249.rss # AI科技大本营
-https://werss.gqy25.top/feed/MP_WXS_3098132220.rss # AI科技评论
-https://werss.gqy25.top/feed/MP_WXS_2392024520.rss # APPSO
-https://werss.gqy25.top/feed/MP_WXS_3075228534.rss # DeepTech深科技
-https://werss.gqy25.top/feed/MP_WXS_3941633310.rss # PaperAgent
-https://werss.gqy25.top/feed/MP_WXS_3082518302.rss # 光子星球
-https://werss.gqy25.top/feed/MP_WXS_3900464567.rss # 智能涌现
-https://werss.gqy25.top/feed/MP_WXS_1304308441.rss # 极客公园
-https://werss.gqy25.top/feed/MP_WXS_3214834875.rss # 深度学习与NLP
-https://werss.gqy25.top/feed/MP_WXS_3599245772.rss # 甲子光年
-https://werss.gqy25.top/feed/MP_WXS_3876614989.rss # 超有 AI
+/feed/MP_WXS_3903186594.rss # 袋鼠帝AI客栈
+/feed/MP_WXS_3903631794.rss # AI信息Gap
+/feed/MP_WXS_2398296760.rss # 51CTO技术栈
+/feed/MP_WXS_3271041950.rss # 新智元
+/feed/MP_WXS_3934419561.rss # 赛博禅心
+/feed/MP_WXS_3233423537.rss # 字节笔记本
+/feed/MP_WXS_3231445360.rss # AI变革指南
+/feed/MP_WXS_3223096120.rss # 数字生命卡兹克
+/feed/MP_WXS_3905207779.rss # 火山引擎Agent社区
+/feed/MP_WXS_3540975510.rss # 歸藏的AI工具箱
+/feed/MP_WXS_2398114060.rss # 智猩猩AI
+/feed/MP_WXS_3089095027.rss # 源见卓识
+/feed/MP_WXS_3871912638.rss # AI寒武纪
+/feed/MP_WXS_3943641304.rss # 扣子Coze
+/feed/MP_WXS_3274664830.rss # 悠哉AGI
+/feed/MP_WXS_3091215681.rss # AI工程化
+/feed/MP_WXS_3198754609.rss # Alex AI自动化
+/feed/MP_WXS_3867641939.rss # 数字开物
+/feed/MP_WXS_3908759862.rss # ShowHN Today
+/feed/MP_WXS_3873892677.rss # AIGC开放社区
+/feed/MP_WXS_3554086560.rss # AI前线
+/feed/MP_WXS_3884405249.rss # AI科技大本营
+/feed/MP_WXS_3098132220.rss # AI科技评论
+/feed/MP_WXS_2392024520.rss # APPSO
+/feed/MP_WXS_3075228534.rss # DeepTech深科技
+/feed/MP_WXS_3941633310.rss # PaperAgent
+/feed/MP_WXS_3082518302.rss # 光子星球
+/feed/MP_WXS_3900464567.rss # 智能涌现
+/feed/MP_WXS_1304308441.rss # 极客公园
+/feed/MP_WXS_3214834875.rss # 深度学习与NLP
+/feed/MP_WXS_3599245772.rss # 甲子光年
+/feed/MP_WXS_3876614989.rss # 超有 AI
+/feed/MP_WXS_3236757533.rss # 量子位
+/feed/MP_WXS_3201788143.rss # PaperWeekly
+/feed/MP_WXS_3073282833.rss # 机器之心
 
 https://duanyytop.github.io/agents-radar/feed.xml # agents-radar AI CLI/Agents 生态日报
 https://chrbailey.github.io/deeptrend/feed.xml # deeptrend AI 趋势情报
 
 [direct]
 https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
+https://feeds.arstechnica.com/arstechnica/index # Ars Technica
+https://www.wired.com/feed/rss # WIRED
+https://feeds.feedblitz.com/marginalrevolution # Marginal Revolution
+https://www.youtube.com/feeds/videos.xml?channel_id=UCLXo7UDZvByw2ixzpQCufnA # YouTube Vox
 https://openai.com/news/rss.xml # OpenAI News
 https://deepmind.google/blog/rss.xml # Google DeepMind News
 https://blog.google/technology/ai/rss/ # Google AI Blog
@@ -219,6 +226,35 @@ https://www.inference.vc/rss.xml # Inference Blog
 https://developer.nvidia.com/blog/feed # NVIDIA Developer Blog
 https://www.marktechpost.com/feed/ # MarkTechPost
 https://gradientflow.substack.com/feed # Gradient Flow
+# 工程 / 基础设施 / 开发工具博客
+https://vercel.com/atom # Vercel Blog
+https://blog.replit.com/feed.xml # Replit Blog
+https://databricks.com/feed # Databricks Blog
+https://blog.cloudflare.com/rss/ # Cloudflare Blog
+https://githubengineering.com/atom.xml # GitHub Engineering
+https://www.hashicorp.com/blog/feed.xml # HashiCorp Blog
+https://blog.docker.com/feed/ # Docker Blog
+https://clickhouse.com/rss.xml # ClickHouse Blog
+https://www.tinybird.co/blog/rss.xml # Tinybird Blog
+https://httptoolkit.tech/rss.xml # HTTP Toolkit Blog
+https://learnk8s.io/rss.xml # Learnk8s Blog
+https://evilmartians.com/chronicles.atom # Evil Martians Chronicles
+https://dropbox.tech/feed # Dropbox Tech
+https://benchling.engineering/feed # Benchling Engineering
+https://blog.acolyer.org/feed/ # Adrian Colyer Blog
+https://hacks.mozilla.org/feed/ # Mozilla Hacks
+https://tech.instacart.com/feed # Instacart Tech
+https://overreacted.io/rss.xml # Dan Abramov Blog
+https://www.morling.dev/blog/index.xml # Gunnar Morling Blog
+https://daniel.haxx.se/blog/feed/ # Daniel Stenberg Blog
+https://www.pulumi.com/blog/rss.xml # Pulumi Blog
+https://devblogs.microsoft.com/typescript/feed # Microsoft TypeScript Blog
+http://feeds.feedburner.com/blogspot/gJZg # Google Research Blog
+https://nodejs.org/en/feed/blog.xml # Node.js Blog
+https://v8.dev/blog.atom # V8 Blog
+https://engineering.hashnode.com/rss.xml # Hashnode Engineering
+https://blog.digitalocean.com/rss/ # DigitalOcean Blog
+https://www.elastic.co/blog/feed # Elastic Blog
 # AI Builder / Hacker 博客
 https://tinyprojects.dev/feed.xml # Tiny Projects
 https://thesephist.com/rss.xml # thesephist Blog
