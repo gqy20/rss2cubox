@@ -48,11 +48,13 @@ class TestGlobalAgentTools:
             JINA_READER_BASE,
             JINA_MAX_CHARS,
             GLOBAL_AGENT_ENABLE_SKILLS,
+            WECHAT_FETCH_TIMEOUT_SECONDS,
         )
 
         assert JINA_READER_BASE == "https://r.jina.ai/"
         assert JINA_MAX_CHARS >= 1000
         assert isinstance(GLOBAL_AGENT_ENABLE_SKILLS, bool)
+        assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10
 
     def test_tools_in_run_agent(self) -> None:
         """Verify tools are defined in _run_agent."""
@@ -62,6 +64,7 @@ class TestGlobalAgentTools:
         source = inspect.getsource(global_agent._run_agent)
         assert "read_signals_file" in source
         assert "read_webpage" in source
+        assert "read_webpage_text" in source
 
 
 class TestGlobalAgentPrompt:
@@ -85,11 +88,13 @@ class TestGlobalAgentConfig:
             GLOBAL_AGENT_ENABLE_SKILLS,
             JINA_READER_BASE,
             JINA_MAX_CHARS,
+            WECHAT_FETCH_TIMEOUT_SECONDS,
         )
 
         assert isinstance(GLOBAL_AGENT_ENABLE_SKILLS, bool)
         assert JINA_READER_BASE == "https://r.jina.ai/"
         assert JINA_MAX_CHARS >= 1000
+        assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10
 
 
 class TestGlobalAgentIntegration:

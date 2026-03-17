@@ -20,7 +20,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import requests as _requests
+from rss2cubox.webpage_reader import read_webpage_text
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
@@ -57,7 +57,8 @@ SYSTEM_PROMPT = (
 )
 
 JINA_READER_BASE = "https://r.jina.ai/"
-JINA_MAX_CHARS = 8000
+JINA_MAX_CHARS = 30000
+WECHAT_FETCH_TIMEOUT_SECONDS = max(10, int(os.getenv("WECHAT_FETCH_TIMEOUT_SECONDS", "30")))
 
 
 def _build_user_prompt(signals_file: str, total: int) -> str:
@@ -216,24 +217,20 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
 
     @tool(
         "read_webpage",
-        "通过 Jina Reader 获取指定 URL 的干净正文 Markdown，用于深度阅读原文",
+        "读取指定 URL 的干净正文 Markdown（微信文章优先用 Playwright，其他网页走 Jina Reader）",
         {"url": str},
     )
     async def read_webpage(args: dict) -> dict:
         url = args["url"]
-        jina_url = f"{JINA_READER_BASE}{url}"
 
         def _fetch() -> tuple[bool, str]:
-            try:
-                resp = _requests.get(
-                    jina_url,
-                    headers={"Accept": "text/plain", "x-respond-with": "markdown"},
-                    timeout=20,
-                )
-                resp.raise_for_status()
-                return True, resp.text[:JINA_MAX_CHARS]
-            except Exception as e:
-                return False, f"[读取失败: {e}]"
+            ok, content, _source = read_webpage_text(
+                url,
+                jina_reader_base=JINA_READER_BASE,
+                jina_max_chars=JINA_MAX_CHARS,
+                wechat_timeout_seconds=WECHAT_FETCH_TIMEOUT_SECONDS,
+            )
+            return ok, content
 
         ok, content = await anyio.to_thread.run_sync(_fetch)
         if not ok:

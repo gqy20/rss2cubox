@@ -46,12 +46,13 @@ class TestEnrichAgentOutputFormat:
 class TestEnrichAgentTools:
     """Tests for MCP tools configuration."""
 
-    def test_read_webpage_jina_tool_exists(self) -> None:
-        """Verify read_webpage_jina tool is configured."""
-        from rss2cubox.enrich_agent import JINA_READER_BASE, JINA_MAX_CHARS
+    def test_read_webpage_tool_config_exists(self) -> None:
+        """Verify webpage reading config is configured."""
+        from rss2cubox.enrich_agent import JINA_READER_BASE, JINA_MAX_CHARS, WECHAT_FETCH_TIMEOUT_SECONDS
 
         assert JINA_READER_BASE == "https://r.jina.ai/"
         assert JINA_MAX_CHARS >= 1000
+        assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10
 
     def test_tools_defined(self) -> None:
         """Verify tools are defined in source."""
@@ -59,7 +60,8 @@ class TestEnrichAgentTools:
         import inspect
 
         source = inspect.getsource(enrich_agent._enrich_one)
-        assert "read_webpage_jina" in source
+        assert "read_webpage" in source
+        assert "read_webpage_text" in source
 
 
 class TestEnrichAgentConfig:
@@ -101,6 +103,7 @@ class TestEnrichAgentErrorHandling:
             ENRICH_MAX_BUDGET_USD,
             JINA_READER_BASE,
             JINA_MAX_CHARS,
+            WECHAT_FETCH_TIMEOUT_SECONDS,
         )
 
         assert isinstance(ENRICH_AGENT_ENABLED, bool)
@@ -110,3 +113,4 @@ class TestEnrichAgentErrorHandling:
         assert isinstance(ENRICH_ITEM_TIMEOUT_SECONDS, int)
         assert JINA_READER_BASE == "https://r.jina.ai/"
         assert JINA_MAX_CHARS >= 1000
+        assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10

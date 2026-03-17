@@ -20,6 +20,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from rss2cubox.webpage_reader import read_webpage_text
+
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
 ENRICH_MIN_SCORE = float(os.getenv("ENRICH_MIN_SCORE", "0.7"))
@@ -27,7 +29,8 @@ ENRICH_MAX_ITEMS = int(os.getenv("ENRICH_MAX_ITEMS", "15"))
 ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "90")))
 ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
-JINA_MAX_CHARS = max(1000, int(os.getenv("JINA_MAX_CHARS", "10000")))
+JINA_MAX_CHARS = max(1000, int(os.getenv("JINA_MAX_CHARS", "30000")))
+WECHAT_FETCH_TIMEOUT_SECONDS = max(10, int(os.getenv("WECHAT_FETCH_TIMEOUT_SECONDS", "30")))
 _enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "1.5").strip()
 try:
     ENRICH_MAX_BUDGET_USD = float(_enrich_max_budget_raw) if _enrich_max_budget_raw else None
@@ -52,7 +55,7 @@ ENRICH_OUTPUT_SCHEMA = {
 
 SYSTEM_PROMPT = (
     "你是一位顶级科技产业分析师，正在对一篇已通过初筛的高价值文章进行深度精读。\n"
-    "你已拥有文章的标题与初步摘要，现在优先通过 read_webpage_jina 工具获取原文全文。\n"
+    "你已拥有文章的标题与初步摘要，现在优先通过 read_webpage 工具获取原文全文。\n"
     "阅读完毕后，直接以 JSON 格式输出分析结果。\n"
     "字段要求：\n"
     "- core_event：冷静客观地用一句话描述事实（≤60字）\n"
@@ -71,7 +74,7 @@ def _build_user_prompt(item: dict, original: dict) -> str:
         f"初步评分：{original.get('score', 0):.2f}\n"
         f"初步核心事件：{original.get('core_event', '')}\n\n"
         "步骤：\n"
-        "1. 调用 read_webpage_jina 读取原文（传入上方原文链接）。\n"
+        "1. 调用 read_webpage 读取原文（传入上方原文链接）。\n"
         "2. 无论读取是否成功，直接输出 JSON 格式的分析结果。\n"
         "   如果读取失败，基于已有标题、摘要和初步分析输出 JSON。"
     )
@@ -145,23 +148,18 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         return None, "missing_url"
 
     @tool(
-        "read_webpage_jina",
-        "通过 Jina Reader 获取文章原文完整内容（Markdown），用于深度阅读",
+        "read_webpage",
+        "读取文章原文完整内容（微信文章优先用 Playwright，其他网页走 Jina Reader）",
         {"url": str},
     )
-    async def read_webpage_jina(args: dict) -> dict:
+    async def read_webpage(args: dict) -> dict:
         def _fetch() -> tuple[bool, str]:
-            import requests
-            try:
-                resp = requests.get(
-                    f"{JINA_READER_BASE}{expected_url}",
-                    headers={"Accept": "text/plain", "x-respond-with": "markdown"},
-                    timeout=20,
-                )
-                resp.raise_for_status()
-                return True, resp.text[:JINA_MAX_CHARS]
-            except Exception as e:
-                return False, f"jina_fetch_failed: {e}"
+            return read_webpage_text(
+                expected_url,
+                jina_reader_base=JINA_READER_BASE,
+                jina_max_chars=JINA_MAX_CHARS,
+                wechat_timeout_seconds=WECHAT_FETCH_TIMEOUT_SECONDS,
+            )[:2]
 
         ok, payload = await anyio.to_thread.run_sync(_fetch)
         return {"content": [{"type": "text", "text": payload if ok else f"[网页读取失败，请基于已有标题和摘要完成分析] {payload}"}]}
@@ -169,10 +167,10 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     server = create_sdk_mcp_server(
         name="enrich-tools",
         version="1.0.0",
-        tools=[read_webpage_jina],
+        tools=[read_webpage],
     )
 
-    allowed_tools = ["mcp__enrich-tools__read_webpage_jina"]
+    allowed_tools = ["mcp__enrich-tools__read_webpage"]
     if ENRICH_ENABLE_SKILLS:
         allowed_tools.append("Skill")
 
