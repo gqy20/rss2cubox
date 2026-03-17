@@ -34,6 +34,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install .
 
+      - name: Install Playwright Chromium
+        run: python -m playwright install chromium
+
       - name: Run sync
         env:
           CUBOX_FOLDER: "RSS Inbox"
