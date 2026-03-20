@@ -302,7 +302,6 @@ async def _enrich_all(
                 stage="enrich",
                 eid=eid,
                 url=str(item.get("url", "")).strip(),
-                score=original.get("score", 0),
             )
             try:
                 enriched, reason = await _enrich_one(item, original)
@@ -347,7 +346,7 @@ def analyze_candidates_with_agent(
 
     seed: dict[str, dict[str, Any]] = {
         str(item.get("eid", "")): {
-            "score": 0.0,
+            "score": None,
             "reason": "",
             "hidden_signal": "",
             "actionable": "",
