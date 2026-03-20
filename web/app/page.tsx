@@ -1,6 +1,6 @@
 import DashboardClient from './DashboardClient'
 
-import { loadGlobalInsights, loadProcessedItems } from '../lib/neonDb'
+import { loadGlobalInsights, loadIcArticles } from '../lib/neonDb'
 import { BUSINESS_TZ, getBusinessDayKey } from '../lib/time'
 
 export const revalidate = 1800 // 30 minutes; GitHub Actions triggers on-demand revalidation after each sync
@@ -164,7 +164,7 @@ async function loadFromDb(): Promise<{
   metrics: ReturnType<typeof buildMetrics>
   insights: GlobalInsights | null
 }> {
-  const [events, rawInsights] = await Promise.all([loadProcessedItems(), loadGlobalInsights()])
+  const [events, rawInsights] = await Promise.all([loadIcArticles(), loadGlobalInsights()])
   const rows: Row[] = dedupeRows(
     events.map((e) => ({
       id: e.id,

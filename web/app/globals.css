@@ -382,74 +382,6 @@ body {
   flex-wrap: wrap;
 }
 
-.cubox-editor {
-  margin-top: 8px;
-  margin-bottom: 8px;
-  padding: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.cubox-editor.compact {
-  margin-top: 0;
-  margin-bottom: 0;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  box-shadow: none;
-}
-
-.cubox-editor-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.cubox-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.cubox-field-label {
-  font-size: 12px;
-  font-weight: 600;
-  color: #c9d8ea;
-}
-
-.cubox-field-help {
-  font-size: 12px;
-  color: #8aa3be;
-}
-
-.cubox-get-link {
-  font-size: 12px;
-  color: #7dd3fc;
-  text-decoration: none;
-}
-
-.cubox-get-link:hover {
-  text-decoration: underline;
-}
-
-.cubox-editor-row {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
-.cubox-save-btn {
-  border-radius: 10px;
-  padding: 8px 12px;
-  min-width: 108px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-}
-
 .action-message {
   position: fixed;
   top: 18px;
@@ -1184,10 +1116,6 @@ body {
   .insight-panel-head {
     align-items: flex-start;
     flex-wrap: wrap;
-  }
-
-  .cubox-editor-row {
-    flex-direction: column;
   }
 
   .kpi {

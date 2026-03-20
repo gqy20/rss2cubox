@@ -73,20 +73,7 @@ export type GlobalInsights = {
   daily_advices?: string[]
 }
 
-export async function loadRunEvents(): Promise<EventRow[]> {
-  const sql = getSql()
-  const rows = await sql`
-    SELECT data FROM run_events
-    WHERE ((data->>'score')::float >= 0.6
-       OR (data->>'pushed') = 'true')
-      AND event_time >= (NOW() - INTERVAL '14 days')
-    ORDER BY event_time DESC NULLS LAST
-    LIMIT 12000
-  `
-  return rows.map((r) => r.data as EventRow)
-}
-
-export async function loadProcessedItems(): Promise<EventRow[]> {
+export async function loadIcArticles(): Promise<EventRow[]> {
   const batchSize = 100
   const maxPages = 1000
   const items: IcArticle[] = []
