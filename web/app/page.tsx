@@ -60,6 +60,7 @@ function resolveSource(row: Record<string, unknown>): string {
 
 function getDayKey(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date
+  if (Number.isNaN(d.getTime())) return ''
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: BUSINESS_TZ,
     year: 'numeric',
@@ -73,6 +74,7 @@ function getDayKey(date: Date | string): string {
 }
 
 function formatAxisDay(value: Date): string {
+  if (Number.isNaN(value.getTime())) return ''
   const parts = new Intl.DateTimeFormat('zh-CN', {
     timeZone: BUSINESS_TZ,
     month: 'numeric',
@@ -99,6 +101,7 @@ function buildMetrics(rows: Row[]) {
     sourceCount[source] = (sourceCount[source] ?? 0) + 1
     
     const dayKey = getDayKey(r.time)
+    if (!dayKey) continue
     if (dayKey === today) {
       totalToday++
       if ((r.score ?? 0) >= 0.85) highToday++
@@ -128,6 +131,7 @@ function buildMetrics(rows: Row[]) {
   
   for (const r of rows) {
     const dayKey = getDayKey(r.time)
+    if (!dayKey) continue
     const slot = dayMap.get(dayKey)
     if (slot) {
       slot.total++
@@ -141,6 +145,7 @@ function buildMetrics(rows: Row[]) {
   const dailyCounts: Record<string, number> = {}
   for (const r of rows) {
     const dayKey = getDayKey(r.time)
+    if (!dayKey) continue
     dailyCounts[dayKey] = (dailyCounts[dayKey] || 0) + 1
   }
 

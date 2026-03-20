@@ -697,7 +697,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div className="live-status">
               <span className="status-dot" />
-              <span>实时分析中</span>
+              <span>批量分析结果</span>
             </div>
             <button className="filter-btn" onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
               <Download size={13} /> 导出 JSON
