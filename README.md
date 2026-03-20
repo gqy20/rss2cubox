@@ -2,6 +2,19 @@
 
 抓取 RSS，使用 Agent SDK 做文章分析，并批量导入信息库。
 
+## 架构职责
+
+- `processed_items`
+  - 本地运行态文章表
+  - 用于增量去重、导出状态跟踪、前端文章列表展示
+- `ic`
+  - 正式文章内容库
+  - 通过 `IC_API_URL` 批量导入
+- `global_insights`
+  - 全局洞察结果表
+  - 仅保存 `global_agent` 生成的趋势、弱信号、行动建议
+  - 不写入 `processed_items`
+
 ## 1) feeds.txt
 
 ```txt
@@ -83,7 +96,9 @@ uv run rss2cubox
 
 - 前端目录：`web/`
 - 在 Vercel 创建项目时把 **Root Directory** 设为 `web`
-- 页面服务端直接读取 Neon 中的 `processed_items` 和 `global_insights`
+- 页面服务端直接读取 Neon 中的：
+  - `processed_items`：文章列表
+  - `global_insights`：洞察卡片
 - 不再依赖本地导出的静态 JSON 文件
 
 ## 8) 数据迁移与审计脚本
