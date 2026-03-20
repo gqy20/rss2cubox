@@ -76,10 +76,17 @@ uv run rss2cubox
 
 - 主工作流：`.github/workflows/rss_to_ic.yml`
 - 快速测试：`.github/workflows/rss_to_ic_test.yml`
-- 每次运行会输出日志 artifact
-- Step Summary 包含阶段耗时、熔断跳过数、去重数、每源处理统计
+- 每次运行会输出 `rss2cubox.log` artifact
+- Step Summary 包含：阶段耗时、熔断跳过数、去重数、每源处理统计
 
-## 7) 数据迁移与审计脚本
+## 7) Vercel 前端（自动更新）
+
+- 前端目录：`web/`
+- 在 Vercel 创建项目时把 **Root Directory** 设为 `web`
+- 页面服务端直接读取 Neon 中的 `processed_items` 和 `global_insights`
+- 不再依赖本地导出的静态 JSON 文件
+
+## 8) 数据迁移与审计脚本
 
 迁移旧 Neon `processed_items` 到 `ic`：
 
