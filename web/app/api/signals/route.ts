@@ -30,7 +30,7 @@ type IcListResponse = {
 }
 
 function buildIcListApiUrl(limit: number, offset: number, sourceType: string = DEFAULT_SOURCE_TYPE): string {
-  if (!IC_BATCH_API_URL) throw new Error('IC_API_URL is not configured')
+  if (!IC_BATCH_API_URL) return ''
   const baseUrl = IC_BATCH_API_URL.replace(/\/api\/v1\/articles\/batch\/?$/, '')
   const url = new URL('/api/v1/articles', baseUrl)
   url.searchParams.set('limit', String(limit))
@@ -90,6 +90,7 @@ function matchesDate(article: IcArticle, date: string): boolean {
 }
 
 async function fetchIcArticles(limit: number, offset: number): Promise<IcArticle[]> {
+  if (!IC_BATCH_API_URL) return []
   const response = await fetch(buildIcListApiUrl(limit, offset), {
     next: { revalidate: 1800 },
   })

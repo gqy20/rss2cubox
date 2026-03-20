@@ -61,7 +61,6 @@ export FEED_CURSOR_LOOKBACK_HOURS="24"
 
 # Agent SDK 分析（基于 Claude Agent SDK）
 export ENRICH_AGENT_ENABLED="true"
-export ENRICH_MAX_ITEMS="200"
 export ENRICH_MAX_WORKERS="10"          # 并发工作数
 export ENRICH_ITEM_TIMEOUT_SECONDS="90"  # 单条目超时
 export ENRICH_MAX_BUDGET_USD="0.15"     # 单条目最大预算

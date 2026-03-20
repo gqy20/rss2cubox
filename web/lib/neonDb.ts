@@ -2,7 +2,7 @@ import { neon } from '@neondatabase/serverless'
 
 function getSql() {
   const url = process.env.NEON_DATABASE_URL
-  if (!url) throw new Error('NEON_DATABASE_URL is not configured')
+  if (!url) return null
   return neon(url)
 }
 
@@ -10,7 +10,7 @@ const DEFAULT_SOURCE_TYPE = process.env.IC_SOURCE_TYPE || 'gqy'
 const IC_BATCH_API_URL = process.env.IC_API_URL || ''
 
 function getIcListApiUrl(limit: number, offset: number, sourceType: string = DEFAULT_SOURCE_TYPE): string {
-  if (!IC_BATCH_API_URL) throw new Error('IC_API_URL is not configured')
+  if (!IC_BATCH_API_URL) return ''
   const baseUrl = IC_BATCH_API_URL.replace(/\/api\/v1\/articles\/batch\/?$/, '')
   const url = new URL('/api/v1/articles', baseUrl)
   url.searchParams.set('limit', String(limit))
@@ -72,6 +72,7 @@ export type GlobalInsights = {
 }
 
 export async function loadIcArticles(): Promise<EventRow[]> {
+  if (!IC_BATCH_API_URL) return []
   const batchSize = 100
   const maxPages = 1000
   const items: IcArticle[] = []
@@ -116,6 +117,7 @@ export async function loadIcArticles(): Promise<EventRow[]> {
 
 export async function loadGlobalInsights(): Promise<GlobalInsights | null> {
   const sql = getSql()
+  if (!sql) return null
   const rows = await sql`
     SELECT data
     FROM global_insights

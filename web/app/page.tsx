@@ -203,7 +203,7 @@ export const PAGE_SIZE = 50
 export default async function Page() {
   const { rows, metrics: data, insights } = await loadFromDb()
 
-    const paginatedRows = rows.slice(0, PAGE_SIZE)
+  const paginatedRows = rows.slice(0, PAGE_SIZE)
 
   // 服务端时间，用于避免 hydration mismatch
   const serverTime = new Date().toISOString()

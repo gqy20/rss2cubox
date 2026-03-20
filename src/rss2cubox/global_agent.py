@@ -1,6 +1,6 @@
 """
 全局情报深度分析 Agent
-使用 Claude Agent SDK 驱动 claude CLI 进程，对高价值情报进行二次深度分析。
+使用 Claude Agent SDK 驱动 claude CLI 进程，对候选情报进行二次深度分析。
 Agent 通过 read_signals_file 工具读取信号文件，通过 Jina Reader API (r.jina.ai) 抓取原文，
 最终以结构化 JSON 格式输出分析报告。
 
@@ -204,7 +204,7 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
 
     @tool(
         "read_signals_file",
-        "读取今日高价值情报信号文件，返回完整的 JSON 列表",
+        "读取今日候选情报信号文件，返回完整的 JSON 列表",
         {},
     )
     async def read_signals_file(args: dict) -> dict:
@@ -378,7 +378,7 @@ def run_global_analysis(
     candidates: list[dict],
 ) -> None:
     """
-    从本次 pipeline 的分析结果中筛出高价值条目，
+    从本次 pipeline 的分析结果中筛出可用于全局分析的条目，
     驱动 Claude Agent 进行二次深度分析并写入 Neon DB。
     """
     import anyio
