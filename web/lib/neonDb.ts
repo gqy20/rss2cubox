@@ -6,6 +6,45 @@ function getSql() {
   return neon(url)
 }
 
+const DEFAULT_SOURCE_TYPE = process.env.IC_SOURCE_TYPE || 'gqy'
+const IC_BATCH_API_URL = process.env.IC_API_URL || ''
+
+function getIcListApiUrl(limit: number, offset: number, sourceType: string = DEFAULT_SOURCE_TYPE): string {
+  if (!IC_BATCH_API_URL) throw new Error('IC_API_URL is not configured')
+  const baseUrl = IC_BATCH_API_URL.replace(/\/api\/v1\/articles\/batch\/?$/, '')
+  const url = new URL('/api/v1/articles', baseUrl)
+  url.searchParams.set('limit', String(limit))
+  url.searchParams.set('offset', String(offset))
+  if (sourceType) url.searchParams.set('source_type', sourceType)
+  return url.toString()
+}
+
+type IcArticle = {
+  id: number | string
+  title?: string | null
+  source_feed_id?: string | null
+  source_feed_name?: string | null
+  url?: string | null
+  pic_url?: string | null
+  description?: string | null
+  publish_time?: string | null
+  tags?: string[] | null
+  score?: number | null
+  reason?: string | null
+  actionable?: string | null
+  hidden_signal?: string | null
+  created_at?: string | null
+}
+
+type IcListResponse = {
+  ok?: boolean
+  data?: {
+    list?: IcArticle[]
+    limit?: number
+    offset?: number
+  }
+}
+
 export type EventRow = {
   id: string
   time: string
@@ -48,16 +87,23 @@ export async function loadRunEvents(): Promise<EventRow[]> {
 }
 
 export async function loadProcessedItems(): Promise<EventRow[]> {
-  const sql = getSql()
-  const rows = await sql`
-    SELECT data
-    FROM processed_items
-    WHERE NULLIF(data->>'url', '') IS NOT NULL
-    ORDER BY COALESCE(NULLIF(data->>'publish_time', ''), NULLIF(data->>'created_at', '')) DESC
-    LIMIT 12000
-  `
-  return rows.map((r) => {
-    const data = r.data as Record<string, unknown>
+  const batchSize = 100
+  const maxScan = 2000
+  const items: IcArticle[] = []
+  for (let offset = 0; offset < maxScan; offset += batchSize) {
+    const response = await fetch(getIcListApiUrl(batchSize, offset), {
+      next: { revalidate: 1800 },
+    })
+    if (!response.ok) {
+      throw new Error(`IC article list request failed: HTTP ${response.status}`)
+    }
+    const payload = (await response.json()) as IcListResponse
+    const chunk = Array.isArray(payload?.data?.list) ? payload.data.list : []
+    if (!chunk.length) break
+    items.push(...chunk)
+    if (chunk.length < batchSize) break
+  }
+  return items.map((data) => {
     return {
       id: String(data.id || ''),
       time: String(data.publish_time || data.created_at || ''),
@@ -68,14 +114,14 @@ export async function loadProcessedItems(): Promise<EventRow[]> {
       url: String(data.url || ''),
       title: String(data.title || ''),
       score: Number(data.score || 0),
-      status: Boolean(data.exported) ? 'exported' : 'processed',
-      pushed: Boolean(data.exported),
+      status: 'exported',
+      pushed: true,
       tags: Array.isArray(data.tags) ? data.tags.map((v) => String(v)) : [],
       core_event: String(data.description || ''),
       hidden_signal: String(data.hidden_signal || ''),
       actionable: String(data.actionable || ''),
       reason: String(data.reason || ''),
-      exported_at: String(data.exported_at || ''),
+      exported_at: '',
     } satisfies EventRow
   })
 }

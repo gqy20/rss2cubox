@@ -1,12 +1,115 @@
-import { neon } from '@neondatabase/serverless'
 import { NextRequest, NextResponse } from 'next/server'
 
 const BUSINESS_TZ = 'Asia/Shanghai'
+const DEFAULT_SOURCE_TYPE = process.env.IC_SOURCE_TYPE || 'gqy'
+const IC_BATCH_API_URL = process.env.IC_API_URL || ''
 
-function getSql() {
-  const url = process.env.NEON_DATABASE_URL
-  if (!url) throw new Error('NEON_DATABASE_URL is not configured')
-  return neon(url)
+type IcArticle = {
+  id: number | string
+  title?: string | null
+  source_feed_id?: string | null
+  source_feed_name?: string | null
+  url?: string | null
+  pic_url?: string | null
+  description?: string | null
+  publish_time?: string | null
+  tags?: string[] | null
+  score?: number | null
+  reason?: string | null
+  actionable?: string | null
+  hidden_signal?: string | null
+  created_at?: string | null
+}
+
+type IcListResponse = {
+  ok?: boolean
+  data?: {
+    list?: IcArticle[]
+    limit?: number
+    offset?: number
+  }
+}
+
+function buildIcListApiUrl(limit: number, offset: number, sourceType: string = DEFAULT_SOURCE_TYPE): string {
+  if (!IC_BATCH_API_URL) throw new Error('IC_API_URL is not configured')
+  const baseUrl = IC_BATCH_API_URL.replace(/\/api\/v1\/articles\/batch\/?$/, '')
+  const url = new URL('/api/v1/articles', baseUrl)
+  url.searchParams.set('limit', String(limit))
+  url.searchParams.set('offset', String(offset))
+  if (sourceType) url.searchParams.set('source_type', sourceType)
+  return url.toString()
+}
+
+function normalizeTime(article: IcArticle): string {
+  return String(article.publish_time || article.created_at || '')
+}
+
+function normalizeSource(article: IcArticle): string {
+  const label = String(article.source_feed_name || '').trim()
+  if (label) return label
+  const feed = String(article.source_feed_id || '').trim()
+  if (feed) {
+    try {
+      return new URL(feed).hostname
+    } catch {
+      return feed
+    }
+  }
+  try {
+    return new URL(String(article.url || '')).hostname
+  } catch {
+    return 'unknown'
+  }
+}
+
+function getDateKey(raw: string): string {
+  const date = new Date(raw)
+  if (Number.isNaN(date.getTime())) return ''
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: BUSINESS_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).formatToParts(date)
+  const year = parts.find((p) => p.type === 'year')?.value || '1970'
+  const month = parts.find((p) => p.type === 'month')?.value || '01'
+  const day = parts.find((p) => p.type === 'day')?.value || '01'
+  return `${year}-${month}-${day}`
+}
+
+function matchesSearch(article: IcArticle, search: string): boolean {
+  if (!search) return true
+  const needle = search.toLowerCase()
+  const fields = [
+    article.title,
+    article.source_feed_name,
+    article.source_feed_id,
+    article.hidden_signal,
+    article.description,
+    article.reason,
+    article.actionable,
+    article.url,
+    article.pic_url,
+    article.publish_time,
+  ]
+  if (fields.some((value) => String(value || '').toLowerCase().includes(needle))) return true
+  return Array.isArray(article.tags) && article.tags.some((tag) => String(tag).toLowerCase().includes(needle))
+}
+
+function matchesDate(article: IcArticle, date: string): boolean {
+  if (!date) return true
+  return getDateKey(normalizeTime(article)) === date
+}
+
+async function fetchIcArticles(limit: number, offset: number): Promise<IcArticle[]> {
+  const response = await fetch(buildIcListApiUrl(limit, offset), {
+    next: { revalidate: 1800 },
+  })
+  if (!response.ok) {
+    throw new Error(`IC article list request failed: HTTP ${response.status}`)
+  }
+  const payload = (await response.json()) as IcListResponse
+  return Array.isArray(payload?.data?.list) ? payload.data.list : []
 }
 
 export async function GET(request: NextRequest) {
@@ -22,91 +125,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid date format, expected YYYY-MM-DD' }, { status: 400 })
   }
 
-  const sql = getSql()
-
-  const whereClauses: string[] = ["NULLIF(data->>'url', '') IS NOT NULL"]
-  const params: Array<string | number> = []
-
-  if (date) {
-    params.push(date)
-    whereClauses.push(`(
-      COALESCE(NULLIF(data->>'publish_time', ''), NULLIF(data->>'created_at', '')) IS NOT NULL
-      AND COALESCE(NULLIF(data->>'publish_time', ''), NULLIF(data->>'created_at', '')) ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}'
-      AND DATE((COALESCE(NULLIF(data->>'publish_time', ''), NULLIF(data->>'created_at', ''))::timestamptz) AT TIME ZONE '${BUSINESS_TZ}') = $${params.length}
-    )`)
+  const batchSize = 100
+  const maxScan = 2000
+  const articles: IcArticle[] = []
+  let scanOffset = 0
+  while (scanOffset < maxScan) {
+    const chunk = await fetchIcArticles(batchSize, scanOffset)
+    if (!chunk.length) break
+    articles.push(...chunk)
+    if (chunk.length < batchSize) break
+    scanOffset += batchSize
   }
 
-  if (search) {
-    params.push(`%${search}%`)
-    const patternIdx = params.length
-    whereClauses.push(`(data->>'title' ILIKE $${patternIdx}
-      OR data->>'source_feed_name' ILIKE $${patternIdx}
-      OR data->>'source_feed_id' ILIKE $${patternIdx}
-      OR data->>'hidden_signal' ILIKE $${patternIdx}
-      OR data->>'description' ILIKE $${patternIdx}
-      OR data->>'reason' ILIKE $${patternIdx}
-      OR data->>'actionable' ILIKE $${patternIdx}
-      OR data->>'url' ILIKE $${patternIdx}
-      OR data->>'pic_url' ILIKE $${patternIdx}
-      OR data->>'publish_time' ILIKE $${patternIdx}
-      OR EXISTS (
-        SELECT 1
-        FROM jsonb_array_elements_text(COALESCE(data->'tags', '[]'::jsonb)) AS tag
-        WHERE tag ILIKE $${patternIdx}
-      ))`)
-  }
+  const filtered = articles.filter((article) => matchesDate(article, date) && matchesSearch(article, search))
+  filtered.sort((a, b) => new Date(normalizeTime(b)).getTime() - new Date(normalizeTime(a)).getTime())
 
-  const whereClause = whereClauses.join(' AND ')
   const offset = (page - 1) * limit
-
-  const countSql = `SELECT COUNT(*) as total FROM processed_items WHERE ${whereClause}`
-  const dataSql = `SELECT data FROM processed_items WHERE ${whereClause} ORDER BY COALESCE(NULLIF(data->>'publish_time', ''), NULLIF(data->>'created_at', '')) DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
-
-  const countResult = await sql.query(countSql, params) as any
-  const total = Number(countResult[0]?.total || 0)
-
-  const rowsResult = await sql.query(dataSql, [...params, limit, offset]) as any
-  const events = rowsResult.map((r: any) => r.data)
-
-  // 处理数据去重和格式化
-  const seen = new Set<string>()
-  const deduped: typeof events = []
-  for (const e of events) {
-    const key = e.id || `${e.url}|${e.time}|${e.title}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    deduped.push(e)
-  }
-
-  // 解析来源
-  function resolveSource(row: Record<string, unknown>): string {
-    const label = String(row.source_feed_name || row.source_label || row.source || '').trim()
-    if (label) return label
-    const feed = String(row.source_feed_id || row.source_feed || '').trim()
-    if (feed) {
-      try {
-        return new URL('https://x.com' + feed).pathname.split('/')[1] || feed
-      } catch {
-        return feed
-      }
-    }
-    try {
-      return new URL(String(row.url || '')).hostname
-    } catch {
-      return 'unknown'
-    }
-  }
-
-  const formatted = deduped.map((e: any) => ({
+  const pageRows = filtered.slice(offset, offset + limit)
+  const formatted = pageRows.map((e) => ({
     id: e.id,
     title: e.title,
     url: e.url,
-    source: resolveSource(e),
-    time: e.publish_time || e.created_at,
+    source: normalizeSource(e),
+    time: normalizeTime(e),
     score: e.score,
-    pushed: Boolean(e.exported),
-    status: e.exported ? 'exported' : 'processed',
-    tags: e.tags,
+    pushed: true,
+    status: 'exported',
+    tags: Array.isArray(e.tags) ? e.tags : [],
     core_event: e.description,
     hidden_signal: e.hidden_signal,
     actionable: e.actionable,
@@ -118,8 +163,8 @@ export async function GET(request: NextRequest) {
 
   return NextResponse.json({
     data: formatted,
-    total,
+    total: filtered.length,
     page,
-    hasMore: (page - 1) * limit + formatted.length < total,
+    hasMore: offset + formatted.length < filtered.length,
   })
 }

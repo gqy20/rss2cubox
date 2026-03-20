@@ -96,10 +96,12 @@ uv run rss2cubox
 
 - 前端目录：`web/`
 - 在 Vercel 创建项目时把 **Root Directory** 设为 `web`
-- 页面服务端直接读取 Neon 中的：
-  - `processed_items`：文章列表
+- 页面服务端直接读取：
+  - `ic`：文章列表
   - `global_insights`：洞察卡片
-- 不再依赖本地导出的静态 JSON 文件
+- Vercel 需要至少配置：
+  - `IC_API_URL`
+  - `NEON_DATABASE_URL`
 
 ## 8) 数据迁移与审计脚本
 
