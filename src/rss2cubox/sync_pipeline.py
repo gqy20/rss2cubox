@@ -313,3 +313,26 @@ def post_articles_batch(
     response = request_post(api_url, json={"articles": articles}, timeout=30)
     response.raise_for_status()
     return response.text
+
+
+def post_articles_in_chunks(
+    *,
+    api_url: str | None,
+    request_post: Any,
+    articles: list[dict[str, Any]],
+    chunk_size: int,
+) -> list[str]:
+    if chunk_size < 1:
+        raise ValueError("chunk_size must be >= 1")
+
+    responses: list[str] = []
+    for start in range(0, len(articles), chunk_size):
+        batch = articles[start : start + chunk_size]
+        responses.append(
+            post_articles_batch(
+                api_url=api_url,
+                request_post=request_post,
+                articles=batch,
+            )
+        )
+    return responses

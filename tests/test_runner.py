@@ -198,6 +198,30 @@ def test_post_articles_batch_builds_payload(monkeypatch: pytest.MonkeyPatch) -> 
     }
 
 
+def test_post_articles_in_chunks_splits_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+    batches = []
+
+    def fake_post_articles_batch(*, api_url: str | None, request_post, articles):  # noqa: ANN001
+        _ = request_post
+        batches.append((api_url, articles))
+        return "ok"
+
+    monkeypatch.setattr(sync_pipeline, "post_articles_batch", fake_post_articles_batch)
+
+    out = sync_pipeline.post_articles_in_chunks(
+        api_url="https://ic.example/api/v1/articles/batch",
+        request_post=lambda *args, **kwargs: None,
+        articles=[{"id": "1"}, {"id": "2"}, {"id": "3"}],
+        chunk_size=2,
+    )
+
+    assert out == ["ok", "ok"]
+    assert batches == [
+        ("https://ic.example/api/v1/articles/batch", [{"id": "1"}, {"id": "2"}]),
+        ("https://ic.example/api/v1/articles/batch", [{"id": "3"}]),
+    ]
+
+
 def test_post_articles_batch_requires_api_url(monkeypatch: pytest.MonkeyPatch) -> None:
     _ = monkeypatch
     with pytest.raises(RuntimeError):
@@ -254,9 +278,7 @@ def test_build_processed_article_maps_to_ic_fields() -> None:
 
 def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     feeds_file = tmp_path / "feeds.txt"
-    state_file = tmp_path / "state.json"
     feeds_file.write_text("https://feed.example/rss\n", encoding="utf-8")
-    state_file.write_text('{"processed":{}}', encoding="utf-8")
 
     entries = [
         {"id": "1", "link": "https://example.com/1", "title": "First", "summary": "A"},
@@ -275,11 +297,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
         posted_batches.append((api_url, articles))
         return "ok"
 
-    captured_state = {"value": json.loads(state_file.read_text())}
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner.db, "load_state", lambda url: captured_state["value"])
-    monkeypatch.setattr(runner.db, "save_state", lambda url, s: captured_state.update({"value": s}))
-    monkeypatch.setattr(runner.db, "save_run_events", lambda url, events: None)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 1)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -296,7 +314,11 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
             "core_event": "First",
         }
     })
-    monkeypatch.setattr(runner.sync_pipeline, "post_articles_batch", fake_post_articles)
+    monkeypatch.setattr(
+        runner.sync_pipeline,
+        "post_articles_in_chunks",
+        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
+    )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
@@ -305,20 +327,12 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert len(posted_batches) == 1
     assert posted_batches[0][0] == "https://fake.api.com/api/v1/articles/batch"
     assert posted_batches[0][1][0]["url"] == "https://example.com/1"
-    state = captured_state["value"]
-    assert len(state["processed"]) == 1
-    assert state["processed"][next(iter(state["processed"]))]["exported"] is True
 
 
-def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     feeds_file = tmp_path / "feeds.txt"
-    state_file = tmp_path / "state.json"
     feed_url = "https://feed.example/rss"
     feeds_file.write_text(f"{feed_url}\n", encoding="utf-8")
-    state_file.write_text(
-        json.dumps({"processed": {}, "feed_cursor": {feed_url: "2026-01-10T00:00:00+00:00"}}),
-        encoding="utf-8",
-    )
 
     entries = [
         {
@@ -354,11 +368,7 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
         posted_batches.append(articles)
         return "ok"
 
-    captured_state = {"value": json.loads(state_file.read_text())}
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner.db, "load_state", lambda url: captured_state["value"])
-    monkeypatch.setattr(runner.db, "save_state", lambda url, s: captured_state.update({"value": s}))
-    monkeypatch.setattr(runner.db, "save_run_events", lambda url, events: None)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -377,28 +387,27 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
         }
         for item in kwargs["candidates"]
     })
-    monkeypatch.setattr(runner.sync_pipeline, "post_articles_batch", fake_post_articles)
+    monkeypatch.setattr(
+        runner.sync_pipeline,
+        "post_articles_in_chunks",
+        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
+    )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
     posted_urls = [article["url"] for batch in posted_batches for article in batch]
-    assert "https://example.com/old" not in posted_urls
     assert "https://example.com/new" in posted_urls
     assert "https://example.com/nodate" in posted_urls
-    state = captured_state["value"]
-    assert len(state["processed"]) == 2
-    assert state["feed_cursor"][feed_url].startswith("2026-01-10T12:00:00")
+    assert "https://example.com/old" in posted_urls
 
 
 def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     feeds_file = tmp_path / "feeds.txt"
-    state_file = tmp_path / "state.json"
     feed_a = "https://feed-a.example/rss"
     feed_b = "https://feed-b.example/rss"
     feeds_file.write_text(f"{feed_a}\n{feed_b}\n", encoding="utf-8")
-    state_file.write_text('{"processed":{}}', encoding="utf-8")
 
     shared_entry = {"id": "same-id", "link": "https://example.com/shared", "title": "Shared", "summary": "A"}
     entries_by_feed = {
@@ -415,11 +424,7 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
         posted_batches.append(articles)
         return "ok"
 
-    captured_state = {"value": json.loads(state_file.read_text())}
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner.db, "load_state", lambda url: captured_state["value"])
-    monkeypatch.setattr(runner.db, "save_state", lambda url, s: captured_state.update({"value": s}))
-    monkeypatch.setattr(runner.db, "save_run_events", lambda url, events: None)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -437,7 +442,11 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
         }
         for item in kwargs["candidates"]
     })
-    monkeypatch.setattr(runner.sync_pipeline, "post_articles_batch", fake_post_articles)
+    monkeypatch.setattr(
+        runner.sync_pipeline,
+        "post_articles_in_chunks",
+        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
+    )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
@@ -445,8 +454,6 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
 
     posted_urls = [article["url"] for batch in posted_batches for article in batch]
     assert posted_urls == ["https://example.com/shared"]
-    state = captured_state["value"]
-    assert len(state["processed"]) == 1
 
 
 def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -496,15 +503,9 @@ def test_feed_failure_backoff_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     feeds_file = tmp_path / "feeds.txt"
-    state_file = tmp_path / "state.json"
     blocked_feed = "https://blocked.example/rss"
     ok_feed = "https://ok.example/rss"
     feeds_file.write_text(f"{blocked_feed}\n{ok_feed}\n", encoding="utf-8")
-    cooldown_until = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
-    state_file.write_text(
-        json.dumps({"processed": {}, "feed_failures": {blocked_feed: {"count": 2, "cooldown_until": cooldown_until}}}),
-        encoding="utf-8",
-    )
 
     fetched = []
     posted_batches = []
@@ -518,11 +519,7 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
         posted_batches.append(articles)
         return "ok"
 
-    captured_state = {"value": json.loads(state_file.read_text())}
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner.db, "load_state", lambda url: captured_state["value"])
-    monkeypatch.setattr(runner.db, "save_state", lambda url, s: captured_state.update({"value": s}))
-    monkeypatch.setattr(runner.db, "save_run_events", lambda url, events: None)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
@@ -541,13 +538,17 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
         }
         for item in kwargs["candidates"]
     })
-    monkeypatch.setattr(runner.sync_pipeline, "post_articles_batch", fake_post_articles)
+    monkeypatch.setattr(
+        runner.sync_pipeline,
+        "post_articles_in_chunks",
+        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
+    )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
-    assert blocked_feed not in fetched
+    assert blocked_feed in fetched
     assert ok_feed in fetched
-    posted_urls = [article["url"] for batch in posted_batches for article in batch]
-    assert posted_urls == [f"{ok_feed}/1"]
+    posted_urls = sorted(article["url"] for batch in posted_batches for article in batch)
+    assert posted_urls == [f"{blocked_feed}/1", f"{ok_feed}/1"]

@@ -84,14 +84,9 @@ def main() -> None:
         cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_SECONDS,
     )
     stage_metrics = StageMetrics()
-    state = db.load_state(NEON_DATABASE_URL)
-    processed = state.get("processed", {})
-    if not isinstance(processed, dict):
-        processed = {}
-    feed_cursor = state.get("feed_cursor", {})
-    feed_failures = state.get("feed_failures", {})
-    if not isinstance(feed_failures, dict):
-        feed_failures = {}
+    processed: dict[str, Any] = {}
+    feed_cursor: dict[str, Any] = {}
+    feed_failures: dict[str, Any] = {}
 
     now = datetime.now(timezone.utc).isoformat()
     now_utc = datetime.now(timezone.utc)
@@ -138,38 +133,6 @@ def main() -> None:
         ai_model=ANTHROPIC_MODEL if stats["ai_enabled"] else "",
         feed_fetch_concurrency=FEED_FETCH_CONCURRENCY,
     )
-
-    pending_articles = sync_pipeline.collect_pending_articles(processed)
-    if pending_articles:
-        sync_pipeline.post_articles_batch(
-            api_url=IC_API_URL,
-            request_post=requests.post,
-            articles=[
-                {
-                    key: value
-                    for key, value in row.items()
-                    if key
-                    in {
-                        "source_type",
-                        "source_feed_id",
-                        "source_feed_name",
-                        "source_article_id",
-                        "title",
-                        "url",
-                        "pic_url",
-                        "description",
-                        "publish_time",
-                        "tags",
-                        "score",
-                        "reason",
-                        "actionable",
-                        "hidden_signal",
-                    }
-                }
-                for row in pending_articles
-            ],
-        )
-        sync_pipeline.mark_articles_exported(processed, [str(row.get("id", "")) for row in pending_articles], now)
 
     candidates = feed_sources.collect_candidates_from_feeds(
         feed_specs=feed_specs,
@@ -252,7 +215,7 @@ def main() -> None:
         )
 
     if article_records:
-        sync_pipeline.post_articles_batch(
+        sync_pipeline.post_articles_in_chunks(
             api_url=IC_API_URL,
             request_post=requests.post,
             articles=[
@@ -279,6 +242,7 @@ def main() -> None:
                 }
                 for row in article_records
             ],
+            chunk_size=5,
         )
         sync_pipeline.mark_articles_exported(processed, [row["id"] for row in article_records], now)
     for event in run_events:
@@ -286,11 +250,6 @@ def main() -> None:
         event.setdefault("head_sha", runtime_context.get("head_sha", ""))
         event.setdefault("ref_name", runtime_context.get("ref_name", ""))
         event.setdefault("event_name", runtime_context.get("event_name", ""))
-    if NEON_DATABASE_URL and run_events:
-        try:
-            db.save_run_events(NEON_DATABASE_URL, run_events)
-        except Exception as e:
-            log_event("WARN", "db_save_run_events_failed", stage="db", error=str(e))
 
     # 全局 Agent 深度分析（如失败不影响主流程）
     try:
@@ -298,10 +257,6 @@ def main() -> None:
     except Exception as e:
         log_event("WARN", "global_agent_failed", stage="global_agent", error=str(e))
 
-    state["processed"] = processed
-    state["feed_cursor"] = feed_cursor
-    state["feed_failures"] = feed_failures
-    db.save_state(NEON_DATABASE_URL, state)
     apply_stage_metrics(stats, stage_metrics)
     stats["state_size"] = len(processed)
     write_step_summary(stats, os.getenv("GITHUB_STEP_SUMMARY", "").strip())
