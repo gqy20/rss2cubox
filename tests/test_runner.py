@@ -120,11 +120,11 @@ def test_passes_filter_include_exclude(monkeypatch: pytest.MonkeyPatch) -> None:
     assert sync_pipeline.passes_filter(entry_bad, ["openai"], ["hiring"]) is False
 
 
-def test_cubox_save_url_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_post_articles_batch_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
     calls = {}
 
     class Resp:
-        text = "ok"
+        text = '{"ok":true}'
 
         @staticmethod
         def raise_for_status() -> None:
@@ -136,33 +136,106 @@ def test_cubox_save_url_builds_payload(monkeypatch: pytest.MonkeyPatch) -> None:
         calls["timeout"] = timeout
         return Resp()
 
-    out = sync_pipeline.cubox_save_url(
-        api_url="https://cubox.example/api",
+    out = sync_pipeline.post_articles_batch(
+        api_url="https://ic.example/api/v1/articles/batch",
         request_post=fake_post,
-        url="https://example.com/post",
-        title="t",
-        description="d",
-        tags=["news"],
-        folder="Inbox",
+        articles=[
+            {
+                "source_type": "gqy",
+                "source_feed_id": "feed-1",
+                "source_feed_name": "供应情报",
+                "source_article_id": "article-1",
+                "title": "t",
+                "url": "https://example.com/post",
+                "pic_url": "https://example.com/post.png",
+                "description": "d",
+                "publish_time": "2026-01-01T00:00:00+00:00",
+                "tags": ["news"],
+                "score": 0.9,
+                "reason": "r",
+                "actionable": "a",
+                "hidden_signal": "h",
+            }
+        ],
     )
 
-    assert out == "ok"
-    assert calls["url"] == "https://cubox.example/api"
+    assert out == '{"ok":true}'
+    assert calls["url"] == "https://ic.example/api/v1/articles/batch"
     assert calls["timeout"] == 30
     assert calls["json"] == {
-        "type": "url",
-        "content": "https://example.com/post",
-        "title": "t",
-        "description": "d",
-        "tags": ["news"],
-        "folder": "Inbox",
+        "articles": [
+            {
+                "source_type": "gqy",
+                "source_feed_id": "feed-1",
+                "source_feed_name": "供应情报",
+                "source_article_id": "article-1",
+                "title": "t",
+                "url": "https://example.com/post",
+                "pic_url": "https://example.com/post.png",
+                "description": "d",
+                "publish_time": "2026-01-01T00:00:00+00:00",
+                "tags": ["news"],
+                "score": 0.9,
+                "reason": "r",
+                "actionable": "a",
+                "hidden_signal": "h",
+            }
+        ]
     }
 
 
-def test_cubox_save_url_requires_api_url(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_post_articles_batch_requires_api_url(monkeypatch: pytest.MonkeyPatch) -> None:
     _ = monkeypatch
     with pytest.raises(RuntimeError):
-        sync_pipeline.cubox_save_url(api_url=None, request_post=lambda *args, **kwargs: None, url="https://example.com")
+        sync_pipeline.post_articles_batch(api_url=None, request_post=lambda *args, **kwargs: None, articles=[])
+
+
+def test_build_processed_article_maps_to_ic_fields() -> None:
+    article = sync_pipeline.build_processed_article(
+        item={
+            "eid": "e1",
+            "source_feed": "https://feed.example/rss",
+            "source_label": "供应情报",
+            "source_article_id": "src-1",
+            "title": "标题",
+            "url": "https://example.com/post",
+            "cover_url": "https://example.com/post.png",
+            "description": "原始摘要",
+            "publish_time": "2026-03-19T13:18:31.612345+00:00",
+        },
+        analysis={
+            "score": 0.82,
+            "reason": "命中关键主题",
+            "actionable": "建议跟进",
+            "hidden_signal": "存在供应链变化信号",
+            "tags": ["a", "b"],
+            "core_event": "情报文章",
+        },
+        now_iso="2026-03-20T00:00:00+00:00",
+        source_type="gqy",
+    )
+
+    assert article == {
+        "id": "e1",
+        "source_type": "gqy",
+        "source_feed_id": "https://feed.example/rss",
+        "source_feed_name": "供应情报",
+        "source_article_id": "src-1",
+        "title": "标题",
+        "url": "https://example.com/post",
+        "pic_url": "https://example.com/post.png",
+        "description": "情报文章",
+        "publish_time": "2026-03-19T13:18:31.612345+00:00",
+        "tags": ["a", "b"],
+        "score": 0.82,
+        "reason": "命中关键主题",
+        "actionable": "建议跟进",
+        "hidden_signal": "存在供应链变化信号",
+        "exported": False,
+        "exported_at": "",
+        "created_at": "2026-03-20T00:00:00+00:00",
+        "updated_at": "2026-03-20T00:00:00+00:00",
+    }
 
 
 def test_analyze_candidates_with_ai_prefers_tool_use(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -400,7 +473,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     feeds_file = tmp_path / "feeds.txt"
     state_file = tmp_path / "state.json"
     feeds_file.write_text("https://feed.example/rss\n", encoding="utf-8")
-    state_file.write_text('{"sent":{}}', encoding="utf-8")
+    state_file.write_text('{"processed":{}}', encoding="utf-8")
 
     entries = [
         {"id": "1", "link": "https://example.com/1", "title": "First", "summary": "A"},
@@ -408,14 +481,15 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
         {"id": "2", "link": "https://example.com/2", "title": "Second", "summary": "B"},
     ]
 
-    pushed_urls = []
+    posted_batches = []
 
     def fake_fetch(url: str):  # noqa: ANN001
         assert url == "https://feed.example/rss"
         return SimpleNamespace(bozo=False, entries=entries)
 
-    def fake_save(url: str, title: str, description: str, tags, folder: str):  # noqa: ANN001
-        pushed_urls.append((url, title, description, tags, folder))
+    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
+        _ = request_post
+        posted_batches.append((api_url, articles))
         return "ok"
 
     captured_state = {"value": json.loads(state_file.read_text())}
@@ -426,22 +500,31 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 1)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
-    monkeypatch.setattr(runner, "CUBOX_API_URL", "https://fake.api.com")
-    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
-    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
+    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
-    monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
-        kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
-    ))
+    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
+        kwargs["candidates"][0]["eid"]: {
+            "score": 0.9,
+            "reason": "高价值",
+            "actionable": "跟进",
+            "hidden_signal": "信号",
+            "tags": ["rss"],
+            "core_event": "First",
+        }
+    })
+    monkeypatch.setattr(runner.sync_pipeline, "post_articles_batch", fake_post_articles)
+    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
-    assert len(pushed_urls) == 1
-    assert pushed_urls[0][0] == "https://example.com/1"
+    assert len(posted_batches) == 1
+    assert posted_batches[0][0] == "https://fake.api.com/api/v1/articles/batch"
+    assert posted_batches[0][1][0]["url"] == "https://example.com/1"
     state = captured_state["value"]
-    assert len(state["sent"]) == 1
+    assert len(state["processed"]) == 1
+    assert state["processed"][next(iter(state["processed"]))]["exported"] is True
 
 
 def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -450,7 +533,7 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
     feed_url = "https://feed.example/rss"
     feeds_file.write_text(f"{feed_url}\n", encoding="utf-8")
     state_file.write_text(
-        json.dumps({"sent": {}, "feed_cursor": {feed_url: "2026-01-10T00:00:00+00:00"}}),
+        json.dumps({"processed": {}, "feed_cursor": {feed_url: "2026-01-10T00:00:00+00:00"}}),
         encoding="utf-8",
     )
 
@@ -477,14 +560,15 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
         },
     ]
 
-    pushed_urls = []
+    posted_batches = []
 
     def fake_fetch(url: str):  # noqa: ANN001
         assert url == feed_url
         return SimpleNamespace(bozo=False, entries=entries)
 
-    def fake_save(url: str, title: str, description: str, tags, folder: str):  # noqa: ANN001
-        pushed_urls.append(url)
+    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
+        _ = (api_url, request_post)
+        posted_batches.append(articles)
         return "ok"
 
     captured_state = {"value": json.loads(state_file.read_text())}
@@ -495,24 +579,33 @@ def test_main_feed_cursor_prefilter_and_state_update(tmp_path: Path, monkeypatch
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
-    monkeypatch.setattr(runner, "CUBOX_API_URL", "https://fake.api.com")
+    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner, "FEED_CURSOR_LOOKBACK_HOURS", 24)
-    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
-    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
-    monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
-        kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
-    ))
+    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
+        item["eid"]: {
+            "score": 0.8,
+            "reason": "高价值",
+            "actionable": "跟进",
+            "hidden_signal": "信号",
+            "tags": ["rss"],
+            "core_event": item["title"],
+        }
+        for item in kwargs["candidates"]
+    })
+    monkeypatch.setattr(runner.sync_pipeline, "post_articles_batch", fake_post_articles)
+    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
-    assert "https://example.com/old" not in pushed_urls
-    assert "https://example.com/new" in pushed_urls
-    assert "https://example.com/nodate" in pushed_urls
+    posted_urls = [article["url"] for batch in posted_batches for article in batch]
+    assert "https://example.com/old" not in posted_urls
+    assert "https://example.com/new" in posted_urls
+    assert "https://example.com/nodate" in posted_urls
     state = captured_state["value"]
-    assert len(state["sent"]) == 2
+    assert len(state["processed"]) == 2
     assert state["feed_cursor"][feed_url].startswith("2026-01-10T12:00:00")
 
 
@@ -522,21 +615,21 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     feed_a = "https://feed-a.example/rss"
     feed_b = "https://feed-b.example/rss"
     feeds_file.write_text(f"{feed_a}\n{feed_b}\n", encoding="utf-8")
-    state_file.write_text('{"sent":{}}', encoding="utf-8")
+    state_file.write_text('{"processed":{}}', encoding="utf-8")
 
     shared_entry = {"id": "same-id", "link": "https://example.com/shared", "title": "Shared", "summary": "A"}
     entries_by_feed = {
         feed_a: [shared_entry],
         feed_b: [shared_entry],
     }
-    pushed_urls = []
+    posted_batches = []
 
     def fake_fetch(url: str):  # noqa: ANN001
         return SimpleNamespace(bozo=False, entries=entries_by_feed[url])
 
-    def fake_save(url: str, title: str, description: str, tags, folder: str):  # noqa: ANN001
-        _ = (title, description, tags, folder)
-        pushed_urls.append(url)
+    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
+        _ = (api_url, request_post)
+        posted_batches.append(articles)
         return "ok"
 
     captured_state = {"value": json.loads(state_file.read_text())}
@@ -547,21 +640,30 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
-    monkeypatch.setattr(runner, "CUBOX_API_URL", "https://fake.api.com")
-    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
-    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
+    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
-    monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
-        kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
-    ))
+    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
+        item["eid"]: {
+            "score": 0.8,
+            "reason": "高价值",
+            "actionable": "跟进",
+            "hidden_signal": "信号",
+            "tags": ["rss"],
+            "core_event": item["title"],
+        }
+        for item in kwargs["candidates"]
+    })
+    monkeypatch.setattr(runner.sync_pipeline, "post_articles_batch", fake_post_articles)
+    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
-    assert pushed_urls == ["https://example.com/shared"]
+    posted_urls = [article["url"] for batch in posted_batches for article in batch]
+    assert posted_urls == ["https://example.com/shared"]
     state = captured_state["value"]
-    assert len(state["sent"]) == 1
+    assert len(state["processed"]) == 1
 
 
 def test_reorder_candidates_by_ai_score() -> None:
@@ -638,20 +740,20 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
     feeds_file.write_text(f"{blocked_feed}\n{ok_feed}\n", encoding="utf-8")
     cooldown_until = (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat()
     state_file.write_text(
-        json.dumps({"sent": {}, "feed_failures": {blocked_feed: {"count": 2, "cooldown_until": cooldown_until}}}),
+        json.dumps({"processed": {}, "feed_failures": {blocked_feed: {"count": 2, "cooldown_until": cooldown_until}}}),
         encoding="utf-8",
     )
 
     fetched = []
-    pushed_urls = []
+    posted_batches = []
 
     def fake_fetch(url: str):  # noqa: ANN001
         fetched.append(url)
         return SimpleNamespace(bozo=False, entries=[{"id": url, "link": f"{url}/1", "title": "t", "summary": "s"}])
 
-    def fake_save(url: str, title: str, description: str, tags, folder: str):  # noqa: ANN001
-        _ = (title, description, tags, folder)
-        pushed_urls.append(url)
+    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
+        _ = (api_url, request_post)
+        posted_batches.append(articles)
         return "ok"
 
     captured_state = {"value": json.loads(state_file.read_text())}
@@ -662,19 +764,28 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "CUBOX_FOLDER", "RSS Inbox")
-    monkeypatch.setattr(runner, "CUBOX_API_URL", "https://fake.api.com")
-    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "")
-    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "")
+    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner, "FEED_FETCH_CONCURRENCY", 4)
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
-    monkeypatch.setattr(runner.sync_pipeline, "cubox_save_url", lambda **kwargs: fake_save(
-        kwargs["url"], kwargs.get("title", ""), kwargs.get("description", ""), kwargs.get("tags"), kwargs.get("folder", "")
-    ))
+    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
+        item["eid"]: {
+            "score": 0.8,
+            "reason": "高价值",
+            "actionable": "跟进",
+            "hidden_signal": "信号",
+            "tags": ["rss"],
+            "core_event": item["title"],
+        }
+        for item in kwargs["candidates"]
+    })
+    monkeypatch.setattr(runner.sync_pipeline, "post_articles_batch", fake_post_articles)
+    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
     assert blocked_feed not in fetched
     assert ok_feed in fetched
-    assert pushed_urls == [f"{ok_feed}/1"]
+    posted_urls = [article["url"] for batch in posted_batches for article in batch]
+    assert posted_urls == [f"{ok_feed}/1"]

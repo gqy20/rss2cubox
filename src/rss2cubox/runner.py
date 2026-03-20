@@ -9,11 +9,7 @@ from typing import Any
 import requests
 
 from rss2cubox import db, feed_sources, sync_pipeline
-from rss2cubox.ai_pipeline import (
-    ai_analysis_enabled,
-    analyze_candidates_with_ai,
-)
-from rss2cubox.enrich_agent import run_enrich_analysis
+from rss2cubox import enrich_agent
 from rss2cubox.global_agent import run_global_analysis
 from rss2cubox.feed_sources import RSSHubInstancePool
 from rss2cubox.metrics import (
@@ -31,6 +27,8 @@ RSSHUB_INSTANCES_FILE = Path(os.getenv("RSSHUB_INSTANCES_FILE", "rsshub_instance
 
 CUBOX_API_URL = os.getenv("CUBOX_API_URL")
 CUBOX_FOLDER = os.getenv("CUBOX_FOLDER", "RSS Inbox")
+IC_API_URL = os.getenv("IC_API_URL", "").strip()
+IC_SOURCE_TYPE = os.getenv("IC_SOURCE_TYPE", "gqy").strip() or "gqy"
 KEYWORDS_INCLUDE = [k.strip() for k in os.getenv("KEYWORDS_INCLUDE", "").split(",") if k.strip()]
 KEYWORDS_EXCLUDE = [k.strip() for k in os.getenv("KEYWORDS_EXCLUDE", "").split(",") if k.strip()]
 MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "20"))
@@ -76,9 +74,9 @@ def main() -> None:
     )
     stage_metrics = StageMetrics()
     state = db.load_state(NEON_DATABASE_URL)
-    sent = state.get("sent", {})
-    ai = state.get("ai", {})
     processed = state.get("processed", {})
+    if not isinstance(processed, dict):
+        processed = {}
     feed_cursor = state.get("feed_cursor", {})
     feed_failures = state.get("feed_failures", {})
     if not isinstance(feed_failures, dict):
@@ -86,7 +84,7 @@ def main() -> None:
 
     now = datetime.now(timezone.utc).isoformat()
     now_utc = datetime.now(timezone.utc)
-    enabled = ai_analysis_enabled(ANTHROPIC_AUTH_TOKEN, ANTHROPIC_MODEL)
+    enabled = enrich_agent.ENRICH_AGENT_ENABLED
     runtime_context = build_runtime_context(
         run_id=os.getenv("GITHUB_RUN_ID", ""),
         head_sha=os.getenv("GITHUB_SHA", ""),
@@ -130,9 +128,41 @@ def main() -> None:
         feed_fetch_concurrency=FEED_FETCH_CONCURRENCY,
     )
 
+    pending_articles = sync_pipeline.collect_pending_articles(processed)
+    if pending_articles:
+        sync_pipeline.post_articles_batch(
+            api_url=IC_API_URL,
+            request_post=requests.post,
+            articles=[
+                {
+                    key: value
+                    for key, value in row.items()
+                    if key
+                    in {
+                        "source_type",
+                        "source_feed_id",
+                        "source_feed_name",
+                        "source_article_id",
+                        "title",
+                        "url",
+                        "pic_url",
+                        "description",
+                        "publish_time",
+                        "tags",
+                        "score",
+                        "reason",
+                        "actionable",
+                        "hidden_signal",
+                    }
+                }
+                for row in pending_articles
+            ],
+        )
+        sync_pipeline.mark_articles_exported(processed, [str(row.get("id", "")) for row in pending_articles], now)
+
     candidates = feed_sources.collect_candidates_from_feeds(
         feed_specs=feed_specs,
-        analyzed={**sent, **ai},
+        analyzed=processed,
         feed_cursor=feed_cursor,
         feed_failures=feed_failures,
         rsshub_pool=rsshub_pool,
@@ -171,17 +201,8 @@ def main() -> None:
             total=len(candidates),
         )
 
-    analyses = analyze_candidates_with_ai(
+    analyses = enrich_agent.analyze_candidates_with_agent(
         candidates=candidates_for_run,
-        stage_metrics=stage_metrics,
-        auth_token=ANTHROPIC_AUTH_TOKEN,
-        base_url=ANTHROPIC_BASE_URL,
-        model=ANTHROPIC_MODEL,
-        timeout_seconds=AI_TIMEOUT_SECONDS,
-        retry_attempts=AI_RETRY_ATTEMPTS,
-        retry_backoff_seconds=AI_RETRY_BACKOFF_SECONDS,
-        batch_size=AI_BATCH_SIZE,
-        max_workers=AI_MAX_WORKERS,
         log_event=log_event,
     )
     stats["ai_analyzed"] = len(analyses)
@@ -190,45 +211,65 @@ def main() -> None:
         missing = sum(1 for item in candidates_for_run if item["eid"] not in analyses)
         stats["ai_missing"] = missing
         if missing:
-            log_event("WARN", "ai_missing_results", stage="ai_analyze", missing=missing)
-        candidates_for_run = sync_pipeline.reorder_candidates_by_ai_score(
-            candidates_for_run,
-            analyses,
-            ai_enabled=ai_enabled,
-            ai_min_score=AI_MIN_SCORE,
+            log_event("WARN", "ai_missing_results", stage="agent", missing=missing)
+
+    article_records: list[dict[str, Any]] = []
+    for item in candidates_for_run[: max(1, MAX_ITEMS_PER_RUN)]:
+        eid = str(item.get("eid", "")).strip()
+        analysis = analyses.get(eid)
+        if not analysis:
+            continue
+        article = sync_pipeline.build_processed_article(
+            item=item,
+            analysis=analysis,
+            now_iso=now,
+            source_type=IC_SOURCE_TYPE,
         )
-        log_event(
-            "INFO",
-            "candidates_reordered_by_ai_score",
-            stage="ai_decision",
-            candidates=len(candidates_for_run),
-        )
-        run_enrich_analysis(
-            candidates=candidates_for_run,
-            analyses=analyses,
-            ai_min_score=AI_MIN_SCORE,
-            log_event=log_event,
+        processed[eid] = article
+        article_records.append(article)
+        run_events.append(
+            {
+                "id": eid,
+                "time": now,
+                "source_feed": article["source_feed_id"],
+                "source_label": article["source_feed_name"],
+                "url": article["url"],
+                "title": article["title"],
+                "status": "processed",
+                "score": article.get("score"),
+            }
         )
 
-    sync_pipeline.process_candidates_for_push(
-        candidates_for_run=candidates_for_run,
-        analyses=analyses,
-        stats=stats,
-        sent=sent,
-        ai_state=ai,
-        processed_state=processed,
-        now_iso=now,
-        max_items_per_run=MAX_ITEMS_PER_RUN,
-        ai_enabled=ai_enabled,
-        ai_min_score=AI_MIN_SCORE,
-        ai_model=ANTHROPIC_MODEL,
-        cubox_api_url=CUBOX_API_URL,
-        cubox_folder=CUBOX_FOLDER,
-        request_post=requests.post,
-        stage_metrics=stage_metrics,
-        log_event=log_event,
-        event_sink=run_events,
-    )
+    if article_records:
+        sync_pipeline.post_articles_batch(
+            api_url=IC_API_URL,
+            request_post=requests.post,
+            articles=[
+                {
+                    key: value
+                    for key, value in row.items()
+                    if key
+                    in {
+                        "source_type",
+                        "source_feed_id",
+                        "source_feed_name",
+                        "source_article_id",
+                        "title",
+                        "url",
+                        "pic_url",
+                        "description",
+                        "publish_time",
+                        "tags",
+                        "score",
+                        "reason",
+                        "actionable",
+                        "hidden_signal",
+                    }
+                }
+                for row in article_records
+            ],
+        )
+        sync_pipeline.mark_articles_exported(processed, [row["id"] for row in article_records], now)
     for event in run_events:
         event.setdefault("run_id", runtime_context.get("run_id", ""))
         event.setdefault("head_sha", runtime_context.get("head_sha", ""))
@@ -246,17 +287,15 @@ def main() -> None:
     except Exception as e:
         log_event("WARN", "global_agent_failed", stage="global_agent", error=str(e))
 
-    state["sent"] = sent
-    state["ai"] = ai
     state["processed"] = processed
     state["feed_cursor"] = feed_cursor
     state["feed_failures"] = feed_failures
     db.save_state(NEON_DATABASE_URL, state)
     apply_stage_metrics(stats, stage_metrics)
-    stats["state_size"] = len(sent)
+    stats["state_size"] = len(processed)
     write_step_summary(stats, os.getenv("GITHUB_STEP_SUMMARY", "").strip())
     log_event("INFO", "run_summary", stage="summary", **stats)
-    print(f"Done. Pushed {stats['pushed']} items. State size={len(sent)}", flush=True)
+    print(f"Done. Exported {len(article_records)} items. State size={len(processed)}", flush=True)
 
 
 if __name__ == "__main__":

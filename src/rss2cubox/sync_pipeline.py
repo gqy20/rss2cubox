@@ -283,6 +283,92 @@ def _update_ai_state(
     }
 
 
+def build_processed_article(
+    *,
+    item: dict[str, Any],
+    analysis: dict[str, Any],
+    now_iso: str,
+    source_type: str,
+) -> dict[str, Any]:
+    eid = str(item.get("eid", "")).strip()
+    source_feed_id = str(item.get("source_feed", "")).strip()
+    source_feed_name = str(item.get("source_label", "")).strip() or source_feed_id or "unknown"
+    source_article_id = str(item.get("source_article_id", "")).strip() or eid
+    core_event = str(analysis.get("core_event", "")).strip()
+    description = core_event or str(item.get("description", "")).strip()
+    tags = analysis.get("tags", [])
+    if not isinstance(tags, list):
+        tags = []
+    publish_time = str(item.get("publish_time", "")).strip()
+
+    score_raw = analysis.get("score")
+    try:
+        score = float(score_raw) if score_raw is not None else None
+    except (TypeError, ValueError):
+        score = None
+
+    return {
+        "id": eid,
+        "source_type": source_type,
+        "source_feed_id": source_feed_id,
+        "source_feed_name": source_feed_name,
+        "source_article_id": source_article_id,
+        "title": str(item.get("title", "")).strip(),
+        "url": str(item.get("url", "")).strip(),
+        "pic_url": str(item.get("cover_url", "")).strip(),
+        "description": description,
+        "publish_time": publish_time,
+        "tags": tags,
+        "score": score,
+        "reason": str(analysis.get("reason", "")).strip(),
+        "actionable": str(analysis.get("actionable", "")).strip(),
+        "hidden_signal": str(analysis.get("hidden_signal", "")).strip(),
+        "exported": False,
+        "exported_at": "",
+        "created_at": now_iso,
+        "updated_at": now_iso,
+    }
+
+
+def collect_pending_articles(processed_state: dict[str, Any]) -> list[dict[str, Any]]:
+    pending: list[dict[str, Any]] = []
+    for row in processed_state.values():
+        if not isinstance(row, dict):
+            continue
+        if bool(row.get("exported", False)):
+            continue
+        pending.append(row)
+    pending.sort(key=lambda row: str(row.get("created_at", "")))
+    return pending
+
+
+def mark_articles_exported(
+    processed_state: dict[str, Any],
+    article_ids: list[str],
+    exported_at: str,
+) -> None:
+    for article_id in article_ids:
+        row = processed_state.get(article_id)
+        if not isinstance(row, dict):
+            continue
+        row["exported"] = True
+        row["exported_at"] = exported_at
+        row["updated_at"] = exported_at
+
+
+def post_articles_batch(
+    *,
+    api_url: str | None,
+    request_post: Any,
+    articles: list[dict[str, Any]],
+) -> str:
+    if not api_url:
+        raise RuntimeError("IC_API_URL is missing.")
+    response = request_post(api_url, json={"articles": articles}, timeout=30)
+    response.raise_for_status()
+    return response.text
+
+
 def process_candidates_for_push(
     *,
     candidates_for_run: list[dict[str, Any]],

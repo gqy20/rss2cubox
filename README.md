@@ -1,6 +1,6 @@
 # rss2cubox
 
-将 RSS 订阅同步到 Cubox，支持 RSSHub 路由、并发抓取、AI 过滤和去重。
+抓取 RSS，使用 Agent SDK 做文章分析，并批量导入信息库。
 
 ## 1) feeds.txt
 
@@ -30,13 +30,13 @@ https://rsshub.pseudoyu.com
 ## 3) 必要环境变量
 
 ```bash
-export CUBOX_API_URL="https://cubox.pro/c/api/save/..."
+export IC_API_URL="http://ic.nexus.tashan.ac.cn/api/v1/articles/batch"
 ```
 
 可选常用：
 
 ```bash
-export CUBOX_FOLDER="RSS Inbox"
+export IC_SOURCE_TYPE="gqy"
 export MAX_ITEMS_PER_RUN="20"            # 单次运行总上限
 export FEED_FETCH_CONCURRENCY="4"
 export FEED_CONNECT_TIMEOUT_SECONDS="5"
@@ -46,37 +46,12 @@ export FEED_FAILURE_COOLDOWN_MAX_SECONDS="1800"
 export RSSHUB_FAILURE_COOLDOWN_SECONDS="300"
 export FEED_CURSOR_LOOKBACK_HOURS="24"
 
-# AI 过滤（不需要可留空）
-export ANTHROPIC_AUTH_TOKEN=""
-export ANTHROPIC_BASE_URL="https://api.anthropic.com"
-export ANTHROPIC_MODEL=""
-export AI_MIN_SCORE="0.6"
-export AI_TIMEOUT_SECONDS="90"
-export AI_RETRY_ATTEMPTS="3"
-export AI_RETRY_BACKOFF_SECONDS="1.5"
-export AI_BATCH_SIZE="5"
-export AI_MAX_CANDIDATES="40"
-
-# AI 深化分析（可选，基于 Claude Agent SDK）
-export ENRICH_AGENT_ENABLED="true"      # 启用深化分析
-export ENRICH_MIN_SCORE="0.85"          # 深化分析最低分数
-export ENRICH_MAX_ITEMS="200"           # 每批次最大条目数
+# Agent SDK 分析（基于 Claude Agent SDK）
+export ENRICH_AGENT_ENABLED="true"
+export ENRICH_MAX_ITEMS="200"
 export ENRICH_MAX_WORKERS="10"          # 并发工作数
 export ENRICH_ITEM_TIMEOUT_SECONDS="90"  # 单条目超时
 export ENRICH_MAX_BUDGET_USD="0.15"     # 单条目最大预算
-export ENRICH_ALLOW_WEBFETCH_FALLBACK="false"
-
-# 全局洞察分析（可选）
-export GLOBAL_AGENT_ENABLED="true"
-export GLOBAL_AGENT_MIN_SCORE="0.85"
-export GLOBAL_AGENT_MIN_ITEMS="5"
-export GLOBAL_AGENT_MAX_TURNS="100"
-export GLOBAL_AGENT_TIMEOUT_SECONDS="600"
-export GLOBAL_AGENT_MAX_BUDGET_USD="5.0"
-export GLOBAL_AGENT_ENABLE_SKILLS="true"
-
-# Web（Vercel）导出到 Cubox：用于加密 HttpOnly cookie
-export CUBOX_COOKIE_SECRET="replace-with-a-long-random-secret"
 ```
 
 ## 4) 运行
@@ -89,11 +64,11 @@ rss2cubox
 ## 5) 数据文件职责
 
 - `state.json`
-  - `sent`: 已推送条目（防重复推送到 Cubox）
+  - `processed`: 已分析文章与导出状态
   - `feed_cursor`: 每源时间游标（增量抓取）
   - `feed_failures`: 每源失败计数与熔断状态
 - `run_events.jsonl`
-  - 本次运行的逐条处理结果（pushed/dropped/failed）
+  - 本次运行的逐条处理结果
 - `web/public/data/updates_history.jsonl`
   - 前端历史数据池（由 `run_events.jsonl` 增量合并）
 
@@ -101,7 +76,7 @@ rss2cubox
 
 - 工作流：`.github/workflows/rss_to_cubox.yml`
 - 每次运行会输出 `rss2cubox.log` artifact
-- Step Summary 包含：阶段耗时、熔断跳过数、去重数、每源推送/丢弃统计
+- Step Summary 包含：阶段耗时、熔断跳过数、去重数、每源处理统计
 - 每次运行后会自动执行 `rss2cubox-export-web`，生成：
   - `run_events.jsonl`
   - `web/public/data/updates_history.jsonl`

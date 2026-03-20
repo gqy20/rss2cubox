@@ -45,11 +45,13 @@ ENRICH_OUTPUT_SCHEMA = {
     "type": "object",
     "properties": {
         "core_event": {"type": "string", "maxLength": 100},
+        "reason": {"type": "string", "maxLength": 120},
         "hidden_signal": {"type": "string", "maxLength": 200},
         "actionable": {"type": "string", "maxLength": 100},
+        "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 5},
         "score": {"type": "number", "minimum": 0, "maximum": 1},
     },
-    "required": ["core_event", "hidden_signal", "actionable", "score"],
+    "required": ["core_event", "reason", "hidden_signal", "actionable", "tags", "score"],
 }
 
 
@@ -59,8 +61,10 @@ SYSTEM_PROMPT = (
     "阅读完毕后，直接以 JSON 格式输出分析结果。\n"
     "字段要求：\n"
     "- core_event：冷静客观地用一句话描述事实（≤60字）\n"
+    "- reason：简要说明这条信息为什么值得保留（≤60字）\n"
     "- hidden_signal：这意味着什么？背后的范式转移、行业冲击或深层技术含义（≤100字）\n"
     "- actionable：工程师/独立开发者应如何行动？（≤60字）\n"
+    "- tags：输出 1-3 个精准标签，必须是字符串数组\n"
     "- score：在原始分基础上，基于全文内容重新评估 0.0-1.0\n"
     "所有输出必须使用简体中文。如果读取网页失败，请基于已有标题和摘要尽力输出。"
 )
@@ -120,7 +124,7 @@ def _make_stderr_logger(prefix: str, limit: int = 40) -> tuple[list[str], Any]:
 
 
 def _has_enrich_content(payload: dict[str, Any] | None) -> bool:
-    return bool(payload and (payload.get("core_event") or payload.get("hidden_signal")))
+    return bool(payload and (payload.get("core_event") or payload.get("hidden_signal") or payload.get("reason")))
 
 
 async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
@@ -306,10 +310,13 @@ async def _enrich_all(
                 enriched, reason = await _enrich_one(item, original)
                 if enriched:
                     merged = {**original}
-                    for key in ("core_event", "hidden_signal", "actionable"):
+                    for key in ("core_event", "reason", "hidden_signal", "actionable"):
                         val = str(enriched.get(key, "")).strip()
                         if val:
                             merged[key] = val
+                    tags = enriched.get("tags", [])
+                    if isinstance(tags, list):
+                        merged["tags"] = [str(tag).strip() for tag in tags if str(tag).strip()]
                     try:
                         new_score = float(enriched.get("score", original.get("score", 0)))
                         merged["score"] = max(0.0, min(1.0, new_score))
@@ -376,3 +383,36 @@ def run_enrich_analysis(
                   started=enrich_stats.get("started", len(to_enrich)))
     except Exception as e:
         log_event("WARN", "enrich_error", stage="enrich", error=str(e))
+
+
+def analyze_candidates_with_agent(
+    *,
+    candidates: list[dict],
+    log_event: Any,
+) -> dict[str, dict[str, Any]]:
+    analyses: dict[str, dict[str, Any]] = {}
+    if not candidates:
+        return analyses
+
+    seed: dict[str, dict[str, Any]] = {
+        str(item.get("eid", "")): {
+            "score": 0.0,
+            "reason": "",
+            "hidden_signal": "",
+            "actionable": "",
+            "tags": [],
+            "core_event": "",
+        }
+        for item in candidates
+        if str(item.get("eid", "")).strip()
+    }
+    analyses.update(seed)
+    _ = ENRICH_MIN_SCORE
+    _enrich_candidates = [(item, analyses[item["eid"]]) for item in candidates if item.get("eid") in analyses]
+
+    try:
+        import anyio
+        anyio.run(_enrich_all, _enrich_candidates, analyses, log_event)
+    except Exception as e:
+        log_event("WARN", "agent_analysis_error", stage="agent", error=str(e))
+    return analyses

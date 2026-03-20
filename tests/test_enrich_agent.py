@@ -11,21 +11,27 @@ class TestEnrichAgentOutputFormat:
             "type": "object",
             "properties": {
                 "core_event": {"type": "string"},
+                "reason": {"type": "string"},
                 "hidden_signal": {"type": "string"},
                 "actionable": {"type": "string"},
+                "tags": {"type": "array"},
                 "score": {"type": "number"},
             },
-            "required": ["core_event", "hidden_signal", "actionable", "score"],
+            "required": ["core_event", "reason", "hidden_signal", "actionable", "tags", "score"],
         }
 
         assert "core_event" in expected_schema["properties"]
+        assert "reason" in expected_schema["properties"]
         assert "hidden_signal" in expected_schema["properties"]
         assert "actionable" in expected_schema["properties"]
+        assert "tags" in expected_schema["properties"]
         assert "score" in expected_schema["properties"]
         assert expected_schema["required"] == [
             "core_event",
+            "reason",
             "hidden_signal",
             "actionable",
+            "tags",
             "score",
         ]
 

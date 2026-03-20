@@ -499,6 +499,8 @@ def parse_feed_spec(
         title = entry.get("title", "") or ""
         description = (entry.get("summary", "") or "").strip()
         cover_url = extract_cover_url(entry, url)
+        publish_time = entry_ts.isoformat() if entry_ts is not None else ""
+        source_article_id = str(entry.get("id") or entry.get("guid") or eid).strip() or eid
         if len(description) > 5000:
             description = description[:5000] + "..."
         candidates.append(
@@ -508,8 +510,10 @@ def parse_feed_spec(
                 "title": title,
                 "description": description,
                 "cover_url": cover_url,
+                "publish_time": publish_time,
                 "source_feed": feed_url,
                 "source_label": source_label,
+                "source_article_id": source_article_id,
             }
         )
         feed_candidates += 1
