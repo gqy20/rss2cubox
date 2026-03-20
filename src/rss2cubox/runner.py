@@ -46,14 +46,11 @@ IC_API_URL = os.getenv("IC_API_URL", "").strip()
 IC_SOURCE_TYPE = os.getenv("IC_SOURCE_TYPE", "gqy").strip() or "gqy"
 KEYWORDS_INCLUDE = [k.strip() for k in os.getenv("KEYWORDS_INCLUDE", "").split(",") if k.strip()]
 KEYWORDS_EXCLUDE = [k.strip() for k in os.getenv("KEYWORDS_EXCLUDE", "").split(",") if k.strip()]
-MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "20"))
+MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "500"))
 
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
-AI_MIN_SCORE = sync_pipeline.env_float("AI_MIN_SCORE", 0.6)
-AI_TIMEOUT_SECONDS = sync_pipeline.env_int("AI_TIMEOUT_SECONDS", 90)
-AI_MAX_WORKERS = sync_pipeline.env_int("AI_MAX_WORKERS", 10)
-AI_MAX_CANDIDATES = sync_pipeline.env_int("AI_MAX_CANDIDATES", max(MAX_ITEMS_PER_RUN * 2, 1))
+AI_MAX_CANDIDATES = sync_pipeline.env_int("AI_MAX_CANDIDATES", 500)
 FEED_CONNECT_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_CONNECT_TIMEOUT_SECONDS", 5.0)
 FEED_READ_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_READ_TIMEOUT_SECONDS", 30.0)
 FEED_FETCH_CONCURRENCY = max(1, sync_pipeline.env_int("FEED_FETCH_CONCURRENCY", 10))
@@ -84,8 +81,11 @@ def main() -> None:
         cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_SECONDS,
     )
     stage_metrics = StageMetrics()
-    processed: dict[str, Any] = {}
-    feed_cursor: dict[str, Any] = {}
+    processed, feed_cursor = sync_pipeline.load_ic_state(
+        api_url=IC_API_URL,
+        source_type=IC_SOURCE_TYPE,
+        request_get=requests.get,
+    )
     feed_failures: dict[str, Any] = {}
 
     now = datetime.now(timezone.utc).isoformat()
@@ -101,10 +101,6 @@ def main() -> None:
         max_items_per_run=MAX_ITEMS_PER_RUN,
         ai_enabled=enabled,
         ai_model=ANTHROPIC_MODEL,
-        ai_min_score=AI_MIN_SCORE,
-        ai_timeout_seconds=AI_TIMEOUT_SECONDS,
-        ai_retry_attempts=0,
-        ai_batch_size=0,
         ai_max_candidates=AI_MAX_CANDIDATES,
         feed_connect_timeout_seconds=FEED_CONNECT_TIMEOUT_SECONDS,
         feed_read_timeout_seconds=FEED_READ_TIMEOUT_SECONDS,
@@ -121,7 +117,6 @@ def main() -> None:
         runtime_context=runtime_context,
         config_snapshot=config_snapshot,
     )
-    run_events: list[dict[str, Any]] = []
     log_event(
         "INFO",
         "run_start",
@@ -179,7 +174,7 @@ def main() -> None:
         candidates=candidates_for_run,
         log_event=log_event,
     )
-    stats["ai_analyzed"] = len(analyses)
+    stats["ai_analyzed"] = len(candidates_for_run)
     ai_enabled = stats["ai_enabled"]
     if ai_enabled and analyses:
         missing = sum(1 for item in candidates_for_run if item["eid"] not in analyses)
@@ -201,18 +196,6 @@ def main() -> None:
         )
         processed[eid] = article
         article_records.append(article)
-        run_events.append(
-            {
-                "id": eid,
-                "time": now,
-                "source_feed": article["source_feed_id"],
-                "source_label": article["source_feed_name"],
-                "url": article["url"],
-                "title": article["title"],
-                "status": "processed",
-                "score": article.get("score"),
-            }
-        )
 
     if article_records:
         sync_pipeline.post_articles_in_chunks(
@@ -245,11 +228,6 @@ def main() -> None:
             chunk_size=5,
         )
         sync_pipeline.mark_articles_exported(processed, [row["id"] for row in article_records], now)
-    for event in run_events:
-        event.setdefault("run_id", runtime_context.get("run_id", ""))
-        event.setdefault("head_sha", runtime_context.get("head_sha", ""))
-        event.setdefault("ref_name", runtime_context.get("ref_name", ""))
-        event.setdefault("event_name", runtime_context.get("event_name", ""))
 
     # 全局 Agent 深度分析（如失败不影响主流程）
     try:

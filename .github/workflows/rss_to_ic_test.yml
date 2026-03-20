@@ -33,16 +33,9 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
           ANTHROPIC_MODEL: ${{ secrets.ANTHROPIC_MODEL }}
-          AI_MIN_SCORE: ${{ vars.AI_MIN_SCORE }}
-          AI_TIMEOUT_SECONDS: ${{ vars.AI_TIMEOUT_SECONDS }}
-          AI_RETRY_ATTEMPTS: ${{ vars.AI_RETRY_ATTEMPTS }}
-          AI_RETRY_BACKOFF_SECONDS: ${{ vars.AI_RETRY_BACKOFF_SECONDS }}
-          AI_BATCH_SIZE: ${{ vars.AI_BATCH_SIZE }}
           AI_MAX_CANDIDATES: "20"
           # enrich 配置
-          ENRICH_MAX_ITEMS: "3"
           ENRICH_MAX_BUDGET_USD: "1.5"
-          ENRICH_MIN_SCORE: "0.7"
           # global 配置
           GLOBAL_AGENT_ENABLED: "true"
           # RSS 配置

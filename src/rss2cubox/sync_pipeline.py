@@ -229,6 +229,68 @@ def dedupe_run_candidates(
     return unique_candidates, run_deduped
 
 
+def load_ic_state(
+    *,
+    api_url: str | None,
+    source_type: str,
+    request_get: Any,
+    page_size: int = 100,
+) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    if not api_url:
+        return {}, {}
+
+    base_url = re.sub(r"/api/v1/articles/batch/?$", "", api_url.strip())
+    if not base_url:
+        return {}, {}
+
+    processed: dict[str, dict[str, Any]] = {}
+    feed_cursor: dict[str, str] = {}
+    offset = 0
+
+    while True:
+        response = request_get(
+            f"{base_url}/api/v1/articles",
+            params={
+                "source_type": source_type,
+                "limit": page_size,
+                "offset": offset,
+            },
+            timeout=30,
+        )
+        response.raise_for_status()
+        payload = response.json()
+        items = payload.get("data", {}).get("list", [])
+        if not isinstance(items, list) or not items:
+            break
+
+        for item in items:
+            if not isinstance(item, dict):
+                continue
+            url = str(item.get("url", "")).strip()
+            if not url:
+                continue
+            eid = stable_id({"link": url})
+            publish_time = str(item.get("publish_time", "")).strip()
+            source_feed_id = str(item.get("source_feed_id", "")).strip()
+            processed[eid] = {
+                "id": eid,
+                "url": url,
+                "publish_time": publish_time,
+                "source_feed_id": source_feed_id,
+                "exported": True,
+            }
+            publish_dt = parse_iso_datetime(publish_time)
+            prev_dt = parse_iso_datetime(feed_cursor.get(source_feed_id, ""))
+            if source_feed_id and publish_dt is not None and (prev_dt is None or publish_dt > prev_dt):
+                feed_cursor[source_feed_id] = publish_dt.isoformat()
+
+        if len(items) < page_size:
+            break
+        offset += page_size
+
+    return processed, feed_cursor
+
+
 def build_processed_article(
     *,
     item: dict[str, Any],

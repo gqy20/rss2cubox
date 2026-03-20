@@ -24,8 +24,6 @@ from rss2cubox.webpage_reader import read_webpage_text
 
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
-ENRICH_MIN_SCORE = float(os.getenv("ENRICH_MIN_SCORE", "0.7"))
-ENRICH_MAX_ITEMS = int(os.getenv("ENRICH_MAX_ITEMS", "15"))
 ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "90")))
 ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
@@ -338,53 +336,6 @@ async def _enrich_all(
         for item, original in items_to_enrich:
             tg.start_soon(run_one, item, original)
     return stats
-
-
-def run_enrich_analysis(
-    *,
-    candidates: list[dict],
-    analyses: dict[str, dict],
-    ai_min_score: float | None = None,
-    log_event: Any,
-) -> None:
-    """对 analyses 中 score >= ENRICH_MIN_SCORE 的条目进行全文深化，结果直接更新 analyses dict。"""
-    if not ENRICH_AGENT_ENABLED:
-        log_event("INFO", "enrich_skipped", stage="enrich", reason="ENRICH_AGENT_ENABLED=false")
-        return
-
-    threshold = ai_min_score if ai_min_score is not None else ENRICH_MIN_SCORE
-
-    to_enrich: list[tuple[dict, dict]] = []
-    for c in candidates:
-        eid = c.get("eid", "")
-        analysis = analyses.get(eid)
-        if not analysis:
-            continue
-        score = analysis.get("score", 0)
-        if score >= threshold:
-            to_enrich.append((c, analysis))
-
-    to_enrich.sort(key=lambda x: -x[1].get("score", 0))
-    to_enrich = to_enrich[:ENRICH_MAX_ITEMS]
-
-    if not to_enrich:
-        log_event("INFO", "enrich_skipped", stage="enrich", reason="no_eligible_items")
-        return
-
-    log_event("INFO", "enrich_start", stage="enrich", count=len(to_enrich), max_workers=ENRICH_MAX_WORKERS)
-
-    try:
-        import anyio
-        enrich_stats = anyio.run(_enrich_all, to_enrich, analyses, log_event)
-        log_event("INFO", "enrich_complete", stage="enrich",
-                  enriched=enrich_stats.get("succeeded", 0),
-                  failed=enrich_stats.get("failed", 0),
-                  empty=enrich_stats.get("empty", 0),
-                  started=enrich_stats.get("started", len(to_enrich)))
-    except Exception as e:
-        log_event("WARN", "enrich_error", stage="enrich", error=str(e))
-
-
 def analyze_candidates_with_agent(
     *,
     candidates: list[dict],
@@ -407,12 +358,30 @@ def analyze_candidates_with_agent(
         if str(item.get("eid", "")).strip()
     }
     analyses.update(seed)
-    _ = ENRICH_MIN_SCORE
     _enrich_candidates = [(item, analyses[item["eid"]]) for item in candidates if item.get("eid") in analyses]
+
+    if not ENRICH_AGENT_ENABLED:
+        log_event("INFO", "enrich_skipped", stage="enrich", reason="ENRICH_AGENT_ENABLED=false")
+        return analyses
+
+    if not _enrich_candidates:
+        log_event("INFO", "enrich_skipped", stage="enrich", reason="no_candidates")
+        return analyses
+
+    log_event("INFO", "enrich_start", stage="enrich", count=len(_enrich_candidates), max_workers=ENRICH_MAX_WORKERS)
 
     try:
         import anyio
-        anyio.run(_enrich_all, _enrich_candidates, analyses, log_event)
+        enrich_stats = anyio.run(_enrich_all, _enrich_candidates, analyses, log_event)
+        log_event(
+            "INFO",
+            "enrich_complete",
+            stage="enrich",
+            enriched=enrich_stats.get("succeeded", 0),
+            failed=enrich_stats.get("failed", 0),
+            empty=enrich_stats.get("empty", 0),
+            started=enrich_stats.get("started", len(_enrich_candidates)),
+        )
     except Exception as e:
         log_event("WARN", "agent_analysis_error", stage="agent", error=str(e))
     return analyses

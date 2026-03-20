@@ -228,6 +228,57 @@ def test_post_articles_batch_requires_api_url(monkeypatch: pytest.MonkeyPatch) -
         sync_pipeline.post_articles_batch(api_url=None, request_post=lambda *args, **kwargs: None, articles=[])
 
 
+def test_load_ic_state_builds_processed_and_feed_cursor() -> None:
+    class Resp:
+        @staticmethod
+        def raise_for_status() -> None:
+            return None
+
+        @staticmethod
+        def json() -> dict:
+            return {
+                "data": {
+                    "list": [
+                        {
+                            "url": "https://example.com/a?utm_source=test",
+                            "publish_time": "2026-03-20T10:00:00+00:00",
+                            "source_feed_id": "feed-a",
+                        },
+                        {
+                            "url": "https://example.com/b",
+                            "publish_time": "2026-03-20T12:00:00+00:00",
+                            "source_feed_id": "feed-a",
+                        },
+                    ]
+                }
+            }
+
+    calls = []
+
+    def fake_get(url, params, timeout):  # noqa: ANN001
+        calls.append((url, params, timeout))
+        if params["offset"] > 0:
+            class EmptyResp(Resp):
+                @staticmethod
+                def json() -> dict:
+                    return {"data": {"list": []}}
+            return EmptyResp()
+        return Resp()
+
+    processed, feed_cursor = sync_pipeline.load_ic_state(
+        api_url="https://ic.example/api/v1/articles/batch",
+        source_type="gqy",
+        request_get=fake_get,
+        page_size=2,
+    )
+
+    assert len(processed) == 2
+    assert sync_pipeline.stable_id({"link": "https://example.com/a"}) in processed
+    assert feed_cursor == {"feed-a": "2026-03-20T12:00:00+00:00"}
+    assert calls[0][0] == "https://ic.example/api/v1/articles"
+    assert calls[0][1]["source_type"] == "gqy"
+
+
 def test_build_processed_article_maps_to_ic_fields() -> None:
     article = sync_pipeline.build_processed_article(
         item={
@@ -303,6 +354,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
+    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         kwargs["candidates"][0]["eid"]: {
@@ -375,6 +427,11 @@ def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypa
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner, "FEED_CURSOR_LOOKBACK_HOURS", 24)
+    monkeypatch.setattr(
+        runner.sync_pipeline,
+        "load_ic_state",
+        lambda **kwargs: ({}, {feed_url: "2026-01-10T00:00:00+00:00"}),
+    )
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
@@ -400,7 +457,7 @@ def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypa
     posted_urls = [article["url"] for batch in posted_batches for article in batch]
     assert "https://example.com/new" in posted_urls
     assert "https://example.com/nodate" in posted_urls
-    assert "https://example.com/old" in posted_urls
+    assert "https://example.com/old" not in posted_urls
 
 
 def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -430,6 +487,7 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
+    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
@@ -454,6 +512,64 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
 
     posted_urls = [article["url"] for batch in posted_batches for article in batch]
     assert posted_urls == ["https://example.com/shared"]
+
+
+def test_main_skips_articles_already_in_ic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    feeds_file = tmp_path / "feeds.txt"
+    feed_url = "https://feed.example/rss"
+    feeds_file.write_text(f"{feed_url}\n", encoding="utf-8")
+
+    entries = [
+        {"id": "1", "link": "https://example.com/existing", "title": "Existing", "summary": "A"},
+        {"id": "2", "link": "https://example.com/new", "title": "New", "summary": "B"},
+    ]
+    posted_batches = []
+    existing_eid = sync_pipeline.stable_id({"link": "https://example.com/existing"})
+
+    def fake_fetch(url: str):  # noqa: ANN001
+        assert url == feed_url
+        return SimpleNamespace(bozo=False, entries=entries)
+
+    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
+        _ = (api_url, request_post)
+        posted_batches.append(articles)
+        return "ok"
+
+    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
+    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
+    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
+    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
+    monkeypatch.setattr(
+        runner.sync_pipeline,
+        "load_ic_state",
+        lambda **kwargs: ({existing_eid: {"id": existing_eid, "exported": True}}, {}),
+    )
+    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
+        item["eid"]: {
+            "score": 0.8,
+            "reason": "高价值",
+            "actionable": "跟进",
+            "hidden_signal": "信号",
+            "tags": ["rss"],
+            "core_event": item["title"],
+        }
+        for item in kwargs["candidates"]
+    })
+    monkeypatch.setattr(
+        runner.sync_pipeline,
+        "post_articles_in_chunks",
+        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
+    )
+    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
+    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+
+    runner.main()
+
+    posted_urls = [article["url"] for batch in posted_batches for article in batch]
+    assert posted_urls == ["https://example.com/new"]
 
 
 def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -526,6 +642,7 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner, "FEED_FETCH_CONCURRENCY", 4)
+    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {

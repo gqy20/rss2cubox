@@ -50,7 +50,7 @@ export IC_API_URL="http://ic.nexus.tashan.ac.cn/api/v1/articles/batch"
 
 ```bash
 export IC_SOURCE_TYPE="gqy"
-export MAX_ITEMS_PER_RUN="20"            # 单次运行总上限
+export MAX_ITEMS_PER_RUN="500"           # 单次运行总上限
 export FEED_FETCH_CONCURRENCY="4"
 export FEED_CONNECT_TIMEOUT_SECONDS="5"
 export FEED_READ_TIMEOUT_SECONDS="10"

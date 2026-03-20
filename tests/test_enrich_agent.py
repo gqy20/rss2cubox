@@ -79,8 +79,6 @@ class TestEnrichAgentConfig:
 
         assert enrich_agent.ENRICH_AGENT_ENABLED is True
         assert enrich_agent.ENRICH_MAX_WORKERS >= 1
-        assert enrich_agent.ENRICH_MIN_SCORE >= 0
-        assert enrich_agent.ENRICH_MAX_ITEMS > 0
         assert enrich_agent.ENRICH_ITEM_TIMEOUT_SECONDS >= 10
 
 
@@ -103,8 +101,6 @@ class TestEnrichAgentErrorHandling:
         from rss2cubox.enrich_agent import (
             ENRICH_AGENT_ENABLED,
             ENRICH_MAX_WORKERS,
-            ENRICH_MIN_SCORE,
-            ENRICH_MAX_ITEMS,
             ENRICH_ITEM_TIMEOUT_SECONDS,
             ENRICH_MAX_BUDGET_USD,
             JINA_READER_BASE,
@@ -114,8 +110,6 @@ class TestEnrichAgentErrorHandling:
 
         assert isinstance(ENRICH_AGENT_ENABLED, bool)
         assert isinstance(ENRICH_MAX_WORKERS, int)
-        assert isinstance(ENRICH_MIN_SCORE, float)
-        assert isinstance(ENRICH_MAX_ITEMS, int)
         assert isinstance(ENRICH_ITEM_TIMEOUT_SECONDS, int)
         assert JINA_READER_BASE == "https://r.jina.ai/"
         assert JINA_MAX_CHARS >= 1000
