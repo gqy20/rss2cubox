@@ -19,7 +19,6 @@ type Row = {
   url: string
   source: string
   time: string
-  score?: number
   pushed?: boolean
   status?: string
   tags?: string[]
@@ -33,6 +32,10 @@ type Row = {
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
   return value.map((v) => String(v)).filter((v) => v.trim().length > 0)
+}
+
+function hasAiSummary(row: Pick<Row, 'core_event' | 'hidden_signal' | 'actionable' | 'reason'>): boolean {
+  return Boolean(row.core_event || row.hidden_signal || row.actionable || row.reason)
 }
 
 function dedupeRows(rows: Row[]): Row[] {
@@ -80,7 +83,7 @@ function buildMetrics(rows: Row[]) {
   
   const sourceCount: Record<string, number> = {}
   let totalToday = 0, totalYesterday = 0
-  let highToday = 0, highYesterday = 0
+  let analyzedToday = 0, analyzedYesterday = 0
   const sourceToday = new Set<string>()
   const sourceYesterday = new Set<string>()
   
@@ -90,13 +93,14 @@ function buildMetrics(rows: Row[]) {
     
     const dayKey = getDayKey(r.time)
     if (!dayKey) continue
+    const analyzed = hasAiSummary(r)
     if (dayKey === today) {
       totalToday++
-      if ((r.score ?? 0) >= 0.85) highToday++
+      if (analyzed) analyzedToday++
       sourceToday.add(source)
     } else if (dayKey === yesterday) {
       totalYesterday++
-      if ((r.score ?? 0) >= 0.85) highYesterday++
+      if (analyzed) analyzedYesterday++
       sourceYesterday.add(source)
     }
   }
@@ -107,14 +111,14 @@ function buildMetrics(rows: Row[]) {
     .map(([source, count]) => ({ source, count }))
     
   // 计算最近7天的趋势数据
-  const dayMap = new Map<string, { name: string; total: number; high: number }>()
+  const dayMap = new Map<string, { name: string; total: number; analyzed: number }>()
   const base = new Date()
   base.setHours(0, 0, 0, 0)
   for (let i = 6; i >= 0; i--) {
     const d = new Date(base)
     d.setDate(base.getDate() - i)
     const dayKey = getDayKey(d)
-    dayMap.set(dayKey, { name: formatAxisDay(d), total: 0, high: 0 })
+    dayMap.set(dayKey, { name: formatAxisDay(d), total: 0, analyzed: 0 })
   }
   
   for (const r of rows) {
@@ -123,7 +127,7 @@ function buildMetrics(rows: Row[]) {
     const slot = dayMap.get(dayKey)
     if (slot) {
       slot.total++
-      if ((r.score ?? 0) >= 0.85) slot.high++
+      if (hasAiSummary(r)) slot.analyzed++
     }
   }
   
@@ -145,11 +149,11 @@ function buildMetrics(rows: Row[]) {
     top_sources: topSources,
     // KPI 数据
     total_all: rows.length,
-    high_all: rows.filter((r) => (r.score ?? 0) >= 0.85).length,
+    analyzed_all: rows.filter((r) => hasAiSummary(r)).length,
     total_today: totalToday,
     total_yesterday: totalYesterday,
-    high_today: highToday,
-    high_yesterday: highYesterday,
+    analyzed_today: analyzedToday,
+    analyzed_yesterday: analyzedYesterday,
     sources_today: sourceToday.size,
     sources_yesterday: sourceYesterday.size,
     // 趋势数据
@@ -172,7 +176,6 @@ async function loadFromDb(): Promise<{
       url: e.url,
       source: resolveSource(e as unknown as Record<string, unknown>),
       time: e.time,
-      score: e.score,
       pushed: e.pushed,
       status: e.status,
       tags: e.tags,

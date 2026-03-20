@@ -14,7 +14,6 @@ type IcArticle = {
   description?: string | null
   publish_time?: string | null
   tags?: string[] | null
-  score?: number | null
   reason?: string | null
   actionable?: string | null
   hidden_signal?: string | null
@@ -139,7 +138,6 @@ export async function GET(request: NextRequest) {
     url: e.url,
     source: normalizeSource(e),
     time: normalizeTime(e),
-    score: e.score,
     pushed: true,
     status: 'exported',
     tags: Array.isArray(e.tags) ? e.tags : [],

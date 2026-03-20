@@ -1,6 +1,6 @@
 """
 阶段 1.5 — 全文深化 Agent
-对初筛通过（score >= threshold）的条目，使用 Claude Agent SDK + Jina Reader(MCP Tool)
+对候选条目使用 Claude Agent SDK + Jina Reader(MCP Tool)
 逐条读取原文全文，重新生成更高质量的 hidden_signal / core_event / actionable。
 结果直接覆盖 analyses dict，供后续 pipeline 使用。
 
@@ -47,9 +47,8 @@ ENRICH_OUTPUT_SCHEMA = {
         "hidden_signal": {"type": "string", "maxLength": 200},
         "actionable": {"type": "string", "maxLength": 100},
         "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 5},
-        "score": {"type": "number", "minimum": 0, "maximum": 1},
     },
-    "required": ["core_event", "reason", "hidden_signal", "actionable", "tags", "score"],
+    "required": ["core_event", "reason", "hidden_signal", "actionable", "tags"],
 }
 
 
@@ -63,7 +62,6 @@ SYSTEM_PROMPT = (
     "- hidden_signal：这意味着什么？背后的范式转移、行业冲击或深层技术含义（≤100字）\n"
     "- actionable：工程师/独立开发者应如何行动？（≤60字）\n"
     "- tags：输出 1-3 个精准标签，必须是字符串数组\n"
-    "- score：在原始分基础上，基于全文内容重新评估 0.0-1.0\n"
     "所有输出必须使用简体中文。如果读取网页失败，请基于已有标题和摘要尽力输出。"
 )
 
@@ -73,7 +71,6 @@ def _build_user_prompt(item: dict, original: dict) -> str:
         f"文章标题：{item.get('title', '')}\n"
         f"原文链接：{item.get('url', '')}\n"
         f"初步摘要：{item.get('description', '')[:500]}\n"
-        f"初步评分：{original.get('score', 0):.2f}\n"
         f"初步核心事件：{original.get('core_event', '')}\n\n"
         "步骤：\n"
         "1. 调用 read_webpage 读取原文（传入上方原文链接）。\n"
@@ -314,16 +311,11 @@ async def _enrich_all(
                     tags = enriched.get("tags", [])
                     if isinstance(tags, list):
                         merged["tags"] = [str(tag).strip() for tag in tags if str(tag).strip()]
-                    try:
-                        new_score = float(enriched.get("score", original.get("score", 0)))
-                        merged["score"] = max(0.0, min(1.0, new_score))
-                    except (TypeError, ValueError):
-                        pass
                     merged["enriched"] = True
                     analyses[eid] = merged
                     stats["succeeded"] += 1
                     log_event("INFO", "enrich_done", stage="enrich", eid=eid,
-                              score=merged.get("score"), hidden_signal=merged.get("hidden_signal", "")[:40])
+                              hidden_signal=merged.get("hidden_signal", "")[:40])
                 else:
                     stats["empty"] += 1
                     log_event("WARN", "enrich_failed", stage="enrich", eid=eid, error=f"no_result:{reason}")
@@ -346,7 +338,6 @@ def analyze_candidates_with_agent(
 
     seed: dict[str, dict[str, Any]] = {
         str(item.get("eid", "")): {
-            "score": None,
             "reason": "",
             "hidden_signal": "",
             "actionable": "",

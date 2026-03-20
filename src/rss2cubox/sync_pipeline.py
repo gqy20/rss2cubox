@@ -309,12 +309,6 @@ def build_processed_article(
         tags = []
     publish_time = str(item.get("publish_time", "")).strip()
 
-    score_raw = analysis.get("score")
-    try:
-        score = float(score_raw) if score_raw is not None else None
-    except (TypeError, ValueError):
-        score = None
-
     return {
         "id": eid,
         "source_type": source_type,
@@ -327,7 +321,6 @@ def build_processed_article(
         "description": description,
         "publish_time": publish_time,
         "tags": tags,
-        "score": score,
         "reason": str(analysis.get("reason", "")).strip(),
         "actionable": str(analysis.get("actionable", "")).strip(),
         "hidden_signal": str(analysis.get("hidden_signal", "")).strip(),

@@ -7,9 +7,9 @@
   --text: #e7edf5;
   --muted: #8aa3be;
   --accent: #2dd4bf;
-  --high-score: #34d399;
-  --mid-score: #60a5fa;
-  --low-score: #9ca3af;
+  --signal-strong: #34d399;
+  --signal-mid: #60a5fa;
+  --signal-muted: #9ca3af;
 }
 
 * {
@@ -845,15 +845,15 @@ body {
 }
 
 .glow-green {
-  background: var(--high-score);
+  background: var(--signal-strong);
 }
 
 .glow-blue {
-  background: var(--mid-score);
+  background: var(--signal-mid);
 }
 
 .glow-gray {
-  background: var(--low-score);
+  background: var(--signal-muted);
 }
 
 .node-time {

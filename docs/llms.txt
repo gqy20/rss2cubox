@@ -8,7 +8,7 @@ RSS Signals 是一个 RSS 情报采集与分析系统。它抓取多个 RSS 源�
 
 - **RSS 抓取与分析**
   - 抓取 `feeds.txt` 中配置的 RSS 源
-  - 使用 Agent SDK 输出 `score`、`tags`、`reason`、`actionable`、`hidden_signal`
+  - 使用 Agent SDK 输出 `tags`、`reason`、`actionable`、`hidden_signal`、`core_event`
 - **文章正式入库**
   - 通过 `IC_API_URL` 调用 `POST /api/v1/articles/batch`
   - `ic` 是正式文章库

@@ -172,21 +172,6 @@ export function SourceLogo({ row }: { row: Row }) {
   )
 }
 
-export function ScoreBar({ score }: { score: number }) {
-  const color = score >= 0.85 ? '#34d399' : score >= 0.7 ? '#60a5fa' : '#9ca3af'
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-      <div style={{ width: 42, height: 4, background: 'rgba(255,255,255,0.08)', borderRadius: 4, overflow: 'hidden' }}>
-        <div
-          style={{
-            width: `${Math.round(score * 100)}%`,
-            height: '100%',
-            background: color,
-            borderRadius: 4,
-          }}
-        />
-      </div>
-      <span style={{ fontSize: 11, fontWeight: 700, color, fontVariantNumeric: 'tabular-nums' }}>{score.toFixed(2)}</span>
-    </div>
-  )
+export function hasAiSummary(row: Pick<Row, 'core_event' | 'hidden_signal' | 'actionable' | 'reason'>): boolean {
+  return Boolean(row.core_event || row.hidden_signal || row.actionable || row.reason)
 }

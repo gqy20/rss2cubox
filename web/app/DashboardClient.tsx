@@ -22,12 +22,13 @@ import {
   getDayKey,
   formatGroupTitle,
   formatKpiDelta,
+  hasAiSummary,
 } from './utils'
 import FeedCard from './FeedCard'
 import type { Row, Metrics, GlobalInsights, InsightKey } from './types'
 
 type ChartsSectionProps = {
-  trendData: Array<{ name: string; total: number; high: number }>
+  trendData: Array<{ name: string; total: number; analyzed: number }>
   sourceData: Array<{ name: string; value: number }>
   selectedSource: string | null
   onSelectSource: (source: string | null | ((prev: string | null) => string | null)) => void
@@ -133,7 +134,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [groupData, setGroupData] = useState<Record<string, GroupData>>({})
   const [groupPaging, setGroupPaging] = useState<Record<string, GroupPaging>>({})
   const [loadingMore, setLoadingMore] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'high'>('all')
+  const [filter, setFilter] = useState<'all' | 'analyzed'>('all')
   const [timeScope, setTimeScope] = useState<'all' | 'today'>('all')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
@@ -144,8 +145,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [searchTotal, setSearchTotal] = useState(0)
   const [searchHasMore, setSearchHasMore] = useState(false)
   const [searchLoading, setSearchLoading] = useState(false)
-  const [sortBy, setSortBy] = useState<'time' | 'score'>('time')
-
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
@@ -190,7 +189,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   useEffect(() => {
     timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [filter, timeScope, selectedSource, selectedTag, search, sortBy])
+  }, [filter, timeScope, selectedSource, selectedTag, search])
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search.trim()), 280)
@@ -270,7 +269,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   // 展示数据：搜索模式使用后端检索结果，非搜索模式使用已加载分组
   const displayedRows = useMemo(() => {
     const baseRows = isSearchMode ? searchRows : loadedRows
-    let result = filter === 'high' ? baseRows.filter((r) => (r.score ?? 0) >= 0.85) : [...baseRows]
+    let result = filter === 'analyzed' ? baseRows.filter((r) => hasAiSummary(r)) : [...baseRows]
     if (timeScope === 'today') result = result.filter((r) => getDayKey(r.time) === todayKey)
     if (selectedSource) {
       if (selectedSource === '__others__') {
@@ -281,9 +280,8 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       }
     }
     if (selectedTag) result = result.filter((r) => (r.tags || []).includes(selectedTag))
-    if (sortBy === 'score') return result.sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
     return result.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-  }, [isSearchMode, searchRows, loadedRows, filter, timeScope, selectedSource, selectedTag, sortBy, todayKey, topSourceNames])
+  }, [isSearchMode, searchRows, loadedRows, filter, timeScope, selectedSource, selectedTag, todayKey, topSourceNames])
 
   // 趋势数据来自服务端（基于全部数据）
   const trendData = metrics.trend_data || []
@@ -345,7 +343,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   // KPI 使用服务端计算的完整数据
   const kpis = [
     { key: 'all', title: '有效信号', value: metrics.updates_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setTimeScope('all') } },
-    { key: 'high', title: '高价值 (≥0.85)', value: metrics.high_all ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('high'); setTimeScope('all') } },
+    { key: 'analyzed', title: '已分析', value: metrics.analyzed_all ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setTimeScope('all') } },
     { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setTimeScope('today') } },
     { key: 'source', title: '活跃情报源', value: metrics.sources_total ?? 0, tone: '#a78bfa', delta: null, onClick: () => setSelectedSource(null) },
   ] as const
@@ -777,9 +775,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
         <div className="controls-bar" style={{ borderBottom: '1px solid var(--panel-border)', paddingBottom: 14, marginBottom: 0, flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <h2 style={{ fontSize: '20px', margin: 0, fontWeight: 700 }}>实时情报流</h2>
-            <button className="filter-btn" onClick={() => setSortBy((prev) => (prev === 'time' ? 'score' : 'time'))} style={{ padding: '5px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <ArrowUpDown size={12} /> {sortBy === 'score' ? '按分数' : '按时间'}
-            </button>
+            <div className="filter-btn" style={{ padding: '5px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, cursor: 'default' }}>
+              <ArrowUpDown size={12} /> 按时间
+            </div>
           </div>
 
           <div style={{ width: '100%', position: 'relative' }}>
@@ -795,7 +793,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
             <Filter size={15} color="#8aa3be" />
             <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>全量</button>
-            <button className={`filter-btn ${filter === 'high' ? 'active' : ''}`} onClick={() => setFilter('high')}>高价值</button>
+            <button className={`filter-btn ${filter === 'analyzed' ? 'active' : ''}`} onClick={() => setFilter('analyzed')}>已分析</button>
             <button className={`filter-btn ${timeScope === 'today' ? 'active' : ''}`} onClick={() => setTimeScope((prev) => (prev === 'today' ? 'all' : 'today'))}>今日</button>
             <button className="filter-btn" onClick={jumpToTodayGroup}>定位今天</button>
             <button className="filter-btn" onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
@@ -803,7 +801,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             </button>
             {selectedSource && <button className="filter-btn source-filter-active" onClick={() => setSelectedSource(null)}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</button>}
             {selectedTag && <button className="filter-btn source-filter-active" onClick={() => setSelectedTag(null)}>#{selectedTag} ×</button>}
-            {(search || selectedSource || selectedTag || timeScope === 'today' || filter === 'high') && <button className="filter-btn" onClick={clearAllFilters}>清除</button>}
+            {(search || selectedSource || selectedTag || timeScope === 'today' || filter === 'analyzed') && <button className="filter-btn" onClick={clearAllFilters}>清除</button>}
           </div>
 
           <div style={{ fontSize: 12, color: '#8aa3be', width: '100%' }}>

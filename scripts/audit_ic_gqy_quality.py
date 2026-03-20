@@ -63,7 +63,6 @@ def is_empty_text(value: Any) -> bool:
 def analyze(rows: list[dict[str, Any]], example_limit: int) -> dict[str, Any]:
     summary = {
         "total": len(rows),
-        "score_zero": 0,
         "description_empty": 0,
         "reason_empty": 0,
         "actionable_empty": 0,
@@ -74,14 +73,12 @@ def analyze(rows: list[dict[str, Any]], example_limit: int) -> dict[str, Any]:
     examples: list[dict[str, Any]] = []
 
     for item in rows:
-        score_zero = item.get("score") in (0, 0.0, None)
         description_empty = is_empty_text(item.get("description"))
         reason_empty = is_empty_text(item.get("reason"))
         actionable_empty = is_empty_text(item.get("actionable"))
         hidden_signal_empty = is_empty_text(item.get("hidden_signal"))
         tags_empty = not isinstance(item.get("tags"), list) or len(item.get("tags", [])) == 0
 
-        summary["score_zero"] += int(score_zero)
         summary["description_empty"] += int(description_empty)
         summary["reason_empty"] += int(reason_empty)
         summary["actionable_empty"] += int(actionable_empty)
@@ -91,8 +88,7 @@ def analyze(rows: list[dict[str, Any]], example_limit: int) -> dict[str, Any]:
             summary["all_analysis_empty"] += 1
 
         if len(examples) < example_limit and (
-            score_zero
-            or description_empty
+            description_empty
             or reason_empty
             or actionable_empty
             or hidden_signal_empty
@@ -102,7 +98,6 @@ def analyze(rows: list[dict[str, Any]], example_limit: int) -> dict[str, Any]:
                 {
                     "id": item.get("id"),
                     "title": item.get("title"),
-                    "score": item.get("score"),
                     "tags": item.get("tags"),
                     "description": item.get("description"),
                     "reason": item.get("reason"),

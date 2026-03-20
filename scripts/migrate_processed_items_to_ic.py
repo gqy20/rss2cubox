@@ -68,12 +68,6 @@ def to_ic_article(row: dict[str, Any], *, source_type: str) -> dict[str, Any] | 
     description = str(row.get("description", "")).strip() or str(row.get("core_event", "")).strip()
     publish_time = str(row.get("publish_time", row.get("time", ""))).strip()
 
-    score_raw = row.get("score")
-    try:
-        score = float(score_raw) if score_raw is not None else None
-    except (TypeError, ValueError):
-        score = None
-
     return {
         "source_type": article_source_type,
         "source_feed_id": source_feed_id,
@@ -85,7 +79,6 @@ def to_ic_article(row: dict[str, Any], *, source_type: str) -> dict[str, Any] | 
         "description": description or None,
         "publish_time": publish_time or None,
         "tags": normalize_tags(row.get("tags", [])),
-        "score": score,
         "reason": str(row.get("reason", "")).strip() or None,
         "actionable": str(row.get("actionable", "")).strip() or None,
         "hidden_signal": str(row.get("hidden_signal", "")).strip() or None,

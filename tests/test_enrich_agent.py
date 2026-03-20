@@ -15,9 +15,8 @@ class TestEnrichAgentOutputFormat:
                 "hidden_signal": {"type": "string"},
                 "actionable": {"type": "string"},
                 "tags": {"type": "array"},
-                "score": {"type": "number"},
             },
-            "required": ["core_event", "reason", "hidden_signal", "actionable", "tags", "score"],
+            "required": ["core_event", "reason", "hidden_signal", "actionable", "tags"],
         }
 
         assert "core_event" in expected_schema["properties"]
@@ -25,14 +24,12 @@ class TestEnrichAgentOutputFormat:
         assert "hidden_signal" in expected_schema["properties"]
         assert "actionable" in expected_schema["properties"]
         assert "tags" in expected_schema["properties"]
-        assert "score" in expected_schema["properties"]
         assert expected_schema["required"] == [
             "core_event",
             "reason",
             "hidden_signal",
             "actionable",
             "tags",
-            "score",
         ]
 
     def test_uses_query_output_format(self) -> None:
@@ -114,3 +111,18 @@ class TestEnrichAgentErrorHandling:
         assert JINA_READER_BASE == "https://r.jina.ai/"
         assert JINA_MAX_CHARS >= 1000
         assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10
+
+
+class TestEnrichAgentPrompt:
+    """Tests for prompt building robustness."""
+
+    def test_build_user_prompt_omits_legacy_rating(self) -> None:
+        from rss2cubox.enrich_agent import _build_user_prompt
+
+        prompt = _build_user_prompt(
+            {"title": "T", "url": "https://example.com", "description": "D"},
+            {"core_event": ""},
+        )
+
+        assert "文章标题：T" in prompt
+        assert "初步评分" not in prompt

@@ -90,7 +90,6 @@ RSS Signals 是一个技术情报站点，聚合 RSS 文章并提供结构化分
 - `url`: 原文链接
 - `source`: 来源名称
 - `time`: 文章时间
-- `score`: 评分，范围通常为 `0.0` 到 `1.0`
 - `tags`: 标签数组
 - `core_event`: 核心事件摘要
 - `hidden_signal`: 隐含信号
@@ -108,8 +107,6 @@ RSS Signals 是一个技术情报站点，聚合 RSS 文章并提供结构化分
   - 来源名称，例如 `arXiv cs.CV`、`MarkTechPost`
 - `time`
   - 文章时间轴字段；用于排序、日期分组和按天筛选
-- `score`
-  - 信号强度或价值评分
 - `tags`
   - 主题标签
 - `core_event`

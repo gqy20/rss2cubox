@@ -29,7 +29,6 @@ type IcArticle = {
   description?: string | null
   publish_time?: string | null
   tags?: string[] | null
-  score?: number | null
   reason?: string | null
   actionable?: string | null
   hidden_signal?: string | null
@@ -54,7 +53,6 @@ export type EventRow = {
   cover_url: string
   url: string
   title: string
-  score: number
   status: string
   pushed: boolean
   tags: string[]
@@ -104,7 +102,6 @@ export async function loadIcArticles(): Promise<EventRow[]> {
       cover_url: String(data.pic_url || ''),
       url: String(data.url || ''),
       title: String(data.title || ''),
-      score: Number(data.score || 0),
       status: 'exported',
       pushed: true,
       tags: Array.isArray(data.tags) ? data.tags.map((v) => String(v)) : [],

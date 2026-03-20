@@ -43,8 +43,6 @@ def test_enrich_agent() -> bool:
         "ANTHROPIC_API_KEY",
         "ENRICH_AGENT_ENABLED",
         "ENRICH_MAX_WORKERS",
-        "ENRICH_MIN_SCORE",
-        "ENRICH_MAX_ITEMS",
         "ENRICH_ITEM_TIMEOUT_SECONDS",
         "ENRICH_MAX_BUDGET_USD",
     ])
@@ -64,8 +62,6 @@ def test_enrich_agent() -> bool:
     print("\n[CONFIG] enrich_agent 配置:")
     print(f"  ENRICH_AGENT_ENABLED: {enrich_agent.ENRICH_AGENT_ENABLED}")
     print(f"  ENRICH_MAX_WORKERS: {enrich_agent.ENRICH_MAX_WORKERS}")
-    print(f"  ENRICH_MIN_SCORE: {enrich_agent.ENRICH_MIN_SCORE}")
-    print(f"  ENRICH_MAX_ITEMS: {enrich_agent.ENRICH_MAX_ITEMS}")
     print(f"  ENRICH_ITEM_TIMEOUT_SECONDS: {enrich_agent.ENRICH_ITEM_TIMEOUT_SECONDS}")
     print(f"  ENRICH_MAX_BUDGET_USD: {enrich_agent.ENRICH_MAX_BUDGET_USD}")
 
@@ -76,7 +72,7 @@ def test_enrich_agent() -> bool:
         'title': 'PERSIST: Persistent 3D Scene Generation',
         'description': 'A new approach to world models with 3D scene persistence.',
     }
-    original = {'score': 0.92, 'core_event': 'Initial analysis of PERSIST paper'}
+    original = {'core_event': 'Initial analysis of PERSIST paper'}
 
     print("\n[INPUT] 测试输入:")
     print(f"  eid: {item['eid']}")
@@ -98,7 +94,7 @@ def test_enrich_agent() -> bool:
 
     if result:
         print("\n[OUTPUT] 解析结果:")
-        for key in ['core_event', 'hidden_signal', 'actionable', 'score']:
+        for key in ['core_event', 'hidden_signal', 'actionable', 'reason', 'tags']:
             val = result.get(key, '(空)')
             if isinstance(val, str) and len(val) > 80:
                 val = val[:80] + "..."
@@ -141,27 +137,24 @@ def test_global_agent() -> bool:
             "title": "PERSIST: Persistent 3D Scene Generation",
             "hidden_signal": "世界模型从2D时序生成转向3D状态持久化建模",
             "core_event": "Cornell团队提出PERSIST框架实现持久化世界模型",
-            "score": 0.94,
         },
         {
             "url": "https://arxiv.org/abs/2603.01234",
             "title": "New Advances in Transformer Architecture",
             "hidden_signal": "Transformer架构持续演进，效率提升显著",
             "core_event": "研究团队发布新型高效Transformer变体",
-            "score": 0.91,
         },
         {
             "url": "https://blog.openai.com/new-model-release",
             "title": "OpenAI Releases New Model",
             "hidden_signal": "模型能力边界再次扩展",
             "core_event": "OpenAI发布新一代大语言模型",
-            "score": 0.89,
         },
     ]
 
-    print(f"\n[INPUT] 测试输入: {len(high_value_items)} 条高价值情报")
+    print(f"\n[INPUT] 测试输入: {len(high_value_items)} 条候选情报")
     for i, item in enumerate(high_value_items, 1):
-        print(f"  {i}. [{item['score']:.2f}] {item['title'][:50]}...")
+        print(f"  {i}. {item['title'][:50]}...")
 
     # 运行测试
     print("\n[RUN] 执行 _run_agent...")

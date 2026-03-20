@@ -113,3 +113,33 @@ class TestGlobalAgentIntegration:
         )
 
         assert result is None
+
+    def test_non_empty_analyses_are_forwarded_to_global_agent(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        from rss2cubox import global_agent
+
+        monkeypatch.setattr(global_agent, "GLOBAL_AGENT_ENABLED", True)
+
+        captured = {"items": None}
+
+        async def fake_run(items):  # noqa: ANN001
+            captured["items"] = items
+            return {"trends": [], "weak_signals": [], "daily_advices": []}
+
+        monkeypatch.setattr(global_agent, "_run_agent", fake_run)
+
+        analyses = {"e1": {"hidden_signal": "hs", "core_event": "ce"}}
+        candidates = [{"eid": "e1", "url": "https://example.com", "title": "T"}]
+
+        monkeypatch.delenv("NEON_DATABASE_URL", raising=False)
+
+        result = global_agent.run_global_analysis(analyses=analyses, candidates=candidates)
+
+        assert result is None
+        assert captured["items"] == [
+            {
+                "url": "https://example.com",
+                "title": "T",
+                "hidden_signal": "hs",
+                "core_event": "ce",
+            }
+        ]

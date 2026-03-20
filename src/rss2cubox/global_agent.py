@@ -63,7 +63,7 @@ WECHAT_FETCH_TIMEOUT_SECONDS = max(10, int(os.getenv("WECHAT_FETCH_TIMEOUT_SECON
 
 def _build_user_prompt(signals_file: str, total: int) -> str:
     deep_read_target = min(max(total, 1), 8)
-    return f"""今日高价值情报（score ≥ 0.85）共 {total} 条，已保存到文件：{signals_file}
+    return f"""今日候选情报共 {total} 条，已保存到文件：{signals_file}
 
 请完成以下任务：
 1. 首先调用 read_signals_file 工具读取完整信号列表。
@@ -189,7 +189,6 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
             "title": r.get("title", ""),
             "hidden_signal": r.get("hidden_signal", ""),
             "core_event": r.get("core_event", ""),
-            "score": round(r.get("score", 0), 2),
         }
         for r in high_value_items
     ]
@@ -388,30 +387,31 @@ def run_global_analysis(
         print("[global_agent] GLOBAL_AGENT_ENABLED=false，跳过全局分析", flush=True)
         return
 
-    # 拼装高价值条目 (score >= 0.85)
+    # 拼装本轮可用于全局分析的条目
     high_value: list[dict] = []
     for c in candidates:
         eid = c.get("eid", "")
         analysis = analyses.get(eid, {})
-        score = analysis.get("score", 0)
-        if score >= 0.85:
-            high_value.append({
-                "url": c.get("url", ""),
-                "title": c.get("title", ""),
-                "hidden_signal": analysis.get("hidden_signal", ""),
-                "core_event": analysis.get("core_event", ""),
-                "score": score,
-            })
+        hidden_signal = str(analysis.get("hidden_signal", "")).strip()
+        core_event = str(analysis.get("core_event", "")).strip()
+        reason = str(analysis.get("reason", "")).strip()
+        if not (hidden_signal or core_event or reason):
+            continue
+        high_value.append({
+            "url": c.get("url", ""),
+            "title": c.get("title", ""),
+            "hidden_signal": hidden_signal,
+            "core_event": core_event,
+        })
 
     if not high_value:
-        print("[global_agent] 无高价值情报，跳过全局分析", flush=True)
+        print("[global_agent] 无可用情报，跳过全局分析", flush=True)
         return
 
-    # 按 score 降序，取前 200 条
-    high_value.sort(key=lambda x: x["score"], reverse=True)
+    # 保持主流程顺序，取前 200 条
     high_value = high_value[:200]
 
-    print(f"[global_agent] 启动全局 Agent 分析，共 {len(high_value)} 条高价值情报...", flush=True)
+    print(f"[global_agent] 启动全局 Agent 分析，共 {len(high_value)} 条候选情报...", flush=True)
 
     result = anyio.run(_run_agent, high_value)
 

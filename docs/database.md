@@ -75,7 +75,6 @@ POST /api/v1/articles/batch
 - `source_feed`
 - `source_label`
 - `cover_url`
-- `score`
 - `tags`
 - `reason`
 - `actionable`

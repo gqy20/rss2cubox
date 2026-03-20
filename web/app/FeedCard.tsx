@@ -2,7 +2,7 @@
 
 import React from 'react'
 import { ExternalLink } from 'lucide-react'
-import { SourceLogo, ScoreBar, formatRelativeTime, formatShortTime } from './utils'
+import { SourceLogo, formatRelativeTime, formatShortTime, hasAiSummary } from './utils'
 import type { Row } from './types'
 
 function extractBvid(value: string): string {
@@ -34,9 +34,7 @@ const FeedCard = React.memo(function FeedCard({
   onHoverLeave,
   onTagClick,
 }: FeedCardProps) {
-  const s = row.score ?? 0
-  const isHigh = s >= 0.85
-  const isMid = s >= 0.7 && s < 0.85
+  const hasSummary = hasAiSummary(row)
   const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
   const isHovered = hoveredRowKey === rowKey
   const hasAiContent = Boolean(row.core_event || row.actionable || row.reason)
@@ -60,7 +58,7 @@ const FeedCard = React.memo(function FeedCard({
   return (
     <div className="timeline-item timeline-item-enter" style={{ animationDelay: `${Math.min(idx * 0.02, 0.15)}s` }}>
       <article
-        className={`glass timeline-content timeline-compact${isHigh ? ' timeline-high' : ''}${isHovered ? ' hover-open' : ''}`}
+        className={`glass timeline-content timeline-compact${hasSummary ? ' timeline-high' : ''}${isHovered ? ' hover-open' : ''}`}
         onMouseEnter={() => onHoverEnter(rowKey)}
         onMouseLeave={() => onHoverLeave(rowKey)}
       >
@@ -95,8 +93,7 @@ const FeedCard = React.memo(function FeedCard({
             </span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <ScoreBar score={s} />
-            <div className={`node-dot ${isHigh ? 'glow-green' : isMid ? 'glow-blue' : 'glow-gray'}`} />
+            <div className={`node-dot ${hasSummary ? 'glow-green' : 'glow-gray'}`} />
             <a href={row.url} target="_blank" rel="noreferrer" aria-label="打开原文" style={{ display: 'inline-flex', alignItems: 'center' }}>
               <ExternalLink size={13} color="#8aa3be" />
             </a>

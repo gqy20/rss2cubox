@@ -165,7 +165,6 @@ def test_post_articles_batch_builds_payload(monkeypatch: pytest.MonkeyPatch) -> 
                 "description": "d",
                 "publish_time": "2026-01-01T00:00:00+00:00",
                 "tags": ["news"],
-                "score": 0.9,
                 "reason": "r",
                 "actionable": "a",
                 "hidden_signal": "h",
@@ -189,7 +188,6 @@ def test_post_articles_batch_builds_payload(monkeypatch: pytest.MonkeyPatch) -> 
                 "description": "d",
                 "publish_time": "2026-01-01T00:00:00+00:00",
                 "tags": ["news"],
-                "score": 0.9,
                 "reason": "r",
                 "actionable": "a",
                 "hidden_signal": "h",
@@ -293,7 +291,6 @@ def test_build_processed_article_maps_to_ic_fields() -> None:
             "publish_time": "2026-03-19T13:18:31.612345+00:00",
         },
         analysis={
-            "score": 0.82,
             "reason": "命中关键主题",
             "actionable": "建议跟进",
             "hidden_signal": "存在供应链变化信号",
@@ -316,7 +313,6 @@ def test_build_processed_article_maps_to_ic_fields() -> None:
         "description": "情报文章",
         "publish_time": "2026-03-19T13:18:31.612345+00:00",
         "tags": ["a", "b"],
-        "score": 0.82,
         "reason": "命中关键主题",
         "actionable": "建议跟进",
         "hidden_signal": "存在供应链变化信号",
@@ -358,7 +354,6 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         kwargs["candidates"][0]["eid"]: {
-            "score": 0.9,
             "reason": "高价值",
             "actionable": "跟进",
             "hidden_signal": "信号",
@@ -435,7 +430,6 @@ def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypa
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
-            "score": 0.8,
             "reason": "高价值",
             "actionable": "跟进",
             "hidden_signal": "信号",
@@ -491,7 +485,6 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
-            "score": 0.8,
             "reason": "高价值",
             "actionable": "跟进",
             "hidden_signal": "信号",
@@ -549,7 +542,6 @@ def test_main_skips_articles_already_in_ic(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
-            "score": 0.8,
             "reason": "高价值",
             "actionable": "跟进",
             "hidden_signal": "信号",
@@ -591,7 +583,6 @@ def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
             "ai_missing": 0,
             "ai_kept": 2,
             "ai_dropped_keep_false": 1,
-            "ai_dropped_score": 1,
             "push_attempted": 2,
             "pushed": 2,
             "push_failed": 0,
@@ -646,7 +637,6 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
-            "score": 0.8,
             "reason": "高价值",
             "actionable": "跟进",
             "hidden_signal": "信号",

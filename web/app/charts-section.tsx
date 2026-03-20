@@ -16,7 +16,7 @@ import {
 import { Radar, Zap } from 'lucide-react'
 import { PIE_COLORS } from './utils'
 
-type TrendPoint = { name: string; total: number; high: number }
+type TrendPoint = { name: string; total: number; analyzed: number }
 type SourcePoint = { name: string; value: number }
 
 type Props = {
@@ -52,7 +52,7 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
               <Tooltip contentStyle={{ backgroundColor: 'rgba(13, 27, 42, 0.96)', border: '1px solid #1f3550', borderRadius: '8px', color: '#fff' }} itemStyle={{ color: '#e7edf5' }} />
               <Legend verticalAlign="top" height={28} iconType="circle" wrapperStyle={{ fontSize: 12, color: '#8aa3be' }} />
               <Area type="monotone" dataKey="total" name="总数" stroke="#60a5fa" fillOpacity={1} fill="url(#colorTotal)" />
-              <Area type="monotone" dataKey="high" name="优质" stroke="#34d399" fillOpacity={1} fill="url(#colorHigh)" />
+              <Area type="monotone" dataKey="analyzed" name="已分析" stroke="#34d399" fillOpacity={1} fill="url(#colorHigh)" />
             </AreaChart>
           </ResponsiveContainer>
         </div>

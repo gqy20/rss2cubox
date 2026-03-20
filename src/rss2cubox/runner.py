@@ -217,7 +217,6 @@ def main() -> None:
                         "description",
                         "publish_time",
                         "tags",
-                        "score",
                         "reason",
                         "actionable",
                         "hidden_signal",
