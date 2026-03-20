@@ -1,6 +1,7 @@
 import DashboardClient from './DashboardClient'
 
 import { loadGlobalInsights, loadProcessedItems } from '../lib/neonDb'
+import { BUSINESS_TZ, getBusinessDayKey } from '../lib/time'
 
 export const revalidate = 1800 // 30 minutes; GitHub Actions triggers on-demand revalidation after each sync
 
@@ -28,8 +29,6 @@ type Row = {
   reason?: string
   cover_url?: string
 }
-
-const BUSINESS_TZ = 'Asia/Shanghai'
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -59,18 +58,7 @@ function resolveSource(row: Record<string, unknown>): string {
 }
 
 function getDayKey(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date
-  if (Number.isNaN(d.getTime())) return ''
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: BUSINESS_TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(d)
-  const year = parts.find((p) => p.type === 'year')?.value || '1970'
-  const month = parts.find((p) => p.type === 'month')?.value || '01'
-  const day = parts.find((p) => p.type === 'day')?.value || '01'
-  return `${year}-${month}-${day}`
+  return getBusinessDayKey(date)
 }
 
 function formatAxisDay(value: Date): string {

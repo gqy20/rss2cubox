@@ -88,9 +88,10 @@ export async function loadRunEvents(): Promise<EventRow[]> {
 
 export async function loadProcessedItems(): Promise<EventRow[]> {
   const batchSize = 100
-  const maxScan = 2000
+  const maxPages = 1000
   const items: IcArticle[] = []
-  for (let offset = 0; offset < maxScan; offset += batchSize) {
+  for (let page = 0; page < maxPages; page += 1) {
+    const offset = page * batchSize
     const response = await fetch(getIcListApiUrl(batchSize, offset), {
       next: { revalidate: 1800 },
     })
@@ -102,6 +103,9 @@ export async function loadProcessedItems(): Promise<EventRow[]> {
     if (!chunk.length) break
     items.push(...chunk)
     if (chunk.length < batchSize) break
+  }
+  if (items.length >= batchSize * maxPages) {
+    throw new Error(`IC article scan exceeded safety limit (${batchSize * maxPages} rows)`)
   }
   return items.map((data) => {
     return {

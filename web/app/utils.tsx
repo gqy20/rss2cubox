@@ -2,22 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import type { Row } from './types'
+import { BUSINESS_TZ, getBusinessDayKey, parseBusinessDate } from '../lib/time'
 
 export const DISPLAY_TZ = 'Asia/Shanghai'
-export const BUSINESS_TZ = 'Asia/Shanghai'
-
-function formatDayKeyInBusinessTz(dt: Date): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: BUSINESS_TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(dt)
-  const y = parts.find((p) => p.type === 'year')?.value || '1970'
-  const m = parts.find((p) => p.type === 'month')?.value || '01'
-  const d = parts.find((p) => p.type === 'day')?.value || '01'
-  return `${y}-${m}-${d}`
-}
 
 export const PIE_COLORS = ['#2dd4bf', '#60a5fa', '#818cf8', '#a78bfa', '#c084fc']
 
@@ -51,7 +38,7 @@ export const SOURCE_DOMAIN_MAP: Array<[string, string]> = [
 ]
 
 export function formatRelativeTime(value: string, now: Date | null): string {
-  const dt = new Date(value)
+  const dt = parseBusinessDate(value)
   if (Number.isNaN(dt.getTime())) return value
   if (!now) return dt.toLocaleString('zh-CN', { timeZone: DISPLAY_TZ, month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })
   const diff = now.getTime() - dt.getTime()
@@ -64,15 +51,13 @@ export function formatRelativeTime(value: string, now: Date | null): string {
 }
 
 export function formatShortTime(value: string): string {
-  const dt = new Date(value)
+  const dt = parseBusinessDate(value)
   if (Number.isNaN(dt.getTime())) return value
   return dt.toLocaleString('zh-CN', { timeZone: DISPLAY_TZ, hour: '2-digit', minute: '2-digit' })
 }
 
 export function getDayKey(value: string | Date): string {
-  const dt = value instanceof Date ? value : new Date(value)
-  if (Number.isNaN(dt.getTime())) return ''
-  return formatDayKeyInBusinessTz(dt)
+  return getBusinessDayKey(value)
 }
 
 export function formatAxisDay(value: Date): string {

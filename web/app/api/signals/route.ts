@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getBusinessDayKey, parseBusinessDate } from '../../../lib/time'
 
-const BUSINESS_TZ = 'Asia/Shanghai'
 const DEFAULT_SOURCE_TYPE = process.env.IC_SOURCE_TYPE || 'gqy'
 const IC_BATCH_API_URL = process.env.IC_API_URL || ''
 
@@ -63,18 +63,7 @@ function normalizeSource(article: IcArticle): string {
 }
 
 function getDateKey(raw: string): string {
-  const date = new Date(raw)
-  if (Number.isNaN(date.getTime())) return ''
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: BUSINESS_TZ,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(date)
-  const year = parts.find((p) => p.type === 'year')?.value || '1970'
-  const month = parts.find((p) => p.type === 'month')?.value || '01'
-  const day = parts.find((p) => p.type === 'day')?.value || '01'
-  return `${year}-${month}-${day}`
+  return getBusinessDayKey(raw)
 }
 
 function matchesSearch(article: IcArticle, search: string): boolean {
@@ -126,19 +115,21 @@ export async function GET(request: NextRequest) {
   }
 
   const batchSize = 100
-  const maxScan = 2000
+  const maxPages = 1000
   const articles: IcArticle[] = []
-  let scanOffset = 0
-  while (scanOffset < maxScan) {
-    const chunk = await fetchIcArticles(batchSize, scanOffset)
+  for (let pageIndex = 0; pageIndex < maxPages; pageIndex += 1) {
+    const offset = pageIndex * batchSize
+    const chunk = await fetchIcArticles(batchSize, offset)
     if (!chunk.length) break
     articles.push(...chunk)
     if (chunk.length < batchSize) break
-    scanOffset += batchSize
+  }
+  if (articles.length >= batchSize * maxPages) {
+    throw new Error(`IC article scan exceeded safety limit (${batchSize * maxPages} rows)`)
   }
 
   const filtered = articles.filter((article) => matchesDate(article, date) && matchesSearch(article, search))
-  filtered.sort((a, b) => new Date(normalizeTime(b)).getTime() - new Date(normalizeTime(a)).getTime())
+  filtered.sort((a, b) => parseBusinessDate(normalizeTime(b)).getTime() - parseBusinessDate(normalizeTime(a)).getTime())
 
   const offset = (page - 1) * limit
   const pageRows = filtered.slice(offset, offset + limit)
