@@ -1,14 +1,9 @@
-name: RSS to Cubox
+name: RSS to IC
 
 on:
   schedule:
     - cron: "0 */3 * * *"
   workflow_dispatch:
-    inputs:
-      push_to_cubox:
-        description: 'Push to Cubox (uncheck to only update web data)'
-        type: boolean
-        default: true
 
 permissions:
   contents: write
@@ -39,7 +34,8 @@ jobs:
 
       - name: Run sync
         env:
-          CUBOX_FOLDER: "RSS Inbox"
+          IC_API_URL: ${{ secrets.IC_API_URL }}
+          IC_SOURCE_TYPE: "gqy"
           KEYWORDS_INCLUDE: ""
           KEYWORDS_EXCLUDE: ""
           MAX_ITEMS_PER_RUN: "20"
@@ -66,11 +62,6 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail
-          if [[ "${{ github.event_name }}" == "schedule" || "${{ inputs.push_to_cubox }}" == "true" ]]; then
-            export CUBOX_API_URL="${{ secrets.CUBOX_API_URL }}"
-          else
-            export CUBOX_API_URL="skip"
-          fi
           rss2cubox 2>&1 | tee rss2cubox.log
 
       - name: Upload run log artifact
@@ -80,16 +71,3 @@ jobs:
           name: rss2cubox-log-${{ github.run_id }}
           path: rss2cubox.log
           if-no-files-found: warn
-
-      - name: Trigger Vercel revalidation
-        if: success()
-        env:
-          REVALIDATE_SECRET: ${{ secrets.VERCEL_REVALIDATE_SECRET }}
-          VERCEL_PRODUCTION_URL: ${{ vars.VERCEL_PRODUCTION_URL }}
-        run: |
-          if [ -n "$REVALIDATE_SECRET" ]; then
-            curl -sf "$VERCEL_PRODUCTION_URL/api/revalidate?secret=$REVALIDATE_SECRET" \
-              -o /dev/null && echo "Revalidation triggered" || echo "Revalidation skipped (non-fatal)"
-          else
-            echo "Revalidation skipped (no secret configured)"
-          fi

@@ -59,8 +59,8 @@ export ENRICH_MAX_BUDGET_USD="0.15"     # 单条目最大预算
 ## 4) 运行
 
 ```bash
-python -m pip install -e ".[dev]"
-rss2cubox
+uv sync
+uv run rss2cubox
 ```
 
 ## 5) 数据文件职责
@@ -71,54 +71,25 @@ rss2cubox
   - `feed_failures`: 每源失败计数与熔断状态
 - `run_events.jsonl`
   - 本次运行的逐条处理结果
-- `web/public/data/updates_history.jsonl`
-  - 前端历史数据池（由 `run_events.jsonl` 增量合并）
 
 ## 6) GitHub Actions
 
-- 工作流：`.github/workflows/rss_to_cubox.yml`
-- 每次运行会输出 `rss2cubox.log` artifact
-- Step Summary 包含：阶段耗时、熔断跳过数、去重数、每源处理统计
-- 每次运行后会自动执行 `rss2cubox-export-web`，生成：
-  - `run_events.jsonl`
-  - `web/public/data/updates_history.jsonl`
-  - `web/public/data/updates.json`
-  - `web/public/data/metrics.json`
-- workflow 会把上述数据文件提交到 `main`
+- 主工作流：`.github/workflows/rss_to_ic.yml`
+- 快速测试：`.github/workflows/rss_to_ic_test.yml`
+- 每次运行会输出日志 artifact
+- Step Summary 包含阶段耗时、熔断跳过数、去重数、每源处理统计
 
-## 7) Vercel 前端（自动更新）
+## 7) 数据迁移与审计脚本
 
-- 前端目录：`web/`
-- 在 Vercel 创建项目时把 **Root Directory** 设为 `web`
-- 每次 GitHub Action 推送新 commit 后，Vercel 会自动重新部署
-- 页面读取 `web/public/data/*.json`，因此部署完成后就是最新数据
-
-本地可单独导出前端数据：
+迁移旧 Neon `processed_items` 到 `ic`：
 
 ```bash
-rss2cubox-export-web
+uv run python scripts/migrate_processed_items_to_ic.py --dry-run
+uv run python scripts/migrate_processed_items_to_ic.py
 ```
 
-## 8) Cubox Key 保存位置（本地 / 云端）
+审计 `ic` 中 `gqy` 数据质量：
 
-当前 Web 端不会把 Cubox Key 写入数据库或服务器文件。
-
-- 保存介质：浏览器 `HttpOnly` Cookie
-  - Cookie 名：`cubox_key_v1`
-  - 过期时间：7 天
-  - 属性：`HttpOnly`、`SameSite=Lax`、`Path=/`
-  - 生产环境（HTTPS）自动带 `Secure`
-- Cookie 内不是明文，使用服务端密钥加密（AES-256-GCM）
-  - 服务端环境变量：`CUBOX_COOKIE_SECRET`（必需）
-
-云端（Vercel）行为：
-
-- Key 仍在用户浏览器 Cookie 中，不在 Vercel 数据库中持久化
-- API 请求时，Vercel 函数读取并解密 Cookie，再调用 Cubox API
-- 必须在 Vercel 项目配置 `CUBOX_COOKIE_SECRET`
-- 不同域名（如 preview/production）Cookie 不共享，需分别配置
-
-本地开发：
-
-- 在 `web/.env.local` 配置 `CUBOX_COOKIE_SECRET`
-- 修改后需重启 `npm run dev`
+```bash
+uv run python scripts/audit_ic_gqy_quality.py
+```

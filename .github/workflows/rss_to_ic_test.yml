@@ -1,12 +1,7 @@
-name: RSS to Cubox - Quick Test
+name: RSS to IC - Quick Test
 
 on:
   workflow_dispatch:
-    inputs:
-      push_to_cubox:
-        description: 'Push to Cubox'
-        type: boolean
-        default: false
 
 permissions:
   contents: write
@@ -30,7 +25,7 @@ jobs:
 
       - name: Run quick test
         env:
-          CUBOX_FOLDER: "Test Inbox"
+          IC_SOURCE_TYPE: "gqy"
           KEYWORDS_INCLUDE: ""
           KEYWORDS_EXCLUDE: ""
           MAX_ITEMS_PER_RUN: "3"
@@ -62,11 +57,7 @@ jobs:
           PYTHONUNBUFFERED: "1"
         run: |
           set -o pipefail
-          if [[ "${{ inputs.push_to_cubox }}" == "true" ]]; then
-            export CUBOX_API_URL="${{ secrets.CUBOX_API_URL }}"
-          else
-            export CUBOX_API_URL="skip"
-          fi
+          export IC_API_URL="http://127.0.0.1:9/api/v1/articles/batch"
           rss2cubox 2>&1 | tee rss2cubox-test.log
 
       - name: Upload test log artifact
