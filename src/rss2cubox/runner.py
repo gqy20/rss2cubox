@@ -6,6 +6,23 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+
+def _load_local_env_file(env_file: Path = Path(".env")) -> None:
+    if not env_file.exists():
+        return
+    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        key = key.strip()
+        if not key:
+            continue
+        os.environ.setdefault(key, value.strip())
+
+
+_load_local_env_file()
+
 import requests
 
 from rss2cubox import db, feed_sources, sync_pipeline
@@ -25,22 +42,16 @@ FEEDS_FILE = Path(os.getenv("FEEDS_FILE", "feeds.txt"))
 NEON_DATABASE_URL = os.getenv("NEON_DATABASE_URL", "").strip()
 RSSHUB_INSTANCES_FILE = Path(os.getenv("RSSHUB_INSTANCES_FILE", "rsshub_instances.txt"))
 
-CUBOX_API_URL = os.getenv("CUBOX_API_URL")
-CUBOX_FOLDER = os.getenv("CUBOX_FOLDER", "RSS Inbox")
 IC_API_URL = os.getenv("IC_API_URL", "").strip()
 IC_SOURCE_TYPE = os.getenv("IC_SOURCE_TYPE", "gqy").strip() or "gqy"
 KEYWORDS_INCLUDE = [k.strip() for k in os.getenv("KEYWORDS_INCLUDE", "").split(",") if k.strip()]
 KEYWORDS_EXCLUDE = [k.strip() for k in os.getenv("KEYWORDS_EXCLUDE", "").split(",") if k.strip()]
 MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "20"))
 
-ANTHROPIC_AUTH_TOKEN = os.getenv("ANTHROPIC_AUTH_TOKEN", "").strip()
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
 AI_MIN_SCORE = sync_pipeline.env_float("AI_MIN_SCORE", 0.6)
 AI_TIMEOUT_SECONDS = sync_pipeline.env_int("AI_TIMEOUT_SECONDS", 90)
-AI_RETRY_ATTEMPTS = sync_pipeline.env_int("AI_RETRY_ATTEMPTS", 3)
-AI_RETRY_BACKOFF_SECONDS = sync_pipeline.env_float("AI_RETRY_BACKOFF_SECONDS", 1.5)
-AI_BATCH_SIZE = sync_pipeline.env_int("AI_BATCH_SIZE", 5)
 AI_MAX_WORKERS = sync_pipeline.env_int("AI_MAX_WORKERS", 10)
 AI_MAX_CANDIDATES = sync_pipeline.env_int("AI_MAX_CANDIDATES", max(MAX_ITEMS_PER_RUN * 2, 1))
 FEED_CONNECT_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_CONNECT_TIMEOUT_SECONDS", 5.0)
@@ -97,8 +108,8 @@ def main() -> None:
         ai_model=ANTHROPIC_MODEL,
         ai_min_score=AI_MIN_SCORE,
         ai_timeout_seconds=AI_TIMEOUT_SECONDS,
-        ai_retry_attempts=AI_RETRY_ATTEMPTS,
-        ai_batch_size=AI_BATCH_SIZE,
+        ai_retry_attempts=0,
+        ai_batch_size=0,
         ai_max_candidates=AI_MAX_CANDIDATES,
         feed_connect_timeout_seconds=FEED_CONNECT_TIMEOUT_SECONDS,
         feed_read_timeout_seconds=FEED_READ_TIMEOUT_SECONDS,

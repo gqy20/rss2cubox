@@ -1,12 +1,10 @@
 import json
+import os
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
-import requests
-
-from rss2cubox import ai_pipeline
 from rss2cubox import feed_sources, sync_pipeline
 from rss2cubox import metrics
 from rss2cubox import runner
@@ -17,6 +15,22 @@ def test_load_lines_ignores_blank_and_comment(tmp_path: Path) -> None:
     feeds.write_text("# comment\n\nhttps://a.example/rss\n  \nhttps://b.example/rss\n", encoding="utf-8")
 
     assert feed_sources.load_lines(feeds) == ["https://a.example/rss", "https://b.example/rss"]
+
+
+def test_load_local_env_file_sets_missing_values_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    env_file = tmp_path / ".env"
+    env_file.write_text(
+        "IC_API_URL=http://ic.example/api/v1/articles/batch\nEXISTING=from_file\n# comment\nINVALID\n",
+        encoding="utf-8",
+    )
+
+    monkeypatch.delenv("IC_API_URL", raising=False)
+    monkeypatch.setenv("EXISTING", "from_env")
+
+    runner._load_local_env_file(env_file)
+
+    assert os.environ["IC_API_URL"] == "http://ic.example/api/v1/articles/batch"
+    assert os.environ["EXISTING"] == "from_env"
 
 
 def test_load_feed_specs_supports_sections(tmp_path: Path) -> None:
@@ -88,7 +102,7 @@ def test_load_rsshub_instances_from_file(tmp_path: Path, monkeypatch: pytest.Mon
 def test_state_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     state_file = tmp_path / "state.json"
     _ = monkeypatch
-    payload = {"sent": {"x": {"url": "https://example.com", "ts": "2026-01-01T00:00:00+00:00"}}}
+    payload = {"processed": {"x": {"url": "https://example.com", "created_at": "2026-01-01T00:00:00+00:00"}}}
 
     sync_pipeline.save_state(state_file, payload)
     assert sync_pipeline.load_state(state_file) == payload
@@ -236,237 +250,6 @@ def test_build_processed_article_maps_to_ic_fields() -> None:
         "created_at": "2026-03-20T00:00:00+00:00",
         "updated_at": "2026-03-20T00:00:00+00:00",
     }
-
-
-def test_analyze_candidates_with_ai_prefers_tool_use(monkeypatch: pytest.MonkeyPatch) -> None:
-    calls = {}
-
-    class Resp:
-        @staticmethod
-        def raise_for_status() -> None:
-            return None
-
-        @staticmethod
-        def json() -> dict:
-            return {
-                "content": [
-                    {
-                        "type": "tool_use",
-                        "name": "analyze_batch",
-                        "input": {
-                            "results": [
-                                {
-                                    "eid": "e1",
-                                    "keep": True,
-                                    "score": 0.92,
-                                    "reason": "high signal",
-                                    "tags": ["ai"],
-                                    "brief": "good summary",
-                                }
-                            ]
-                        },
-                    }
-                ]
-            }
-
-    def fake_post(url, headers, json, timeout):  # noqa: ANN001
-        calls["url"] = url
-        calls["headers"] = headers
-        calls["json"] = json
-        calls["timeout"] = timeout
-        return Resp()
-
-    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
-    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
-    monkeypatch.setattr(runner, "ANTHROPIC_BASE_URL", "https://api.example.com/anthropic")
-    monkeypatch.setattr(runner, "AI_TIMEOUT_SECONDS", 12)
-    monkeypatch.setattr(ai_pipeline.requests, "post", fake_post)
-
-    out = ai_pipeline.analyze_candidates_with_ai(
-        candidates=[{"eid": "e1", "url": "https://example.com/1", "title": "t", "description": "d"}],
-        stage_metrics=runner.StageMetrics(),
-        auth_token=runner.ANTHROPIC_AUTH_TOKEN,
-        base_url=runner.ANTHROPIC_BASE_URL,
-        model=runner.ANTHROPIC_MODEL,
-        timeout_seconds=runner.AI_TIMEOUT_SECONDS,
-        retry_attempts=runner.AI_RETRY_ATTEMPTS,
-        retry_backoff_seconds=runner.AI_RETRY_BACKOFF_SECONDS,
-        batch_size=runner.AI_BATCH_SIZE,
-        log_event=lambda *_args, **_kwargs: None,
-    )
-
-    assert calls["url"] == "https://api.example.com/anthropic/v1/messages"
-    assert calls["timeout"] == 12
-    assert calls["json"]["tool_choice"] == {"type": "any"}
-    assert calls["json"]["tools"][0]["name"] == "analyze_batch"
-    assert out["e1"]["keep"] is True
-    assert out["e1"]["score"] == 0.92
-    assert out["e1"]["tags"] == ["ai"]
-
-
-def test_analyze_candidates_with_ai_text_fallback(monkeypatch: pytest.MonkeyPatch) -> None:
-    class Resp:
-        @staticmethod
-        def raise_for_status() -> None:
-            return None
-
-        @staticmethod
-        def json() -> dict:
-            return {
-                "content": [
-                    {
-                        "type": "text",
-                        "text": (
-                            '{"results":[{"eid":"e2","keep":false,"score":0.3,'
-                            '"reason":"low signal","tags":[],"brief":""}]}'
-                        ),
-                    }
-                ]
-            }
-
-    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
-    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
-    monkeypatch.setattr(ai_pipeline.requests, "post", lambda *_, **__: Resp())
-
-    out = ai_pipeline.analyze_candidates_with_ai(
-        candidates=[{"eid": "e2", "url": "https://example.com/2", "title": "t2", "description": "d2"}],
-        stage_metrics=runner.StageMetrics(),
-        auth_token=runner.ANTHROPIC_AUTH_TOKEN,
-        base_url=runner.ANTHROPIC_BASE_URL,
-        model=runner.ANTHROPIC_MODEL,
-        timeout_seconds=runner.AI_TIMEOUT_SECONDS,
-        retry_attempts=runner.AI_RETRY_ATTEMPTS,
-        retry_backoff_seconds=runner.AI_RETRY_BACKOFF_SECONDS,
-        batch_size=runner.AI_BATCH_SIZE,
-        log_event=lambda *_args, **_kwargs: None,
-    )
-    assert out["e2"]["keep"] is False
-    assert out["e2"]["score"] == 0.3
-
-
-def test_analyze_candidates_with_ai_retries_then_success(monkeypatch: pytest.MonkeyPatch) -> None:
-    class Resp:
-        @staticmethod
-        def raise_for_status() -> None:
-            return None
-
-        @staticmethod
-        def json() -> dict:
-            return {
-                "content": [
-                    {
-                        "type": "tool_use",
-                        "name": "analyze_batch",
-                        "input": {
-                            "results": [
-                                {
-                                    "eid": "e3",
-                                    "keep": True,
-                                    "score": 0.88,
-                                    "reason": "good",
-                                    "tags": ["weekly"],
-                                    "brief": "ok",
-                                }
-                            ]
-                        },
-                    }
-                ]
-            }
-
-    calls = {"count": 0}
-
-    def flaky_post(*_, **__):  # noqa: ANN001
-        calls["count"] += 1
-        if calls["count"] == 1:
-            raise requests.exceptions.ReadTimeout("timeout")
-        return Resp()
-
-    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
-    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
-    monkeypatch.setattr(runner, "AI_RETRY_ATTEMPTS", 2)
-    monkeypatch.setattr(runner, "AI_RETRY_BACKOFF_SECONDS", 0)
-    monkeypatch.setattr(ai_pipeline.requests, "post", flaky_post)
-    monkeypatch.setattr(ai_pipeline.time, "sleep", lambda *_: None)
-
-    out = ai_pipeline.analyze_candidates_with_ai(
-        candidates=[{"eid": "e3", "url": "https://example.com/3", "title": "t3", "description": "d3"}],
-        stage_metrics=runner.StageMetrics(),
-        auth_token=runner.ANTHROPIC_AUTH_TOKEN,
-        base_url=runner.ANTHROPIC_BASE_URL,
-        model=runner.ANTHROPIC_MODEL,
-        timeout_seconds=runner.AI_TIMEOUT_SECONDS,
-        retry_attempts=runner.AI_RETRY_ATTEMPTS,
-        retry_backoff_seconds=runner.AI_RETRY_BACKOFF_SECONDS,
-        batch_size=runner.AI_BATCH_SIZE,
-        log_event=lambda *_args, **_kwargs: None,
-    )
-    assert calls["count"] == 2
-    assert out["e3"]["keep"] is True
-
-
-def test_analyze_candidates_with_ai_batches(monkeypatch: pytest.MonkeyPatch) -> None:
-    batch_sizes = []
-
-    class Resp:
-        def __init__(self, payload: dict) -> None:
-            self.payload = payload
-
-        @staticmethod
-        def raise_for_status() -> None:
-            return None
-
-        def json(self) -> dict:
-            items = json.loads(self.payload["messages"][0]["content"])
-            results = [
-                {
-                    "eid": item["eid"],
-                    "keep": True,
-                    "score": 0.9,
-                    "reason": "ok",
-                    "tags": ["ai"],
-                    "brief": "brief",
-                }
-                for item in items
-            ]
-            return {
-                "stop_reason": "tool_use",
-                "content": [{"type": "tool_use", "name": "analyze_batch", "input": {"results": results}}],
-            }
-
-    def fake_post(url, headers, json, timeout):  # noqa: ANN001
-        _ = (url, headers, timeout)
-        items = json_loads(json["messages"][0]["content"])
-        batch_sizes.append(len(items))
-        return Resp(json)
-
-    def json_loads(s: str) -> list[dict]:
-        return json.loads(s)
-
-    monkeypatch.setattr(runner, "ANTHROPIC_AUTH_TOKEN", "token")
-    monkeypatch.setattr(runner, "ANTHROPIC_MODEL", "model")
-    monkeypatch.setattr(runner, "AI_BATCH_SIZE", 3)
-    monkeypatch.setattr(runner, "AI_RETRY_ATTEMPTS", 1)
-    monkeypatch.setattr(ai_pipeline.requests, "post", fake_post)
-
-    cands = [
-        {"eid": f"e{i}", "url": f"https://example.com/{i}", "title": "t", "description": "d"}
-        for i in range(7)
-    ]
-    out = ai_pipeline.analyze_candidates_with_ai(
-        candidates=cands,
-        stage_metrics=runner.StageMetrics(),
-        auth_token=runner.ANTHROPIC_AUTH_TOKEN,
-        base_url=runner.ANTHROPIC_BASE_URL,
-        model=runner.ANTHROPIC_MODEL,
-        timeout_seconds=runner.AI_TIMEOUT_SECONDS,
-        retry_attempts=runner.AI_RETRY_ATTEMPTS,
-        retry_backoff_seconds=runner.AI_RETRY_BACKOFF_SECONDS,
-        batch_size=runner.AI_BATCH_SIZE,
-        log_event=lambda *_args, **_kwargs: None,
-    )
-    assert batch_sizes == [3, 3, 1]
-    assert len(out) == 7
-    assert out["e0"]["keep"] is True
 
 
 def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

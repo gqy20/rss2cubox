@@ -147,25 +147,21 @@ def build_updates_from_history(history_rows: list[dict[str, Any]], limit: int) -
 
 
 def build_updates(state: dict[str, Any], limit: int) -> list[dict[str, Any]]:
-    sent = state.get('sent', {})
-    ai = state.get('ai', {})
+    processed = state.get('processed', {})
     items: list[dict[str, Any]] = []
-    for eid, value in sent.items():
+    for eid, value in processed.items():
         if not isinstance(value, dict):
             continue
         url = str(value.get('url', '')).strip()
         if not url:
             continue
-        ts = str(value.get('ts', '')).strip()
-        parsed = urlparse(url)
-        host = parsed.netloc
-        ai_result = ai.get(eid, {}) if isinstance(ai, dict) else {}
+        ts = str(value.get('publish_time', '') or value.get('created_at', '')).strip()
+        host = str(value.get('source_feed_name', '')).strip() or _source_from_feed_value(str(value.get('source_feed_id', '')))
         score = 0.0
-        if isinstance(ai_result, dict):
-            try:
-                score = float(ai_result.get('score', 0.0))
-            except (TypeError, ValueError):
-                score = 0.0
+        try:
+            score = float(value.get('score', 0.0))
+        except (TypeError, ValueError):
+            score = 0.0
         items.append(
             {
                 'id': eid,
@@ -174,12 +170,13 @@ def build_updates(state: dict[str, Any], limit: int) -> list[dict[str, Any]]:
                 'url': url,
                 'title': str(value.get('title', '')).strip() or _guess_title_from_url(url),
                 'score': score,
-                'core_event': ai_result.get('core_event', '') if isinstance(ai_result, dict) else '',
-                'hidden_signal': ai_result.get('hidden_signal', '') if isinstance(ai_result, dict) else '',
-                'actionable': ai_result.get('actionable', '') if isinstance(ai_result, dict) else '',
-                'reason': ai_result.get('reason', '') if isinstance(ai_result, dict) else '',
-                'tags': ai_result.get('tags', []) if isinstance(ai_result, dict) else [],
-                'enriched': bool(ai_result.get('enriched', False)) if isinstance(ai_result, dict) else False,
+                'core_event': str(value.get('description', '')).strip(),
+                'hidden_signal': str(value.get('hidden_signal', '')).strip(),
+                'actionable': str(value.get('actionable', '')).strip(),
+                'reason': str(value.get('reason', '')).strip(),
+                'tags': value.get('tags', []) if isinstance(value.get('tags', []), list) else [],
+                'enriched': False,
+                'status': 'exported' if bool(value.get('exported', False)) else 'processed',
             }
         )
 
@@ -231,22 +228,6 @@ def export_web_data(
     run_rows = sync_pipeline.load_jsonl(run_events_file)
     merged_history = merge_history_rows(history_rows, run_rows, history_limit=history_limit)
 
-    # 用 state.json 中的 AI 字段回填 history 中缺失的摘要
-    ai_state: dict[str, Any] = state.get('ai', {})
-    if isinstance(ai_state, dict) and ai_state:
-        for row in merged_history:
-            eid = row.get('id', '')
-            ai = ai_state.get(eid)
-            if not isinstance(ai, dict):
-                continue
-            for field in ('core_event', 'hidden_signal', 'actionable', 'reason', 'tags'):
-                if not row.get(field):
-                    row[field] = ai.get(field, '' if field != 'tags' else [])
-            if not row.get('score'):
-                try:
-                    row['score'] = float(ai.get('score', 0.0))
-                except (TypeError, ValueError):
-                    pass
     history_file.parent.mkdir(parents=True, exist_ok=True)
     sync_pipeline.save_jsonl(history_file, merged_history)
 

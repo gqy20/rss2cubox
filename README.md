@@ -54,6 +54,8 @@ export ENRICH_ITEM_TIMEOUT_SECONDS="90"  # 单条目超时
 export ENRICH_MAX_BUDGET_USD="0.15"     # 单条目最大预算
 ```
 
+根目录 `.env` 会在启动 `rss2cubox` 时自动加载；已存在的系统环境变量优先，不会被 `.env` 覆盖。
+
 ## 4) 运行
 
 ```bash

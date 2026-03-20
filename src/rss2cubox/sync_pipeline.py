@@ -37,7 +37,7 @@ def env_int(name: str, default: int) -> int:
 
 def load_state(state_file: Path) -> dict:
     if not state_file.exists():
-        return {"sent": {}}
+        return {"processed": {}}
     with state_file.open("r", encoding="utf-8") as f:
         return json.load(f)
 

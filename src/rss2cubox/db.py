@@ -18,17 +18,6 @@ from typing import Any
 import psycopg
 
 DDL = """
-CREATE TABLE IF NOT EXISTS sent_items (
-    id   TEXT PRIMARY KEY,
-    url  TEXT NOT NULL,
-    ts   TIMESTAMPTZ NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS ai_results (
-    id   TEXT PRIMARY KEY,
-    data JSONB NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS processed_items (
     id   TEXT PRIMARY KEY,
     data JSONB NOT NULL
@@ -100,8 +89,6 @@ def load_state(db_url: str) -> dict[str, Any]:
     # 不使用数据库时返回空状态
     if not db_url:
         return {
-            "sent": {},
-            "ai": {},
             "processed": {},
             "feed_cursor": {},
             "feed_failures": {},
@@ -109,18 +96,6 @@ def load_state(db_url: str) -> dict[str, Any]:
 
     with psycopg.connect(db_url) as conn:
         _ensure_schema(conn)
-
-        sent: dict[str, Any] = {}
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, url, ts FROM sent_items")
-            for row in cur.fetchall():
-                sent[row[0]] = {"url": row[1], "ts": row[2].isoformat() if hasattr(row[2], "isoformat") else str(row[2])}
-
-        ai: dict[str, Any] = {}
-        with conn.cursor() as cur:
-            cur.execute("SELECT id, data FROM ai_results")
-            for row in cur.fetchall():
-                ai[row[0]] = row[1]
 
         processed: dict[str, Any] = {}
         with conn.cursor() as cur:
@@ -141,8 +116,6 @@ def load_state(db_url: str) -> dict[str, Any]:
                 feed_failures[row[0]] = row[1]
 
     return {
-        "sent": sent,
-        "ai": ai,
         "processed": processed,
         "feed_cursor": feed_cursor,
         "feed_failures": feed_failures,
@@ -154,8 +127,6 @@ def save_state(db_url: str, state: dict[str, Any]) -> None:
     if not db_url:
         return
 
-    sent: dict[str, Any] = state.get("sent", {})
-    ai: dict[str, Any] = state.get("ai", {})
     processed: dict[str, Any] = state.get("processed", {})
     feed_cursor: dict[str, Any] = state.get("feed_cursor", {})
     feed_failures: dict[str, Any] = state.get("feed_failures", {})
@@ -164,28 +135,6 @@ def save_state(db_url: str, state: dict[str, Any]) -> None:
         _ensure_schema(conn)
 
         with conn.cursor() as cur:
-            # sent_items
-            if sent:
-                cur.executemany(
-                    """
-                    INSERT INTO sent_items (id, url, ts)
-                    VALUES (%s, %s, %s)
-                    ON CONFLICT (id) DO UPDATE SET url = EXCLUDED.url, ts = EXCLUDED.ts
-                    """,
-                    [(k, v["url"], v["ts"]) for k, v in sent.items()],
-                )
-
-            # ai_results
-            if ai:
-                cur.executemany(
-                    """
-                    INSERT INTO ai_results (id, data)
-                    VALUES (%s, %s)
-                    ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data
-                    """,
-                    [(k, json.dumps(v, ensure_ascii=False)) for k, v in ai.items()],
-                )
-
             # processed_items
             if processed:
                 cur.executemany(

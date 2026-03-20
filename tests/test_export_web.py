@@ -3,13 +3,10 @@ from rss2cubox import export_web
 
 def test_build_updates_sorted_and_scored() -> None:
     state = {
-        'sent': {
-            'a': {'url': 'https://example.com/a', 'ts': '2026-01-01T00:00:00+00:00'},
-            'b': {'url': 'https://example.com/b', 'ts': '2026-01-02T00:00:00+00:00'},
-        },
-        'ai': {
-            'b': {'score': 0.9, 'tags': ['ai']},
-        },
+        'processed': {
+            'a': {'url': 'https://example.com/a', 'created_at': '2026-01-01T00:00:00+00:00', 'title': 'A', 'source_feed_id': 'https://example.com/rss', 'source_feed_name': 'example.com', 'score': 0.1, 'tags': []},
+            'b': {'url': 'https://example.com/b', 'created_at': '2026-01-02T00:00:00+00:00', 'title': 'B', 'source_feed_id': 'https://example.com/rss', 'source_feed_name': 'example.com', 'score': 0.9, 'tags': ['ai'], 'reason': 'r'},
+        }
     }
     out = export_web.build_updates(state, limit=10)
     assert [row['id'] for row in out] == ['b', 'a']
@@ -63,7 +60,7 @@ def test_export_web_data_with_run_events(tmp_path) -> None:
     updates_file = tmp_path / 'updates.json'
     metrics_file = tmp_path / 'metrics.json'
 
-    state_file.write_text('{"sent":{},"ai":{}}', encoding='utf-8')
+    state_file.write_text('{"processed":{}}', encoding='utf-8')
     run_events_file.write_text(
         '\n'.join(
             [
