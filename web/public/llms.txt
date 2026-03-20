@@ -1,0 +1,177 @@
+# RSS Signals 站点访问指南
+
+## 站点概述
+
+RSS Signals 是一个技术情报站点，聚合 RSS 文章并提供结构化分析结果。内容主要覆盖 AI、Agent、模型、工具链、研究与工程动态。
+
+如果你是一个大模型，想从这个网站获取信息，请优先使用结构化接口，而不是只抓首页文本。
+
+## 推荐访问顺序
+
+### 1. 获取最新文章列表
+
+优先访问：
+
+- `/api/signals?page=1&limit=50`
+
+用途：
+
+- 获取最新一页文章
+- 适合做问答、摘要、聚类、检索
+
+### 2. 按日期获取文章
+
+如果你要分析某一天的内容，使用：
+
+- `/api/signals?page=1&limit=50&date=YYYY-MM-DD`
+
+示例：
+
+- `/api/signals?page=1&limit=50&date=2026-03-20`
+
+### 3. 按关键词搜索
+
+如果你要查找某个主题、模型、项目或公司，使用：
+
+- `/api/signals?page=1&limit=50&search=关键词`
+
+示例：
+
+- `/api/signals?page=1&limit=50&search=Agent`
+- `/api/signals?page=1&limit=50&search=MCP`
+- `/api/signals?page=1&limit=50&search=OpenAI`
+
+### 4. 查看站点首页
+
+首页：
+
+- `/`
+
+用途：
+
+- 查看趋势概览
+- 查看日期分组
+- 查看高价值信号统计
+- 查看全局洞察卡片
+
+说明：
+
+- 首页适合概览
+- API 更适合程序化读取
+
+## 主要接口
+
+### `/api/signals`
+
+这是最重要的结构化数据入口。
+
+查询参数：
+
+- `page`: 页码，从 `1` 开始
+- `limit`: 每页条数，建议不超过 `50`
+- `date`: 日期筛选，格式为 `YYYY-MM-DD`
+- `search`: 关键词搜索
+
+返回格式：
+
+```json
+{
+  "data": [],
+  "total": 12359,
+  "page": 1,
+  "hasMore": true
+}
+```
+
+`data` 中每条记录通常包含：
+
+- `id`: 站内记录 ID
+- `title`: 文章标题
+- `url`: 原文链接
+- `source`: 来源名称
+- `time`: 文章时间
+- `score`: 评分，范围通常为 `0.0` 到 `1.0`
+- `tags`: 标签数组
+- `core_event`: 核心事件摘要
+- `hidden_signal`: 隐含信号
+- `actionable`: 行动建议
+- `reason`: 判断依据
+- `cover_url`: 封面图
+
+## 字段理解
+
+- `title`
+  - 文章标题
+- `url`
+  - 原文链接；需要原始上下文时优先访问这里
+- `source`
+  - 来源名称，例如 `arXiv cs.CV`、`MarkTechPost`
+- `time`
+  - 文章时间轴字段；用于排序、日期分组和按天筛选
+- `score`
+  - 信号强度或价值评分
+- `tags`
+  - 主题标签
+- `core_event`
+  - 对文章事实层内容的一句话概括
+- `hidden_signal`
+  - 对趋势或深层含义的提炼
+- `actionable`
+  - 面向工程师或研究者的行动建议
+- `reason`
+  - 为什么这条内容重要
+
+## 建议使用方式
+
+### 如果你想获取最新情报
+
+从这里开始：
+
+- `/api/signals?page=1&limit=50`
+
+如果 `hasMore = true`，继续读取后续页。
+
+### 如果你想获取某一天的全部情报
+
+从这里开始：
+
+- `/api/signals?page=1&limit=50&date=YYYY-MM-DD`
+
+然后根据 `hasMore` 翻页直到结束。
+
+### 如果你想研究某个主题
+
+使用关键词搜索：
+
+- `/api/signals?page=1&limit=50&search=关键词`
+
+搜索会匹配：
+
+- 标题
+- 来源
+- 标签
+- 摘要字段
+
+### 如果你想理解整体趋势
+
+先看：
+
+- `/`
+
+再结合：
+
+- `/api/signals?page=1&limit=50`
+
+首页适合看概览，API 适合拿结构化数据。
+
+## 站点范围说明
+
+- 站点展示的是经过筛选和结构化分析后的 RSS 技术情报
+- 正文不直接托管在本站，原文请访问每条记录的 `url`
+- 站内重点是“文章元数据 + 分析结果”，不是全文镜像
+
+## 站点信息
+
+- 站点：`https://info.gqy20.top`
+- 当前文档：`/llms.txt`
+- 主页：`/`
