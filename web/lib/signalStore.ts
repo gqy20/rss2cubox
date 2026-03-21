@@ -1,6 +1,6 @@
 import { neon } from '@neondatabase/serverless'
 
-function getSql() {
+function getInsightsSql() {
   const url = process.env.NEON_DATABASE_URL
   if (!url) return null
   return neon(url)
@@ -54,7 +54,7 @@ export type EventRow = {
   url: string
   title: string
   status: string
-  pushed: boolean
+  exported: boolean
   tags: string[]
   core_event: string
   hidden_signal: string
@@ -104,7 +104,7 @@ export async function loadIcArticles(): Promise<EventRow[]> {
       url: String(data.url || ''),
       title: String(data.title || ''),
       status: 'exported',
-      pushed: true,
+      exported: true,
       tags: Array.isArray(data.tags) ? data.tags.map((v) => String(v)) : [],
       core_event: String(data.description || ''),
       hidden_signal: String(data.hidden_signal || ''),
@@ -116,7 +116,7 @@ export async function loadIcArticles(): Promise<EventRow[]> {
 }
 
 export async function loadGlobalInsights(): Promise<GlobalInsights | null> {
-  const sql = getSql()
+  const sql = getInsightsSql()
   if (!sql) return null
   const rows = await sql`
     SELECT data

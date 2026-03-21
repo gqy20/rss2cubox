@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""从旧 Neon processed_items 表迁移数据到 ic articles batch API。"""
+"""LEGACY: 从旧 Neon processed_items 表迁移数据到 ic articles batch API。
+
+仅用于一次性历史回填，不属于当前主同步链路。
+"""
 
 from __future__ import annotations
 

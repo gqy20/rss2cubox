@@ -4,7 +4,7 @@ export type Row = {
   url: string
   source: string
   time: string
-  pushed?: boolean
+  exported?: boolean
   enriched?: boolean
   status?: string
   reason?: string
@@ -19,12 +19,13 @@ export type Row = {
 
 export type Metrics = {
   generated_at?: string
-  updates_total?: number
-  sources_total?: number
-  top_sources?: Array<{ source: string; count: number }>
+  signals_total?: number
+  exported_total?: number
+  active_sources_total?: number
+  top_source_counts?: Array<{ source: string; count: number }>
   // KPI 数据（服务端计算）
   total_all?: number
-  analyzed_all?: number
+  analyzed_total?: number
   total_today?: number
   total_yesterday?: number
   analyzed_today?: number
@@ -32,9 +33,9 @@ export type Metrics = {
   sources_today?: number
   sources_yesterday?: number
   // 趋势数据
-  trend_data?: Array<{ name: string; total: number; analyzed: number }>
+  timeline_points?: Array<{ name: string; total: number; analyzed: number }>
   // 每日数据量（用于右侧分组显示总数）
-  daily_counts?: Record<string, number>
+  daily_totals?: Record<string, number>
 }
 
 export type GlobalInsights = {

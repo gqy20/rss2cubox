@@ -25,7 +25,7 @@ _load_local_env_file()
 
 import requests
 
-from rss2cubox import db, feed_sources, sync_pipeline
+from rss2cubox import feed_sources, sync_pipeline
 from rss2cubox import enrich_agent
 from rss2cubox.global_agent import run_global_analysis
 from rss2cubox.feed_sources import RSSHubInstancePool
@@ -39,7 +39,6 @@ from rss2cubox.metrics import (
 )
 
 FEEDS_FILE = Path(os.getenv("FEEDS_FILE", "feeds.txt"))
-NEON_DATABASE_URL = os.getenv("NEON_DATABASE_URL", "").strip()
 RSSHUB_INSTANCES_FILE = Path(os.getenv("RSSHUB_INSTANCES_FILE", "rsshub_instances.txt"))
 
 IC_API_URL = os.getenv("IC_API_URL", "").strip()

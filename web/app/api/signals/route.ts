@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
     url: e.url,
     source: normalizeSource(e),
     time: normalizeTime(e),
-    pushed: true,
+    exported: true,
     status: 'exported',
     tags: Array.isArray(e.tags) ? e.tags : [],
     core_event: e.description,

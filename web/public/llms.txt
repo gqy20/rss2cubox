@@ -90,12 +90,16 @@ RSS Signals 是一个技术情报站点，聚合 RSS 文章并提供结构化分
 - `url`: 原文链接
 - `source`: 来源名称
 - `time`: 文章时间
+- `exported`: 是否已完成正式入库
+- `status`: 当前状态，当前正常值通常为 `exported`
 - `tags`: 标签数组
 - `core_event`: 核心事件摘要
 - `hidden_signal`: 隐含信号
 - `actionable`: 行动建议
 - `reason`: 判断依据
 - `cover_url`: 封面图
+- `source_feed`: 原始 feed 标识
+- `source_label`: 原始 feed 展示名
 
 ## 字段理解
 
@@ -109,6 +113,10 @@ RSS Signals 是一个技术情报站点，聚合 RSS 文章并提供结构化分
   - 文章时间轴字段；用于排序、日期分组和按天筛选
 - `tags`
   - 主题标签
+- `exported`
+  - 该记录是否已经作为正式文章从 `ic` 返回
+- `status`
+  - 当前前端状态字段；当前主流程下通常是 `exported`
 - `core_event`
   - 对文章事实层内容的一句话概括
 - `hidden_signal`
@@ -164,6 +172,8 @@ RSS Signals 是一个技术情报站点，聚合 RSS 文章并提供结构化分
 ## 站点范围说明
 
 - 站点展示的是经过筛选和结构化分析后的 RSS 技术情报
+- 文章列表数据来自 `ic`
+- 全局洞察卡片来自 `global_insights`
 - 正文不直接托管在本站，原文请访问每条记录的 `url`
 - 站内重点是“文章元数据 + 分析结果”，不是全文镜像
 

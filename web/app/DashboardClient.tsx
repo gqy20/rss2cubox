@@ -157,7 +157,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   useEffect(() => {
     const today = getDayKey(new Date())
     const todayItems = initialRows.filter((r) => getDayKey(r.time) === today)
-    const todayCount = metrics.daily_counts?.[today] || 0
+    const todayCount = metrics.daily_totals?.[today] || 0
     setGroupData({
       [today]: {
         loading: false,
@@ -169,7 +169,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     setGroupPaging({
       [today]: { page: 1 },
     })
-  }, [initialRows, metrics.daily_counts])
+  }, [initialRows, metrics.daily_totals])
   
   const searchRef = useRef<HTMLInputElement>(null)
   const chartsTriggerRef = useRef<HTMLDivElement>(null)
@@ -254,9 +254,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   // 情报源列表（用于筛选）
   const topSourceNames = useMemo(() => {
-    const sources = metrics.top_sources || []
+    const sources = metrics.top_source_counts || []
     return sources.slice(0, 5).map((s: { source: string }) => s.source)
-  }, [metrics.top_sources])
+  }, [metrics.top_source_counts])
 
   const loadedRows = useMemo(() => {
     const allItems: Row[] = []
@@ -284,22 +284,22 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   }, [isSearchMode, searchRows, loadedRows, filter, timeScope, selectedSource, selectedTag, todayKey, topSourceNames])
 
   // 趋势数据来自服务端（基于全部数据）
-  const trendData = metrics.trend_data || []
+  const trendData = metrics.timeline_points || []
 
   // 情报源分布来自服务端（基于全部数据）
   const sourceData = useMemo(() => {
-    const topSources = metrics.top_sources || []
+    const topSources = metrics.top_source_counts || []
     const rawData = topSources.map((s: { source: string; count: number }) => ({ name: s.source, value: s.count }))
     const top5 = rawData.slice(0, 5)
     const others = rawData.slice(5)
     if (others.length > 0) top5.push({ name: '其他', value: others.reduce((sum, item) => sum + item.value, 0) })
     return top5
-  }, [metrics.top_sources])
+  }, [metrics.top_source_counts])
 
   // 所有日期列表（从服务端获取）
   const allDates = useMemo(() => {
-    return Object.keys(metrics.daily_counts || {}).sort((a, b) => b.localeCompare(a))
-  }, [metrics.daily_counts])
+    return Object.keys(metrics.daily_totals || {}).sort((a, b) => b.localeCompare(a))
+  }, [metrics.daily_totals])
 
   // 按日期分组：搜索模式仅显示命中日期，非搜索模式显示所有日期并懒加载
   const groupedRows = useMemo(() => {
@@ -326,10 +326,10 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       id: dayKey,
       title: formatGroupTitle(dayKey, todayKey, yesterdayKey),
       items: dateMap.get(dayKey) || [],
-      total: metrics.daily_counts?.[dayKey] || 0,
+      total: metrics.daily_totals?.[dayKey] || 0,
       loaded: !!dateMap.get(dayKey)?.length,
     }))
-  }, [isSearchMode, allDates, displayedRows, todayKey, yesterdayKey, metrics.daily_counts])
+  }, [isSearchMode, allDates, displayedRows, todayKey, yesterdayKey, metrics.daily_totals])
 
   const insightPanels = useMemo(
     () => [
@@ -342,10 +342,10 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   // KPI 使用服务端计算的完整数据
   const kpis = [
-    { key: 'all', title: '有效信号', value: metrics.updates_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setTimeScope('all') } },
-    { key: 'analyzed', title: '已分析', value: metrics.analyzed_all ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setTimeScope('all') } },
+    { key: 'all', title: '有效信号', value: metrics.signals_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setTimeScope('all') } },
+    { key: 'analyzed', title: '已分析', value: metrics.analyzed_total ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setTimeScope('all') } },
     { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setTimeScope('today') } },
-    { key: 'source', title: '活跃情报源', value: metrics.sources_total ?? 0, tone: '#a78bfa', delta: null, onClick: () => setSelectedSource(null) },
+    { key: 'source', title: '活跃情报源', value: metrics.active_sources_total ?? 0, tone: '#a78bfa', delta: null, onClick: () => setSelectedSource(null) },
   ] as const
 
   // Handlers

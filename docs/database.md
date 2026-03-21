@@ -3,7 +3,8 @@
 本项目当前有两类数据存储：
 
 - **Neon / PostgreSQL**
-  - 保存本地运行态和洞察结果
+  - 当前主要保存全局洞察结果
+  - 兼容保留少量旧运行态表接口
   - 通过 `NEON_DATABASE_URL` 连接
 - **ic 信息库**
   - 保存正式文章内容
@@ -30,14 +31,16 @@ POST /api/v1/articles/batch
 
 ### 2. `processed_items`
 
-`processed_items` 是本地运行态文章表，主要用于：
+`processed_items` 是旧运行态文章表，当前不再是主流程依赖。
+
+历史上它主要用于：
 
 - 增量抓取去重
 - 本地状态保留
 - 导入 `ic` 前后的过程态跟踪
 - 排障与回放
 
-它不是正式内容库。
+当前主流程的去重基线已经直接来自 `ic`，不是这张表。
 
 ### 3. `global_insights`
 
@@ -53,82 +56,40 @@ POST /api/v1/articles/batch
 
 定义位置：
 
-- [db.py](/home/qy113/workspace/project/2603/rss2cubox/src/rss2cubox/db.py)
+- 当前洞察表入口：
+  - [db.py](/home/qy113/workspace/project/2603/rss2cubox/src/rss2cubox/db.py)
+- 旧运行态兼容表入口：
+  - [db.py](/home/qy113/workspace/project/2603/rss2cubox/src/rss2cubox/legacy/db.py)
 
-当前实际创建的表只有 5 张。
+当前代码里仍保留 5 张表定义，但主流程稳定使用的是 `global_insights`。
+其余 4 张表仅服务于历史迁移、兼容和排障脚本。
 
 ### 1. `processed_items`
 
-保存本地处理后的条目状态。
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `id` | `TEXT` | 主键，条目标识 |
-| `data` | `JSONB` | 条目完整状态 |
-
-`data` 中通常包含这些字段：
-
-- `id`
-- `url`
-- `title`
-- `time`
-- `source_feed`
-- `source_label`
-- `cover_url`
-- `tags`
-- `reason`
-- `actionable`
-- `hidden_signal`
-- `core_event`
-- `status`
-- `drop_reason`
-- `publish_time`
-- `source_article_id`
-- `source_type`
-- `exported`
-
-说明：
-
-- 历史数据里仍可能混有旧字段，例如 `pushed`
-- 这张表允许保留运行态信息，但不再承担正式展示库职责
+旧运行态条目表，保留给兼容逻辑和历史脚本。
+主键为 `id`，主要数据存放在 `data JSONB`。
+历史数据里仍可能混有旧字段，例如 `pushed`。
+当前文章正式展示与去重都不再依赖它。
 
 ### 2. `feed_cursors`
 
-保存每个 Feed 的增量抓取游标。
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `feed_key` | `TEXT` | 主键，Feed 标识 |
-| `cursor_at` | `TEXT` | 上次抓取时间游标 |
+旧增量抓取游标表，保留给兼容逻辑。
+主键为 `feed_key`，游标字段为 `cursor_at`。
 
 ### 3. `feed_failures`
 
-保存每个 Feed 的失败计数和熔断状态。
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `feed_key` | `TEXT` | 主键，Feed 标识 |
-| `data` | `JSONB` | 失败详情、冷却时间等 |
+旧失败计数和熔断状态表，保留给兼容逻辑。
+主键为 `feed_key`，详情存放在 `data JSONB`。
 
 ### 4. `run_events`
 
-保存一次运行中的逐条事件日志。
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| `event_key` | `TEXT` | 主键，事件唯一标识 |
-| `data` | `JSONB` | 事件详情 |
-| `event_time` | `TIMESTAMPTZ` | 事件时间 |
-
-这张表用于：
-
-- 排查为什么被 dropped
-- 排查某次运行里哪个源失败
-- 回看 Agent 分析结果
+旧运行事件表，保留给兼容逻辑。
+主键为 `event_key`，详情存放在 `data JSONB`，时间字段为 `event_time`。
+主要用于旧排障和一次性回放。
 
 ### 5. `global_insights`
 
-保存全局洞察结果，保留历史。
+当前仍在实际使用的 Neon 表。
 
 | 字段 | 类型 | 说明 |
 |------|------|------|
@@ -160,13 +121,18 @@ POST /api/v1/articles/batch
 
 ## 读写接口
 
-定义于 [db.py](/home/qy113/workspace/project/2603/rss2cubox/src/rss2cubox/db.py)：
+定义位置：
+
+- 全局洞察：
+  - [db.py](/home/qy113/workspace/project/2603/rss2cubox/src/rss2cubox/db.py)
+- 旧运行态兼容接口：
+  - [db.py](/home/qy113/workspace/project/2603/rss2cubox/src/rss2cubox/legacy/db.py)
 
 | 函数 | 说明 |
 |------|------|
-| `load_state(db_url)` | 读取 `processed/feed_cursor/feed_failures` |
-| `save_state(db_url, state)` | 保存本地运行态 |
-| `save_run_events(db_url, events)` | 写入运行事件 |
+| `load_state(db_url)` | 读取旧运行态兼容表 |
+| `save_state(db_url, state)` | 保存旧运行态兼容表 |
+| `save_run_events(db_url, events)` | 写入旧运行事件兼容表 |
 | `save_global_insights(db_url, payload)` | 追加保存全局洞察 |
 | `load_global_insights(db_url)` | 读取最新洞察 |
 | `load_all_global_insights(db_url, limit)` | 读取历史洞察 |
@@ -177,40 +143,20 @@ POST /api/v1/articles/batch
 
 | Neon 表 | 对应 JSON 状态 |
 |---------|----------------|
-| `processed_items` | `state.processed` |
-| `feed_cursors` | `state.feed_cursor` |
-| `feed_failures` | `state.feed_failures` |
-| `run_events` | `run_events.jsonl` |
+| `processed_items` | 旧 `state.processed` |
+| `feed_cursors` | 旧 `state.feed_cursor` |
+| `feed_failures` | 旧 `state.feed_failures` |
+| `run_events` | 旧 `run_events.jsonl` |
 | `global_insights` | 无直接 JSON 镜像 |
 
-当 `NEON_DATABASE_URL` 未配置时，会退回文件态/内存态。
+当 `NEON_DATABASE_URL` 未配置时，`global_insights` 不会持久化；旧兼容逻辑可退回文件态/内存态。
 
-## `processed_items` 与 `ic` 的区别
-
-这是当前最容易混淆的地方。
-
-### `processed_items`
-
-是本地运行态，关注：
-
-- 这条文章是否抓到
-- 是否分析成功
-- 是否被判定保留
-- 是否已经导出
-- 导出前后的状态细节
-
-### `ic`
-
-是正式文章库，关注：
-
-- 文章最终展示字段
-- 面向前端和外部系统的正式查询
-- URL 去重后的最终内容沉淀
-
-因此：
+## 旧表结论
 
 - **不要把 `processed_items` 当正式文章库**
 - **不要把 `global_insights` 塞进 `processed_items`**
+- 正式文章内容看 `ic`
+- 全局洞察看 `global_insights`
 
 ## 当前前端的数据来源
 
@@ -224,7 +170,7 @@ POST /api/v1/articles/batch
 这意味着：
 
 - Vercel 需要 `IC_API_URL`
-- Vercel 也需要 `NEON_DATABASE_URL`
+- Vercel 也需要 `NEON_DATABASE_URL`，但当前只为 `global_insights` 服务
 
 ## 时间字段说明
 
@@ -255,5 +201,6 @@ POST /api/v1/articles/batch
 
 一句话总结当前架构：
 
-- **RSS -> Agent SDK -> `processed_items` / `run_events` -> `ic`**
+- **RSS -> Agent SDK -> `ic`**
+- **旧运行态兼容表：`processed_items` / `run_events` / `feed_*`**
 - **全局洞察 -> `global_insights`**

@@ -1,33 +1,10 @@
 import DashboardClient from './DashboardClient'
 
-import { loadGlobalInsights, loadIcArticles } from '../lib/neonDb'
+import { loadGlobalInsights, loadIcArticles } from '../lib/signalStore'
 import { BUSINESS_TZ, getBusinessDayKey } from '../lib/time'
+import type { GlobalInsights, Row } from './types'
 
 export const revalidate = 1800 // 30 minutes; GitHub Actions triggers on-demand revalidation after each sync
-
-type GlobalInsights = {
-  generated_at?: string
-  source_count?: number
-  trends?: string[]
-  weak_signals?: string[]
-  daily_advices?: string[]
-}
-
-type Row = {
-  id: string
-  title: string
-  url: string
-  source: string
-  time: string
-  pushed?: boolean
-  status?: string
-  tags?: string[]
-  core_event?: string
-  hidden_signal?: string
-  actionable?: string
-  reason?: string
-  cover_url?: string
-}
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -143,13 +120,13 @@ function buildMetrics(rows: Row[]) {
 
   return {
     generated_at: new Date().toISOString(),
-    updates_total: rows.length,
-    pushed_total: rows.filter((r) => r.pushed).length,
-    sources_total: Object.keys(sourceCount).length,
-    top_sources: topSources,
+    signals_total: rows.length,
+    exported_total: rows.filter((r) => r.exported).length,
+    active_sources_total: Object.keys(sourceCount).length,
+    top_source_counts: topSources,
     // KPI 数据
     total_all: rows.length,
-    analyzed_all: rows.filter((r) => hasAiSummary(r)).length,
+    analyzed_total: rows.filter((r) => hasAiSummary(r)).length,
     total_today: totalToday,
     total_yesterday: totalYesterday,
     analyzed_today: analyzedToday,
@@ -157,13 +134,13 @@ function buildMetrics(rows: Row[]) {
     sources_today: sourceToday.size,
     sources_yesterday: sourceYesterday.size,
     // 趋势数据
-    trend_data: trendData,
+    timeline_points: trendData,
     // 每日数据量
-    daily_counts: dailyCounts,
+    daily_totals: dailyCounts,
   }
 }
 
-async function loadFromDb(): Promise<{
+async function loadDashboardData(): Promise<{
   rows: Row[]
   metrics: ReturnType<typeof buildMetrics>
   insights: GlobalInsights | null
@@ -176,7 +153,7 @@ async function loadFromDb(): Promise<{
       url: e.url,
       source: resolveSource(e as unknown as Record<string, unknown>),
       time: e.time,
-      pushed: e.pushed,
+      exported: e.exported,
       status: e.status,
       tags: e.tags,
       core_event: e.core_event,
@@ -201,7 +178,7 @@ async function loadFromDb(): Promise<{
 export const PAGE_SIZE = 50
 
 export default async function Page() {
-  const { rows, metrics: data, insights } = await loadFromDb()
+  const { rows, metrics: data, insights } = await loadDashboardData()
 
   const paginatedRows = rows.slice(0, PAGE_SIZE)
 

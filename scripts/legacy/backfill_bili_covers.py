@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""回填 Bilibili 封面 URL。
+"""LEGACY: 回填 Bilibili 封面 URL。
 
 对 run_events 表中 cover_url 为空且 URL 含 bilibili 的条目，
 通过 wbi 签名调用 Bilibili API 拿真实封面 CDN URL 并写回 DB。
 
+该脚本依赖旧的 run_events 兼容表，不属于当前主同步链路。
+
 用法：
-    uv run scripts/backfill_bili_covers.py [--dry-run] [--limit N]
+    uv run scripts/legacy/backfill_bili_covers.py [--dry-run] [--limit N]
 """
 from __future__ import annotations
 

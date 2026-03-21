@@ -4,16 +4,18 @@
 
 ## 架构职责
 
-- `processed_items`
-  - 本地运行态文章表
-  - 用于增量去重、导出状态跟踪、前端文章列表展示
+- 当前主链路：
+  - RSS -> Agent SDK -> `ic`
+  - 全局洞察 -> Neon `global_insights`
+- Legacy compatibility：
+  - 旧 `processed_items` / `run_events` 仅保留给历史迁移、兼容和排障
 - `ic`
   - 正式文章内容库
   - 通过 `IC_API_URL` 批量导入
 - `global_insights`
   - 全局洞察结果表
   - 仅保存 `global_agent` 生成的趋势、弱信号、行动建议
-  - 不写入 `processed_items`
+  - 暂时仍保存在 Neon 中，不写入 `processed_items`
 
 ## 1) feeds.txt
 
@@ -77,12 +79,8 @@ uv run rss2cubox
 
 ## 5) 数据文件职责
 
-- `state.json`
-  - `processed`: 已分析文章与导出状态
-  - `feed_cursor`: 每源时间游标（增量抓取）
-  - `feed_failures`: 每源失败计数与熔断状态
-- `run_events.jsonl`
-  - 本次运行的逐条处理结果
+- 当前主流程的去重基线来自 `ic`，不再依赖 Neon `processed_items`
+- 旧 `state.json` / `run_events.jsonl` 说明主要保留给兼容逻辑和历史脚本参考
 
 ## 6) GitHub Actions
 
@@ -97,18 +95,25 @@ uv run rss2cubox
 - 在 Vercel 创建项目时把 **Root Directory** 设为 `web`
 - 页面服务端直接读取：
   - `ic`：文章列表
-  - `global_insights`：洞察卡片
+  - Neon `global_insights`：洞察卡片
+- 前端聚合入口：`web/lib/signalStore.ts`
 - Vercel 需要至少配置：
   - `IC_API_URL`
-  - `NEON_DATABASE_URL`
+  - `NEON_DATABASE_URL`（仅用于读取 `global_insights`）
 
-## 8) 数据迁移与审计脚本
+## 8) 历史迁移与审计脚本
 
-迁移旧 Neon `processed_items` 到 `ic`：
+历史回填：迁移旧 Neon `processed_items` 到 `ic`：
 
 ```bash
-uv run python scripts/migrate_processed_items_to_ic.py --dry-run
-uv run python scripts/migrate_processed_items_to_ic.py
+uv run python scripts/legacy/migrate_processed_items_to_ic.py --dry-run
+uv run python scripts/legacy/migrate_processed_items_to_ic.py
+```
+
+旧表排障：基于 `run_events` 回填 Bilibili 封面：
+
+```bash
+uv run python scripts/legacy/backfill_bili_covers.py --dry-run --limit 20
 ```
 
 审计 `ic` 中 `gqy` 数据质量：
