@@ -20,6 +20,7 @@ type FeedCardProps = {
   selectedTag: string | null
   onHoverEnter: (key: string) => void
   onHoverLeave: (key: string) => void
+  onToggleOpen: (key: string) => void
   onTagClick: (tag: string) => void
 }
 
@@ -32,6 +33,7 @@ const FeedCard = React.memo(function FeedCard({
   selectedTag,
   onHoverEnter,
   onHoverLeave,
+  onToggleOpen,
   onTagClick,
 }: FeedCardProps) {
   const hasSummary = hasAiSummary(row)
@@ -61,6 +63,19 @@ const FeedCard = React.memo(function FeedCard({
         className={`glass timeline-content timeline-compact${hasSummary ? ' timeline-high' : ''}${isHovered ? ' hover-open' : ''}`}
         onMouseEnter={() => onHoverEnter(rowKey)}
         onMouseLeave={() => onHoverLeave(rowKey)}
+        onClick={() => {
+          if (hasAiContent) onToggleOpen(rowKey)
+        }}
+        onKeyDown={(e) => {
+          if (!hasAiContent) return
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onToggleOpen(rowKey)
+          }
+        }}
+        role={hasAiContent ? 'button' : undefined}
+        tabIndex={hasAiContent ? 0 : undefined}
+        aria-expanded={hasAiContent ? isHovered : undefined}
       >
         <div className="t-header" style={{ marginBottom: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
@@ -94,18 +109,18 @@ const FeedCard = React.memo(function FeedCard({
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div className={`node-dot ${hasSummary ? 'glow-green' : 'glow-gray'}`} />
-            <a href={row.url} target="_blank" rel="noreferrer" aria-label="打开原文" style={{ display: 'inline-flex', alignItems: 'center' }}>
+            <a href={row.url} target="_blank" rel="noreferrer" aria-label="打开原文" style={{ display: 'inline-flex', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
               <ExternalLink size={13} color="#8aa3be" />
             </a>
           </div>
         </div>
 
-        <a href={row.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }}>
+        <a href={row.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}>
           <h3 className="t-title">{row.title || row.hidden_signal || '未命名信号'}</h3>
         </a>
 
         {hasCover && (
-          <a href={row.url} target="_blank" rel="noreferrer" className="t-cover-wrap" aria-label="打开原文封面">
+          <a href={row.url} target="_blank" rel="noreferrer" className="t-cover-wrap" aria-label="打开原文封面" onClick={(e) => e.stopPropagation()}>
             <img
               className="t-cover"
               src={coverUrl}
@@ -152,7 +167,7 @@ const FeedCard = React.memo(function FeedCard({
           </p>
         )}
 
-        {hasAiContent && <p className="t-expand-hint">悬停查看 AI 分析</p>}
+        {hasAiContent && <p className="t-expand-hint">{isHovered ? '收起 AI 分析' : '点击查看 AI 分析'}</p>}
 
         <div className={`t-ai-content${isHovered ? ' expanded' : ''}`}>
           {row.core_event && (

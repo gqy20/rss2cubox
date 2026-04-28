@@ -1,5 +1,6 @@
 'use client'
 
+import { useMemo, useState } from 'react'
 import {
   AreaChart,
   Area,
@@ -42,32 +43,35 @@ type InsightHistoryItem = {
 }
 
 export default function ChartsSection({ trendData, sourceData, selectedSource, onSelectSource, timeRange, onTimeRangeChange, insightHistory, selectedInsightIdx, onSelectInsight }: Props) {
+  const [historyMenuOpen, setHistoryMenuOpen] = useState(false)
+  const selectedHistoryLabel = useMemo(() => {
+    const item = insightHistory?.[selectedInsightIdx]
+    if (!item || selectedInsightIdx === 0) return '最新信号'
+    return new Date(item.generated_at).toLocaleString('zh-CN', {
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+  }, [insightHistory, selectedInsightIdx])
+
   return (
     <section className="charts-grid" style={{ marginBottom: 18 }}>
       <div className="glass chart-card">
         {/* 图表Header：标题 + 时间范围 + 信号时段 */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div className="chart-card-head">
           <h3 className="chart-title" style={{ margin: 0 }}>
             <Zap size={18} color="#2dd4bf" /> 信号爆发趋势
           </h3>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div className="chart-head-actions">
             {/* 7天/30天切换 - Apple风格pill toggle */}
-            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 2, gap: 2 }}>
+            <div className="segmented-control">
               {(['7d', '30d'] as const).map((range) => (
                 <button
                   key={range}
                   onClick={() => onTimeRangeChange(range)}
-                  style={{
-                    background: timeRange === range ? 'rgba(45, 212, 191, 0.2)' : 'transparent',
-                    border: 'none',
-                    borderRadius: 6,
-                    color: timeRange === range ? 'var(--accent)' : '#8aa3be',
-                    padding: '4px 10px',
-                    fontSize: 12,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    fontWeight: timeRange === range ? 600 : 400,
-                  }}
+                  className={timeRange === range ? 'active' : ''}
                 >
                   {range === '7d' ? '7天' : '30天'}
                 </button>
@@ -75,28 +79,33 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
             </div>
             {/* 信号时段选择 - 仅在有多条历史时显示 */}
             {insightHistory && insightHistory.length > 1 && (
-              <select
-                value={selectedInsightIdx}
-                onChange={(e) => onSelectInsight(Number(e.target.value))}
-                style={{
-                  background: 'rgba(255,255,255,0.04)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 6,
-                  color: 'var(--accent)',
-                  padding: '4px 8px',
-                  fontSize: 11,
-                  cursor: 'pointer',
-                  minWidth: 100,
-                }}
-              >
-                {insightHistory.map((item, idx) => (
-                  <option key={item.generated_at} value={idx}>
-                    {idx === 0 ? '最新信号' : new Date(item.generated_at).toLocaleString('zh-CN', {
-                      month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false,
-                    })}
-                  </option>
-                ))}
-              </select>
+              <div className="history-menu">
+                <button className="history-menu-trigger" onClick={() => setHistoryMenuOpen((prev) => !prev)} aria-expanded={historyMenuOpen}>
+                  {selectedHistoryLabel}
+                </button>
+                {historyMenuOpen && (
+                  <div className="history-menu-list">
+                    {insightHistory.map((item, idx) => (
+                      <button
+                        key={item.generated_at}
+                        className={selectedInsightIdx === idx ? 'active' : ''}
+                        onClick={() => {
+                          onSelectInsight(idx)
+                          setHistoryMenuOpen(false)
+                        }}
+                      >
+                        {idx === 0 ? '最新信号' : new Date(item.generated_at).toLocaleString('zh-CN', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false,
+                        })}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

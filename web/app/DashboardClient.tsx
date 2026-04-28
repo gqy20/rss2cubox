@@ -144,6 +144,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
+  const [dateMenuOpen, setDateMenuOpen] = useState(false)
 
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [shouldLoadCharts, setShouldLoadCharts] = useState(false)
@@ -153,6 +154,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   // Insights 历史记录状态
   const [insightsHistory, setInsightsHistory] = useState<InsightHistoryItem[]>([])
   const [selectedInsightIdx, setSelectedInsightIdx] = useState<number>(0)
+  const [selectedInsightKey, setSelectedInsightKey] = useState<InsightKey>('daily_advices')
   const [insightsLoading, setInsightsLoading] = useState(false)
 
   // 趋势图表时间范围状态
@@ -348,6 +350,11 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     ],
     [currentInsights]
   )
+  const visibleInsightPanels = useMemo(() => insightPanels.filter((panel) => panel.items.length > 0), [insightPanels])
+  const activeInsightPanel = useMemo(
+    () => visibleInsightPanels.find((panel) => panel.key === selectedInsightKey) ?? visibleInsightPanels[0],
+    [selectedInsightKey, visibleInsightPanels],
+  )
 
   // KPI 使用服务端计算的完整数据
   const kpis = [
@@ -448,6 +455,31 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     }
   }, [isSearchMode, todayKey, groupData, loadGroupData])
 
+  const jumpToDateGroup = useCallback((dayKey: string) => {
+    if (!dayKey) return
+    if (isSearchMode) {
+      setSearch('')
+    }
+
+    const scrollToGroup = () => {
+      setCollapsedGroups((prev) => ({ ...prev, [dayKey]: false }))
+      requestAnimationFrame(() => {
+        groupRefs.current[dayKey]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
+
+    const groupState = groupData[dayKey]
+    if (!isSearchMode && !groupState?.loaded && !groupState?.loading) {
+      void loadGroupData(dayKey).then(scrollToGroup)
+      return
+    }
+
+    if (groupRefs.current[dayKey]) {
+      scrollToGroup()
+      return
+    }
+  }, [isSearchMode, groupData, loadGroupData, setSearch])
+
   const openRowHover = (key: string) => {
     const timer = hoverCloseTimers.current[key]
     if (timer) { clearTimeout(timer); delete hoverCloseTimers.current[key] }
@@ -459,6 +491,12 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       setHoveredRowKey((prev) => (prev === key ? null : prev))
       delete hoverCloseTimers.current[key]
     }, 140)
+  }
+
+  const toggleRowOpen = (key: string) => {
+    const timer = hoverCloseTimers.current[key]
+    if (timer) { clearTimeout(timer); delete hoverCloseTimers.current[key] }
+    setHoveredRowKey((prev) => (prev === key ? null : key))
   }
 
   const setMessage = (type: 'success' | 'error', text: string) => {
@@ -555,6 +593,46 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
           ))}
         </section>
 
+        {activeInsightPanel && (
+          <section className="glass briefing-panel">
+            <div className="briefing-head">
+              <div className="briefing-title-row">
+                <h2 className="briefing-title">{activeInsightPanel.title}</h2>
+                <div className="briefing-tabs" role="tablist" aria-label="洞察类别">
+                  {visibleInsightPanels
+                    .filter((panel) => panel.key !== activeInsightPanel.key)
+                    .map((panel) => (
+                      <button
+                        key={panel.key}
+                        role="tab"
+                        aria-selected={false}
+                        className="briefing-tab"
+                        onClick={() => setSelectedInsightKey(panel.key)}
+                      >
+                        {panel.icon}
+                        <span>{panel.title}</span>
+                      </button>
+                    ))}
+                </div>
+              </div>
+              <button className="filter-btn icon-only-btn" onClick={() => copyInsightText(activeInsightPanel.title, activeInsightPanel.items)} title="复制" aria-label="复制">
+                <Copy size={14} />
+              </button>
+            </div>
+            <ol className="briefing-list">
+              {activeInsightPanel.items.slice(0, 5).map((item, i) => (
+                <li key={`${activeInsightPanel.key}-${i}-${item.title}`}>
+                  <span className="briefing-index">{String(i + 1).padStart(2, '0')}</span>
+                  <div>
+                    <div className="briefing-item-title">{item.title}</div>
+                    {item.content && <p className="briefing-item-content">{item.content}</p>}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        )}
+
         <div ref={chartsTriggerRef}>
           {shouldLoadCharts ? (
             <ChartsSection
@@ -571,13 +649,13 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
           ) : (
             <section className="charts-grid" style={{ marginBottom: 18 }}>
               <div className="glass chart-card chart-deferred-card">
-                <div className="chart-deferred-title">趋势图按需加载</div>
-                <p className="chart-deferred-copy">滚动到此区域时再加载图表脚本，以减少首屏 JS。</p>
+                <div className="chart-deferred-title">查看趋势</div>
+                <p className="chart-deferred-copy">展开最近信号的总量变化与已分析占比。</p>
                 <button className="filter-btn" onClick={() => setShouldLoadCharts(true)}>立即加载图表</button>
               </div>
               <div className="glass chart-card chart-deferred-card">
-                <div className="chart-deferred-title">来源分布图按需加载</div>
-                <p className="chart-deferred-copy">你也可以点击按钮手动加载，不影响核心数据阅读。</p>
+                <div className="chart-deferred-title">查看来源分布</div>
+                <p className="chart-deferred-copy">按来源筛选情报流，快速聚焦高频信号源。</p>
                 <button className="filter-btn" onClick={() => setShouldLoadCharts(true)}>立即加载图表</button>
               </div>
             </section>
@@ -589,35 +667,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             {actionMessage.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
             <span>{actionMessage.text}</span>
           </div>
-        )}
-
-        {currentInsights && (
-          <section className="insight-grid">
-            {insightPanels
-              .filter((panel) => panel.items.length > 0)
-              .map((panel) => (
-                <div key={panel.key} className="glass chart-card tertiary-card insight-panel-card">
-                  <div className="insight-panel-head">
-                    <h3 className="chart-title insight-panel-title" style={{ margin: 0 }}>{panel.icon} {panel.title}</h3>
-                    <div className="insight-panel-actions">
-                      <button className="filter-btn icon-only-btn" onClick={() => copyInsightText(panel.title, panel.items)} title="复制" aria-label="复制">
-                        <Copy size={13} />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="insight-panel-body">
-                    <ul className="insight-list">
-                      {panel.items.map((item, i) => (
-                        <li key={`${panel.key}-${i}-${item.title}`}>
-                          <div className="insight-item-title">{item.title}</div>
-                          {item.content && <div className="insight-item-content">{item.content}</div>}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              ))}
-          </section>
         )}
       </div>
 
@@ -646,6 +695,27 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             <button className={`filter-btn ${filter === 'analyzed' ? 'active' : ''}`} onClick={() => setFilter('analyzed')}>已分析</button>
             <button className={`filter-btn ${timeScope === 'today' ? 'active' : ''}`} onClick={() => setTimeScope((prev) => (prev === 'today' ? 'all' : 'today'))}>今日</button>
             <button className="filter-btn" onClick={jumpToTodayGroup}>定位今天</button>
+            <div className="date-jump-menu">
+              <button className="date-jump-trigger" onClick={() => setDateMenuOpen((prev) => !prev)} aria-expanded={dateMenuOpen}>
+                日期跳转
+              </button>
+              {dateMenuOpen && (
+                <div className="date-jump-list">
+                  {allDates.map((dayKey) => (
+                    <button
+                      key={dayKey}
+                      onClick={() => {
+                        jumpToDateGroup(dayKey)
+                        setDateMenuOpen(false)
+                      }}
+                    >
+                      <span>{formatGroupTitle(dayKey, todayKey, yesterdayKey)}</span>
+                      <strong>{metrics.daily_totals?.[dayKey] || 0}</strong>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <button className="filter-btn" onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
               <Download size={13} /> 导出
             </button>
@@ -714,6 +784,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
                           selectedTag={selectedTag}
                           onHoverEnter={openRowHover}
                           onHoverLeave={closeRowHover}
+                          onToggleOpen={toggleRowOpen}
                           onTagClick={(tag) => setSelectedTag((prev) => (prev === tag ? null : tag))}
                         />
                       )

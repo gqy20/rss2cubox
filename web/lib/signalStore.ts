@@ -30,16 +30,16 @@ export async function loadIcArticles(): Promise<EventRow[]> {
   return items.map((data: IcArticle) => normalizeArticle(data))
 }
 
-function getApiBaseUrl(): string {
+function getApiBaseUrl(apiBaseUrl?: string): string {
   if (typeof window !== 'undefined') {
     return '' // Browser will use relative URL
   }
   // Server-side: need absolute URL
-  return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
+  return apiBaseUrl || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
 }
 
-export async function loadLocalArticles(): Promise<EventRow[]> {
-  const baseUrl = getApiBaseUrl()
+export async function loadLocalArticles(apiBaseUrl?: string): Promise<EventRow[]> {
+  const baseUrl = getApiBaseUrl(apiBaseUrl)
   const allItems: EventRow[] = []
   const pageSize = 100
   let cursor: string | null = null
@@ -66,10 +66,10 @@ export async function loadLocalArticles(): Promise<EventRow[]> {
   return allItems
 }
 
-export async function loadArticles(): Promise<EventRow[]> {
+export async function loadArticles(apiBaseUrl?: string): Promise<EventRow[]> {
   const source = getApiSource()
   if (source === 'local') {
-    return loadLocalArticles()
+    return loadLocalArticles(apiBaseUrl)
   }
   return loadIcArticles()
 }
@@ -82,8 +82,8 @@ export type LocalStats = {
   trendData?: Array<{ name: string; total: number; analyzed: number }>
 }
 
-export async function loadLocalStats(): Promise<LocalStats | null> {
-  const baseUrl = getApiBaseUrl()
+export async function loadLocalStats(apiBaseUrl?: string): Promise<LocalStats | null> {
+  const baseUrl = getApiBaseUrl(apiBaseUrl)
   const url = baseUrl
     ? `${baseUrl}/api/signals/local/stats`
     : '/api/signals/local/stats'

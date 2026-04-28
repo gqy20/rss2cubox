@@ -1,10 +1,20 @@
 import DashboardClient from './DashboardClient'
+import { headers } from 'next/headers'
 
 import { loadGlobalInsights, loadArticles, loadLocalStats, type LocalStats } from '../lib/signalStore'
 import { getBusinessDayKey } from '../lib/time'
 import type { GlobalInsights, Row } from './types'
 
 export const dynamic = 'force-dynamic'
+
+function getRequestBaseUrl(requestHeaders: Headers): string {
+  const host = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host')
+  if (!host) return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
+
+  const forwardedProto = requestHeaders.get('x-forwarded-proto')
+  const protocol = forwardedProto || (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) ? 'http' : 'https')
+  return `${protocol}://${host}`
+}
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -128,7 +138,7 @@ function buildMetrics(rows: Row[], localStats?: LocalStats | null) {
   }
 }
 
-async function loadDashboardData(): Promise<{
+async function loadDashboardData(apiBaseUrl?: string): Promise<{
   rows: Row[]
   metrics: ReturnType<typeof buildMetrics>
   insights: GlobalInsights | null
@@ -139,8 +149,8 @@ async function loadDashboardData(): Promise<{
   try {
     // 并行加载：文章列表（只用于展示）、统计数据（用于准确计数）、全局洞察
     const results = await Promise.allSettled([
-      loadArticles(),
-      loadLocalStats(),
+      loadArticles(apiBaseUrl),
+      loadLocalStats(apiBaseUrl),
       loadGlobalInsights()
     ])
     events = results[0].status === 'fulfilled' ? results[0].value : []
@@ -181,7 +191,8 @@ async function loadDashboardData(): Promise<{
 export const PAGE_SIZE = 50
 
 export default async function Page() {
-  const { rows, metrics: data, insights } = await loadDashboardData()
+  const requestHeaders = await headers()
+  const { rows, metrics: data, insights } = await loadDashboardData(getRequestBaseUrl(requestHeaders))
 
   const paginatedRows = rows.slice(0, PAGE_SIZE)
 
