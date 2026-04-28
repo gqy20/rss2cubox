@@ -547,6 +547,7 @@ def collect_candidates_from_feeds(
     stats: dict[str, Any],
     stage_metrics: Any,
     feed_fetch_concurrency: int,
+    werss_fetch_concurrency: int,
     feed_cursor_lookback_hours: int,
     include_keywords: list[str],
     exclude_keywords: list[str],
@@ -565,6 +566,7 @@ def collect_candidates_from_feeds(
 ) -> list[dict[str, Any]]:
     candidates: list[dict[str, Any]] = []
     pending_specs: list[tuple[int, dict[str, str]]] = []
+    pending_werss: list[tuple[int, dict[str, str]]] = []
     for idx, spec in enumerate(feed_specs):
         feed_kind = spec["kind"]
         feed_url = spec["value"]
@@ -585,12 +587,15 @@ def collect_candidates_from_feeds(
                 failure_count=int(failure_state.get("count", 0)),
             )
             continue
-        pending_specs.append((idx, spec))
+        if feed_kind == "werss":
+            pending_werss.append((idx, spec))
+        else:
+            pending_specs.append((idx, spec))
 
     parse_results: dict[int, dict[str, Any]] = {}
-    max_workers = min(max(1, feed_fetch_concurrency), max(1, len(pending_specs)))
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_map = {
+
+    def submit_tasks(executor: ThreadPoolExecutor, specs: list[tuple[int, dict[str, str]]]) -> dict[Any, int]:
+        return {
             executor.submit(
                 parse_feed_spec,
                 spec,
@@ -611,23 +616,38 @@ def collect_candidates_from_feeds(
                 ),
                 log_event=log_event,
             ): idx
-            for idx, spec in pending_specs
+            for idx, spec in specs
         }
-        for future in as_completed(future_map):
-            idx = future_map[future]
-            spec = feed_specs[idx]
-            feed_url = spec["value"]
-            feed_kind = spec["kind"]
-            try:
-                parse_results[idx] = future.result()
-            except Exception as exc:  # noqa: BLE001
-                parse_results[idx] = {
-                    "ok": False,
-                    "kind": feed_kind,
-                    "feed": feed_url,
-                    "duration_ms": 0,
-                    "error": str(exc),
-                }
+
+    all_futures: dict[Any, int] = {}
+
+    # WERSS feeds: high concurrency
+    if pending_werss:
+        werss_workers = min(max(1, werss_fetch_concurrency), max(1, len(pending_werss)))
+        with ThreadPoolExecutor(max_workers=werss_workers) as executor:
+            all_futures.update(submit_tasks(executor, pending_werss))
+
+    # Non-WERSS feeds: normal concurrency
+    if pending_specs:
+        normal_workers = min(max(1, feed_fetch_concurrency), max(1, len(pending_specs)))
+        with ThreadPoolExecutor(max_workers=normal_workers) as executor:
+            all_futures.update(submit_tasks(executor, pending_specs))
+
+    for future in as_completed(all_futures):
+        idx = all_futures[future]
+        spec = feed_specs[idx]
+        feed_url = spec["value"]
+        feed_kind = spec["kind"]
+        try:
+            parse_results[idx] = future.result()
+        except Exception as exc:  # noqa: BLE001
+            parse_results[idx] = {
+                "ok": False,
+                "kind": feed_kind,
+                "feed": feed_url,
+                "duration_ms": 0,
+                "error": str(exc),
+            }
 
     for idx in sorted(parse_results):
         result = parse_results[idx]

@@ -62,6 +62,7 @@ AI_MAX_CANDIDATES = sync_pipeline.env_int("AI_MAX_CANDIDATES", 500)
 FEED_CONNECT_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_CONNECT_TIMEOUT_SECONDS", 5.0)
 FEED_READ_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_READ_TIMEOUT_SECONDS", 30.0)
 FEED_FETCH_CONCURRENCY = max(1, sync_pipeline.env_int("FEED_FETCH_CONCURRENCY", 10))
+WERSS_FETCH_CONCURRENCY = max(1, sync_pipeline.env_int("WERSS_FETCH_CONCURRENCY", 50))
 RSSHUB_FAILURE_COOLDOWN_SECONDS = sync_pipeline.env_int("RSSHUB_FAILURE_COOLDOWN_SECONDS", 300)
 FEED_CURSOR_LOOKBACK_HOURS = sync_pipeline.env_int("FEED_CURSOR_LOOKBACK_HOURS", 24)
 FEED_FAILURE_COOLDOWN_SECONDS = max(1, sync_pipeline.env_int("FEED_FAILURE_COOLDOWN_SECONDS", 60))
@@ -156,6 +157,7 @@ def main() -> None:
         stats=stats,
         stage_metrics=stage_metrics,
         feed_fetch_concurrency=FEED_FETCH_CONCURRENCY,
+        werss_fetch_concurrency=WERSS_FETCH_CONCURRENCY,
         feed_cursor_lookback_hours=FEED_CURSOR_LOOKBACK_HOURS,
         include_keywords=KEYWORDS_INCLUDE,
         exclude_keywords=KEYWORDS_EXCLUDE,
