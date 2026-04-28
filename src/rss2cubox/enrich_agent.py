@@ -19,7 +19,12 @@ import re
 from pathlib import Path
 from typing import Any
 
+from dotenv import load_dotenv
+
 from rss2cubox.webpage_reader import read_webpage_text
+
+# 加载 .env 文件，使 ANTHROPIC_API_KEY 可被读取
+load_dotenv()
 
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
@@ -160,6 +165,8 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
         stderr=stderr_logger,
         output_format={"type": "json_schema", "schema": ENRICH_OUTPUT_SCHEMA},
+        # 显式传递 ANTHROPIC_API_KEY 使 .env 拥有最高优先级
+        env={k: v for k, v in os.environ.items() if k == "ANTHROPIC_API_KEY"},
     )
 
     try:
