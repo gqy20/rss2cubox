@@ -30,6 +30,7 @@ import {
 import FeedCard from './FeedCard'
 import type { Row, Metrics, GlobalInsights, InsightKey } from './types'
 import { loadAllGlobalInsights, type InsightHistoryItem } from '../lib/signalStore'
+import { Button, MenuPanel } from './ui'
 
 type ChartsSectionProps = {
   trendData: Array<{ name: string; total: number; analyzed: number }>
@@ -575,9 +576,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               <span className="status-dot" />
               <span>批量分析结果</span>
             </div>
-            <button className="filter-btn" onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
+            <Button onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
               <Download size={13} /> 导出 JSON
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -615,9 +616,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
                     ))}
                 </div>
               </div>
-              <button className="filter-btn icon-only-btn" onClick={() => copyInsightText(activeInsightPanel.title, activeInsightPanel.items)} title="复制" aria-label="复制">
+              <Button iconOnly onClick={() => copyInsightText(activeInsightPanel.title, activeInsightPanel.items)} title="复制" aria-label="复制">
                 <Copy size={14} />
-              </button>
+              </Button>
             </div>
             <ol className="briefing-list">
               {activeInsightPanel.items.slice(0, 5).map((item, i) => (
@@ -651,12 +652,12 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
               <div className="glass chart-card chart-deferred-card">
                 <div className="chart-deferred-title">查看趋势</div>
                 <p className="chart-deferred-copy">展开最近信号的总量变化与已分析占比。</p>
-                <button className="filter-btn" onClick={() => setShouldLoadCharts(true)}>立即加载图表</button>
+                <Button onClick={() => setShouldLoadCharts(true)}>立即加载图表</Button>
               </div>
               <div className="glass chart-card chart-deferred-card">
                 <div className="chart-deferred-title">查看来源分布</div>
                 <p className="chart-deferred-copy">按来源筛选情报流，快速聚焦高频信号源。</p>
-                <button className="filter-btn" onClick={() => setShouldLoadCharts(true)}>立即加载图表</button>
+                <Button onClick={() => setShouldLoadCharts(true)}>立即加载图表</Button>
               </div>
             </section>
           )}
@@ -691,16 +692,16 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
             <Filter size={15} color="#8aa3be" />
-            <button className={`filter-btn ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>全量</button>
-            <button className={`filter-btn ${filter === 'analyzed' ? 'active' : ''}`} onClick={() => setFilter('analyzed')}>已分析</button>
-            <button className={`filter-btn ${timeScope === 'today' ? 'active' : ''}`} onClick={() => setTimeScope((prev) => (prev === 'today' ? 'all' : 'today'))}>今日</button>
-            <button className="filter-btn" onClick={jumpToTodayGroup}>定位今天</button>
+            <Button active={filter === 'all'} onClick={() => setFilter('all')}>全量</Button>
+            <Button active={filter === 'analyzed'} onClick={() => setFilter('analyzed')}>已分析</Button>
+            <Button active={timeScope === 'today'} onClick={() => setTimeScope((prev) => (prev === 'today' ? 'all' : 'today'))}>今日</Button>
+            <Button onClick={jumpToTodayGroup}>定位今天</Button>
             <div className="date-jump-menu">
               <button className="date-jump-trigger" onClick={() => setDateMenuOpen((prev) => !prev)} aria-expanded={dateMenuOpen}>
                 日期跳转
               </button>
               {dateMenuOpen && (
-                <div className="date-jump-list">
+                <MenuPanel className="date-jump-list">
                   {allDates.map((dayKey) => (
                     <button
                       key={dayKey}
@@ -713,15 +714,15 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
                       <strong>{metrics.daily_totals?.[dayKey] || 0}</strong>
                     </button>
                   ))}
-                </div>
+                </MenuPanel>
               )}
             </div>
-            <button className="filter-btn" onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
+            <Button onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
               <Download size={13} /> 导出
-            </button>
-            {selectedSource && <button className="filter-btn source-filter-active" onClick={() => setSelectedSource(null)}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</button>}
-            {selectedTag && <button className="filter-btn source-filter-active" onClick={() => setSelectedTag(null)}>#{selectedTag} ×</button>}
-            {(search || selectedSource || selectedTag || timeScope === 'today' || filter === 'analyzed') && <button className="filter-btn" onClick={clearAllFilters}>清除</button>}
+            </Button>
+            {selectedSource && <Button tone="purple" onClick={() => setSelectedSource(null)}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
+            {selectedTag && <Button tone="purple" onClick={() => setSelectedTag(null)}>#{selectedTag} ×</Button>}
+            {(search || selectedSource || selectedTag || timeScope === 'today' || filter === 'analyzed') && <Button onClick={clearAllFilters}>清除</Button>}
           </div>
 
           <div style={{ fontSize: 12, color: '#8aa3be', width: '100%' }}>

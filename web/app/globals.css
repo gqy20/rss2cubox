@@ -578,6 +578,24 @@ body {
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
 }
 
+.menu-panel {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(178, 190, 205, 0.32) transparent;
+}
+
+.menu-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menu-panel::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.menu-panel::-webkit-scrollbar-thumb {
+  background: rgba(178, 190, 205, 0.32);
+  border-radius: 4px;
+}
+
 .history-menu-list button {
   width: 100%;
   border: 0;

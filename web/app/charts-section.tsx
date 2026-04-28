@@ -17,6 +17,7 @@ import {
 } from 'recharts'
 import { Radar, Zap } from 'lucide-react'
 import { PIE_COLORS } from './utils'
+import { MenuPanel, SegmentedControl } from './ui'
 
 type TrendPoint = { name: string; total: number; analyzed: number }
 type SourcePoint = { name: string; value: number }
@@ -66,17 +67,15 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
           </h3>
           <div className="chart-head-actions">
             {/* 7天/30天切换 - Apple风格pill toggle */}
-            <div className="segmented-control">
-              {(['7d', '30d'] as const).map((range) => (
-                <button
-                  key={range}
-                  onClick={() => onTimeRangeChange(range)}
-                  className={timeRange === range ? 'active' : ''}
-                >
-                  {range === '7d' ? '7天' : '30天'}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              value={timeRange}
+              ariaLabel="趋势时间范围"
+              onChange={onTimeRangeChange}
+              options={[
+                { value: '7d', label: '7天' },
+                { value: '30d', label: '30天' },
+              ]}
+            />
             {/* 信号时段选择 - 仅在有多条历史时显示 */}
             {insightHistory && insightHistory.length > 1 && (
               <div className="history-menu">
@@ -84,7 +83,7 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
                   {selectedHistoryLabel}
                 </button>
                 {historyMenuOpen && (
-                  <div className="history-menu-list">
+                  <MenuPanel className="history-menu-list">
                     {insightHistory.map((item, idx) => (
                       <button
                         key={item.generated_at}
@@ -103,7 +102,7 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
                         })}
                       </button>
                     ))}
-                  </div>
+                  </MenuPanel>
                 )}
               </div>
             )}
