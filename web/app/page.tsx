@@ -127,7 +127,15 @@ async function loadDashboardData(): Promise<{
   metrics: ReturnType<typeof buildMetrics>
   insights: GlobalInsights | null
 }> {
-  const [events, rawInsights] = await Promise.all([loadIcArticles(), loadGlobalInsights()])
+  let events: ReturnType<typeof loadIcArticles> extends Promise<infer T> ? T : never = []
+  let rawInsights: GlobalInsights | null = null
+  try {
+    const results = await Promise.allSettled([loadIcArticles(), loadGlobalInsights()])
+    events = results[0].status === 'fulfilled' ? results[0].value : []
+    rawInsights = results[1].status === 'fulfilled' ? results[1].value : null
+  } catch {
+    // Build env may not reach IC API / DB — client will fetch via API route
+  }
   const rows: Row[] = dedupeRows(
     events.map((e) => ({
       id: e.id,
