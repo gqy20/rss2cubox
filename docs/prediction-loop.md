@@ -411,6 +411,36 @@ burst_delta
 - Prediction Strategy Agent
 - 前端预测看板
 
+## 当前实现状态
+
+第一版实现为规则 Agent，先保证闭环数据结构和可测试行为稳定。
+
+代码入口：
+
+| Agent | 文件 | 当前职责 |
+|------|------|----------|
+| Signal Cluster Agent | `src/rss2cubox/signal_cluster_agent.py` | 基于 `signal_type + cluster_hint` 聚类文章，输出 clusters 和 article links |
+| Trend Prediction Agent | `src/rss2cubox/prediction_agent.py` | 基于活跃 cluster 生成未来 7 天可验证预测 |
+| Prediction Review Agent | `src/rss2cubox/prediction_review_agent.py` | 基于目标窗口文章、关键词和证据类型给预测评分 |
+
+本地数据库 schema 和保存函数位于：
+
+```text
+src/rss2cubox/db_client.py
+```
+
+包括：
+
+```text
+PREDICTION_LOOP_SCHEMA
+ensure_prediction_loop_schema()
+save_signal_clusters()
+save_trend_predictions()
+save_prediction_review()
+```
+
+当前版本还没有引入 Agent SDK 审核，也没有使用 embedding。后续可以在保持函数输入输出契约不变的前提下，将规则判断替换为 LLM 审核或 pgvector 相似度聚类。
+
 ## 未来前端模块
 
 建议新增一个“趋势预测”模块：

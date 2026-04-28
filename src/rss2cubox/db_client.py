@@ -607,6 +607,282 @@ CREATE INDEX IF NOT EXISTS idx_global_insights_generated_at ON global_insights(g
 """
 
 
+PREDICTION_LOOP_SCHEMA = """
+CREATE TABLE IF NOT EXISTS signal_clusters (
+    id                      SERIAL PRIMARY KEY,
+    label                   TEXT NOT NULL,
+    normalized_label        TEXT NOT NULL,
+    signal_type             SMALLINT,
+    status                  TEXT NOT NULL DEFAULT 'new',
+    summary                 TEXT,
+    entities                JSONB DEFAULT '[]',
+    watch_keywords          JSONB DEFAULT '[]',
+    first_seen_at           TIMESTAMPTZ,
+    last_seen_at            TIMESTAMPTZ,
+    article_count           INTEGER DEFAULT 0,
+    source_count            INTEGER DEFAULT 0,
+    avg_importance          NUMERIC,
+    avg_evidence_strength   NUMERIC,
+    avg_novelty             NUMERIC,
+    avg_confidence          NUMERIC,
+    prediction_score_avg    NUMERIC,
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
+    updated_at              TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE (normalized_label, signal_type)
+);
+
+CREATE TABLE IF NOT EXISTS signal_cluster_articles (
+    cluster_id              INTEGER NOT NULL REFERENCES signal_clusters(id) ON DELETE CASCADE,
+    article_id              VARCHAR(255) NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    relevance_score         NUMERIC,
+    linked_at               TIMESTAMPTZ DEFAULT NOW(),
+    PRIMARY KEY (cluster_id, article_id)
+);
+
+CREATE TABLE IF NOT EXISTS trend_predictions (
+    id                      SERIAL PRIMARY KEY,
+    signal_cluster_id       INTEGER REFERENCES signal_clusters(id) ON DELETE SET NULL,
+    prediction_type         SMALLINT NOT NULL,
+    created_at              TIMESTAMPTZ DEFAULT NOW(),
+    target_start_at         TIMESTAMPTZ NOT NULL,
+    target_end_at           TIMESTAMPTZ NOT NULL,
+    horizon_days            INTEGER NOT NULL DEFAULT 7,
+    prediction_title        TEXT NOT NULL,
+    prediction_body         TEXT NOT NULL,
+    watch_keywords          JSONB DEFAULT '[]',
+    expected_evidence       JSONB DEFAULT '{}',
+    disconfirming_evidence  TEXT,
+    baseline_metrics        JSONB DEFAULT '{}',
+    confidence              SMALLINT,
+    status                  TEXT NOT NULL DEFAULT 'pending',
+    created_from_insight_id INTEGER
+);
+
+CREATE TABLE IF NOT EXISTS prediction_reviews (
+    id                      SERIAL PRIMARY KEY,
+    prediction_id           INTEGER NOT NULL REFERENCES trend_predictions(id) ON DELETE CASCADE,
+    reviewed_at             TIMESTAMPTZ DEFAULT NOW(),
+    score                   SMALLINT NOT NULL,
+    hit_level               TEXT NOT NULL,
+    supporting_articles     JSONB DEFAULT '[]',
+    contradicting_articles  JSONB DEFAULT '[]',
+    actual_observation      TEXT,
+    why_score               TEXT,
+    improvement_advice      TEXT,
+    review_metrics          JSONB DEFAULT '{}'
+);
+
+CREATE INDEX IF NOT EXISTS idx_signal_clusters_type_status ON signal_clusters(signal_type, status);
+CREATE INDEX IF NOT EXISTS idx_signal_clusters_updated_at ON signal_clusters(updated_at DESC);
+CREATE INDEX IF NOT EXISTS idx_trend_predictions_status_end ON trend_predictions(status, target_end_at);
+CREATE INDEX IF NOT EXISTS idx_prediction_reviews_prediction_id ON prediction_reviews(prediction_id);
+"""
+
+
+def ensure_prediction_loop_schema(db_url: str | None = None) -> bool:
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+
+    if not db_url:
+        logging.warning("LOCAL_DB_URL not set, skipping prediction loop schema")
+        return False
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(ARTICLES_SCHEMA)
+            cur.execute(PREDICTION_LOOP_SCHEMA)
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.warning(f"Failed to ensure prediction loop schema: {e}")
+        return False
+
+
+def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url: str | None = None) -> dict[str, int]:
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    if not db_url:
+        logging.warning("LOCAL_DB_URL not set, skipping signal_clusters save")
+        return {}
+
+    cluster_ids: dict[str, int] = {}
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(ARTICLES_SCHEMA)
+            cur.execute(PREDICTION_LOOP_SCHEMA)
+            for cluster in cluster_result.get("clusters", []):
+                cluster_key = str(cluster.get("cluster_key") or "").strip()
+                normalized_label = str(cluster.get("normalized_label") or cluster_key.split(":", 1)[-1]).strip()
+                cur.execute(
+                    """
+                    INSERT INTO signal_clusters (
+                        label, normalized_label, signal_type, status, summary,
+                        entities, watch_keywords, first_seen_at, last_seen_at,
+                        article_count, source_count, avg_importance, avg_evidence_strength,
+                        avg_novelty, avg_confidence, updated_at
+                    ) VALUES (
+                        %(label)s, %(normalized_label)s, %(signal_type)s, %(status)s, %(summary)s,
+                        %(entities)s, %(watch_keywords)s, %(first_seen_at)s::timestamptz, %(last_seen_at)s::timestamptz,
+                        %(article_count)s, %(source_count)s, %(avg_importance)s, %(avg_evidence_strength)s,
+                        %(avg_novelty)s, %(avg_confidence)s, NOW()
+                    )
+                    ON CONFLICT (normalized_label, signal_type) DO UPDATE SET
+                        label = EXCLUDED.label,
+                        status = EXCLUDED.status,
+                        summary = EXCLUDED.summary,
+                        entities = EXCLUDED.entities,
+                        watch_keywords = EXCLUDED.watch_keywords,
+                        first_seen_at = LEAST(signal_clusters.first_seen_at, EXCLUDED.first_seen_at),
+                        last_seen_at = GREATEST(signal_clusters.last_seen_at, EXCLUDED.last_seen_at),
+                        article_count = EXCLUDED.article_count,
+                        source_count = EXCLUDED.source_count,
+                        avg_importance = EXCLUDED.avg_importance,
+                        avg_evidence_strength = EXCLUDED.avg_evidence_strength,
+                        avg_novelty = EXCLUDED.avg_novelty,
+                        avg_confidence = EXCLUDED.avg_confidence,
+                        updated_at = NOW()
+                    RETURNING id
+                    """,
+                    {
+                        "label": cluster.get("label") or normalized_label,
+                        "normalized_label": normalized_label,
+                        "signal_type": _bounded_int(cluster.get("signal_type"), 1, 12),
+                        "status": cluster.get("status") or "new",
+                        "summary": cluster.get("summary") or "",
+                        "entities": json.dumps(_string_list(cluster.get("entities"), 20), ensure_ascii=False),
+                        "watch_keywords": json.dumps(_string_list(cluster.get("watch_keywords"), 20), ensure_ascii=False),
+                        "first_seen_at": cluster.get("first_seen_at"),
+                        "last_seen_at": cluster.get("last_seen_at"),
+                        "article_count": int(cluster.get("article_count") or 0),
+                        "source_count": int(cluster.get("source_count") or 0),
+                        "avg_importance": cluster.get("avg_importance"),
+                        "avg_evidence_strength": cluster.get("avg_evidence_strength"),
+                        "avg_novelty": cluster.get("avg_novelty"),
+                        "avg_confidence": cluster.get("avg_confidence"),
+                    },
+                )
+                row = cur.fetchone()
+                if row and cluster_key:
+                    cluster_ids[cluster_key] = int(row[0])
+
+            for link in cluster_result.get("links", []):
+                cluster_id = cluster_ids.get(str(link.get("cluster_key") or ""))
+                article_id = str(link.get("article_id") or "").strip()
+                if not cluster_id or not article_id:
+                    continue
+                cur.execute(
+                    """
+                    INSERT INTO signal_cluster_articles (cluster_id, article_id, relevance_score)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (cluster_id, article_id) DO UPDATE SET
+                        relevance_score = EXCLUDED.relevance_score,
+                        linked_at = NOW()
+                    """,
+                    (cluster_id, article_id, link.get("relevance_score", 1.0)),
+                )
+            conn.commit()
+            return cluster_ids
+    except Exception as e:
+        logging.warning(f"Failed to save signal clusters: {e}")
+        return {}
+
+
+def save_trend_predictions(
+    predictions: list[dict[str, Any]],
+    cluster_ids_by_key: dict[str, int],
+    db_url: str | None = None,
+) -> int:
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    if not db_url or not predictions:
+        return 0
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(PREDICTION_LOOP_SCHEMA)
+            inserted = 0
+            for prediction in predictions:
+                cluster_id = cluster_ids_by_key.get(str(prediction.get("signal_cluster_key") or ""))
+                cur.execute(
+                    """
+                    INSERT INTO trend_predictions (
+                        signal_cluster_id, prediction_type, target_start_at, target_end_at,
+                        horizon_days, prediction_title, prediction_body, watch_keywords,
+                        expected_evidence, disconfirming_evidence, baseline_metrics,
+                        confidence, status
+                    ) VALUES (
+                        %(signal_cluster_id)s, %(prediction_type)s, %(target_start_at)s::timestamptz, %(target_end_at)s::timestamptz,
+                        %(horizon_days)s, %(prediction_title)s, %(prediction_body)s, %(watch_keywords)s,
+                        %(expected_evidence)s, %(disconfirming_evidence)s, %(baseline_metrics)s,
+                        %(confidence)s, %(status)s
+                    )
+                    """,
+                    {
+                        "signal_cluster_id": cluster_id,
+                        "prediction_type": prediction.get("prediction_type"),
+                        "target_start_at": prediction.get("target_start_at"),
+                        "target_end_at": prediction.get("target_end_at"),
+                        "horizon_days": prediction.get("horizon_days", 7),
+                        "prediction_title": prediction.get("prediction_title", ""),
+                        "prediction_body": prediction.get("prediction_body", ""),
+                        "watch_keywords": json.dumps(_string_list(prediction.get("watch_keywords"), 20), ensure_ascii=False),
+                        "expected_evidence": json.dumps(prediction.get("expected_evidence") if isinstance(prediction.get("expected_evidence"), dict) else {}, ensure_ascii=False),
+                        "disconfirming_evidence": prediction.get("disconfirming_evidence"),
+                        "baseline_metrics": json.dumps(prediction.get("baseline_metrics") if isinstance(prediction.get("baseline_metrics"), dict) else {}, ensure_ascii=False),
+                        "confidence": _bounded_int(prediction.get("confidence"), 1, 5),
+                        "status": prediction.get("status", "pending"),
+                    },
+                )
+                inserted += 1
+            conn.commit()
+            return inserted
+    except Exception as e:
+        logging.warning(f"Failed to save trend predictions: {e}")
+        return 0
+
+
+def save_prediction_review(review: dict[str, Any], db_url: str | None = None) -> bool:
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    if not db_url:
+        return False
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(PREDICTION_LOOP_SCHEMA)
+            cur.execute(
+                """
+                INSERT INTO prediction_reviews (
+                    prediction_id, score, hit_level, supporting_articles, contradicting_articles,
+                    actual_observation, why_score, improvement_advice, review_metrics
+                ) VALUES (
+                    %(prediction_id)s, %(score)s, %(hit_level)s, %(supporting_articles)s, %(contradicting_articles)s,
+                    %(actual_observation)s, %(why_score)s, %(improvement_advice)s, %(review_metrics)s
+                )
+                """,
+                {
+                    "prediction_id": review.get("prediction_id"),
+                    "score": _bounded_int(review.get("score"), 1, 5),
+                    "hit_level": review.get("hit_level", ""),
+                    "supporting_articles": json.dumps(_string_list(review.get("supporting_articles"), 100), ensure_ascii=False),
+                    "contradicting_articles": json.dumps(_string_list(review.get("contradicting_articles"), 100), ensure_ascii=False),
+                    "actual_observation": review.get("actual_observation"),
+                    "why_score": review.get("why_score"),
+                    "improvement_advice": review.get("improvement_advice"),
+                    "review_metrics": json.dumps(review.get("review_metrics") if isinstance(review.get("review_metrics"), dict) else {}, ensure_ascii=False),
+                },
+            )
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.warning(f"Failed to save prediction review: {e}")
+        return False
+
+
 def save_global_insights(
     payload: dict[str, Any],
     db_url: str | None = None,

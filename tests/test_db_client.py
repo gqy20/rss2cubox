@@ -326,6 +326,16 @@ class TestSchema:
 
         assert "PRIMARY KEY" in ARTICLES_SCHEMA.upper()
 
+    def test_prediction_loop_schema_has_required_tables(self):
+        """Prediction loop schema should define clusters, predictions, and reviews."""
+        from rss2cubox.db_client import PREDICTION_LOOP_SCHEMA
+
+        schema_lower = PREDICTION_LOOP_SCHEMA.lower()
+        assert "create table if not exists signal_clusters" in schema_lower
+        assert "create table if not exists signal_cluster_articles" in schema_lower
+        assert "create table if not exists trend_predictions" in schema_lower
+        assert "create table if not exists prediction_reviews" in schema_lower
+
 
 class TestGetAllArticleIds:
     """Test get_all_article_ids for deduplication."""
@@ -426,3 +436,84 @@ class TestGetFeedCursors:
             result = get_feed_cursors(db_url=None)
 
             assert result == {}
+
+
+class TestPredictionLoopPersistence:
+    """Test local persistence helpers for prediction loop agents."""
+
+    def test_save_signal_clusters_upserts_clusters_and_links_articles(self):
+        conn, cur = make_mock_conn()
+        cur.fetchone.return_value = (42,)
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import save_signal_clusters
+
+            result = save_signal_clusters(
+                {
+                    "clusters": [{
+                        "cluster_key": "3:异步软件工程代理",
+                        "label": "异步软件工程代理",
+                        "normalized_label": "异步软件工程代理",
+                        "signal_type": 3,
+                        "status": "warming",
+                        "summary": "summary",
+                        "entities": ["OpenAI"],
+                        "watch_keywords": ["coding agent"],
+                    }],
+                    "links": [{
+                        "cluster_key": "3:异步软件工程代理",
+                        "article_id": "a1",
+                        "relevance_score": 1.0,
+                    }],
+                },
+                db_url="postgresql://localhost/test",
+            )
+
+            assert result == {"3:异步软件工程代理": 42}
+            sql_calls = " ".join(c[0][0] for c in cur.execute.call_args_list)
+            assert "INSERT INTO signal_clusters" in sql_calls
+            assert "INSERT INTO signal_cluster_articles" in sql_calls
+
+    def test_save_trend_predictions_inserts_rows(self):
+        conn, cur = make_mock_conn()
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import save_trend_predictions
+
+            result = save_trend_predictions(
+                [{
+                    "signal_cluster_key": "3:异步软件工程代理",
+                    "prediction_type": 1,
+                    "target_start_at": "2026-04-28T12:00:00+00:00",
+                    "target_end_at": "2026-05-05T12:00:00+00:00",
+                    "horizon_days": 7,
+                    "prediction_title": "title",
+                    "prediction_body": "body",
+                    "watch_keywords": ["coding agent"],
+                    "expected_evidence": {"minimum_support_count": 2},
+                    "confidence": 4,
+                }],
+                {"3:异步软件工程代理": 42},
+                db_url="postgresql://localhost/test",
+            )
+
+            assert result == 1
+            sql_calls = " ".join(c[0][0] for c in cur.execute.call_args_list)
+            assert "INSERT INTO trend_predictions" in sql_calls
+
+    def test_save_prediction_review_inserts_row(self):
+        conn, cur = make_mock_conn()
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import save_prediction_review
+
+            assert save_prediction_review(
+                {
+                    "prediction_id": 1,
+                    "score": 4,
+                    "hit_level": "strong",
+                    "supporting_articles": ["a1"],
+                    "contradicting_articles": [],
+                    "review_metrics": {"support_count": 1},
+                },
+                db_url="postgresql://localhost/test",
+            ) is True
+            sql_calls = " ".join(c[0][0] for c in cur.execute.call_args_list)
+            assert "INSERT INTO prediction_reviews" in sql_calls
