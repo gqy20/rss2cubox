@@ -7,8 +7,7 @@
 设计原则：
 - 只精读通过粗筛的条目，不处理所有候选，控制时间和成本
 - 有限并发（ENRICH_MAX_WORKERS），默认 10
-- 使用 output_format 让 CLI 自动验证 JSON Schema（内置重试）
-- 应用层仅对 timeout/网络错误重试（ENRICH_APP_MAX_RETRIES）
+- 使用 output_format 让 CLI 自动验证 JSON Schema（内置 5 次重试）
 - 单条失败静默回退到原始粗筛结果
 - 可通过 ENRICH_AGENT_ENABLED=false 关闭
 """
@@ -29,14 +28,11 @@ ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1"
 JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
 JINA_MAX_CHARS = max(1000, int(os.getenv("JINA_MAX_CHARS", "30000")))
 WECHAT_FETCH_TIMEOUT_SECONDS = max(10, int(os.getenv("WECHAT_FETCH_TIMEOUT_SECONDS", "30")))
-_enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "1.5").strip()
+_enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "15.0").strip()
 try:
     ENRICH_MAX_BUDGET_USD = float(_enrich_max_budget_raw) if _enrich_max_budget_raw else None
 except ValueError:
     ENRICH_MAX_BUDGET_USD = None
-# 应用层重试配置（仅针对 timeout/网络错误）
-ENRICH_APP_MAX_RETRIES = int(os.getenv("ENRICH_APP_MAX_RETRIES", "2"))
-ENRICH_RETRY_DELAY_BASE = float(os.getenv("ENRICH_RETRY_DELAY_BASE", "1.0"))
 
 # JSON Schema 用于 output_format（CLI 层自动验证）
 ENRICH_OUTPUT_SCHEMA = {
@@ -79,30 +75,6 @@ def _build_user_prompt(item: dict, original: dict) -> str:
     )
 
 
-def _extract_json_from_text(text: str) -> dict | None:
-    """从文本中提取 JSON 对象（回退解析用）"""
-    if not text:
-        return None
-
-    # 优先匹配 JSON 代码块
-    json_block_match = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
-    if json_block_match:
-        try:
-            return json.loads(json_block_match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    # 尝试匹配裸 JSON 对象
-    json_match = re.search(r"(\{[\s\S]*\})", text)
-    if json_match:
-        try:
-            return json.loads(json_match.group(1))
-        except json.JSONDecodeError:
-            pass
-
-    return None
-
-
 def _make_stderr_logger(prefix: str, limit: int = 40) -> tuple[list[str], Any]:
     lines: list[str] = []
 
@@ -125,16 +97,14 @@ def _has_enrich_content(payload: dict[str, Any] | None) -> bool:
 async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
-    应用层仅对 timeout/网络错误进行有限重试。
+    直接信任 structured_output，失败即返回错误。
     """
     import anyio
 
     try:
         from claude_agent_sdk import (  # type: ignore
-            AssistantMessage,
             ClaudeAgentOptions,
             ResultMessage,
-            TextBlock,
             create_sdk_mcp_server,
             query,
             tool,
@@ -186,97 +156,26 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         cwd=Path.cwd(),
         setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
         stderr=stderr_logger,
-        # 使用 output_format 让 CLI 自动验证 JSON Schema（CLI 内置重试）
         output_format={"type": "json_schema", "schema": ENRICH_OUTPUT_SCHEMA},
     )
 
-    last_error = "no_result"
+    try:
+        with anyio.fail_after(ENRICH_ITEM_TIMEOUT_SECONDS):
+            async for message in query(prompt=_build_user_prompt(item, original), options=options):
+                if isinstance(message, ResultMessage):
+                    if message.structured_output is not None:
+                        return message.structured_output, "ok"
+                    if message.is_error:
+                        return None, message.subtype or "error"
+                    return None, message.subtype or "no_structured_output"
+    except TimeoutError:
+        return None, "timeout"
+    except Exception as e:
+        if stderr_lines:
+            print(f"[enrich_agent] eid={eid_short} error: {' | '.join(stderr_lines[-5:])}", flush=True)
+        return None, str(e)
 
-    # 应用层重试：仅针对 timeout 和网络错误
-    for attempt in range(ENRICH_APP_MAX_RETRIES + 1):
-        final_result: dict[str, Any] | None = None
-        result_text: str | None = None
-        assistant_chunks: list[str] = []
-        try:
-            with anyio.fail_after(ENRICH_ITEM_TIMEOUT_SECONDS):
-                async for message in query(prompt=_build_user_prompt(item, original), options=options):
-                    if isinstance(message, AssistantMessage):
-                        for block in message.content:
-                            if isinstance(block, TextBlock) and block.text:
-                                assistant_chunks.append(block.text)
-                    elif isinstance(message, ResultMessage):
-                        # CLI 层 JSON Schema 验证成功
-                        if message.structured_output:
-                            result = message.structured_output
-                            if _has_enrich_content(result):
-                                final_result = result
-                                last_error = "ok"
-                            else:
-                                last_error = "empty_fields"
-                        elif message.subtype == "error_max_budget_usd":
-                            last_error = "error_max_budget_usd"
-                        # CLI 层重试耗尽
-                        elif message.subtype == "error_max_structured_output_retries":
-                            last_error = "cli_retry_exhausted"
-                        # 其他错误
-                        elif message.is_error:
-                            last_error = f"subtype:{message.subtype}"
-                            print(f"[enrich_agent] eid={eid_short} error: subtype={message.subtype}", flush=True)
-                        # structured_output 为空但有 result，尝试手动解析 JSON
-                        elif message.result:
-                            result_text = message.result
-                            parsed = _extract_json_from_text(message.result)
-                            if _has_enrich_content(parsed):
-                                final_result = parsed
-                                last_error = "ok"
-                            else:
-                                last_error = "no_structured_output"
-                                print(f"[enrich_agent] eid={eid_short} no_structured_output, result preview: {message.result[:200] if message.result else 'None'}", flush=True)
-                        elif message.subtype and message.subtype not in ("success", "completed_end_turn"):
-                            last_error = f"subtype:{message.subtype}"
-                            print(f"[enrich_agent] eid={eid_short} no_structured_output: subtype={message.subtype}", flush=True)
-                        else:
-                            last_error = "no_structured_output"
-                            print(f"[enrich_agent] eid={eid_short} no_structured_output: subtype={message.subtype}", flush=True)
-        except TimeoutError:
-            last_error = "timeout"
-            # timeout 可以重试
-        except Exception as e:
-            last_error = f"error:{type(e).__name__}:{e}"
-            if stderr_lines:
-                print(f"[enrich_agent] eid={eid_short} recent_cli_stderr: {' | '.join(stderr_lines[-5:])}", flush=True)
-            # 某些网络错误可以重试
-
-        if final_result:
-            print(f"[enrich_agent] eid={eid_short} validated: ok", flush=True)
-            return final_result, "ok"
-        if assistant_chunks:
-            parsed = _extract_json_from_text("\n".join(assistant_chunks))
-            if _has_enrich_content(parsed):
-                print(f"[enrich_agent] eid={eid_short} parsed_from_assistant: ok", flush=True)
-                return parsed, "ok"
-        if result_text:
-            parsed = _extract_json_from_text(result_text)
-            if _has_enrich_content(parsed):
-                print(f"[enrich_agent] eid={eid_short} parsed_from_result: ok", flush=True)
-                return parsed, "ok"
-
-        # 指数退避重试（最后一次不等待）
-        if attempt < ENRICH_APP_MAX_RETRIES and (
-            last_error == "timeout"
-            or last_error.startswith("error:ConnectionError")
-            or last_error.startswith("error:HTTPError")
-            or last_error.startswith("error:RuntimeError:Attempted to exit a cancel scope")
-        ):
-            delay = ENRICH_RETRY_DELAY_BASE * (2 ** attempt)
-            print(f"[enrich_agent] eid={eid_short} retry {attempt + 1}, wait {delay}s, reason={last_error}", flush=True)
-            await anyio.sleep(delay)
-        else:
-            # 其他错误不重试
-            break
-
-    print(f"[enrich_agent] eid={eid_short} failed: {last_error}", flush=True)
-    return None, last_error
+    return None, "no_result"
 
 
 async def _enrich_all(
