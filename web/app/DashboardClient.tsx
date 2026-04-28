@@ -29,6 +29,7 @@ import {
 } from './utils'
 import FeedCard from './FeedCard'
 import type { Row, Metrics, GlobalInsights, InsightKey } from './types'
+import { loadAllGlobalInsights, type InsightHistoryItem } from '../lib/signalStore'
 
 type ChartsSectionProps = {
   trendData: Array<{ name: string; total: number; analyzed: number }>
@@ -143,6 +144,28 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [shouldLoadCharts, setShouldLoadCharts] = useState(false)
 
   const [now, setNow] = useState<Date | null>(serverTime ? new Date(serverTime) : null)
+
+  // Insights 历史记录状态
+  const [insightsHistory, setInsightsHistory] = useState<InsightHistoryItem[]>([])
+  const [selectedInsightIdx, setSelectedInsightIdx] = useState<number>(0)
+  const [insightsLoading, setInsightsLoading] = useState(false)
+
+  // 加载 Insights 历史记录
+  useEffect(() => {
+    setInsightsLoading(true)
+    loadAllGlobalInsights(30)
+      .then((history) => {
+        setInsightsHistory(history)
+        if (history.length > 0) {
+          setSelectedInsightIdx(0)
+        }
+      })
+      .catch(() => console.error('Failed to load insights history'))
+      .finally(() => setInsightsLoading(false))
+  }, [])
+
+  // 当前选中的 insights
+  const currentInsights = insightsHistory[selectedInsightIdx]?.data ?? insights ?? null
   
   // 初始化：只加载今天的 20 条数据
   useEffect(() => {
@@ -311,11 +334,11 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   const insightPanels = useMemo(
     () => [
-      { key: 'trends' as InsightKey, title: '宏观技术趋势', icon: <TrendingUp size={16} color="#2dd4bf" />, items: normalizeInsightItems(Array.isArray(insights?.trends) ? insights.trends : []) },
-      { key: 'weak_signals' as InsightKey, title: '暗流弱信号', icon: <Radio size={16} color="#f59e0b" />, items: normalizeInsightItems(Array.isArray(insights?.weak_signals) ? insights.weak_signals : []) },
-      { key: 'daily_advices' as InsightKey, title: '今日行动建议', icon: <Lightbulb size={16} color="#a78bfa" />, items: normalizeInsightItems(Array.isArray(insights?.daily_advices) ? insights.daily_advices : []) },
+      { key: 'trends' as InsightKey, title: '宏观技术趋势', icon: <TrendingUp size={16} color="#2dd4bf" />, items: normalizeInsightItems(Array.isArray(currentInsights?.trends) ? currentInsights.trends : []) },
+      { key: 'weak_signals' as InsightKey, title: '暗流弱信号', icon: <Radio size={16} color="#f59e0b" />, items: normalizeInsightItems(Array.isArray(currentInsights?.weak_signals) ? currentInsights.weak_signals : []) },
+      { key: 'daily_advices' as InsightKey, title: '今日行动建议', icon: <Lightbulb size={16} color="#a78bfa" />, items: normalizeInsightItems(Array.isArray(currentInsights?.daily_advices) ? currentInsights.daily_advices : []) },
     ],
-    [insights]
+    [currentInsights]
   )
 
   // KPI 使用服务端计算的完整数据
@@ -550,8 +573,38 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
           </div>
         )}
 
-        {insights && (
+        {currentInsights && (
           <section className="insight-grid">
+            {/* Insights 历史选择器 */}
+            {insightsHistory.length > 1 && (
+              <div className="glass chart-card tertiary-card" style={{ gridColumn: '1 / -1', marginBottom: 8, padding: '10px 14px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span className="muted" style={{ fontSize: 12 }}>信号时段：</span>
+                  <select
+                    value={selectedInsightIdx}
+                    onChange={(e) => setSelectedInsightIdx(Number(e.target.value))}
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid var(--panel-border)',
+                      borderRadius: 6,
+                      color: 'var(--accent)',
+                      padding: '4px 8px',
+                      fontSize: 12,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {insightsHistory.map((item, idx) => (
+                      <option key={item.generated_at} value={idx}>
+                        {new Date(item.generated_at).toLocaleString('zh-CN', {
+                          month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
+                        })}
+                      </option>
+                    ))}
+                  </select>
+                  {insightsLoading && <span className="muted" style={{ fontSize: 11 }}>加载中...</span>}
+                </div>
+              </div>
+            )}
             {insightPanels
               .filter((panel) => panel.items.length > 0)
               .map((panel) => (
