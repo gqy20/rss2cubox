@@ -1,6 +1,6 @@
 import DashboardClient from './DashboardClient'
 
-import { loadGlobalInsights, loadArticles } from '../lib/signalStore'
+import { loadGlobalInsights, loadArticles, loadLocalStats } from '../lib/signalStore'
 import { getBusinessDayKey } from '../lib/time'
 import type { GlobalInsights, Row } from './types'
 
@@ -35,7 +35,7 @@ function dedupeRows(rows: Row[]): Row[] {
   return out
 }
 
-function buildMetrics(rows: Row[]) {
+function buildMetrics(rows: Row[], localStats?: { total: number; analyzed: number; today: number; sources: number } | null) {
   const now = new Date()
   const today = getDayKey(now)
   const yesterday = getDayKey(new Date(now.getTime() - 86400000))
@@ -100,16 +100,21 @@ function buildMetrics(rows: Row[]) {
     dailyCounts[dayKey] = (dailyCounts[dayKey] || 0) + 1
   }
 
+  // 使用本地数据库统计的准确数据（如果可用）
+  const signalsTotal = localStats?.total ?? rows.length
+  const analyzedTotal = localStats?.analyzed ?? rows.filter((r) => hasAiSummary(r)).length
+  const sourcesTotal = localStats?.sources ?? Object.keys(sourceCount).length
+
   return {
     generated_at: new Date().toISOString(),
-    signals_total: rows.length,
-    exported_total: rows.filter((r) => r.exported).length,
-    active_sources_total: Object.keys(sourceCount).length,
+    signals_total: signalsTotal,
+    exported_total: signalsTotal,
+    active_sources_total: sourcesTotal,
     top_source_counts: topSources,
     // KPI 数据
-    total_all: rows.length,
-    analyzed_total: rows.filter((r) => hasAiSummary(r)).length,
-    total_today: totalToday,
+    total_all: signalsTotal,
+    analyzed_total: analyzedTotal,
+    total_today: localStats?.today ?? totalToday,
     total_yesterday: totalYesterday,
     analyzed_today: analyzedToday,
     analyzed_yesterday: analyzedYesterday,
@@ -129,10 +134,17 @@ async function loadDashboardData(): Promise<{
 }> {
   let events: ReturnType<typeof loadArticles> extends Promise<infer T> ? T : never = []
   let rawInsights: GlobalInsights | null = null
+  let localStats: { total: number; analyzed: number; today: number; sources: number } | null = null
   try {
-    const results = await Promise.allSettled([loadArticles(), loadGlobalInsights()])
+    // 并行加载：文章列表（只用于展示）、统计数据（用于准确计数）、全局洞察
+    const results = await Promise.allSettled([
+      loadArticles(),
+      loadLocalStats(),
+      loadGlobalInsights()
+    ])
     events = results[0].status === 'fulfilled' ? results[0].value : []
-    rawInsights = results[1].status === 'fulfilled' ? results[1].value : null
+    localStats = results[1].status === 'fulfilled' ? results[1].value : null
+    rawInsights = results[2].status === 'fulfilled' ? results[2].value : null
   } catch {
     // Build env may not reach IC API / DB — client will fetch via API route
   }
@@ -162,7 +174,7 @@ async function loadDashboardData(): Promise<{
         daily_advices: asStringArray(rawInsights.daily_advices),
       }
     : null
-  return { rows, metrics: buildMetrics(rows), insights }
+  return { rows, metrics: buildMetrics(rows, localStats), insights }
 }
 
 export const PAGE_SIZE = 50

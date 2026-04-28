@@ -12,8 +12,8 @@ export async function GET(request: NextRequest) {
   const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 50
   const search = searchParams.get('search')?.trim() || ''
   const date = searchParams.get('date')?.trim() || ''
-  // Cursor: ISO timestamp string for keyset pagination
-  const cursor = searchParams.get('cursor')?.trim() || null
+  // Cursor: "$publish_time|$id" composite string for stable ordering
+  const cursorParam = searchParams.get('cursor')?.trim() || null
 
   if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: 'Invalid date format, expected YYYY-MM-DD' }, { status: 400 })
@@ -31,9 +31,18 @@ export async function GET(request: NextRequest) {
       let countQuery: string
       let params: (string | number)[]
 
+      // Parse composite cursor: "publish_time|id"
+      let cursorTime: string | null = null
+      let cursorId: string | null = null
+      if (cursorParam) {
+        const parts = cursorParam.split('|')
+        cursorTime = parts[0] || null
+        cursorId = parts[1] || null
+      }
+
       if (date) {
         // Date range query with optional cursor
-        if (cursor) {
+        if (cursorTime && cursorId) {
           query = `
             SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
                    title, url, pic_url, description, publish_time, tags,
@@ -41,11 +50,11 @@ export async function GET(request: NextRequest) {
                    created_at, updated_at
             FROM articles
             WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
-              AND publish_time < $2::timestamp
-            ORDER BY publish_time DESC NULLS LAST
-            LIMIT $3
+              AND (publish_time < $2::timestamp OR (publish_time = $2::timestamp AND id < $3))
+            ORDER BY publish_time DESC, id DESC
+            LIMIT $4
           `
-          params = [date, cursor, limit]
+          params = [date, cursorTime, cursorId, limit]
         } else {
           query = `
             SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
@@ -54,7 +63,7 @@ export async function GET(request: NextRequest) {
                    created_at, updated_at
             FROM articles
             WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
-            ORDER BY publish_time DESC NULLS LAST
+            ORDER BY publish_time DESC, id DESC
             LIMIT $2
           `
           params = [date, limit]
@@ -64,19 +73,20 @@ export async function GET(request: NextRequest) {
           WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
         `
       } else {
-        // No date filter - use cursor-based pagination
-        if (cursor) {
+        // No date filter - use composite cursor-based pagination (publish_time + id)
+        if (cursorTime && cursorId) {
           query = `
             SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
                    title, url, pic_url, description, publish_time, tags,
                    importance_score, reason, actionable, hidden_signal,
                    created_at, updated_at
             FROM articles
-            WHERE publish_time IS NOT NULL AND publish_time < $1::timestamp
-            ORDER BY publish_time DESC NULLS LAST
-            LIMIT $2
+            WHERE publish_time IS NOT NULL
+              AND (publish_time < $1::timestamp OR (publish_time = $1::timestamp AND id < $2))
+            ORDER BY publish_time DESC, id DESC
+            LIMIT $3
           `
-          params = [cursor, limit]
+          params = [cursorTime, cursorId, limit]
         } else {
           query = `
             SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
@@ -84,7 +94,7 @@ export async function GET(request: NextRequest) {
                    importance_score, reason, actionable, hidden_signal,
                    created_at, updated_at
             FROM articles
-            ORDER BY publish_time DESC NULLS LAST
+            ORDER BY publish_time DESC, id DESC
             LIMIT $1
           `
           params = [limit]
@@ -92,7 +102,7 @@ export async function GET(request: NextRequest) {
         countQuery = 'SELECT COUNT(*) FROM articles'
       }
 
-      // Get total count (for first page only, or cache it)
+      // Get total count
       const countResult = date
         ? await client.query(countQuery, date ? [date] : [])
         : await client.query(countQuery)
@@ -134,8 +144,9 @@ export async function GET(request: NextRequest) {
       )
       const sorted = sortArticles(filtered as any)
 
-      // Next cursor: last item's publish_time
-      const nextCursor = sorted.length > 0 ? sorted[sorted.length - 1].publish_time : null
+      // Next cursor: composite of last item's publish_time and id for stable pagination
+      const lastItem = sorted.length > 0 ? sorted[sorted.length - 1] : null
+      const nextCursor = lastItem ? `${lastItem.publish_time}|${lastItem.id}` : null
 
       return NextResponse.json({
         data: sorted,

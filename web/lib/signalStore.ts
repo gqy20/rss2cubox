@@ -74,6 +74,27 @@ export async function loadArticles(): Promise<EventRow[]> {
   return loadIcArticles()
 }
 
+export type LocalStats = {
+  total: number
+  analyzed: number
+  today: number
+  sources: number
+}
+
+export async function loadLocalStats(): Promise<LocalStats | null> {
+  const baseUrl = getApiBaseUrl()
+  const url = baseUrl
+    ? `${baseUrl}/api/signals/local/stats`
+    : '/api/signals/local/stats'
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    return await response.json() as LocalStats
+  } catch {
+    return null
+  }
+}
+
 export async function loadGlobalInsights(): Promise<GlobalInsights | null> {
   const sql = getInsightsSql()
   if (!sql) return null
@@ -84,4 +105,28 @@ export async function loadGlobalInsights(): Promise<GlobalInsights | null> {
     LIMIT 1
   `
   return (rows[0]?.data as GlobalInsights) ?? null
+}
+
+export type InsightHistoryItem = {
+  generated_at: string
+  data: GlobalInsights
+}
+
+export async function loadAllGlobalInsights(limit: number = 30): Promise<InsightHistoryItem[]> {
+  // 通过 API 路由获取，避免在客户端直接暴露数据库连接
+  const baseUrl = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000')
+  const url = baseUrl ? `${baseUrl}/api/signals/global-insights` : '/api/signals/global-insights'
+
+  try {
+    const response = await fetch(url)
+    if (!response.ok) {
+      console.error('Failed to fetch global insights:', response.status)
+      return []
+    }
+    const jsonData = await response.json() as { data?: InsightHistoryItem[] }
+    return jsonData.data ?? []
+  } catch (error) {
+    console.error('Failed to fetch global insights:', error)
+    return []
+  }
 }
