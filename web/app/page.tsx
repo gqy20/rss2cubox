@@ -4,7 +4,7 @@ import { loadGlobalInsights, loadArticles, loadLocalStats, type LocalStats } fro
 import { getBusinessDayKey } from '../lib/time'
 import type { GlobalInsights, Row } from './types'
 
-export const revalidate = 1800 // 30 minutes; GitHub Actions triggers on-demand revalidation after each sync
+export const dynamic = 'force-dynamic'
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
