@@ -326,3 +326,10 @@ def run_global_analysis(
             print(f"[global_agent] Neon DB 写入失败: {e}", flush=True)
     else:
         print("[global_agent] 全局分析完成，但未配置 NEON_DATABASE_URL，结果未保存", flush=True)
+
+    # 同时写入本地 PostgreSQL（可选，失败不影响主流程）
+    try:
+        from rss2cubox.db_client import save_global_insights as save_local_insights
+        save_local_insights(payload)
+    except Exception as e:
+        print(f"[global_agent] 本地 DB 写入失败（可忽略）: {e}", flush=True)

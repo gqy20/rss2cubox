@@ -266,3 +266,98 @@ def _parse_publish_time(value: Any) -> datetime | None:
             except ValueError:
                 continue
     return None
+
+
+# ── Global Insights ──────────────────────────────────────────────────────────
+
+GLOBAL_INSIGHTS_SCHEMA = """
+CREATE TABLE IF NOT EXISTS global_insights (
+    id           SERIAL PRIMARY KEY,
+    generated_at TIMESTAMPTZ NOT NULL,
+    data         JSONB NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_global_insights_generated_at ON global_insights(generated_at DESC);
+"""
+
+
+def save_global_insights(
+    payload: dict[str, Any],
+    db_url: str | None = None,
+) -> bool:
+    """Save global insights to local PostgreSQL database.
+
+    Args:
+        payload: Global insights data from global_agent.
+        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+
+    Returns:
+        True if saved successfully, False otherwise.
+    """
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+
+    if not db_url:
+        logging.warning("LOCAL_DB_URL not set, skipping global_insights save")
+        return False
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(GLOBAL_INSIGHTS_SCHEMA)
+            cur.execute(
+                """
+                INSERT INTO global_insights (generated_at, data)
+                VALUES (%s::timestamptz, %s)
+                """,
+                (
+                    payload.get("generated_at"),
+                    json.dumps(payload, ensure_ascii=False),
+                ),
+            )
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.warning(f"Failed to save global_insights to local DB: {e}")
+        return False
+
+
+def get_latest_global_insights(
+    db_url: str | None = None,
+) -> dict[str, Any] | None:
+    """Get the latest global insights from local PostgreSQL.
+
+    Args:
+        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+
+    Returns:
+        Latest global insights dict, or None if not found.
+    """
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+
+    if not db_url:
+        logging.warning("LOCAL_DB_URL not set, cannot query global_insights")
+        return None
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT generated_at, data
+                FROM global_insights
+                ORDER BY generated_at DESC
+                LIMIT 1
+                """,
+            )
+            row = cur.fetchone()
+            if row is None:
+                return None
+            _, data = row
+            if isinstance(data, str):
+                return json.loads(data)
+            return data
+    except Exception as e:
+        logging.warning(f"Failed to get global_insights from local DB: {e}")
+        return None
