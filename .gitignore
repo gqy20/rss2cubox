@@ -6,6 +6,9 @@ build/
 .pytest_cache/
 .venv/
 
+# logs
+logs/
+
 # web
 web/node_modules/
 web/.next/
@@ -17,3 +20,14 @@ web/.env*
 !.env.example
 .vercel
 .env*.local
+
+# playwright
+.playwright-cli/
+playwright-report/
+test-results/
+
+# node
+node_modules/
+*.tsbuildinfo
+vitest.config.temp
+nohup.out
