@@ -22,6 +22,7 @@ RSS Signals 是一个 RSS 情报采集与分析系统。它抓取多个 RSS 源�
 - **文章搜索接口**: `/api/signals`
 - **Bilibili 封面代理**: `/api/bili-cover`
 - **数据库说明**: `/docs/database.md`
+- **预测闭环设计**: `/docs/prediction-loop.md`
 
 ## 关键数据边界
 

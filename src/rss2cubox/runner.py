@@ -42,13 +42,21 @@ from rss2cubox.metrics import (
 FEEDS_FILE = Path(os.getenv("FEEDS_FILE", "feeds.txt"))
 RSSHUB_INSTANCES_FILE = Path(os.getenv("RSSHUB_INSTANCES_FILE", "rsshub_instances.txt"))
 
-# 日志文件：logs/YYYY-MM-DD/HH-MM-SS.log
+# 日志文件：logs/runs/YYYY-MM-DD/HH-MM-SS.jsonl
 _log_file: Any = None
+_run_id = ""
 
 
-def _get_log_file_path() -> Path:
-    now = datetime.now()
-    return Path("logs") / now.strftime("%Y-%m-%d") / f"{now.strftime('%H-%M-%S')}.log"
+def _get_log_file_path(now: datetime) -> Path:
+    return Path("logs") / "runs" / now.strftime("%Y-%m-%d") / f"{now.strftime('%H-%M-%S')}.jsonl"
+
+
+def _build_run_id(now: datetime) -> str:
+    return (
+        os.getenv("RSS2CUBOX_RUN_ID", "").strip()
+        or os.getenv("GITHUB_RUN_ID", "").strip()
+        or now.strftime("%Y%m%dT%H%M%S%z")
+    )
 
 IC_API_URL = os.getenv("IC_API_URL", "").strip()
 IC_SOURCE_TYPE = os.getenv("IC_SOURCE_TYPE", "gqy").strip() or "gqy"
@@ -77,6 +85,7 @@ def log_event(level: str, event: str, **fields: Any) -> None:
         "ts": datetime.now(timezone.utc).isoformat(),
         "level": level,
         "event": event,
+        "run_id": _run_id,
     }
     payload.update(fields)
     line = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
@@ -87,9 +96,11 @@ def log_event(level: str, event: str, **fields: Any) -> None:
 
 
 def main() -> None:
-    global _log_file
+    global _log_file, _run_id
 
-    log_path = _get_log_file_path()
+    run_started_at = datetime.now()
+    _run_id = _build_run_id(run_started_at)
+    log_path = _get_log_file_path(run_started_at)
     log_path.parent.mkdir(parents=True, exist_ok=True)
     _log_file = open(log_path, "a", encoding="utf-8")
 
@@ -111,7 +122,7 @@ def main() -> None:
     now_utc = datetime.now(timezone.utc)
     enabled = enrich_agent.ENRICH_AGENT_ENABLED
     runtime_context = build_runtime_context(
-        run_id=os.getenv("GITHUB_RUN_ID", ""),
+        run_id=_run_id,
         head_sha=os.getenv("GITHUB_SHA", ""),
         ref_name=os.getenv("GITHUB_REF_NAME", ""),
         event_name=os.getenv("GITHUB_EVENT_NAME", ""),

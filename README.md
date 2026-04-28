@@ -77,6 +77,26 @@ uv sync
 uv run rss2cubox
 ```
 
+本地定时运行可使用脚本：
+
+```bash
+chmod +x scripts/run_local_sync.sh
+scripts/run_local_sync.sh
+```
+
+crontab 示例：
+
+```cron
+0 */3 * * * /home/qy113/workspace/project/2604/rss2cubox/scripts/run_local_sync.sh
+```
+
+脚本会使用 `flock` 防止并发重入，并写入：
+
+```text
+logs/cron/YYYY-MM-DD/HH-MM-SS.log
+logs/runs/YYYY-MM-DD/HH-MM-SS.jsonl
+```
+
 ## 5) 数据文件职责
 
 - 当前主流程的去重基线来自 `ic`，不再依赖 Neon `processed_items`
@@ -89,7 +109,32 @@ uv run rss2cubox
 - 每次运行会输出 `rss2cubox.log` artifact
 - Step Summary 包含：阶段耗时、熔断跳过数、去重数、每源处理统计
 
-## 7) Vercel 前端（自动更新）
+## 7) 日志
+
+本地和 GitHub Actions 均会输出 JSONL 结构化事件。
+
+关键字段：
+
+- `run_id`：一次运行的稳定 ID，本地默认形如 `local-YYYYMMDDTHHMMSSZ`
+- `stage`：运行阶段，例如 `fetch`、`enrich`、`push`、`global_agent`
+- `event`：事件名，例如 `run_start`、`enrich_done`、`run_summary`
+- `eid`：文章稳定 ID
+
+`enrich_done` 会额外记录：
+
+- `duration_ms`
+- `content_source`
+- `importance_score`
+- `signal_type`
+- `evidence_type`
+- `evidence_strength`
+- `novelty_score`
+- `impact_horizon`
+- `market_stage`
+- `confidence`
+- `cluster_hint`
+
+## 8) Vercel 前端（自动更新）
 
 - 前端目录：`web/`
 - 在 Vercel 创建项目时把 **Root Directory** 设为 `web`
@@ -101,7 +146,7 @@ uv run rss2cubox
   - `IC_API_URL`
   - `NEON_DATABASE_URL`（仅用于读取 `global_insights`）
 
-## 8) 历史迁移与审计脚本
+## 9) 历史迁移与审计脚本
 
 历史回填：迁移旧 Neon `processed_items` 到 `ic`：
 

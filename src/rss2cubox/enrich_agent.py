@@ -16,6 +16,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 from pathlib import Path
 from typing import Any
 
@@ -255,6 +256,7 @@ async def _enrich_all(
     async def run_one(item: dict, original: dict) -> None:
         eid = item["eid"]
         async with semaphore:
+            started_at = time.perf_counter()
             stats["started"] += 1
             log_event(
                 "INFO",
@@ -265,6 +267,7 @@ async def _enrich_all(
             )
             try:
                 enriched, reason = await _enrich_one(item, original)
+                duration_ms = int((time.perf_counter() - started_at) * 1000)
                 if enriched:
                     merged = {**original}
                     for key in ("core_event", "reason", "hidden_signal", "actionable"):
@@ -309,14 +312,31 @@ async def _enrich_all(
                     merged["enriched"] = True
                     analyses[eid] = merged
                     stats["succeeded"] += 1
-                    log_event("INFO", "enrich_done", stage="enrich", eid=eid,
-                              hidden_signal=merged.get("hidden_signal", "")[:40])
+                    log_event(
+                        "INFO",
+                        "enrich_done",
+                        stage="enrich",
+                        eid=eid,
+                        duration_ms=duration_ms,
+                        content_source=merged.get("content_source", ""),
+                        importance_score=merged.get("importance_score"),
+                        signal_type=merged.get("signal_type"),
+                        evidence_type=merged.get("evidence_type"),
+                        evidence_strength=merged.get("evidence_strength"),
+                        novelty_score=merged.get("novelty_score"),
+                        impact_horizon=merged.get("impact_horizon"),
+                        market_stage=merged.get("market_stage"),
+                        confidence=merged.get("confidence"),
+                        cluster_hint=merged.get("cluster_hint", ""),
+                        hidden_signal=merged.get("hidden_signal", "")[:40],
+                    )
                 else:
                     stats["empty"] += 1
-                    log_event("WARN", "enrich_failed", stage="enrich", eid=eid, error=f"no_result:{reason}")
+                    log_event("WARN", "enrich_failed", stage="enrich", eid=eid, duration_ms=duration_ms, error=f"no_result:{reason}")
             except Exception as e:
+                duration_ms = int((time.perf_counter() - started_at) * 1000)
                 stats["failed"] += 1
-                log_event("WARN", "enrich_failed", stage="enrich", eid=eid, error=str(e))
+                log_event("WARN", "enrich_failed", stage="enrich", eid=eid, duration_ms=duration_ms, error=str(e))
 
     async with anyio.create_task_group() as tg:
         for item, original in items_to_enrich:
