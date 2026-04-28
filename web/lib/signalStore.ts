@@ -40,24 +40,24 @@ function getApiBaseUrl(): string {
 
 export async function loadLocalArticles(): Promise<EventRow[]> {
   const baseUrl = getApiBaseUrl()
-  const allItems: any[] = []
+  const allItems: EventRow[] = []
   const pageSize = 100
-  let page = 1
+  let cursor: string | null = null
   let hasMore = true
 
   while (hasMore) {
-    const url = baseUrl
-      ? `${baseUrl}/api/signals/local?page=${page}&limit=${pageSize}`
-      : `/api/signals/local?page=${page}&limit=${pageSize}`
-    const response = await fetch(url)
+    const urlStr = baseUrl
+      ? `${baseUrl}/api/signals/local?limit=${pageSize}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`
+      : `/api/signals/local?limit=${pageSize}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`
+    const response = await fetch(urlStr)
     if (!response.ok) {
       throw new Error(`Local API failed: ${response.status}`)
     }
-    const data = await response.json()
-    if (data.data && data.data.length > 0) {
-      allItems.push(...data.data)
-      hasMore = data.hasMore
-      page++
+    const jsonData = await response.json() as { data?: EventRow[], cursor?: string | null, hasMore?: boolean }
+    if (jsonData.data && jsonData.data.length > 0) {
+      allItems.push(...jsonData.data)
+      hasMore = jsonData.hasMore ?? false
+      cursor = jsonData.cursor ?? null
     } else {
       hasMore = false
     }

@@ -8,12 +8,12 @@ const pool = new Pool({
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
-  const rawPage = parseInt(searchParams.get('page') || '1', 10)
   const rawLimit = parseInt(searchParams.get('limit') || '50', 10)
-  const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1
   const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 50
   const search = searchParams.get('search')?.trim() || ''
   const date = searchParams.get('date')?.trim() || ''
+  // Cursor: ISO timestamp string for keyset pagination
+  const cursor = searchParams.get('cursor')?.trim() || null
 
   if (date && !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
     return NextResponse.json({ error: 'Invalid date format, expected YYYY-MM-DD' }, { status: 400 })
@@ -27,45 +27,74 @@ export async function GET(request: NextRequest) {
   try {
     const client = await pool.connect()
     try {
-      // Query articles from local PostgreSQL
       let query: string
       let countQuery: string
       let params: (string | number)[]
 
       if (date) {
-        // Date range query
-        query = `
-          SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
-                 title, url, pic_url, description, publish_time, tags,
-                 importance_score, reason, actionable, hidden_signal,
-                 created_at, updated_at
-          FROM articles
-          WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
-          ORDER BY publish_time DESC NULLS LAST
-          LIMIT $2 OFFSET $3
-        `
+        // Date range query with optional cursor
+        if (cursor) {
+          query = `
+            SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
+                   title, url, pic_url, description, publish_time, tags,
+                   importance_score, reason, actionable, hidden_signal,
+                   created_at, updated_at
+            FROM articles
+            WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
+              AND publish_time < $2::timestamp
+            ORDER BY publish_time DESC NULLS LAST
+            LIMIT $3
+          `
+          params = [date, cursor, limit]
+        } else {
+          query = `
+            SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
+                   title, url, pic_url, description, publish_time, tags,
+                   importance_score, reason, actionable, hidden_signal,
+                   created_at, updated_at
+            FROM articles
+            WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
+            ORDER BY publish_time DESC NULLS LAST
+            LIMIT $2
+          `
+          params = [date, limit]
+        }
         countQuery = `
           SELECT COUNT(*) FROM articles
           WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
         `
-        params = [date, limit, (page - 1) * limit]
       } else {
-        query = `
-          SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
-                 title, url, pic_url, description, publish_time, tags,
-                 importance_score, reason, actionable, hidden_signal,
-                 created_at, updated_at
-          FROM articles
-          ORDER BY publish_time DESC NULLS LAST
-          LIMIT $1 OFFSET $2
-        `
+        // No date filter - use cursor-based pagination
+        if (cursor) {
+          query = `
+            SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
+                   title, url, pic_url, description, publish_time, tags,
+                   importance_score, reason, actionable, hidden_signal,
+                   created_at, updated_at
+            FROM articles
+            WHERE publish_time IS NOT NULL AND publish_time < $1::timestamp
+            ORDER BY publish_time DESC NULLS LAST
+            LIMIT $2
+          `
+          params = [cursor, limit]
+        } else {
+          query = `
+            SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
+                   title, url, pic_url, description, publish_time, tags,
+                   importance_score, reason, actionable, hidden_signal,
+                   created_at, updated_at
+            FROM articles
+            ORDER BY publish_time DESC NULLS LAST
+            LIMIT $1
+          `
+          params = [limit]
+        }
         countQuery = 'SELECT COUNT(*) FROM articles'
-        params = [limit, (page - 1) * limit]
       }
 
-      // Get total count
+      // Get total count (for first page only, or cache it)
       const countResult = date
-        ? await client.query(countQuery, [date])
+        ? await client.query(countQuery, date ? [date] : [])
         : await client.query(countQuery)
       const total = parseInt(countResult.rows[0]?.count || '0', 10)
 
@@ -73,11 +102,10 @@ export async function GET(request: NextRequest) {
       const result = await client.query(query, params)
       const articles = result.rows
 
-      // Format response - convert to EventRow format for compatibility
+      // Format response
       const formatTime = (dt: any): string => {
         if (!dt) return ''
         if (typeof dt === 'string') return dt
-        // Assume it's a Date object or similar with toISOString
         if (typeof dt.toISOString === 'function') return dt.toISOString()
         return String(dt)
       }
@@ -100,17 +128,20 @@ export async function GET(request: NextRequest) {
         publish_time: formatTime(row.publish_time),
       }))
 
-      // Apply search filter (since we did pagination in DB, we need to filter in memory for accuracy)
+      // Apply search filter in memory
       const filtered = formatted.filter(
         (e) => matchesDate({ publish_time: e.time } as any, date) && matchesSearch(e as any, search)
       )
       const sorted = sortArticles(filtered as any)
 
+      // Next cursor: last item's publish_time
+      const nextCursor = sorted.length > 0 ? sorted[sorted.length - 1].publish_time : null
+
       return NextResponse.json({
         data: sorted,
         total,
-        page,
-        hasMore: (page - 1) * limit + formatted.length < total,
+        cursor: nextCursor,
+        hasMore: articles.length === limit,
       })
     } finally {
       client.release()

@@ -32,9 +32,14 @@ CREATE TABLE IF NOT EXISTS articles (
     updated_at          TIMESTAMP DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_articles_publish_time ON articles(publish_time DESC);
+-- Optimized index for cursor-based pagination (covering index)
+CREATE INDEX IF NOT EXISTS idx_articles_pub_time_cover ON articles(publish_time DESC);
+-- Index for source_type filtering
 CREATE INDEX IF NOT EXISTS idx_articles_source_type ON articles(source_type);
+-- Index for importance_score filtering
 CREATE INDEX IF NOT EXISTS idx_articles_importance_score ON articles(importance_score);
+-- GIN index for JSONB tags search
+CREATE INDEX IF NOT EXISTS idx_articles_tags ON articles USING GIN (tags);
 """
 
 
@@ -161,6 +166,65 @@ def get_articles(
             """,
             (limit, offset),
         )
+
+        rows = cur.fetchall()
+        return [_row_to_article(row) for row in rows]
+
+
+def get_articles_cursor(
+    cursor: str | None = None,
+    limit: int = 100,
+    db_url: str | None = None,
+) -> list[dict[str, Any]]:
+    """Get articles using cursor-based pagination for efficient deep paging.
+
+    Args:
+        cursor: ISO format timestamp string. Returns articles published before this time.
+                Use the last item's publish_time from previous page as cursor.
+        limit: Maximum number of articles to return.
+        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+
+    Returns:
+        List of article dictionaries, ordered by publish_time DESC.
+    """
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+
+    if not db_url:
+        raise ValueError("LOCAL_DB_URL environment variable is not set")
+
+    with psycopg.connect(db_url) as conn:
+        cur = conn.cursor()
+        if cursor:
+            cur.execute(
+                """
+                SELECT
+                    id, source_type, source_feed_id, source_feed_name,
+                    source_article_id, title, url, pic_url, description,
+                    publish_time, tags, importance_score, reason, actionable, hidden_signal,
+                    created_at, updated_at
+                FROM articles
+                WHERE publish_time IS NOT NULL AND publish_time < %s::timestamp
+                ORDER BY publish_time DESC
+                LIMIT %s
+                """,
+                (cursor, limit),
+            )
+        else:
+            cur.execute(
+                """
+                SELECT
+                    id, source_type, source_feed_id, source_feed_name,
+                    source_article_id, title, url, pic_url, description,
+                    publish_time, tags, importance_score, reason, actionable, hidden_signal,
+                    created_at, updated_at
+                FROM articles
+                WHERE publish_time IS NOT NULL
+                ORDER BY publish_time DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
 
         rows = cur.fetchall()
         return [_row_to_article(row) for row in rows]
