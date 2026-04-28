@@ -23,8 +23,8 @@ from dotenv import load_dotenv
 
 from rss2cubox.webpage_reader import read_webpage_text
 
-# 加载 .env 文件，使 ANTHROPIC_API_KEY 可被读取
-load_dotenv()
+# 加载 .env 文件（本地开发时 .env 优先级最高，覆盖系统环境变量）
+load_dotenv(override=True)
 
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))

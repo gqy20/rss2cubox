@@ -18,7 +18,8 @@ def test_load_lines_ignores_blank_and_comment(tmp_path: Path) -> None:
     assert feed_sources.load_lines(feeds) == ["https://a.example/rss", "https://b.example/rss"]
 
 
-def test_load_local_env_file_sets_missing_values_only(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_load_local_env_file_overwrites_existing_values(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Test that .env file has highest priority and overwrites existing env vars."""
     env_file = tmp_path / ".env"
     env_file.write_text(
         "IC_API_URL=http://ic.example/api/v1/articles/batch\nEXISTING=from_file\n# comment\nINVALID\n",
@@ -31,7 +32,8 @@ def test_load_local_env_file_sets_missing_values_only(tmp_path: Path, monkeypatc
     runner._load_local_env_file(env_file)
 
     assert os.environ["IC_API_URL"] == "http://ic.example/api/v1/articles/batch"
-    assert os.environ["EXISTING"] == "from_env"
+    # .env overwrites existing env vars (highest priority for local development)
+    assert os.environ["EXISTING"] == "from_file"
 
 
 def test_load_feed_specs_supports_sections(tmp_path: Path) -> None:

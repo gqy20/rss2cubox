@@ -18,7 +18,7 @@ def _load_local_env_file(env_file: Path = Path(".env")) -> None:
         key = key.strip()
         if not key:
             continue
-        os.environ.setdefault(key, value.strip())
+        os.environ[key] = value.strip()
 
 
 _load_local_env_file()
