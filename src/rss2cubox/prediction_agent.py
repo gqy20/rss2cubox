@@ -52,6 +52,7 @@ SYSTEM_PROMPT = (
     "你是 Trend Prediction Agent，负责基于历史 signal_clusters 生成未来一周可验证 AI 趋势预测。"
     "预测必须绑定输入中的 signal_cluster_key，必须可证伪，不能输出泛泛趋势。"
     "expected_evidence 必须包含 minimum_support_count、required_source_count、required_evidence_types。"
+    "必须参考 historical_reviews，避免重复低质量预测，并吸收 improvement_advice 调整证据门槛。"
     "prediction_type: 1=延续预测，2=转阶段预测，3=扩散预测，4=反转预测，5=迟到验证。"
     "只输出符合 JSON Schema 的结构化结果。"
 )
@@ -60,6 +61,7 @@ SYSTEM_PROMPT = (
 def run_trend_prediction_agent(
     clusters: list[dict[str, Any]],
     *,
+    historical_reviews: list[dict[str, Any]] | None = None,
     now: datetime | None = None,
     horizon_days: int = 7,
     max_predictions: int = 5,
@@ -76,9 +78,11 @@ def run_trend_prediction_agent(
             "horizon_days": horizon_days,
             "max_predictions": max_predictions,
             "clusters": clusters,
+            "historical_reviews": historical_reviews or [],
             "instructions": [
                 "只从输入 clusters 中选择值得预测的信号。",
                 "每条预测必须绑定 signal_cluster_key。",
+                "参考 historical_reviews 中的 score、why_score、improvement_advice，避免重复已失败模式。",
                 "不要输出超过 max_predictions 条。",
             ],
         },

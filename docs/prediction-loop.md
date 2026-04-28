@@ -417,6 +417,13 @@ burst_delta
 
 现阶段不做 embedding，也不保留规则版 fallback；如果 SDK 不可用、结构化输出无效或结果引用未知文章/信号簇，任务会直接失败，便于尽早暴露数据和提示词问题。
 
+闭环已补齐以下反馈路径：
+
+- Signal Cluster Agent 会接收已有 `signal_clusters`，优先延续稳定 cluster，而不是每轮只看最近文章重新命名。
+- Trend Prediction Agent 会接收近期 `prediction_reviews`，参考历史评分、`why_score` 和 `improvement_advice` 调整下一轮预测。
+- Prediction Review Agent 的候选证据来自 cluster 关联文章，同时会用预测中的 `watch_keywords` / `required_keywords` 扩展目标窗口文章。
+- 保存预测时会跳过 30 天内同 cluster、同 prediction_type、同标题的重复预测。
+
 代码入口：
 
 | Agent | 文件 | 当前职责 |

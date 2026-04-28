@@ -12,8 +12,10 @@ from dotenv import load_dotenv
 from rss2cubox.db_client import (
     ensure_prediction_loop_schema,
     get_due_trend_predictions,
+    get_existing_signal_clusters,
     get_prediction_window_articles,
     get_recent_enriched_articles,
+    get_recent_prediction_reviews,
     get_signal_clusters_for_prediction,
     save_prediction_review,
     save_signal_clusters,
@@ -33,6 +35,8 @@ PREDICTION_LOOP_CLUSTER_LIMIT = max(1, int(os.getenv("PREDICTION_LOOP_CLUSTER_LI
 PREDICTION_LOOP_MAX_PREDICTIONS = max(1, int(os.getenv("PREDICTION_LOOP_MAX_PREDICTIONS", "5")))
 PREDICTION_LOOP_REVIEW_LIMIT = max(1, int(os.getenv("PREDICTION_LOOP_REVIEW_LIMIT", "20")))
 PREDICTION_LOOP_REVIEW_ARTICLE_LIMIT = max(1, int(os.getenv("PREDICTION_LOOP_REVIEW_ARTICLE_LIMIT", "200")))
+PREDICTION_LOOP_EXISTING_CLUSTER_LIMIT = max(1, int(os.getenv("PREDICTION_LOOP_EXISTING_CLUSTER_LIMIT", "200")))
+PREDICTION_LOOP_REVIEW_HISTORY_LIMIT = max(1, int(os.getenv("PREDICTION_LOOP_REVIEW_HISTORY_LIMIT", "100")))
 PREDICTION_CLUSTER_INTERVAL_HOURS = max(1, int(os.getenv("PREDICTION_CLUSTER_INTERVAL_HOURS", "24")))
 PREDICTION_GENERATE_INTERVAL_HOURS = max(1, int(os.getenv("PREDICTION_GENERATE_INTERVAL_HOURS", "168")))
 PREDICTION_REVIEW_INTERVAL_HOURS = max(1, int(os.getenv("PREDICTION_REVIEW_INTERVAL_HOURS", "24")))
@@ -93,7 +97,8 @@ def main() -> None:
             )
             stats["articles"] = len(articles)
             if articles:
-                cluster_result = run_signal_cluster_agent(articles)
+                existing_clusters = get_existing_signal_clusters(limit=PREDICTION_LOOP_EXISTING_CLUSTER_LIMIT)
+                cluster_result = run_signal_cluster_agent(articles, existing_clusters=existing_clusters)
                 cluster_ids = save_signal_clusters(cluster_result)
                 stats["clusters"] = len(cluster_result.get("clusters", []))
                 stats["links"] = len(cluster_result.get("links", []))
@@ -125,8 +130,10 @@ def main() -> None:
         try:
             clusters = get_signal_clusters_for_prediction(limit=PREDICTION_LOOP_CLUSTER_LIMIT)
             if clusters:
+                historical_reviews = get_recent_prediction_reviews(limit=PREDICTION_LOOP_REVIEW_HISTORY_LIMIT)
                 predictions = run_trend_prediction_agent(
                     clusters,
+                    historical_reviews=historical_reviews,
                     max_predictions=PREDICTION_LOOP_MAX_PREDICTIONS,
                 )
                 if predictions:

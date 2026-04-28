@@ -498,6 +498,8 @@ class TestPredictionLoopPersistence:
             assert result == 1
             sql_calls = " ".join(c[0][0] for c in cur.execute.call_args_list)
             assert "INSERT INTO trend_predictions" in sql_calls
+            assert "WHERE NOT EXISTS" in sql_calls
+            assert "INTERVAL '30 days'" in sql_calls
 
     def test_save_prediction_review_inserts_row(self):
         conn, cur = make_mock_conn()
@@ -533,6 +535,19 @@ class TestPredictionLoopPersistence:
             assert "NOT EXISTS" in sql_calls
             assert "tp.status = 'pending'" in sql_calls
 
+    def test_get_existing_signal_clusters_loads_history_for_clustering(self):
+        conn, cur = make_mock_conn()
+        cur.fetchall.return_value = []
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import get_existing_signal_clusters
+
+            result = get_existing_signal_clusters(db_url="postgresql://localhost/test")
+
+            assert result == []
+            sql_calls = " ".join(c[0][0] for c in cur.execute.call_args_list)
+            assert "FROM signal_clusters" in sql_calls
+            assert "status != 'invalid'" in sql_calls
+
     def test_get_due_trend_predictions_selects_pending_expired_rows(self):
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
@@ -546,3 +561,38 @@ class TestPredictionLoopPersistence:
             assert "FROM trend_predictions" in sql_calls
             assert "tp.status = 'pending'" in sql_calls
             assert "tp.target_end_at <= NOW()" in sql_calls
+
+    def test_get_recent_prediction_reviews_loads_feedback_for_next_predictions(self):
+        conn, cur = make_mock_conn()
+        cur.fetchall.return_value = []
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import get_recent_prediction_reviews
+
+            result = get_recent_prediction_reviews(db_url="postgresql://localhost/test")
+
+            assert result == []
+            sql_calls = " ".join(c[0][0] for c in cur.execute.call_args_list)
+            assert "FROM prediction_reviews" in sql_calls
+            assert "improvement_advice" in sql_calls
+
+    def test_get_prediction_window_articles_expands_with_watch_keywords(self):
+        conn, cur = make_mock_conn()
+        cur.fetchall.return_value = []
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import get_prediction_window_articles
+
+            result = get_prediction_window_articles(
+                {
+                    "signal_cluster_id": 1,
+                    "target_start_at": "2026-04-28T00:00:00+00:00",
+                    "target_end_at": "2026-05-05T00:00:00+00:00",
+                    "watch_keywords": ["coding agent"],
+                    "expected_evidence": {"required_keywords": ["CI"]},
+                },
+                db_url="postgresql://localhost/test",
+            )
+
+            assert result == []
+            sql_calls = " ".join(c[0][0] for c in cur.execute.call_args_list)
+            assert "LEFT JOIN signal_cluster_articles" in sql_calls
+            assert "ILIKE" in sql_calls

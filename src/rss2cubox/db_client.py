@@ -746,6 +746,65 @@ def get_recent_enriched_articles(
         return []
 
 
+def _cluster_from_row(row: tuple) -> dict[str, Any]:
+    (
+        cluster_id, label, normalized_label, signal_type, status, summary,
+        entities, watch_keywords, first_seen_at, last_seen_at,
+        article_count, source_count, avg_importance, avg_evidence_strength,
+        avg_novelty, avg_confidence, prediction_score_avg,
+    ) = row
+    return {
+        "id": cluster_id,
+        "cluster_key": f"{signal_type or 12}:{normalized_label}",
+        "label": label,
+        "normalized_label": normalized_label,
+        "signal_type": signal_type,
+        "status": status,
+        "summary": summary,
+        "entities": _parse_json_value(entities, []),
+        "watch_keywords": _parse_json_value(watch_keywords, []),
+        "first_seen_at": first_seen_at.isoformat() if first_seen_at else None,
+        "last_seen_at": last_seen_at.isoformat() if last_seen_at else None,
+        "article_count": article_count,
+        "source_count": source_count,
+        "avg_importance": float(avg_importance) if avg_importance is not None else 0,
+        "avg_evidence_strength": float(avg_evidence_strength) if avg_evidence_strength is not None else 0,
+        "avg_novelty": float(avg_novelty) if avg_novelty is not None else 0,
+        "avg_confidence": float(avg_confidence) if avg_confidence is not None else 0,
+        "prediction_score_avg": float(prediction_score_avg) if prediction_score_avg is not None else None,
+    }
+
+
+def get_existing_signal_clusters(limit: int = 200, db_url: str | None = None) -> list[dict[str, Any]]:
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    if not db_url:
+        return []
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(PREDICTION_LOOP_SCHEMA)
+            cur.execute(
+                """
+                SELECT
+                    id, label, normalized_label, signal_type, status, summary,
+                    entities, watch_keywords, first_seen_at, last_seen_at,
+                    article_count, source_count, avg_importance, avg_evidence_strength,
+                    avg_novelty, avg_confidence, prediction_score_avg
+                FROM signal_clusters sc
+                WHERE status != 'invalid'
+                ORDER BY updated_at DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            return [_cluster_from_row(row) for row in cur.fetchall()]
+    except Exception as e:
+        logging.warning(f"Failed to load existing signal clusters: {e}")
+        return []
+
+
 def get_signal_clusters_for_prediction(limit: int = 20, db_url: str | None = None) -> list[dict[str, Any]]:
     if db_url is None:
         db_url = os.getenv("LOCAL_DB_URL", "").strip()
@@ -778,37 +837,62 @@ def get_signal_clusters_for_prediction(limit: int = 20, db_url: str | None = Non
                 """,
                 (limit,),
             )
-            clusters: list[dict[str, Any]] = []
-            for row in cur.fetchall():
-                (
-                    cluster_id, label, normalized_label, signal_type, status, summary,
-                    entities, watch_keywords, first_seen_at, last_seen_at,
-                    article_count, source_count, avg_importance, avg_evidence_strength,
-                    avg_novelty, avg_confidence, prediction_score_avg,
-                ) = row
-                clusters.append({
-                    "id": cluster_id,
-                    "cluster_key": f"{signal_type or 12}:{normalized_label}",
-                    "label": label,
-                    "normalized_label": normalized_label,
-                    "signal_type": signal_type,
-                    "status": status,
-                    "summary": summary,
-                    "entities": _parse_json_value(entities, []),
-                    "watch_keywords": _parse_json_value(watch_keywords, []),
-                    "first_seen_at": first_seen_at.isoformat() if first_seen_at else None,
-                    "last_seen_at": last_seen_at.isoformat() if last_seen_at else None,
-                    "article_count": article_count,
-                    "source_count": source_count,
-                    "avg_importance": float(avg_importance) if avg_importance is not None else 0,
-                    "avg_evidence_strength": float(avg_evidence_strength) if avg_evidence_strength is not None else 0,
-                    "avg_novelty": float(avg_novelty) if avg_novelty is not None else 0,
-                    "avg_confidence": float(avg_confidence) if avg_confidence is not None else 0,
-                    "prediction_score_avg": float(prediction_score_avg) if prediction_score_avg is not None else None,
-                })
-            return clusters
+            return [_cluster_from_row(row) for row in cur.fetchall()]
     except Exception as e:
         logging.warning(f"Failed to load signal clusters for prediction: {e}")
+        return []
+
+
+def get_recent_prediction_reviews(limit: int = 100, db_url: str | None = None) -> list[dict[str, Any]]:
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    if not db_url:
+        return []
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(PREDICTION_LOOP_SCHEMA)
+            cur.execute(
+                """
+                SELECT
+                    pr.prediction_id, pr.reviewed_at, pr.score, pr.hit_level,
+                    pr.actual_observation, pr.why_score, pr.improvement_advice,
+                    pr.review_metrics, tp.prediction_type, tp.prediction_title,
+                    tp.prediction_body, sc.normalized_label, sc.signal_type
+                FROM prediction_reviews pr
+                JOIN trend_predictions tp ON tp.id = pr.prediction_id
+                LEFT JOIN signal_clusters sc ON sc.id = tp.signal_cluster_id
+                ORDER BY pr.reviewed_at DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            reviews: list[dict[str, Any]] = []
+            for row in cur.fetchall():
+                (
+                    prediction_id, reviewed_at, score, hit_level,
+                    actual_observation, why_score, improvement_advice,
+                    review_metrics, prediction_type, prediction_title,
+                    prediction_body, normalized_label, signal_type,
+                ) = row
+                reviews.append({
+                    "prediction_id": prediction_id,
+                    "reviewed_at": reviewed_at.isoformat() if reviewed_at else None,
+                    "score": score,
+                    "hit_level": hit_level,
+                    "actual_observation": actual_observation,
+                    "why_score": why_score,
+                    "improvement_advice": improvement_advice,
+                    "review_metrics": _parse_json_value(review_metrics, {}),
+                    "prediction_type": prediction_type,
+                    "prediction_title": prediction_title,
+                    "prediction_body": prediction_body,
+                    "signal_cluster_key": f"{signal_type or 12}:{normalized_label}" if normalized_label else "",
+                })
+            return reviews
+    except Exception as e:
+        logging.warning(f"Failed to load recent prediction reviews: {e}")
         return []
 
 
@@ -883,6 +967,34 @@ def get_prediction_window_articles(prediction: dict[str, Any], limit: int = 200,
         return []
 
     try:
+        expected = prediction.get("expected_evidence") if isinstance(prediction.get("expected_evidence"), dict) else {}
+        keywords = _string_list(prediction.get("watch_keywords"), 20)
+        keywords.extend(_string_list(expected.get("required_keywords"), 20))
+        keyword_terms = []
+        seen_terms: set[str] = set()
+        for keyword in keywords:
+            term = keyword.strip()
+            if term and term.lower() not in seen_terms:
+                seen_terms.add(term.lower())
+                keyword_terms.append(f"%{term}%")
+
+        keyword_clause = ""
+        params: list[Any] = [prediction.get("signal_cluster_id")]
+        if keyword_terms:
+            checks: list[str] = []
+            for term in keyword_terms:
+                checks.append(
+                    "(a.title ILIKE %s OR a.description ILIKE %s OR a.hidden_signal ILIKE %s "
+                    "OR a.reason ILIKE %s OR a.cluster_hint ILIKE %s)"
+                )
+                params.extend([term, term, term, term, term])
+            keyword_clause = " OR " + " OR ".join(checks)
+        params.extend([
+            prediction.get("target_start_at"),
+            prediction.get("target_end_at"),
+            limit,
+        ])
+
         with psycopg.connect(db_url) as conn:
             cur = conn.cursor()
             cur.execute(ARTICLES_SCHEMA)
@@ -891,19 +1003,19 @@ def get_prediction_window_articles(prediction: dict[str, Any], limit: int = 200,
                 f"""
                 SELECT {ARTICLE_SELECT_COLUMNS}
                 FROM articles a
-                JOIN signal_cluster_articles sca ON sca.article_id = a.id
-                WHERE sca.cluster_id = %s
+                LEFT JOIN signal_cluster_articles sca
+                    ON sca.article_id = a.id
+                    AND sca.cluster_id = %s
+                WHERE (
+                    sca.cluster_id IS NOT NULL
+                    {keyword_clause}
+                )
                   AND a.publish_time >= %s::timestamptz
                   AND a.publish_time <= %s::timestamptz
                 ORDER BY a.publish_time DESC
                 LIMIT %s
                 """,
-                (
-                    prediction.get("signal_cluster_id"),
-                    prediction.get("target_start_at"),
-                    prediction.get("target_end_at"),
-                    limit,
-                ),
+                params,
             )
             return [_row_to_article(row) for row in cur.fetchall()]
     except Exception as e:
@@ -1025,12 +1137,20 @@ def save_trend_predictions(
                         horizon_days, prediction_title, prediction_body, watch_keywords,
                         expected_evidence, disconfirming_evidence, baseline_metrics,
                         confidence, status
-                    ) VALUES (
+                    )
+                    SELECT
                         %(signal_cluster_id)s, %(prediction_type)s, %(target_start_at)s::timestamptz, %(target_end_at)s::timestamptz,
                         %(horizon_days)s, %(prediction_title)s, %(prediction_body)s, %(watch_keywords)s,
                         %(expected_evidence)s, %(disconfirming_evidence)s, %(baseline_metrics)s,
                         %(confidence)s, %(status)s
+                    WHERE NOT EXISTS (
+                        SELECT 1 FROM trend_predictions existing
+                        WHERE existing.signal_cluster_id IS NOT DISTINCT FROM %(signal_cluster_id)s
+                          AND existing.prediction_type = %(prediction_type)s
+                          AND LOWER(existing.prediction_title) = LOWER(%(prediction_title)s)
+                          AND existing.created_at >= NOW() - INTERVAL '30 days'
                     )
+                    RETURNING id
                     """,
                     {
                         "signal_cluster_id": cluster_id,
@@ -1048,7 +1168,8 @@ def save_trend_predictions(
                         "status": prediction.get("status", "pending"),
                     },
                 )
-                inserted += 1
+                if cur.fetchone():
+                    inserted += 1
             conn.commit()
             return inserted
     except Exception as e:
