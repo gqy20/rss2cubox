@@ -28,10 +28,10 @@ export async function GET() {
       `)
       const analyzed = parseInt(analyzedResult.rows[0]?.count || '0', 10)
 
-      // Count today's articles
+      // Count today's articles (using Asia/Shanghai timezone to match frontend)
       const todayResult = await client.query(`
         SELECT COUNT(*) FROM articles
-        WHERE publish_time >= CURRENT_DATE
+        WHERE publish_time >= (CURRENT_DATE AT TIME ZONE 'Asia/Shanghai')
       `)
       const today = parseInt(todayResult.rows[0]?.count || '0', 10)
 
