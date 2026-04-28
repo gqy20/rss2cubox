@@ -148,9 +148,7 @@ export async function fetchAllArticles(
   const items: IcArticle[] = []
   for (let page = 0; page < MAX_PAGES; page++) {
     const offset = page * BATCH_SIZE
-    const response = await fetch(buildApiUrl(BATCH_SIZE, offset, baseUrl, sourceType), {
-      next: { revalidate: 1800 },
-    })
+    const response = await fetch(buildApiUrl(BATCH_SIZE, offset, baseUrl, sourceType))
     if (!response.ok) {
       throw new Error(`IC article list request failed: HTTP ${response.status}`)
     }

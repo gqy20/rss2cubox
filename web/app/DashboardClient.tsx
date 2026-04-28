@@ -152,7 +152,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     setGroupData({
       [today]: {
         loading: false,
-        loaded: true,
+        loaded: todayItems.length > 0,
         items: todayItems,
         hasMore: todayCount > todayItems.length,
       }
