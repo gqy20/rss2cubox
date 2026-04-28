@@ -367,6 +367,51 @@ def get_latest_global_insights(
             if isinstance(data, str):
                 return json.loads(data)
             return data
+
+
+def get_all_global_insights(
+    db_url: str | None = None,
+    limit: int = 1000,
+) -> list[dict[str, Any]]:
+    """Get all global insights from local PostgreSQL.
+
+    Args:
+        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        limit: Maximum number of insights to return.
+
+    Returns:
+        List of global insights dicts ordered by generated_at descending.
+    """
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+
+    if not db_url:
+        logging.warning("LOCAL_DB_URL not set, cannot query global_insights")
+        return []
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT generated_at, data
+                FROM global_insights
+                ORDER BY generated_at DESC
+                LIMIT %s
+                """,
+                (limit,),
+            )
+            rows = cur.fetchall()
+            result = []
+            for _, data in rows:
+                if isinstance(data, str):
+                    result.append(json.loads(data))
+                else:
+                    result.append(data)
+            return result
+    except Exception as e:
+        logging.warning(f"Failed to get global_insights from local DB: {e}")
+        return []
     except Exception as e:
         logging.warning(f"Failed to get global_insights from local DB: {e}")
         return None

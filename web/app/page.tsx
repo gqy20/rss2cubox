@@ -1,6 +1,6 @@
 import DashboardClient from './DashboardClient'
 
-import { loadGlobalInsights, loadIcArticles } from '../lib/signalStore'
+import { loadGlobalInsights, loadArticles } from '../lib/signalStore'
 import { getBusinessDayKey } from '../lib/time'
 import type { GlobalInsights, Row } from './types'
 
@@ -127,10 +127,10 @@ async function loadDashboardData(): Promise<{
   metrics: ReturnType<typeof buildMetrics>
   insights: GlobalInsights | null
 }> {
-  let events: ReturnType<typeof loadIcArticles> extends Promise<infer T> ? T : never = []
+  let events: ReturnType<typeof loadArticles> extends Promise<infer T> ? T : never = []
   let rawInsights: GlobalInsights | null = null
   try {
-    const results = await Promise.allSettled([loadIcArticles(), loadGlobalInsights()])
+    const results = await Promise.allSettled([loadArticles(), loadGlobalInsights()])
     events = results[0].status === 'fulfilled' ? results[0].value : []
     rawInsights = results[1].status === 'fulfilled' ? results[1].value : null
   } catch {
