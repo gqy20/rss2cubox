@@ -305,8 +305,11 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     return result.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
   }, [isSearchMode, searchRows, loadedRows, filter, timeScope, selectedSource, selectedTag, todayKey, topSourceNames])
 
-  // 趋势数据来自服务端（基于全部数据）
-  const trendData = metrics.timeline_points || []
+  // 趋势数据来自服务端（基于全部数据），图表按当前范围展示最近 7/30 天
+  const trendData = useMemo(() => {
+    const points = metrics.timeline_points || []
+    return points.slice(timeRange === '7d' ? -7 : -30)
+  }, [metrics.timeline_points, timeRange])
 
   // 情报源分布来自服务端（基于全部数据）
   const sourceData = useMemo(() => {

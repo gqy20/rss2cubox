@@ -42,16 +42,32 @@ export async function GET() {
       `)
       const sources = parseInt(sourcesResult.rows[0]?.count || '0', 10)
 
-      // Calculate trend data for last 7 days (using Asia/Shanghai timezone)
+      // Calculate trend data for last 30 days (using Asia/Shanghai timezone).
+      // Keep zero-count days so the 7d/30d chart toggle has a stable timeline.
       const trendResult = await client.query(`
+        WITH days AS (
+          SELECT generate_series(
+            (CURRENT_DATE - INTERVAL '29 days')::date,
+            CURRENT_DATE::date,
+            INTERVAL '1 day'
+          )::date AS day
+        ),
+        daily AS (
+          SELECT
+            DATE(publish_time AT TIME ZONE 'Asia/Shanghai') as day,
+            COUNT(*) as total,
+            SUM(CASE WHEN (description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != '') THEN 1 ELSE 0 END) as analyzed
+          FROM articles
+          WHERE publish_time >= (CURRENT_DATE AT TIME ZONE 'Asia/Shanghai' - INTERVAL '29 days')
+          GROUP BY DATE(publish_time AT TIME ZONE 'Asia/Shanghai')
+        )
         SELECT
-          DATE(publish_time AT TIME ZONE 'Asia/Shanghai') as day,
-          COUNT(*) as total,
-          SUM(CASE WHEN (description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != '') THEN 1 ELSE 0 END) as analyzed
-        FROM articles
-        WHERE publish_time >= (CURRENT_DATE AT TIME ZONE 'Asia/Shanghai' - INTERVAL '6 days')
-        GROUP BY DATE(publish_time AT TIME ZONE 'Asia/Shanghai')
-        ORDER BY day ASC
+          days.day,
+          COALESCE(daily.total, 0) as total,
+          COALESCE(daily.analyzed, 0) as analyzed
+        FROM days
+        LEFT JOIN daily ON daily.day = days.day
+        ORDER BY days.day ASC
       `)
       const trendData = trendResult.rows.map((row) => ({
         name: new Date(row.day).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit' }),

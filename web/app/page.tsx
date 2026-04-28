@@ -79,11 +79,11 @@ function buildMetrics(rows: Row[], localStats?: LocalStats | null) {
     .slice(0, 10)
     .map(([source, count]) => ({ source, count }))
 
-  // 计算最近7天的趋势数据
+  // 计算最近30天的趋势数据，客户端再切换展示 7/30 天
   const dayMap = new Map<string, { name: string; total: number; analyzed: number }>()
   const base = new Date()
   base.setHours(0, 0, 0, 0)
-  for (let i = 6; i >= 0; i--) {
+  for (let i = 29; i >= 0; i--) {
     const d = new Date(base)
     d.setDate(base.getDate() - i)
     const dayKey = getDayKey(d)
