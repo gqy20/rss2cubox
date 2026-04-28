@@ -4,6 +4,8 @@ This module provides a local PostgreSQL fallback for article storage,
 complementing the remote IC API. Useful for local development and debugging.
 """
 import json
+import logging
+import os
 from datetime import datetime
 from typing import Any
 
@@ -45,70 +47,74 @@ def save_articles(
         db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
 
     Returns:
-        Number of articles saved.
+        Number of articles saved, or 0 if error occurs.
     """
     if not articles:
         return 0
 
     if db_url is None:
-        import os
         db_url = os.getenv("LOCAL_DB_URL", "").strip()
 
     if not db_url:
-        raise ValueError("LOCAL_DB_URL environment variable is not set")
+        logging.warning("LOCAL_DB_URL not set, skipping local DB save")
+        return 0
 
-    with psycopg.connect(db_url) as conn:
-        cur = conn.cursor()
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
 
-        # Create table if not exists
-        cur.execute(ARTICLES_SCHEMA)
+            # Create table if not exists
+            cur.execute(ARTICLES_SCHEMA)
 
-        # Insert each article
-        for article in articles:
-            cur.execute(
-                """
-                INSERT INTO articles (
-                    id, source_type, source_feed_id, source_feed_name,
-                    source_article_id, title, url, pic_url, description,
-                    publish_time, tags, reason, actionable, hidden_signal,
-                    created_at, updated_at
-                ) VALUES (
-                    %(id)s, %(source_type)s, %(source_feed_id)s, %(source_feed_name)s,
-                    %(source_article_id)s, %(title)s, %(url)s, %(pic_url)s, %(description)s,
-                    %(publish_time)s, %(tags)s, %(reason)s, %(actionable)s, %(hidden_signal)s,
-                    NOW(), NOW()
+            # Insert each article
+            for article in articles:
+                cur.execute(
+                    """
+                    INSERT INTO articles (
+                        id, source_type, source_feed_id, source_feed_name,
+                        source_article_id, title, url, pic_url, description,
+                        publish_time, tags, reason, actionable, hidden_signal,
+                        created_at, updated_at
+                    ) VALUES (
+                        %(id)s, %(source_type)s, %(source_feed_id)s, %(source_feed_name)s,
+                        %(source_article_id)s, %(title)s, %(url)s, %(pic_url)s, %(description)s,
+                        %(publish_time)s, %(tags)s, %(reason)s, %(actionable)s, %(hidden_signal)s,
+                        NOW(), NOW()
+                    )
+                    ON CONFLICT (id) DO UPDATE SET
+                        title = EXCLUDED.title,
+                        url = EXCLUDED.url,
+                        pic_url = EXCLUDED.pic_url,
+                        description = EXCLUDED.description,
+                        tags = EXCLUDED.tags,
+                        reason = EXCLUDED.reason,
+                        actionable = EXCLUDED.actionable,
+                        hidden_signal = EXCLUDED.hidden_signal,
+                        updated_at = NOW()
+                    """,
+                    {
+                        "id": article.get("id", ""),
+                        "source_type": article.get("source_type", "unknown"),
+                        "source_feed_id": article.get("source_feed_id", ""),
+                        "source_feed_name": article.get("source_feed_name", ""),
+                        "source_article_id": article.get("source_article_id", ""),
+                        "title": article.get("title", ""),
+                        "url": article.get("url", ""),
+                        "pic_url": article.get("pic_url", ""),
+                        "description": article.get("description", ""),
+                        "publish_time": _parse_publish_time(article.get("publish_time")),
+                        "tags": json.dumps(article.get("tags", []), ensure_ascii=False),
+                        "reason": article.get("reason", ""),
+                        "actionable": article.get("actionable", ""),
+                        "hidden_signal": article.get("hidden_signal", ""),
+                    },
                 )
-                ON CONFLICT (id) DO UPDATE SET
-                    title = EXCLUDED.title,
-                    url = EXCLUDED.url,
-                    pic_url = EXCLUDED.pic_url,
-                    description = EXCLUDED.description,
-                    tags = EXCLUDED.tags,
-                    reason = EXCLUDED.reason,
-                    actionable = EXCLUDED.actionable,
-                    hidden_signal = EXCLUDED.hidden_signal,
-                    updated_at = NOW()
-                """,
-                {
-                    "id": article.get("id", ""),
-                    "source_type": article.get("source_type", "unknown"),
-                    "source_feed_id": article.get("source_feed_id", ""),
-                    "source_feed_name": article.get("source_feed_name", ""),
-                    "source_article_id": article.get("source_article_id", ""),
-                    "title": article.get("title", ""),
-                    "url": article.get("url", ""),
-                    "pic_url": article.get("pic_url", ""),
-                    "description": article.get("description", ""),
-                    "publish_time": _parse_publish_time(article.get("publish_time")),
-                    "tags": json.dumps(article.get("tags", []), ensure_ascii=False),
-                    "reason": article.get("reason", ""),
-                    "actionable": article.get("actionable", ""),
-                    "hidden_signal": article.get("hidden_signal", ""),
-                },
-            )
 
-        conn.commit()
-        return len(articles)
+            conn.commit()
+            return len(articles)
+    except Exception as e:
+        logging.warning(f"Failed to save articles to local DB: {e}")
+        return 0
 
 
 def get_articles(

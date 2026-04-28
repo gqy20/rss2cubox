@@ -27,6 +27,7 @@ import requests
 
 from rss2cubox import feed_sources, sync_pipeline
 from rss2cubox import enrich_agent
+from rss2cubox.db_client import save_articles
 from rss2cubox.global_agent import run_global_analysis
 from rss2cubox.feed_sources import RSSHubInstancePool
 from rss2cubox.metrics import (
@@ -225,6 +226,11 @@ def main() -> None:
             ],
             chunk_size=5,
         )
+        # 同时写入本地 PostgreSQL（可选，失败不影响主流程）
+        try:
+            save_articles(article_records)
+        except Exception as e:
+            log_event("WARN", "local_db_write_failed", stage="push", error=str(e))
         sync_pipeline.mark_articles_exported(processed, [row["id"] for row in article_records], now)
         stats["pushed"] = len(article_records)
         stats["push_attempted"] = len(article_records)
