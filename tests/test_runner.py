@@ -313,6 +313,7 @@ def test_build_processed_article_maps_to_ic_fields() -> None:
         "description": "情报文章",
         "publish_time": "2026-03-19T13:18:31.612345+00:00",
         "tags": ["a", "b"],
+        "importance_score": 3,
         "reason": "命中关键主题",
         "actionable": "建议跟进",
         "hidden_signal": "存在供应链变化信号",

@@ -367,6 +367,9 @@ def get_latest_global_insights(
             if isinstance(data, str):
                 return json.loads(data)
             return data
+    except Exception as e:
+        logging.warning(f"Failed to get latest global_insights from local DB: {e}")
+        return None
 
 
 def get_all_global_insights(
@@ -412,6 +415,3 @@ def get_all_global_insights(
     except Exception as e:
         logging.warning(f"Failed to get global_insights from local DB: {e}")
         return []
-    except Exception as e:
-        logging.warning(f"Failed to get global_insights from local DB: {e}")
-        return None

@@ -1,7 +1,7 @@
 """
 全局情报深度分析 Agent
 使用 Claude Agent SDK 驱动 claude CLI 进程，对候选情报进行二次深度分析。
-Agent 通过 read_signals_file 工具读取信号文件，通过 Jina Reader API (r.jina.ai) 抓取原文，
+Agent 通过内置 Read 工具读取今日候选情报和历史 signals 文件，通过 Jina Reader API (r.jina.ai) 抓取原文，
 最终以结构化 JSON 格式输出分析报告。
 
 设计原则：
@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -64,14 +63,15 @@ JINA_MAX_CHARS = 30000
 WECHAT_FETCH_TIMEOUT_SECONDS = max(10, int(os.getenv("WECHAT_FETCH_TIMEOUT_SECONDS", "30")))
 
 
-def _build_user_prompt(signals_file: str, total: int) -> str:
+def _build_user_prompt(signals_file: str, history_file: str, total: int) -> str:
     deep_read_target = min(max(total, 1), 8)
     return f"""今日候选情报共 {total} 条，已保存到文件：{signals_file}
+所有历史 signals 已保存到文件：{history_file}
 
 请完成以下任务：
-1. 首先调用 read_signals_file 工具读取完整信号列表。
-2. 从中挑选最值得深挖的 {deep_read_target} 条左右条目，使用 read_webpage 工具阅读原文完整内容。
-3. 优先使用 read_signals_file 与 read_webpage 两个工具完成任务；如无必要，不要扩展到其他动作。
+1. 首先使用 Read 工具读取今日候选情报 {signals_file}
+2. 再使用 Read 工具读取历史 signals {history_file}
+3. 从中挑选最值得深挖的 {deep_read_target} 条左右条目，使用 read_webpage 工具阅读原文完整内容。
 4. 综合所有信息后，直接输出结构化 JSON 格式的报告：
    - trends: 宏观技术/行业趋势归纳，3-5 条，每条 ≤ 80 字
    - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条 ≤ 80 字
@@ -127,13 +127,14 @@ def _normalize_global_payload(payload: dict[str, Any]) -> dict[str, list[str]]:
     }
 
 
-async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
+async def _run_agent(
+    high_value_items: list[dict],
+    history_signals: dict[str, list[str]],
+) -> dict[str, Any] | None:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
     直接信任 structured_output，失败即返回错误。
     """
-    import json
-
     import anyio
 
     try:
@@ -148,7 +149,7 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         print("[global_agent] claude-agent-sdk 未安装，跳过全局分析", flush=True)
         return None
 
-    # 将信号数据写入临时文件
+    # 将今日信号数据写入临时文件
     signals_data = [
         {
             "url": r["url"],
@@ -158,30 +159,28 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         }
         for r in high_value_items
     ]
-    tmp_file = tempfile.NamedTemporaryFile(
+    signals_tmp_file = tempfile.NamedTemporaryFile(
         mode="w", suffix=".json", delete=False, encoding="utf-8"
     )
     signals_file_path: str | None = None
     try:
-        json.dump(signals_data, tmp_file, ensure_ascii=False, indent=2)
-        tmp_file.flush()
-        signals_file_path = tmp_file.name
+        json.dump(signals_data, signals_tmp_file, ensure_ascii=False, indent=2)
+        signals_tmp_file.flush()
+        signals_file_path = signals_tmp_file.name
     finally:
-        tmp_file.close()
+        signals_tmp_file.close()
 
-    @tool(
-        "read_signals_file",
-        "读取今日候选情报信号文件，返回完整的 JSON 列表",
-        {},
+    # 将历史 signals 写入临时文件
+    history_tmp_file = tempfile.NamedTemporaryFile(
+        mode="w", suffix=".json", delete=False, encoding="utf-8"
     )
-    async def read_signals_file(args: dict) -> dict:
-        if signals_file_path is None:
-            return {"content": [{"type": "text", "text": "[错误: 文件路径未初始化]"}]}
-        try:
-            content = Path(signals_file_path).read_text(encoding="utf-8")
-        except Exception as e:
-            content = f"[读取失败: {e}]"
-        return {"content": [{"type": "text", "text": content}]}
+    history_file_path: str | None = None
+    try:
+        json.dump(history_signals, history_tmp_file, ensure_ascii=False, indent=2)
+        history_tmp_file.flush()
+        history_file_path = history_tmp_file.name
+    finally:
+        history_tmp_file.close()
 
     @tool(
         "read_webpage",
@@ -208,12 +207,14 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
     server = create_sdk_mcp_server(
         name="insights-tools",
         version="1.0.0",
-        tools=[read_signals_file, read_webpage],
+        tools=[read_webpage],
     )
 
     allowed_tools = [
-        "mcp__insights-tools__read_signals_file",
         "mcp__insights-tools__read_webpage",
+        "Read",
+        "Grep",
+        "Glob",
     ]
     if GLOBAL_AGENT_ENABLE_SKILLS:
         allowed_tools.append("Skill")
@@ -235,7 +236,7 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
 
     try:
         with anyio.fail_after(GLOBAL_AGENT_TIMEOUT_SECONDS):
-            async for message in query(prompt=_build_user_prompt(signals_file_path, len(high_value_items)), options=options):
+            async for message in query(prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)), options=options):
                 if isinstance(message, ResultMessage):
                     if message.structured_output is not None:
                         result = _normalize_global_payload(message.structured_output)
@@ -257,6 +258,11 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
         if signals_file_path:
             try:
                 Path(signals_file_path).unlink(missing_ok=True)
+            except Exception:
+                pass
+        if history_file_path:
+            try:
+                Path(history_file_path).unlink(missing_ok=True)
             except Exception:
                 pass
 
@@ -301,9 +307,22 @@ def run_global_analysis(
     # 保持主流程顺序，取前 200 条
     high_value = high_value[:200]
 
+    # 从数据库读取所有历史 signals
+    history_signals = {"trends": [], "weak_signals": [], "daily_advices": []}
+    try:
+        from rss2cubox.db_client import get_all_global_insights
+        all_insights = get_all_global_insights()
+        for insight in all_insights:
+            history_signals["trends"].extend(insight.get("trends", []))
+            history_signals["weak_signals"].extend(insight.get("weak_signals", []))
+            history_signals["daily_advices"].extend(insight.get("daily_advices", []))
+        print(f"[global_agent] 已加载 {len(all_insights)} 条历史 insights", flush=True)
+    except Exception as e:
+        print(f"[global_agent] 加载历史 signals 失败: {e}", flush=True)
+
     print(f"[global_agent] 启动全局 Agent 分析，共 {len(high_value)} 条候选情报...", flush=True)
 
-    result = anyio.run(_run_agent, high_value)
+    result = anyio.run(_run_agent, high_value, history_signals)
 
     if not result:
         print("[global_agent] Agent 未返回有效报告", flush=True)

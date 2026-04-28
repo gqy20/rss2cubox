@@ -157,6 +157,7 @@ class TestGetArticles:
                 "Research on ML models",
                 datetime(2026, 4, 28, 12, 0, 0),
                 '["虚拟对照组", "因果推断"]',
+                3,  # importance_score
                 "ML virtual control group",
                 "Engineers can use this",
                 "虚拟对照组技术",

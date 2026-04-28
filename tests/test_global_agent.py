@@ -62,9 +62,10 @@ class TestGlobalAgentTools:
         import inspect
 
         source = inspect.getsource(global_agent._run_agent)
-        assert "read_signals_file" in source
         assert "read_webpage" in source
         assert "read_webpage_text" in source
+        # 使用内置 Read 工具，不再需要 read_signals_file MCP 工具
+        assert "mcp__insights-tools__read_webpage" in source
 
 
 class TestGlobalAgentPrompt:
@@ -121,8 +122,8 @@ class TestGlobalAgentIntegration:
 
         captured = {"items": None}
 
-        async def fake_run(items):  # noqa: ANN001
-            captured["items"] = items
+        async def fake_run(high_value_items, history_signals):  # noqa: ANN001
+            captured["items"] = high_value_items
             return {"trends": [], "weak_signals": [], "daily_advices": []}
 
         monkeypatch.setattr(global_agent, "_run_agent", fake_run)
