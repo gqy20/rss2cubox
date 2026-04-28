@@ -1,6 +1,6 @@
 import DashboardClient from './DashboardClient'
 
-import { loadGlobalInsights, loadArticles, loadLocalStats } from '../lib/signalStore'
+import { loadGlobalInsights, loadArticles, loadLocalStats, type LocalStats } from '../lib/signalStore'
 import { getBusinessDayKey } from '../lib/time'
 import type { GlobalInsights, Row } from './types'
 
@@ -35,7 +35,7 @@ function dedupeRows(rows: Row[]): Row[] {
   return out
 }
 
-function buildMetrics(rows: Row[], localStats?: { total: number; analyzed: number; today: number; sources: number } | null) {
+function buildMetrics(rows: Row[], localStats?: LocalStats | null) {
   const now = new Date()
   const today = getDayKey(now)
   const yesterday = getDayKey(new Date(now.getTime() - 86400000))
@@ -135,7 +135,7 @@ async function loadDashboardData(): Promise<{
 }> {
   let events: ReturnType<typeof loadArticles> extends Promise<infer T> ? T : never = []
   let rawInsights: GlobalInsights | null = null
-  let localStats: { total: number; analyzed: number; today: number; sources: number } | null = null
+  let localStats: LocalStats | null = null
   try {
     // 并行加载：文章列表（只用于展示）、统计数据（用于准确计数）、全局洞察
     const results = await Promise.allSettled([

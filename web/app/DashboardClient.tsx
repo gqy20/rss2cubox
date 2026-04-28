@@ -36,6 +36,11 @@ type ChartsSectionProps = {
   sourceData: Array<{ name: string; value: number }>
   selectedSource: string | null
   onSelectSource: (source: string | null | ((prev: string | null) => string | null)) => void
+  timeRange: '7d' | '30d'
+  onTimeRangeChange: (range: '7d' | '30d') => void
+  insightHistory?: InsightHistoryItem[]
+  selectedInsightIdx: number
+  onSelectInsight: (idx: number) => void
 }
 
 const ChartsSection = dynamic<ChartsSectionProps>(() => import('./charts-section').then((m) => m.default), {
@@ -150,6 +155,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [selectedInsightIdx, setSelectedInsightIdx] = useState<number>(0)
   const [insightsLoading, setInsightsLoading] = useState(false)
 
+  // 趋势图表时间范围状态
+  const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d')
+
   // 加载 Insights 历史记录
   useEffect(() => {
     setInsightsLoading(true)
@@ -166,7 +174,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   // 当前选中的 insights
   const currentInsights = insightsHistory[selectedInsightIdx]?.data ?? insights ?? null
-  
+
   // 初始化：只加载今天的 20 条数据
   useEffect(() => {
     const today = getDayKey(new Date())
@@ -549,7 +557,17 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
         <div ref={chartsTriggerRef}>
           {shouldLoadCharts ? (
-            <ChartsSection trendData={trendData} sourceData={sourceData} selectedSource={selectedSource} onSelectSource={setSelectedSource} />
+            <ChartsSection
+              trendData={trendData}
+              sourceData={sourceData}
+              selectedSource={selectedSource}
+              onSelectSource={setSelectedSource}
+              timeRange={timeRange}
+              onTimeRangeChange={setTimeRange}
+              insightHistory={insightsHistory}
+              selectedInsightIdx={selectedInsightIdx}
+              onSelectInsight={setSelectedInsightIdx}
+            />
           ) : (
             <section className="charts-grid" style={{ marginBottom: 18 }}>
               <div className="glass chart-card chart-deferred-card">
@@ -575,36 +593,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
         {currentInsights && (
           <section className="insight-grid">
-            {/* Insights 历史选择器 */}
-            {insightsHistory.length > 1 && (
-              <div className="glass chart-card tertiary-card" style={{ gridColumn: '1 / -1', marginBottom: 8, padding: '10px 14px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="muted" style={{ fontSize: 12 }}>信号时段：</span>
-                  <select
-                    value={selectedInsightIdx}
-                    onChange={(e) => setSelectedInsightIdx(Number(e.target.value))}
-                    style={{
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid var(--panel-border)',
-                      borderRadius: 6,
-                      color: 'var(--accent)',
-                      padding: '4px 8px',
-                      fontSize: 12,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {insightsHistory.map((item, idx) => (
-                      <option key={item.generated_at} value={idx}>
-                        {new Date(item.generated_at).toLocaleString('zh-CN', {
-                          month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false,
-                        })}
-                      </option>
-                    ))}
-                  </select>
-                  {insightsLoading && <span className="muted" style={{ fontSize: 11 }}>加载中...</span>}
-                </div>
-              </div>
-            )}
             {insightPanels
               .filter((panel) => panel.items.length > 0)
               .map((panel) => (

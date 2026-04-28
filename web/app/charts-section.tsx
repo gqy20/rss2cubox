@@ -12,6 +12,7 @@ import {
   Pie,
   Cell as PieCell,
   Legend,
+  ReferenceLine,
 } from 'recharts'
 import { Radar, Zap } from 'lucide-react'
 import { PIE_COLORS } from './utils'
@@ -24,15 +25,81 @@ type Props = {
   sourceData: SourcePoint[]
   selectedSource: string | null
   onSelectSource: (source: string | null | ((prev: string | null) => string | null)) => void
+  timeRange: '7d' | '30d'
+  onTimeRangeChange: (range: '7d' | '30d') => void
+  insightHistory?: InsightHistoryItem[]
+  selectedInsightIdx: number
+  onSelectInsight: (idx: number) => void
 }
 
-export default function ChartsSection({ trendData, sourceData, selectedSource, onSelectSource }: Props) {
+type InsightHistoryItem = {
+  generated_at: string
+  data: {
+    trends?: string[]
+    weak_signals?: string[]
+    daily_advices?: string[]
+  }
+}
+
+export default function ChartsSection({ trendData, sourceData, selectedSource, onSelectSource, timeRange, onTimeRangeChange, insightHistory, selectedInsightIdx, onSelectInsight }: Props) {
   return (
     <section className="charts-grid" style={{ marginBottom: 18 }}>
       <div className="glass chart-card">
-        <h3 className="chart-title">
-          <Zap size={18} color="#2dd4bf" /> 信号爆发趋势 (最近7天)
-        </h3>
+        {/* 图表Header：标题 + 时间范围 + 信号时段 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+          <h3 className="chart-title" style={{ margin: 0 }}>
+            <Zap size={18} color="#2dd4bf" /> 信号爆发趋势
+          </h3>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {/* 7天/30天切换 - Apple风格pill toggle */}
+            <div style={{ display: 'flex', background: 'rgba(255,255,255,0.05)', borderRadius: 8, padding: 2, gap: 2 }}>
+              {(['7d', '30d'] as const).map((range) => (
+                <button
+                  key={range}
+                  onClick={() => onTimeRangeChange(range)}
+                  style={{
+                    background: timeRange === range ? 'rgba(45, 212, 191, 0.2)' : 'transparent',
+                    border: 'none',
+                    borderRadius: 6,
+                    color: timeRange === range ? 'var(--accent)' : '#8aa3be',
+                    padding: '4px 10px',
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    fontWeight: timeRange === range ? 600 : 400,
+                  }}
+                >
+                  {range === '7d' ? '7天' : '30天'}
+                </button>
+              ))}
+            </div>
+            {/* 信号时段选择 - 仅在有多条历史时显示 */}
+            {insightHistory && insightHistory.length > 1 && (
+              <select
+                value={selectedInsightIdx}
+                onChange={(e) => onSelectInsight(Number(e.target.value))}
+                style={{
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  borderRadius: 6,
+                  color: 'var(--accent)',
+                  padding: '4px 8px',
+                  fontSize: 11,
+                  cursor: 'pointer',
+                  minWidth: 100,
+                }}
+              >
+                {insightHistory.map((item, idx) => (
+                  <option key={item.generated_at} value={idx}>
+                    {idx === 0 ? '最新信号' : new Date(item.generated_at).toLocaleString('zh-CN', {
+                      month: '2-digit', day: '2-digit', hour: '2-digit', hour12: false,
+                    })}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        </div>
         <div style={{ width: '100%', height: 250, marginTop: 14 }}>
           <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
             <AreaChart data={trendData} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
