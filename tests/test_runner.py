@@ -301,6 +301,20 @@ def test_build_processed_article_maps_to_ic_fields() -> None:
             "hidden_signal": "存在供应链变化信号",
             "tags": ["a", "b"],
             "core_event": "情报文章",
+            "content_source": "full_text",
+            "signal_type": 3,
+            "evidence_type": 1,
+            "evidence_strength": 4,
+            "novelty_score": 3,
+            "impact_horizon": 2,
+            "audience": [2, 3],
+            "market_stage": 4,
+            "confidence": 4,
+            "entities": ["OpenAI", "Codex"],
+            "cluster_hint": "异步软件工程代理",
+            "watch_keywords": ["coding agent", "CI automation"],
+            "prediction": "未来30天会出现更多异步代码代理进入工程流程。",
+            "disconfirming_evidence": "如果没有真实团队案例则降级。",
         },
         now_iso="2026-03-20T00:00:00+00:00",
         source_type="gqy",
@@ -322,11 +336,66 @@ def test_build_processed_article_maps_to_ic_fields() -> None:
         "reason": "命中关键主题",
         "actionable": "建议跟进",
         "hidden_signal": "存在供应链变化信号",
+        "content_source": "full_text",
+        "signal_type": 3,
+        "evidence_type": 1,
+        "evidence_strength": 4,
+        "novelty_score": 3,
+        "impact_horizon": 2,
+        "audience": [2, 3],
+        "market_stage": 4,
+        "confidence": 4,
+        "entities": ["OpenAI", "Codex"],
+        "cluster_hint": "异步软件工程代理",
+        "watch_keywords": ["coding agent", "CI automation"],
+        "prediction": "未来30天会出现更多异步代码代理进入工程流程。",
+        "disconfirming_evidence": "如果没有真实团队案例则降级。",
+        "enrich_meta": {},
         "exported": False,
         "exported_at": "",
         "created_at": "2026-03-20T00:00:00+00:00",
         "updated_at": "2026-03-20T00:00:00+00:00",
     }
+
+
+def test_build_processed_article_omits_invalid_signal_codes() -> None:
+    article = sync_pipeline.build_processed_article(
+        item={
+            "eid": "e1",
+            "source_feed": "feed",
+            "title": "标题",
+            "url": "https://example.com/post",
+            "description": "原始摘要",
+            "publish_time": "2026-03-19T13:18:31.612345+00:00",
+        },
+        analysis={
+            "reason": "命中关键主题",
+            "actionable": "建议跟进",
+            "hidden_signal": "存在供应链变化信号",
+            "tags": ["a"],
+            "core_event": "情报文章",
+            "signal_type": 99,
+            "evidence_strength": 0,
+            "audience": [2, 99, "bad"],
+        },
+        now_iso="2026-03-20T00:00:00+00:00",
+        source_type="gqy",
+    )
+
+    assert "signal_type" not in article
+    assert "evidence_strength" not in article
+    assert article["audience"] == [2]
+
+
+def test_has_signal_analysis_rejects_empty_seed_analysis() -> None:
+    assert sync_pipeline.has_signal_analysis({
+        "reason": "",
+        "hidden_signal": "",
+        "actionable": "",
+        "tags": [],
+        "core_event": "",
+    }) is False
+    assert sync_pipeline.has_signal_analysis({"hidden_signal": "存在真实变化"}) is True
 
 
 def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

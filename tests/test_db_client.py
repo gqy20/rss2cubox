@@ -25,6 +25,20 @@ def sample_articles():
             "reason": "ML virtual control group research",
             "actionable": "Engineers can use this framework",
             "hidden_signal": "虚拟对照组技术从概念走向临床实践验证",
+            "content_source": "full_text",
+            "signal_type": 6,
+            "evidence_type": 2,
+            "evidence_strength": 3,
+            "novelty_score": 4,
+            "impact_horizon": 3,
+            "audience": [1, 2],
+            "market_stage": 1,
+            "confidence": 4,
+            "entities": ["arXiv"],
+            "cluster_hint": "反事实推断临床验证",
+            "watch_keywords": ["counterfactual", "clinical trial"],
+            "prediction": "未来会出现更多虚拟对照组临床验证案例。",
+            "disconfirming_evidence": "若没有后续临床采用则降级。",
         },
         {
             "id": "ic_124",
@@ -161,6 +175,21 @@ class TestGetArticles:
                 "ML virtual control group",
                 "Engineers can use this",
                 "虚拟对照组技术",
+                "full_text",
+                6,
+                2,
+                3,
+                4,
+                3,
+                "[1, 2]",
+                1,
+                4,
+                '["arXiv"]',
+                "反事实推断临床验证",
+                '["counterfactual", "clinical trial"]',
+                "未来会出现更多虚拟对照组临床验证案例。",
+                "若没有后续临床采用则降级。",
+                "{}",
                 datetime(2026, 4, 28, 14, 0, 0),
                 datetime(2026, 4, 28, 14, 0, 0),
             )
@@ -228,9 +257,61 @@ class TestSchema:
             "hidden_signal",
             "created_at",
             "updated_at",
+            "content_source",
+            "signal_type",
+            "evidence_type",
+            "evidence_strength",
+            "novelty_score",
+            "impact_horizon",
+            "audience",
+            "market_stage",
+            "confidence",
+            "entities",
+            "cluster_hint",
+            "watch_keywords",
+            "prediction",
+            "disconfirming_evidence",
+            "enrich_meta",
         ]
         for col in required_columns:
             assert col in schema_lower, f"Column {col} not found in schema"
+
+    def test_schema_has_indexes_for_signal_fields(self):
+        """Should index structured signal fields for filtering."""
+        from rss2cubox.db_client import ARTICLES_SCHEMA
+
+        schema_lower = ARTICLES_SCHEMA.lower()
+        assert "idx_articles_signal_type" in schema_lower
+        assert "idx_articles_evidence_strength" in schema_lower
+        assert "idx_articles_novelty_score" in schema_lower
+        assert "idx_articles_entities" in schema_lower
+        assert "idx_articles_watch_keywords" in schema_lower
+
+    def test_save_articles_writes_signal_extension_fields(self, sample_articles):
+        """Should persist local-only enrich extension fields."""
+        conn, cur = make_mock_conn()
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import save_articles
+
+            save_articles(sample_articles[:1], db_url="postgresql://localhost/test")
+
+            insert_call = next(
+                call_args for call_args in cur.execute.call_args_list
+                if call_args[0][0].strip().upper().startswith("INSERT")
+            )
+            params = insert_call[0][1]
+            assert params["content_source"] == "full_text"
+            assert params["signal_type"] == 6
+            assert params["evidence_type"] == 2
+            assert params["evidence_strength"] == 3
+            assert params["novelty_score"] == 4
+            assert params["impact_horizon"] == 3
+            assert json.loads(params["audience"]) == [1, 2]
+            assert params["market_stage"] == 1
+            assert params["confidence"] == 4
+            assert json.loads(params["entities"]) == ["arXiv"]
+            assert params["cluster_hint"] == "反事实推断临床验证"
+            assert json.loads(params["watch_keywords"]) == ["counterfactual", "clinical trial"]
 
     def test_schema_has_index_on_publish_time(self):
         """Should have index on publish_time for date range queries."""

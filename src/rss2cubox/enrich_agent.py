@@ -50,8 +50,46 @@ ENRICH_OUTPUT_SCHEMA = {
         "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 5},
         "importance_score": {"type": "integer", "minimum": 1, "maximum": 5},
         "content_source": {"type": "string", "enum": ["full_text", "summary_only"]},
+        "signal_type": {"type": "integer", "minimum": 1, "maximum": 12},
+        "evidence_type": {"type": "integer", "minimum": 1, "maximum": 12},
+        "evidence_strength": {"type": "integer", "minimum": 1, "maximum": 5},
+        "novelty_score": {"type": "integer", "minimum": 1, "maximum": 5},
+        "impact_horizon": {"type": "integer", "minimum": 1, "maximum": 5},
+        "audience": {
+            "type": "array",
+            "items": {"type": "integer", "minimum": 1, "maximum": 8},
+            "maxItems": 3,
+        },
+        "market_stage": {"type": "integer", "minimum": 1, "maximum": 6},
+        "confidence": {"type": "integer", "minimum": 1, "maximum": 5},
+        "entities": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+        "cluster_hint": {"type": "string", "maxLength": 60},
+        "watch_keywords": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
+        "prediction": {"type": "string", "maxLength": 160},
+        "disconfirming_evidence": {"type": "string", "maxLength": 160},
     },
-    "required": ["core_event", "reason", "hidden_signal", "actionable", "tags", "importance_score", "content_source"],
+    "required": [
+        "core_event",
+        "reason",
+        "hidden_signal",
+        "actionable",
+        "tags",
+        "importance_score",
+        "content_source",
+        "signal_type",
+        "evidence_type",
+        "evidence_strength",
+        "novelty_score",
+        "impact_horizon",
+        "audience",
+        "market_stage",
+        "confidence",
+        "entities",
+        "cluster_hint",
+        "watch_keywords",
+        "prediction",
+        "disconfirming_evidence",
+    ],
 }
 
 
@@ -62,6 +100,7 @@ SYSTEM_PROMPT = (
     "【强制要求】在输出任何 JSON 分析结果之前，你必须先成功调用 read_webpage 获取并阅读完原文全文。\n"
     "如果 read_webpage 工具调用失败（即返回「网页读取失败」），你必须重试一次；若仍然失败，则输出 JSON 但 core_event、reason、hidden_signal、actionable 字段必须注明「原文读取失败，仅基于摘要」。\n"
     "阅读完毕后，直接以 JSON 格式输出分析结果。\n"
+    "【结构化稳定性要求】所有用于筛选的编码字段必须只输出整数或整数数组，不要输出中文枚举名、解释文本或“3=开发者工作流”这类混合字符串。\n"
     "字段要求：\n"
     "- core_event：冷静客观地用一句话描述事实（≤60字）\n"
     "- reason：简要说明这条信息为什么值得保留（≤60字）\n"
@@ -70,6 +109,19 @@ SYSTEM_PROMPT = (
     "- tags：输出 1-3 个精准标签，必须是字符串数组\n"
     "- importance_score：文章重要程度，1-5 分（1=一般资讯，2=值得关注，3=重要，4=非常重要，5=重大突破/必读）\n"
     "- content_source：必须注明本次分析的文本来源，值为「full_text」表示使用了全文，值为「summary_only」表示仅使用了摘要\n"
+    "- signal_type：只输出数字。1=模型能力，2=基础设施/算力/芯片，3=开发者工作流，4=产品化/应用层，5=开源生态，6=研究论文/算法，7=安全/风险/对齐，8=监管/政策，9=商业/融资/组织动作，10=数据/评测/Benchmark，11=机器人/具身智能，12=其他\n"
+    "- evidence_type：只输出数字。1=官方发布，2=论文/预印本，3=Benchmark/评测结果，4=代码仓库/开源项目，5=产品上线/功能发布，6=融资/并购/财报，7=招聘/组织调整，8=安全事件/事故，9=工程实践/技术博客，10=媒体报道，11=观点/评论，12=教程/二手整理\n"
+    "- evidence_strength：只输出 1-5。1=弱，2=一般，3=中等，4=强，5=极强\n"
+    "- novelty_score：只输出 1-5。1=已知延续，2=小幅变化，3=明显新动向，4=早期新范式，5=罕见/首次出现/可能开启新方向\n"
+    "- impact_horizon：只输出数字。1=天级，2=周级，3=月级，4=季度级，5=年级\n"
+    "- audience：输出 1-3 个数字。1=研究者，2=AI工程师，3=独立开发者，4=产品/创业者，5=投资/战略，6=政策/合规，7=安全团队，8=普通用户\n"
+    "- market_stage：只输出数字。1=研究探索，2=Demo/实验，3=早期产品，4=工程化采用，5=规模化商业化，6=成熟基础设施\n"
+    "- confidence：只输出 1-5。1=低，2=偏低，3=中，4=高，5=很高\n"
+    "- entities：抽取公司、模型、框架、论文、数据集、Benchmark、产品等实体，最多 8 个\n"
+    "- cluster_hint：用一个短语概括可聚类的信号主题（≤30字）\n"
+    "- watch_keywords：后续追踪该信号的关键词，最多 8 个\n"
+    "- prediction：如果该信号成立，未来 7/30/90 天应看到什么后续证据（≤80字）\n"
+    "- disconfirming_evidence：什么后续现象会削弱或证伪该信号（≤80字）\n"
     "所有输出必须使用简体中文。"
 )
 
@@ -83,7 +135,8 @@ def _build_user_prompt(item: dict, original: dict) -> str:
         "步骤：\n"
         "1. 首先调用 read_webpage 工具读取原文全文（传入上方原文链接）。\n"
         "2. 仔细阅读完整内容后，再输出 JSON 格式的分析结果。\n"
-        "3. content_source 字段必须如实填写：使用了全文填「full_text」，仅摘要则填「summary_only」。"
+        "3. content_source 字段必须如实填写：使用了全文填「full_text」，仅摘要则填「summary_only」。\n"
+        "【强制】如果 read_webpage 返回「网页读取失败」，必须重试一次；重试仍失败则必须填写「summary_only」。"
     )
 
 
@@ -224,6 +277,35 @@ async def _enrich_all(
                     importance = enriched.get("importance_score")
                     if isinstance(importance, int) and 1 <= importance <= 5:
                         merged["importance_score"] = importance
+                    content_source = str(enriched.get("content_source", "")).strip()
+                    if content_source in {"full_text", "summary_only"}:
+                        merged["content_source"] = content_source
+                    for key, upper in (
+                        ("signal_type", 12),
+                        ("evidence_type", 12),
+                        ("evidence_strength", 5),
+                        ("novelty_score", 5),
+                        ("impact_horizon", 5),
+                        ("market_stage", 6),
+                        ("confidence", 5),
+                    ):
+                        value = enriched.get(key)
+                        if isinstance(value, int) and 1 <= value <= upper:
+                            merged[key] = value
+                    audience = enriched.get("audience", [])
+                    if isinstance(audience, list):
+                        merged["audience"] = [
+                            value for value in audience
+                            if isinstance(value, int) and 1 <= value <= 8
+                        ][:3]
+                    for key in ("entities", "watch_keywords"):
+                        values = enriched.get(key, [])
+                        if isinstance(values, list):
+                            merged[key] = [str(value).strip() for value in values if str(value).strip()][:8]
+                    for key in ("cluster_hint", "prediction", "disconfirming_evidence"):
+                        value = str(enriched.get(key, "")).strip()
+                        if value:
+                            merged[key] = value
                     merged["enriched"] = True
                     analyses[eid] = merged
                     stats["succeeded"] += 1

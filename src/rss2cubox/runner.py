@@ -206,7 +206,7 @@ def main() -> None:
     for item in candidates_for_run[: max(1, MAX_ITEMS_PER_RUN)]:
         eid = str(item.get("eid", "")).strip()
         analysis = analyses.get(eid)
-        if not analysis:
+        if not sync_pipeline.has_signal_analysis(analysis):
             continue
         article = sync_pipeline.build_processed_article(
             item=item,

@@ -28,9 +28,41 @@ CREATE TABLE IF NOT EXISTS articles (
     reason              TEXT,
     actionable          TEXT,
     hidden_signal       TEXT,
+    content_source      TEXT,
+    signal_type         SMALLINT,
+    evidence_type       SMALLINT,
+    evidence_strength   SMALLINT,
+    novelty_score       SMALLINT,
+    impact_horizon      SMALLINT,
+    audience            JSONB DEFAULT '[]',
+    market_stage        SMALLINT,
+    confidence          SMALLINT,
+    entities            JSONB DEFAULT '[]',
+    cluster_hint        TEXT,
+    watch_keywords      JSONB DEFAULT '[]',
+    prediction          TEXT,
+    disconfirming_evidence TEXT,
+    enrich_meta         JSONB DEFAULT '{}',
     created_at          TIMESTAMP DEFAULT NOW(),
     updated_at          TIMESTAMP DEFAULT NOW()
 );
+
+ALTER TABLE articles
+    ADD COLUMN IF NOT EXISTS content_source TEXT,
+    ADD COLUMN IF NOT EXISTS signal_type SMALLINT,
+    ADD COLUMN IF NOT EXISTS evidence_type SMALLINT,
+    ADD COLUMN IF NOT EXISTS evidence_strength SMALLINT,
+    ADD COLUMN IF NOT EXISTS novelty_score SMALLINT,
+    ADD COLUMN IF NOT EXISTS impact_horizon SMALLINT,
+    ADD COLUMN IF NOT EXISTS audience JSONB DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS market_stage SMALLINT,
+    ADD COLUMN IF NOT EXISTS confidence SMALLINT,
+    ADD COLUMN IF NOT EXISTS entities JSONB DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS cluster_hint TEXT,
+    ADD COLUMN IF NOT EXISTS watch_keywords JSONB DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS prediction TEXT,
+    ADD COLUMN IF NOT EXISTS disconfirming_evidence TEXT,
+    ADD COLUMN IF NOT EXISTS enrich_meta JSONB DEFAULT '{}';
 
 -- Optimized index for cursor-based pagination (covering index)
 CREATE INDEX IF NOT EXISTS idx_articles_pub_time_cover ON articles(publish_time DESC);
@@ -40,6 +72,13 @@ CREATE INDEX IF NOT EXISTS idx_articles_source_type ON articles(source_type);
 CREATE INDEX IF NOT EXISTS idx_articles_importance_score ON articles(importance_score);
 -- GIN index for JSONB tags search
 CREATE INDEX IF NOT EXISTS idx_articles_tags ON articles USING GIN (tags);
+CREATE INDEX IF NOT EXISTS idx_articles_signal_type ON articles(signal_type);
+CREATE INDEX IF NOT EXISTS idx_articles_evidence_type ON articles(evidence_type);
+CREATE INDEX IF NOT EXISTS idx_articles_evidence_strength ON articles(evidence_strength);
+CREATE INDEX IF NOT EXISTS idx_articles_novelty_score ON articles(novelty_score);
+CREATE INDEX IF NOT EXISTS idx_articles_cluster_hint ON articles(cluster_hint);
+CREATE INDEX IF NOT EXISTS idx_articles_entities ON articles USING GIN (entities);
+CREATE INDEX IF NOT EXISTS idx_articles_watch_keywords ON articles USING GIN (watch_keywords);
 """
 
 
@@ -84,11 +123,19 @@ def save_articles(
                         id, source_type, source_feed_id, source_feed_name,
                         source_article_id, title, url, pic_url, description,
                         publish_time, tags, importance_score, reason, actionable, hidden_signal,
+                        content_source, signal_type, evidence_type, evidence_strength,
+                        novelty_score, impact_horizon, audience, market_stage, confidence,
+                        entities, cluster_hint, watch_keywords, prediction, disconfirming_evidence,
+                        enrich_meta,
                         created_at, updated_at
                     ) VALUES (
                         %(id)s, %(source_type)s, %(source_feed_id)s, %(source_feed_name)s,
                         %(source_article_id)s, %(title)s, %(url)s, %(pic_url)s, %(description)s,
                         %(publish_time)s, %(tags)s, %(importance_score)s, %(reason)s, %(actionable)s, %(hidden_signal)s,
+                        %(content_source)s, %(signal_type)s, %(evidence_type)s, %(evidence_strength)s,
+                        %(novelty_score)s, %(impact_horizon)s, %(audience)s, %(market_stage)s, %(confidence)s,
+                        %(entities)s, %(cluster_hint)s, %(watch_keywords)s, %(prediction)s, %(disconfirming_evidence)s,
+                        %(enrich_meta)s,
                         NOW(), NOW()
                     )
                     ON CONFLICT (id) DO UPDATE SET
@@ -101,6 +148,21 @@ def save_articles(
                         reason = EXCLUDED.reason,
                         actionable = EXCLUDED.actionable,
                         hidden_signal = EXCLUDED.hidden_signal,
+                        content_source = EXCLUDED.content_source,
+                        signal_type = EXCLUDED.signal_type,
+                        evidence_type = EXCLUDED.evidence_type,
+                        evidence_strength = EXCLUDED.evidence_strength,
+                        novelty_score = EXCLUDED.novelty_score,
+                        impact_horizon = EXCLUDED.impact_horizon,
+                        audience = EXCLUDED.audience,
+                        market_stage = EXCLUDED.market_stage,
+                        confidence = EXCLUDED.confidence,
+                        entities = EXCLUDED.entities,
+                        cluster_hint = EXCLUDED.cluster_hint,
+                        watch_keywords = EXCLUDED.watch_keywords,
+                        prediction = EXCLUDED.prediction,
+                        disconfirming_evidence = EXCLUDED.disconfirming_evidence,
+                        enrich_meta = EXCLUDED.enrich_meta,
                         updated_at = NOW()
                     """,
                     {
@@ -119,6 +181,21 @@ def save_articles(
                         "reason": article.get("reason", ""),
                         "actionable": article.get("actionable", ""),
                         "hidden_signal": article.get("hidden_signal", ""),
+                        "content_source": _optional_text(article.get("content_source")),
+                        "signal_type": _bounded_int(article.get("signal_type"), 1, 12),
+                        "evidence_type": _bounded_int(article.get("evidence_type"), 1, 12),
+                        "evidence_strength": _bounded_int(article.get("evidence_strength"), 1, 5),
+                        "novelty_score": _bounded_int(article.get("novelty_score"), 1, 5),
+                        "impact_horizon": _bounded_int(article.get("impact_horizon"), 1, 5),
+                        "audience": json.dumps(_bounded_int_list(article.get("audience"), 1, 8, 3), ensure_ascii=False),
+                        "market_stage": _bounded_int(article.get("market_stage"), 1, 6),
+                        "confidence": _bounded_int(article.get("confidence"), 1, 5),
+                        "entities": json.dumps(_string_list(article.get("entities"), 8), ensure_ascii=False),
+                        "cluster_hint": _optional_text(article.get("cluster_hint")),
+                        "watch_keywords": json.dumps(_string_list(article.get("watch_keywords"), 8), ensure_ascii=False),
+                        "prediction": _optional_text(article.get("prediction")),
+                        "disconfirming_evidence": _optional_text(article.get("disconfirming_evidence")),
+                        "enrich_meta": json.dumps(article.get("enrich_meta") if isinstance(article.get("enrich_meta"), dict) else {}, ensure_ascii=False),
                     },
                 )
 
@@ -159,6 +236,10 @@ def get_articles(
                 id, source_type, source_feed_id, source_feed_name,
                 source_article_id, title, url, pic_url, description,
                 publish_time, tags, importance_score, reason, actionable, hidden_signal,
+                content_source, signal_type, evidence_type, evidence_strength,
+                novelty_score, impact_horizon, audience, market_stage, confidence,
+                entities, cluster_hint, watch_keywords, prediction, disconfirming_evidence,
+                enrich_meta,
                 created_at, updated_at
             FROM articles
             ORDER BY publish_time DESC
@@ -202,6 +283,10 @@ def get_articles_cursor(
                     id, source_type, source_feed_id, source_feed_name,
                     source_article_id, title, url, pic_url, description,
                     publish_time, tags, importance_score, reason, actionable, hidden_signal,
+                    content_source, signal_type, evidence_type, evidence_strength,
+                    novelty_score, impact_horizon, audience, market_stage, confidence,
+                    entities, cluster_hint, watch_keywords, prediction, disconfirming_evidence,
+                    enrich_meta,
                     created_at, updated_at
                 FROM articles
                 WHERE publish_time IS NOT NULL AND publish_time < %s::timestamp
@@ -217,6 +302,10 @@ def get_articles_cursor(
                     id, source_type, source_feed_id, source_feed_name,
                     source_article_id, title, url, pic_url, description,
                     publish_time, tags, importance_score, reason, actionable, hidden_signal,
+                    content_source, signal_type, evidence_type, evidence_strength,
+                    novelty_score, impact_horizon, audience, market_stage, confidence,
+                    entities, cluster_hint, watch_keywords, prediction, disconfirming_evidence,
+                    enrich_meta,
                     created_at, updated_at
                 FROM articles
                 WHERE publish_time IS NOT NULL
@@ -264,6 +353,10 @@ def get_articles_by_date(
                 id, source_type, source_feed_id, source_feed_name,
                 source_article_id, title, url, pic_url, description,
                 publish_time, tags, importance_score, reason, actionable, hidden_signal,
+                content_source, signal_type, evidence_type, evidence_strength,
+                novelty_score, impact_horizon, audience, market_stage, confidence,
+                entities, cluster_hint, watch_keywords, prediction, disconfirming_evidence,
+                enrich_meta,
                 created_at, updated_at
             FROM articles
             WHERE publish_time >= %s AND publish_time < %s::date + INTERVAL '1 day'
@@ -279,6 +372,26 @@ def get_articles_by_date(
 
 def _row_to_article(row: tuple) -> dict[str, Any]:
     """Convert a database row to an article dictionary."""
+    extension_defaults = (
+        None,  # content_source
+        None,  # signal_type
+        None,  # evidence_type
+        None,  # evidence_strength
+        None,  # novelty_score
+        None,  # impact_horizon
+        [],  # audience
+        None,  # market_stage
+        None,  # confidence
+        [],  # entities
+        None,  # cluster_hint
+        [],  # watch_keywords
+        None,  # prediction
+        None,  # disconfirming_evidence
+        {},  # enrich_meta
+    )
+    if len(row) == 17:
+        row = row[:15] + extension_defaults + row[15:]
+
     (
         id,
         source_type,
@@ -295,11 +408,26 @@ def _row_to_article(row: tuple) -> dict[str, Any]:
         reason,
         actionable,
         hidden_signal,
+        content_source,
+        signal_type,
+        evidence_type,
+        evidence_strength,
+        novelty_score,
+        impact_horizon,
+        audience,
+        market_stage,
+        confidence,
+        entities,
+        cluster_hint,
+        watch_keywords,
+        prediction,
+        disconfirming_evidence,
+        enrich_meta,
         created_at,
         updated_at,
     ) = row
 
-    return {
+    article = {
         "id": id,
         "source_type": source_type,
         "source_feed_id": source_feed_id,
@@ -318,6 +446,58 @@ def _row_to_article(row: tuple) -> dict[str, Any]:
         "created_at": created_at.isoformat() if created_at else None,
         "updated_at": updated_at.isoformat() if updated_at else None,
     }
+    for key, value in {
+        "content_source": content_source,
+        "signal_type": signal_type,
+        "evidence_type": evidence_type,
+        "evidence_strength": evidence_strength,
+        "novelty_score": novelty_score,
+        "impact_horizon": impact_horizon,
+        "audience": _parse_json_value(audience, []),
+        "market_stage": market_stage,
+        "confidence": confidence,
+        "entities": _parse_json_value(entities, []),
+        "cluster_hint": cluster_hint,
+        "watch_keywords": _parse_json_value(watch_keywords, []),
+        "prediction": prediction,
+        "disconfirming_evidence": disconfirming_evidence,
+        "enrich_meta": _parse_json_value(enrich_meta, {}),
+    }.items():
+        if value not in (None, "", [], {}):
+            article[key] = value
+    return article
+
+
+def _optional_text(value: Any) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
+def _bounded_int(value: Any, lower: int, upper: int) -> int | None:
+    return value if isinstance(value, int) and lower <= value <= upper else None
+
+
+def _bounded_int_list(value: Any, lower: int, upper: int, limit: int) -> list[int]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, int) and lower <= item <= upper][:limit]
+
+
+def _string_list(value: Any, limit: int) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [str(item).strip() for item in value if str(item).strip()][:limit]
+
+
+def _parse_json_value(value: Any, fallback: Any) -> Any:
+    if value is None:
+        return fallback
+    if isinstance(value, str):
+        try:
+            return json.loads(value)
+        except json.JSONDecodeError:
+            return fallback
+    return value
 
 
 def _parse_publish_time(value: Any) -> datetime | None:

@@ -351,7 +351,7 @@ def build_processed_article(
         tags = []
     publish_time = str(item.get("publish_time", "")).strip()
 
-    return {
+    article = {
         "id": eid,
         "source_type": source_type,
         "source_feed_id": source_feed_id,
@@ -372,6 +372,50 @@ def build_processed_article(
         "created_at": now_iso,
         "updated_at": now_iso,
     }
+
+    content_source = str(analysis.get("content_source", "")).strip()
+    if content_source in {"full_text", "summary_only"}:
+        article["content_source"] = content_source
+
+    for key, upper in (
+        ("signal_type", 12),
+        ("evidence_type", 12),
+        ("evidence_strength", 5),
+        ("novelty_score", 5),
+        ("impact_horizon", 5),
+        ("market_stage", 6),
+        ("confidence", 5),
+    ):
+        value = analysis.get(key)
+        if isinstance(value, int) and 1 <= value <= upper:
+            article[key] = value
+
+    audience = analysis.get("audience", [])
+    if isinstance(audience, list):
+        article["audience"] = [
+            value for value in audience
+            if isinstance(value, int) and 1 <= value <= 8
+        ][:3]
+
+    for key in ("entities", "watch_keywords"):
+        values = analysis.get(key, [])
+        if isinstance(values, list):
+            article[key] = [str(value).strip() for value in values if str(value).strip()][:8]
+
+    for key in ("cluster_hint", "prediction", "disconfirming_evidence"):
+        value = str(analysis.get(key, "")).strip()
+        if value:
+            article[key] = value
+
+    enrich_meta = analysis.get("enrich_meta")
+    article["enrich_meta"] = enrich_meta if isinstance(enrich_meta, dict) else {}
+    return article
+
+
+def has_signal_analysis(analysis: dict[str, Any] | None) -> bool:
+    if not analysis:
+        return False
+    return any(str(analysis.get(key, "")).strip() for key in ("core_event", "reason", "hidden_signal", "actionable"))
 
 
 def collect_pending_articles(processed_state: dict[str, Any]) -> list[dict[str, Any]]:
