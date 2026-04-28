@@ -90,7 +90,8 @@ function buildMetrics(rows: Row[], localStats?: { total: number; analyzed: numbe
     }
   }
 
-  const trendData = Array.from(dayMap.values())
+  // 优先使用本地数据库的 trendData（准确），否则从 rows 计算
+  const trendData = localStats?.trendData ?? Array.from(dayMap.values())
 
   // 计算每日数据量（用于右侧分组显示）
   const dailyCounts: Record<string, number> = {}

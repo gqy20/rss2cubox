@@ -79,6 +79,7 @@ export type LocalStats = {
   analyzed: number
   today: number
   sources: number
+  trendData?: Array<{ name: string; total: number; analyzed: number }>
 }
 
 export async function loadLocalStats(): Promise<LocalStats | null> {

@@ -42,11 +42,29 @@ export async function GET() {
       `)
       const sources = parseInt(sourcesResult.rows[0]?.count || '0', 10)
 
+      // Calculate trend data for last 7 days (using Asia/Shanghai timezone)
+      const trendResult = await client.query(`
+        SELECT
+          DATE(publish_time AT TIME ZONE 'Asia/Shanghai') as day,
+          COUNT(*) as total,
+          SUM(CASE WHEN (description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != '') THEN 1 ELSE 0 END) as analyzed
+        FROM articles
+        WHERE publish_time >= (CURRENT_DATE AT TIME ZONE 'Asia/Shanghai' - INTERVAL '6 days')
+        GROUP BY DATE(publish_time AT TIME ZONE 'Asia/Shanghai')
+        ORDER BY day ASC
+      `)
+      const trendData = trendResult.rows.map((row) => ({
+        name: new Date(row.day).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai', month: '2-digit', day: '2-digit' }),
+        total: parseInt(row.total, 10),
+        analyzed: parseInt(row.analyzed, 10),
+      }))
+
       return NextResponse.json({
         total,
         analyzed,
         today,
         sources,
+        trendData,
       })
     } finally {
       client.release()
