@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS articles (
     description         TEXT,
     publish_time        TIMESTAMP,
     tags                JSONB DEFAULT '[]',
+    importance_score    INTEGER DEFAULT 3,
     reason              TEXT,
     actionable          TEXT,
     hidden_signal       TEXT,
@@ -33,6 +34,7 @@ CREATE TABLE IF NOT EXISTS articles (
 
 CREATE INDEX IF NOT EXISTS idx_articles_publish_time ON articles(publish_time DESC);
 CREATE INDEX IF NOT EXISTS idx_articles_source_type ON articles(source_type);
+CREATE INDEX IF NOT EXISTS idx_articles_importance_score ON articles(importance_score);
 """
 
 
@@ -68,17 +70,20 @@ def save_articles(
 
             # Insert each article
             for article in articles:
+                importance = article.get("importance_score")
+                if not isinstance(importance, int) or not (1 <= importance <= 5):
+                    importance = 3
                 cur.execute(
                     """
                     INSERT INTO articles (
                         id, source_type, source_feed_id, source_feed_name,
                         source_article_id, title, url, pic_url, description,
-                        publish_time, tags, reason, actionable, hidden_signal,
+                        publish_time, tags, importance_score, reason, actionable, hidden_signal,
                         created_at, updated_at
                     ) VALUES (
                         %(id)s, %(source_type)s, %(source_feed_id)s, %(source_feed_name)s,
                         %(source_article_id)s, %(title)s, %(url)s, %(pic_url)s, %(description)s,
-                        %(publish_time)s, %(tags)s, %(reason)s, %(actionable)s, %(hidden_signal)s,
+                        %(publish_time)s, %(tags)s, %(importance_score)s, %(reason)s, %(actionable)s, %(hidden_signal)s,
                         NOW(), NOW()
                     )
                     ON CONFLICT (id) DO UPDATE SET
@@ -87,6 +92,7 @@ def save_articles(
                         pic_url = EXCLUDED.pic_url,
                         description = EXCLUDED.description,
                         tags = EXCLUDED.tags,
+                        importance_score = EXCLUDED.importance_score,
                         reason = EXCLUDED.reason,
                         actionable = EXCLUDED.actionable,
                         hidden_signal = EXCLUDED.hidden_signal,
@@ -104,6 +110,7 @@ def save_articles(
                         "description": article.get("description", ""),
                         "publish_time": _parse_publish_time(article.get("publish_time")),
                         "tags": json.dumps(article.get("tags", []), ensure_ascii=False),
+                        "importance_score": importance,
                         "reason": article.get("reason", ""),
                         "actionable": article.get("actionable", ""),
                         "hidden_signal": article.get("hidden_signal", ""),
@@ -146,7 +153,7 @@ def get_articles(
             SELECT
                 id, source_type, source_feed_id, source_feed_name,
                 source_article_id, title, url, pic_url, description,
-                publish_time, tags, reason, actionable, hidden_signal,
+                publish_time, tags, importance_score, reason, actionable, hidden_signal,
                 created_at, updated_at
             FROM articles
             ORDER BY publish_time DESC
@@ -192,7 +199,7 @@ def get_articles_by_date(
             SELECT
                 id, source_type, source_feed_id, source_feed_name,
                 source_article_id, title, url, pic_url, description,
-                publish_time, tags, reason, actionable, hidden_signal,
+                publish_time, tags, importance_score, reason, actionable, hidden_signal,
                 created_at, updated_at
             FROM articles
             WHERE publish_time >= %s AND publish_time < %s::date + INTERVAL '1 day'
@@ -220,6 +227,7 @@ def _row_to_article(row: tuple) -> dict[str, Any]:
         description,
         publish_time,
         tags,
+        importance_score,
         reason,
         actionable,
         hidden_signal,
@@ -239,6 +247,7 @@ def _row_to_article(row: tuple) -> dict[str, Any]:
         "description": description,
         "publish_time": publish_time.isoformat() if publish_time else None,
         "tags": json.loads(tags) if isinstance(tags, str) else tags,
+        "importance_score": importance_score if isinstance(importance_score, int) else 3,
         "reason": reason,
         "actionable": actionable,
         "hidden_signal": hidden_signal,

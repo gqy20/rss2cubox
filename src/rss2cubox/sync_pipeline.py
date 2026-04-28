@@ -321,6 +321,7 @@ def build_processed_article(
         "description": description,
         "publish_time": publish_time,
         "tags": tags,
+        "importance_score": analysis.get("importance_score", 3),
         "reason": str(analysis.get("reason", "")).strip(),
         "actionable": str(analysis.get("actionable", "")).strip(),
         "hidden_signal": str(analysis.get("hidden_signal", "")).strip(),

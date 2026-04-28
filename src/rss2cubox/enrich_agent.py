@@ -43,8 +43,9 @@ ENRICH_OUTPUT_SCHEMA = {
         "hidden_signal": {"type": "string", "maxLength": 200},
         "actionable": {"type": "string", "maxLength": 100},
         "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 5},
+        "importance_score": {"type": "integer", "minimum": 1, "maximum": 5},
     },
-    "required": ["core_event", "reason", "hidden_signal", "actionable", "tags"],
+    "required": ["core_event", "reason", "hidden_signal", "actionable", "tags", "importance_score"],
 }
 
 
@@ -59,6 +60,7 @@ SYSTEM_PROMPT = (
     "- hidden_signal：这意味着什么？背后的范式转移、行业冲击或深层技术含义（≤100字）\n"
     "- actionable：工程师/独立开发者应如何行动？（≤60字）\n"
     "- tags：输出 1-3 个精准标签，必须是字符串数组\n"
+    "- importance_score：文章重要程度，1-5 分（1=一般资讯，2=值得关注，3=重要，4=非常重要，5=重大突破/必读）\n"
     "所有输出必须使用简体中文。如果读取网页失败，请基于已有标题和摘要尽力输出。"
 )
 
@@ -211,6 +213,9 @@ async def _enrich_all(
                     tags = enriched.get("tags", [])
                     if isinstance(tags, list):
                         merged["tags"] = [str(tag).strip() for tag in tags if str(tag).strip()]
+                    importance = enriched.get("importance_score")
+                    if isinstance(importance, int) and 1 <= importance <= 5:
+                        merged["importance_score"] = importance
                     merged["enriched"] = True
                     analyses[eid] = merged
                     stats["succeeded"] += 1
