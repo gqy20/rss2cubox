@@ -28,15 +28,16 @@ class TestGlobalAgentOutputFormat:
 
     def test_uses_query_output_format(self) -> None:
         """Verify query() + output_format is used for JSON Schema validation."""
-        from rss2cubox import global_agent
+        from rss2cubox import agent_sdk_runner, global_agent
         import inspect
 
-        source = inspect.getsource(global_agent._run_agent)
-        # 新方案：使用 query() + output_format + ResultMessage.structured_output
-        assert "query" in source
-        assert "output_format" in source
-        assert "structured_output" in source
-        assert "ResultMessage" in source
+        global_source = inspect.getsource(global_agent._run_agent)
+        runner_source = inspect.getsource(agent_sdk_runner.run_json_agent)
+        assert "run_json_agent" in global_source
+        assert "query" in runner_source
+        assert "output_format" in runner_source
+        assert "structured_output" in runner_source
+        assert "ResultMessage" in runner_source
 
 
 class TestGlobalAgentTools:

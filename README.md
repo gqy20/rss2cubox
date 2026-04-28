@@ -84,10 +84,23 @@ chmod +x scripts/run_local_sync.sh
 scripts/run_local_sync.sh
 ```
 
-crontab 示例：
+安装到系统 crontab：
+
+```bash
+chmod +x scripts/install_local_cron.sh
+scripts/install_local_cron.sh
+```
+
+默认会安装为每 3 小时运行一次：
 
 ```cron
 0 */3 * * * /home/qy113/workspace/project/2604/rss2cubox/scripts/run_local_sync.sh
+```
+
+可通过环境变量调整频率：
+
+```bash
+RSS2CUBOX_CRON_SCHEDULE="0 8,20 * * *" scripts/install_local_cron.sh
 ```
 
 脚本会使用 `flock` 防止并发重入，并写入：
@@ -95,6 +108,24 @@ crontab 示例：
 ```text
 logs/cron/YYYY-MM-DD/HH-MM-SS.log
 logs/runs/YYYY-MM-DD/HH-MM-SS.jsonl
+```
+
+每次 cron 触发会通过同一个执行脚本依次运行：
+
+```text
+RSS 同步 / enrich / global_agent：每次触发都运行
+signal_cluster_agent：默认每 24 小时运行一次
+trend_prediction_agent：默认每 168 小时运行一次
+prediction_review_agent：默认每 24 小时运行一次
+```
+
+预测闭环仍在同一个 `run_local_sync.sh` 中执行，但内部用本地 marker 控制各阶段频率，避免 cron 每 3 小时触发时重复生成预测。可通过环境变量调整：
+
+```bash
+PREDICTION_CLUSTER_INTERVAL_HOURS=24
+PREDICTION_GENERATE_INTERVAL_HOURS=168
+PREDICTION_REVIEW_INTERVAL_HOURS=24
+RSS2CUBOX_FORCE_PREDICTION_LOOP=true
 ```
 
 ## 5) 数据文件职责

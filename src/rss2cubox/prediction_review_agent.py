@@ -1,128 +1,87 @@
-"""Rule-based Prediction Review Agent."""
+"""Claude Agent SDK powered Prediction Review Agent."""
 from __future__ import annotations
 
+import json
+import os
+from functools import partial
 from typing import Any
+
+import anyio
+
+from rss2cubox.agent_sdk_runner import run_json_agent
+
+
+PREDICTION_REVIEW_OUTPUT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "prediction_id": {"type": "integer"},
+        "score": {"type": "integer", "minimum": 1, "maximum": 5},
+        "hit_level": {"type": "string", "enum": ["miss", "weak", "partial", "strong", "exact"]},
+        "supporting_articles": {"type": "array", "items": {"type": "string"}},
+        "contradicting_articles": {"type": "array", "items": {"type": "string"}},
+        "actual_observation": {"type": "string"},
+        "why_score": {"type": "string"},
+        "improvement_advice": {"type": "string"},
+        "review_metrics": {"type": "object"},
+    },
+    "required": [
+        "prediction_id", "score", "hit_level", "supporting_articles",
+        "contradicting_articles", "actual_observation", "why_score",
+        "improvement_advice", "review_metrics",
+    ],
+}
+
+
+SYSTEM_PROMPT = (
+    "你是 Prediction Review Agent，负责在预测窗口结束后评估趋势预测是否命中。"
+    "必须只使用输入文章作为支持或反证证据，不得臆造 article_id。"
+    "评分标准：1=未命中，2=弱命中，3=部分命中，4=强命中，5=精确命中。"
+    "输出必须符合 JSON Schema。"
+)
 
 
 def run_prediction_review_agent(prediction: dict[str, Any], articles: list[dict[str, Any]]) -> dict[str, Any]:
-    expected = prediction.get("expected_evidence") if isinstance(prediction.get("expected_evidence"), dict) else {}
-    minimum_support = int(expected.get("minimum_support_count") or 2)
-    required_source_count = int(expected.get("required_source_count") or 2)
-    required_types = set(expected.get("required_evidence_types") or [])
-    keywords = [str(value).lower() for value in prediction.get("watch_keywords", []) if str(value).strip()]
-
-    supporting: list[dict[str, Any]] = []
-    contradicting: list[dict[str, Any]] = []
-    for article in articles:
-        if _matches(article, keywords):
-            supporting.append(article)
-        elif _looks_contradicting(article, keywords):
-            contradicting.append(article)
-
-    source_names = {str(item.get("source_feed_name") or item.get("source") or "").strip() for item in supporting}
-    source_names.discard("")
-    evidence_values = [item.get("evidence_strength") for item in supporting if isinstance(item.get("evidence_strength"), (int, float))]
-    avg_evidence = round(sum(evidence_values) / len(evidence_values), 2) if evidence_values else 0
-    required_type_hits = sum(1 for item in supporting if item.get("evidence_type") in required_types)
-
-    support_count = len(supporting)
-    source_count = len(source_names)
-    score = _score(
-        support_count=support_count,
-        minimum_support=minimum_support,
-        source_count=source_count,
-        required_source_count=required_source_count,
-        avg_evidence=avg_evidence,
-        required_type_hits=required_type_hits,
-        contradiction_count=len(contradicting),
-    )
-    hit_level = _hit_level(score)
-
-    return {
-        "prediction_id": prediction.get("id"),
-        "score": score,
-        "hit_level": hit_level,
-        "supporting_articles": [item["id"] for item in supporting if item.get("id")],
-        "contradicting_articles": [item["id"] for item in contradicting if item.get("id")],
-        "actual_observation": _observation(support_count, source_count, avg_evidence),
-        "why_score": _why_score(score, support_count, minimum_support, source_count, required_source_count),
-        "improvement_advice": _improvement(score),
-        "review_metrics": {
-            "keyword_hits": support_count,
-            "support_count": support_count,
-            "source_count": source_count,
-            "avg_evidence_strength": avg_evidence,
-            "required_type_hits": required_type_hits,
-            "contradiction_count": len(contradicting),
+    prompt = json.dumps(
+        {
+            "prediction": prediction,
+            "candidate_articles": articles,
+            "instructions": [
+                "supporting_articles 和 contradicting_articles 只能填输入文章 id。",
+                "review_metrics 至少包含 support_count、source_count、avg_evidence_strength、contradiction_count。",
+                "给出 why_score 和 improvement_advice，便于下一轮预测改进。",
+            ],
         },
-    }
+        ensure_ascii=False,
+    )
+    payload = anyio.run(partial(
+        run_json_agent,
+        prompt=prompt,
+        system_prompt=SYSTEM_PROMPT,
+        schema=PREDICTION_REVIEW_OUTPUT_SCHEMA,
+        max_turns=20,
+        max_budget_usd=_budget("PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD", 10.0),
+    ))
+    return _validate_payload(payload, prediction, {str(article["id"]) for article in articles if article.get("id")})
 
 
-def _matches(article: dict[str, Any], keywords: list[str]) -> bool:
-    if not keywords:
-        return True
-    text = " ".join(
-        str(article.get(key) or "")
-        for key in ("title", "description", "hidden_signal", "reason", "actionable", "cluster_hint")
-    ).lower()
-    return any(keyword in text for keyword in keywords)
+def _validate_payload(payload: dict[str, Any], prediction: dict[str, Any], article_ids: set[str]) -> dict[str, Any]:
+    if payload.get("prediction_id") != prediction.get("id"):
+        payload["prediction_id"] = prediction.get("id")
+    for key in ("supporting_articles", "contradicting_articles"):
+        values = payload.get(key)
+        if not isinstance(values, list):
+            raise RuntimeError("invalid_prediction_review_payload")
+        unknown = [value for value in values if str(value) not in article_ids]
+        if unknown:
+            raise RuntimeError("prediction_review_unknown_article")
+    return payload
 
 
-def _looks_contradicting(article: dict[str, Any], keywords: list[str]) -> bool:
-    if not _matches(article, keywords):
-        return False
-    text = " ".join(str(article.get(key) or "") for key in ("title", "hidden_signal", "reason")).lower()
-    return any(token in text for token in ("fails", "failed", "decline", "降温", "失败", "证伪", "放弃"))
-
-
-def _score(
-    *,
-    support_count: int,
-    minimum_support: int,
-    source_count: int,
-    required_source_count: int,
-    avg_evidence: float,
-    required_type_hits: int,
-    contradiction_count: int,
-) -> int:
-    if contradiction_count > support_count:
-        return 1
-    if support_count <= 0:
-        return 1
-    if support_count < minimum_support:
-        return 2
-    if source_count < required_source_count:
-        return 3
-    if avg_evidence >= 4 and required_type_hits >= minimum_support:
-        return 5
-    if avg_evidence >= 3:
-        return 4
-    return 3
-
-
-def _hit_level(score: int) -> str:
-    return {
-        1: "miss",
-        2: "weak",
-        3: "partial",
-        4: "strong",
-        5: "exact",
-    }[score]
-
-
-def _observation(support_count: int, source_count: int, avg_evidence: float) -> str:
-    return f"目标窗口内找到 {support_count} 条支持证据，覆盖 {source_count} 个来源，平均证据强度 {avg_evidence}。"
-
-
-def _why_score(score: int, support_count: int, minimum_support: int, source_count: int, required_source_count: int) -> str:
-    if score <= 2:
-        return f"支持证据不足，找到 {support_count} 条，低于要求 {minimum_support} 条。"
-    if score == 3:
-        return f"方向有证据，但来源覆盖不足，找到 {source_count} 个来源，要求 {required_source_count} 个。"
-    return "预测方向获得多源证据支持，证据质量满足主要验证条件。"
-
-
-def _improvement(score: int) -> str:
-    if score >= 4:
-        return "下次可提高验证条件，要求更硬的官方、代码或产品证据。"
-    return "下次应收紧关键词和证据类型，避免把讨论热度误判为实质进展。"
+def _budget(name: str, default: float) -> float | None:
+    raw = os.getenv(name, str(default)).strip()
+    if not raw:
+        return None
+    try:
+        return float(raw)
+    except ValueError:
+        return default

@@ -34,16 +34,17 @@ class TestEnrichAgentOutputFormat:
 
     def test_uses_query_output_format(self) -> None:
         """Verify query() + output_format is used for JSON Schema validation."""
-        from rss2cubox import enrich_agent
+        from rss2cubox import agent_sdk_runner, enrich_agent
 
         # 验证函数使用 query() + output_format + structured_output
         import inspect
-        source = inspect.getsource(enrich_agent._enrich_one)
-        # 新方案：使用 query() + output_format + ResultMessage.structured_output
-        assert "query" in source
-        assert "output_format" in source
-        assert "structured_output" in source
-        assert "ResultMessage" in source
+        enrich_source = inspect.getsource(enrich_agent._enrich_one)
+        runner_source = inspect.getsource(agent_sdk_runner.run_json_agent)
+        assert "run_json_agent" in enrich_source
+        assert "query" in runner_source
+        assert "output_format" in runner_source
+        assert "structured_output" in runner_source
+        assert "ResultMessage" in runner_source
 
 
 class TestEnrichAgentTools:

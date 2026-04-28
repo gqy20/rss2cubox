@@ -22,6 +22,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
+from rss2cubox.agent_sdk_runner import run_json_agent
 from rss2cubox.webpage_reader import read_webpage_text
 
 # 加载 .env 文件（本地开发时 .env 优先级最高，覆盖系统环境变量）
@@ -168,13 +169,7 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     import anyio
 
     try:
-        from claude_agent_sdk import (  # type: ignore
-            ClaudeAgentOptions,
-            ResultMessage,
-            create_sdk_mcp_server,
-            query,
-            tool,
-        )
+        from claude_agent_sdk import create_sdk_mcp_server, tool  # type: ignore
     except ImportError:
         return None, "claude_agent_sdk_import_error"
 
@@ -212,29 +207,22 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     eid_short = item.get("eid", "")[:8]
     stderr_lines, stderr_logger = _make_stderr_logger(f"enrich_agent:{eid_short}")
 
-    options = ClaudeAgentOptions(
-        system_prompt=SYSTEM_PROMPT,
-        allowed_tools=allowed_tools,
-        mcp_servers={"enrich-tools": server},
-        permission_mode="acceptEdits",
-        max_turns=10,
-        max_budget_usd=ENRICH_MAX_BUDGET_USD,
-        cwd=Path.cwd(),
-        setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
-        stderr=stderr_logger,
-        output_format={"type": "json_schema", "schema": ENRICH_OUTPUT_SCHEMA},
-        # 显式传递 ANTHROPIC_API_KEY 使 .env 拥有最高优先级
-        env={k: v for k, v in os.environ.items() if k == "ANTHROPIC_API_KEY"},
-    )
-
     try:
-        async for message in query(prompt=_build_user_prompt(item, original), options=options):
-            if isinstance(message, ResultMessage):
-                if message.structured_output is not None:
-                    return message.structured_output, "ok"
-                if message.is_error:
-                    return None, message.subtype or "error"
-                return None, message.subtype or "no_structured_output"
+        structured_output = await run_json_agent(
+            prompt=_build_user_prompt(item, original),
+            system_prompt=SYSTEM_PROMPT,
+            schema=ENRICH_OUTPUT_SCHEMA,
+            allowed_tools=allowed_tools,
+            mcp_servers={"enrich-tools": server},
+            max_turns=10,
+            max_budget_usd=ENRICH_MAX_BUDGET_USD,
+            cwd=Path.cwd(),
+            setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
+            stderr=stderr_logger,
+            # 显式传递 ANTHROPIC_API_KEY 使 .env 拥有最高优先级
+            env={k: v for k, v in os.environ.items() if k == "ANTHROPIC_API_KEY"},
+        )
+        return structured_output, "ok"
     except Exception as e:
         if stderr_lines:
             print(f"[enrich_agent] eid={eid_short} error: {' | '.join(stderr_lines[-5:])}", flush=True)

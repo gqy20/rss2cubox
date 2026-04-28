@@ -18,6 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
+from rss2cubox.agent_sdk_runner import run_json_agent
 from rss2cubox.webpage_reader import read_webpage_text
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
@@ -137,13 +138,7 @@ async def _run_agent(
     import anyio
 
     try:
-        from claude_agent_sdk import (  # type: ignore
-            ClaudeAgentOptions,
-            ResultMessage,
-            create_sdk_mcp_server,
-            query,
-            tool,
-        )
+        from claude_agent_sdk import create_sdk_mcp_server, tool  # type: ignore
     except ImportError:
         print("[global_agent] claude-agent-sdk 未安装，跳过全局分析", flush=True)
         return None
@@ -220,30 +215,22 @@ async def _run_agent(
 
     stderr_lines, stderr_logger = _make_stderr_logger("global_agent")
 
-    options = ClaudeAgentOptions(
-        system_prompt=SYSTEM_PROMPT,
-        allowed_tools=allowed_tools,
-        mcp_servers={"insights-tools": server},
-        permission_mode="acceptEdits",
-        max_turns=100,
-        max_budget_usd=GLOBAL_AGENT_MAX_BUDGET_USD,
-        cwd=Path.cwd(),
-        setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
-        stderr=stderr_logger,
-        output_format={"type": "json_schema", "schema": GLOBAL_OUTPUT_SCHEMA},
-    )
-
     try:
-        async for message in query(prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)), options=options):
-            if isinstance(message, ResultMessage):
-                if message.structured_output is not None:
-                    result = _normalize_global_payload(message.structured_output)
-                    print("[global_agent] structured_output: ok", flush=True)
-                    return result
-                if message.is_error:
-                    print(f"[global_agent] error: {message.subtype or 'unknown'}", flush=True)
-                    return None
-                print(f"[global_agent] no_structured_output: {message.subtype or 'unknown'}", flush=True)
+        structured_output = await run_json_agent(
+            prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)),
+            system_prompt=SYSTEM_PROMPT,
+            schema=GLOBAL_OUTPUT_SCHEMA,
+            allowed_tools=allowed_tools,
+            mcp_servers={"insights-tools": server},
+            max_turns=100,
+            max_budget_usd=GLOBAL_AGENT_MAX_BUDGET_USD,
+            cwd=Path.cwd(),
+            setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
+            stderr=stderr_logger,
+        )
+        result = _normalize_global_payload(structured_output)
+        print("[global_agent] structured_output: ok", flush=True)
+        return result
     except Exception as e:
         if stderr_lines:
             print(f"[global_agent] error: {' | '.join(stderr_lines[-8:])}", flush=True)

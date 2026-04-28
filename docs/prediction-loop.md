@@ -140,13 +140,13 @@ CREATE TABLE IF NOT EXISTS signal_cluster_articles (
 );
 ```
 
-第一版可以用规则聚类：
+第一版由 Signal Cluster Agent 输出稳定聚类键，格式为：
 
 ```text
 cluster_key = normalized(signal_type + cluster_hint)
 ```
 
-后续再升级为：
+后续可在 Agent 判断之前增加候选召回：
 
 ```text
 embedding(title + hidden_signal + cluster_hint) + pgvector 相似度
@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS prediction_reviews (
 - cluster 摘要更新
 - cluster 状态更新：`new / warming / bursting / cooling / mature / invalid`
 
-第一版可以让系统先基于 `signal_type + cluster_hint` 粗聚类，再让 Agent 审核合并/拆分建议。
+当前实现直接由 Claude Agent SDK 基于 `signal_type + cluster_hint + entities + watch_keywords + hidden_signal` 进行归并判断，并输出稳定的 `cluster_key` 与文章链接关系；系统只负责校验引用是否来自输入数据。
 
 ### 2. Trend Prediction Agent
 
@@ -341,7 +341,7 @@ burst_delta
 
 ```text
 1. 读取最近 7/30 天已 enrich 文章
-2. 按 signal_type + cluster_hint 粗聚类
+2. 由 Signal Cluster Agent 基于结构化字段归并信号簇
 3. 写入或更新 signal_clusters
 4. 写入 signal_cluster_articles
 5. 计算 cluster 指标和状态
@@ -399,9 +399,9 @@ burst_delta
 2. signal_cluster_articles 表
 3. trend_predictions 表
 4. prediction_reviews 表
-5. 基于 signal_type + cluster_hint 的规则聚类
-6. 生成 3-5 条一周预测
-7. 一周后基于关键词和 cluster 文章评分
+5. Claude Agent SDK 信号聚类
+6. Claude Agent SDK 生成 3-5 条一周预测
+7. Claude Agent SDK 在一周后基于目标窗口证据评分
 ```
 
 等闭环跑通后，再升级：
@@ -413,15 +413,17 @@ burst_delta
 
 ## 当前实现状态
 
-第一版实现为规则 Agent，先保证闭环数据结构和可测试行为稳定。
+当前实现已经接入 Claude Agent SDK。三个预测闭环 Agent 都通过 `output_format` + JSON Schema 获取结构化结果。
+
+现阶段不做 embedding，也不保留规则版 fallback；如果 SDK 不可用、结构化输出无效或结果引用未知文章/信号簇，任务会直接失败，便于尽早暴露数据和提示词问题。
 
 代码入口：
 
 | Agent | 文件 | 当前职责 |
 |------|------|----------|
-| Signal Cluster Agent | `src/rss2cubox/signal_cluster_agent.py` | 基于 `signal_type + cluster_hint` 聚类文章，输出 clusters 和 article links |
-| Trend Prediction Agent | `src/rss2cubox/prediction_agent.py` | 基于活跃 cluster 生成未来 7 天可验证预测 |
-| Prediction Review Agent | `src/rss2cubox/prediction_review_agent.py` | 基于目标窗口文章、关键词和证据类型给预测评分 |
+| Signal Cluster Agent | `src/rss2cubox/signal_cluster_agent.py` | 使用 Claude Agent SDK 聚类文章，输出 clusters 和 article links |
+| Trend Prediction Agent | `src/rss2cubox/prediction_agent.py` | 使用 Claude Agent SDK 基于活跃 cluster 生成未来 7 天可验证预测 |
+| Prediction Review Agent | `src/rss2cubox/prediction_review_agent.py` | 使用 Claude Agent SDK 基于目标窗口文章和证据条件给预测评分 |
 
 本地数据库 schema 和保存函数位于：
 
@@ -439,7 +441,13 @@ save_trend_predictions()
 save_prediction_review()
 ```
 
-当前版本还没有引入 Agent SDK 审核，也没有使用 embedding。后续可以在保持函数输入输出契约不变的前提下，将规则判断替换为 LLM 审核或 pgvector 相似度聚类。
+共享 SDK 调用位于：
+
+```text
+src/rss2cubox/agent_sdk_runner.py
+```
+
+后续可以在保持函数输入输出契约不变的前提下，引入 pgvector 相似度聚类，但不应重新加入静默规则 fallback。
 
 ## 未来前端模块
 
