@@ -26,6 +26,9 @@ web/.env*
 playwright-report/
 test-results/
 
+# uv lock file
+uv.lock
+
 # node
 node_modules/
 *.tsbuildinfo
