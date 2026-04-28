@@ -42,6 +42,14 @@ from rss2cubox.metrics import (
 FEEDS_FILE = Path(os.getenv("FEEDS_FILE", "feeds.txt"))
 RSSHUB_INSTANCES_FILE = Path(os.getenv("RSSHUB_INSTANCES_FILE", "rsshub_instances.txt"))
 
+# 日志文件：logs/YYYY-MM-DD/HH-MM-SS.log
+_log_file: Any = None
+
+
+def _get_log_file_path() -> Path:
+    now = datetime.now()
+    return Path("logs") / now.strftime("%Y-%m-%d") / f"{now.strftime('%H-%M-%S')}.log"
+
 IC_API_URL = os.getenv("IC_API_URL", "").strip()
 IC_SOURCE_TYPE = os.getenv("IC_SOURCE_TYPE", "gqy").strip() or "gqy"
 KEYWORDS_INCLUDE = [k.strip() for k in os.getenv("KEYWORDS_INCLUDE", "").split(",") if k.strip()]
@@ -70,10 +78,20 @@ def log_event(level: str, event: str, **fields: Any) -> None:
         "event": event,
     }
     payload.update(fields)
-    print(json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str), flush=True)
+    line = json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+    print(line, flush=True)
+    if _log_file:
+        _log_file.write(line + "\n")
+        _log_file.flush()
 
 
 def main() -> None:
+    global _log_file
+
+    log_path = _get_log_file_path()
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    _log_file = open(log_path, "a", encoding="utf-8")
+
     feed_specs = feed_sources.load_feed_specs(FEEDS_FILE)
     rsshub_instances = feed_sources.load_rsshub_instances(RSSHUB_INSTANCES_FILE)
     rsshub_pool = RSSHubInstancePool(
@@ -246,6 +264,9 @@ def main() -> None:
     write_step_summary(stats, os.getenv("GITHUB_STEP_SUMMARY", "").strip())
     log_event("INFO", "run_summary", stage="summary", **stats)
     print(f"Done. Exported {len(article_records)} items. State size={len(processed)}", flush=True)
+    if _log_file:
+        _log_file.close()
+        _log_file = None
 
 
 if __name__ == "__main__":
