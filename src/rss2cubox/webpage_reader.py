@@ -169,6 +169,32 @@ def _fetch_via_jina(url: str, jina_reader_base: str, jina_max_chars: int) -> str
     return resp.text[:jina_max_chars]
 
 
+def _fetch_via_playwright(url: str, max_chars: int, timeout_seconds: int = 30) -> str:
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError as exc:
+        raise RuntimeError("playwright_not_installed") from exc
+
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"])
+        try:
+            context = browser.new_context()
+            page = context.new_page()
+            page.goto(url, wait_until="domcontentloaded", timeout=timeout_seconds * 1000)
+            # wait a bit for JS rendering
+            try:
+                page.wait_for_load_state("networkidle", timeout=10_000)
+            except Exception:
+                pass
+            text = page.evaluate("() => (document.body?.innerText || document.documentElement?.innerText || '').trim()")
+            if not text:
+                html = page.evaluate("() => document.body?.innerHTML || ''")
+                text = html_to_markdown(html)
+            return text[:max_chars]
+        finally:
+            browser.close()
+
+
 def read_webpage_text(
     url: str,
     *,
@@ -194,7 +220,14 @@ def read_webpage_text(
             except Exception as jina_exc:
                 return False, f"wechat_fetch_failed:{exc}; jina_fetch_failed:{jina_exc}", "fallback_failed"
 
+    # 非微信文章：优先 Jina Reader，失败后降级到 Playwright 真实浏览器渲染
     try:
         return True, _fetch_via_jina(target_url, jina_reader_base, jina_max_chars), "jina"
-    except Exception as exc:
-        return False, f"jina_fetch_failed:{exc}", "jina"
+    except Exception as jina_exc:
+        try:
+            text = _fetch_via_playwright(target_url, jina_max_chars)
+            if text.strip():
+                return True, text, "playwright_fallback"
+            return False, "playwright_fallback_empty", "playwright_fallback"
+        except Exception as pw_exc:
+            return False, f"jina_fetch_failed:{jina_exc}; playwright_fallback_failed:{pw_exc}", "all_failed"

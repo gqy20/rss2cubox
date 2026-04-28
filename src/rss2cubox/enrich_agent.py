@@ -51,6 +51,7 @@ ENRICH_OUTPUT_SCHEMA = {
 SYSTEM_PROMPT = (
     "你是一位顶级科技产业分析师，正在对一篇已通过初筛的高价值文章进行深度精读。\n"
     "你已拥有文章的标题与初步摘要，现在优先通过 read_webpage 工具获取原文全文。\n"
+    "（该工具优先走 Jina Reader 返回 Markdown；若目标站点屏蔽了 Jina，会自动降级到 Playwright 真实浏览器渲染。）\n"
     "阅读完毕后，直接以 JSON 格式输出分析结果。\n"
     "字段要求：\n"
     "- core_event：冷静客观地用一句话描述事实（≤60字）\n"
@@ -118,7 +119,7 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
 
     @tool(
         "read_webpage",
-        "读取文章原文完整内容（微信文章优先用 Playwright，其他网页走 Jina Reader）",
+        "读取文章原文完整内容（优先 Jina Reader；Jina 被拦截时自动降级到 Playwright 浏览器渲染）",
         {"url": str},
     )
     async def read_webpage(args: dict) -> dict:

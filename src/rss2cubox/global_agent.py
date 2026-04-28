@@ -52,7 +52,8 @@ GLOBAL_OUTPUT_SCHEMA = {
 
 SYSTEM_PROMPT = (
     "你是一位顶级科技产业与投资分析师，专注从海量 RSS 信息流中提炼宏观趋势与深层弱信号。"
-    "你拥有 read_webpage 工具，可随时获取任何 URL 的完整干净正文（由 Jina Reader 处理，格式为 Markdown）。"
+    "你拥有 read_webpage 工具，可随时获取任何 URL 的完整正文（优先走 Jina Reader 返回 Markdown；"
+    "若目标站点屏蔽了 Jina（如掘金返回 451），工具会自动降级到 Playwright 真实浏览器渲染并提取正文）。"
     "对于值得深挖的情报，主动调用 read_webpage 阅读原文，不要仅凭摘要做判断。"
     "完成所有分析后，直接输出结构化 JSON 格式的报告。"
     "所有输出文字必须使用简体中文，语言专业、精炼，不要废话。"
@@ -184,7 +185,7 @@ async def _run_agent(high_value_items: list[dict]) -> dict[str, Any] | None:
 
     @tool(
         "read_webpage",
-        "读取指定 URL 的干净正文 Markdown（微信文章优先用 Playwright，其他网页走 Jina Reader）",
+        "读取指定 URL 的正文（优先 Jina Reader 返回 Markdown；Jina 被拦截时自动降级到 Playwright 浏览器渲染）",
         {"url": str},
     )
     async def read_webpage(args: dict) -> dict:

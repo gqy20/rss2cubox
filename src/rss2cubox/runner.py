@@ -226,6 +226,8 @@ def main() -> None:
             chunk_size=5,
         )
         sync_pipeline.mark_articles_exported(processed, [row["id"] for row in article_records], now)
+        stats["pushed"] = len(article_records)
+        stats["push_attempted"] = len(article_records)
 
     # 全局 Agent 深度分析（如失败不影响主流程）
     try:
