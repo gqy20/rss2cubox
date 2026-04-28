@@ -171,6 +171,7 @@ async function loadDashboardData(apiBaseUrl?: string): Promise<{
       tags: e.tags,
       core_event: e.core_event,
       hidden_signal: e.hidden_signal,
+      importance_score: e.importance_score,
       actionable: e.actionable,
       reason: e.reason,
       cover_url: e.cover_url,

@@ -14,6 +14,7 @@ export type IcArticle = {
   reason?: string | null
   actionable?: string | null
   hidden_signal?: string | null
+  importance_score?: number | null
   created_at?: string | null
 }
 
@@ -40,6 +41,7 @@ export type EventRow = {
   tags: string[]
   core_event: string
   hidden_signal: string
+  importance_score?: number
   actionable: string
   reason: string
   exported_at?: string
@@ -134,6 +136,7 @@ export function normalizeArticle(data: IcArticle): EventRow {
     tags: Array.isArray(data.tags) ? data.tags.map((v) => String(v)) : [],
     core_event: String(data.description || ''),
     hidden_signal: String(data.hidden_signal || ''),
+    importance_score: typeof data.importance_score === 'number' ? data.importance_score : undefined,
     actionable: String(data.actionable || ''),
     reason: String(data.reason || ''),
     exported_at: '',

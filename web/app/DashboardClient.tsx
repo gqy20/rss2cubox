@@ -140,7 +140,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const { loadGroupData, loadMoreForGroup, nextUnloadedDate } = useGroupData({ groupData, setGroupData, groupPaging, setGroupPaging, allDates })
 
   const [loadingMore, setLoadingMore] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'analyzed'>('all')
+  const [filter, setFilter] = useState<'all' | 'analyzed' | 'high_value'>('all')
   const [timeScope, setTimeScope] = useState<'all' | 'today'>('all')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
@@ -289,7 +289,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   // 展示数据：搜索模式使用后端检索结果，非搜索模式使用已加载分组
   const displayedRows = useMemo(() => {
     const baseRows = isSearchMode ? searchRows : loadedRows
-    let result = filter === 'analyzed' ? baseRows.filter((r) => hasAiSummary(r)) : [...baseRows]
+    let result = [...baseRows]
+    if (filter === 'analyzed') result = result.filter((r) => hasAiSummary(r))
+    if (filter === 'high_value') result = result.filter((r) => (r.importance_score ?? 0) >= 4)
     if (timeScope === 'today') result = result.filter((r) => getDayKey(r.time) === todayKey)
     if (selectedSource) {
       if (selectedSource === '__others__') {
@@ -735,6 +737,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             <Filter size={15} color="#8aa3be" />
             <Button active={filter === 'all'} onClick={() => setFilter('all')}>全量</Button>
             <Button active={filter === 'analyzed'} onClick={() => setFilter('analyzed')}>已分析</Button>
+            <Button active={filter === 'high_value'} onClick={() => setFilter('high_value')}>高价值</Button>
             <Button active={timeScope === 'today'} onClick={() => setTimeScope((prev) => (prev === 'today' ? 'all' : 'today'))}>今日</Button>
             <Button onClick={jumpToTodayGroup}>定位今天</Button>
             <PopoverMenu
@@ -790,7 +793,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             </Button>
             {selectedSource && <Button tone="purple" onClick={() => setSelectedSource(null)}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
             {selectedTag && <Button tone="purple" onClick={() => setSelectedTag(null)}>#{selectedTag} ×</Button>}
-            {(search || selectedSource || selectedTag || timeScope === 'today' || filter === 'analyzed') && <Button onClick={clearAllFilters}>清除</Button>}
+            {(search || selectedSource || selectedTag || timeScope === 'today' || filter !== 'all') && <Button onClick={clearAllFilters}>清除</Button>}
           </div>
 
           <div style={{ fontSize: 12, color: '#8aa3be', width: '100%' }}>

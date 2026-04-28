@@ -6,6 +6,7 @@ export type Row = {
   time: string
   exported?: boolean
   enriched?: boolean
+  importance_score?: number
   status?: string
   reason?: string
   tags?: string[]

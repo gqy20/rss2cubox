@@ -15,6 +15,26 @@ const pool = new Pool({
   connectionString: process.env.LOCAL_DB_URL,
 })
 
+function buildSearchWhere(search: string, paramIndex: number): { sql: string; value: string } | null {
+  if (!search) return null
+  return {
+    sql: `(
+      title ILIKE $${paramIndex}
+      OR source_feed_name ILIKE $${paramIndex}
+      OR source_feed_id ILIKE $${paramIndex}
+      OR hidden_signal ILIKE $${paramIndex}
+      OR description ILIKE $${paramIndex}
+      OR reason ILIKE $${paramIndex}
+      OR actionable ILIKE $${paramIndex}
+      OR url ILIKE $${paramIndex}
+      OR pic_url ILIKE $${paramIndex}
+      OR publish_time::text ILIKE $${paramIndex}
+      OR tags::text ILIKE $${paramIndex}
+    )`,
+    value: `%${search}%`,
+  }
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const rawPage = parseInt(searchParams.get('page') || '1', 10)
@@ -40,43 +60,34 @@ export async function GET(request: NextRequest) {
     try {
       const client = await pool.connect()
       try {
-        let query: string
-        let countQuery: string
-        let params: (string | number)[]
-
+        const whereParts: string[] = []
+        const whereParams: string[] = []
         if (date) {
-          query = `
-            SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
-                   title, url, pic_url, description, publish_time, tags,
-                   importance_score, reason, actionable, hidden_signal,
-                   created_at, updated_at
-            FROM articles
-            WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
-            ORDER BY publish_time DESC NULLS LAST
-            LIMIT $2 OFFSET $3
-          `
-          countQuery = `
-            SELECT COUNT(*) FROM articles
-            WHERE publish_time >= $1::date AND publish_time < $1::date + INTERVAL '1 day'
-          `
-          params = [date, limit, (page - 1) * limit]
-        } else {
-          query = `
-            SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
-                   title, url, pic_url, description, publish_time, tags,
-                   importance_score, reason, actionable, hidden_signal,
-                   created_at, updated_at
-            FROM articles
-            ORDER BY publish_time DESC NULLS LAST
-            LIMIT $1 OFFSET $2
-          `
-          countQuery = 'SELECT COUNT(*) FROM articles'
-          params = [limit, (page - 1) * limit]
+          whereParams.push(date)
+          whereParts.push(`publish_time >= $${whereParams.length}::date AND publish_time < $${whereParams.length}::date + INTERVAL '1 day'`)
         }
 
-        const countResult = date
-          ? await client.query(countQuery, [date])
-          : await client.query(countQuery)
+        const searchWhere = buildSearchWhere(search, whereParams.length + 1)
+        if (searchWhere) {
+          whereParams.push(searchWhere.value)
+          whereParts.push(searchWhere.sql)
+        }
+
+        const whereSql = whereParts.length ? `WHERE ${whereParts.join(' AND ')}` : ''
+        const query = `
+          SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
+                 title, url, pic_url, description, publish_time, tags,
+                 importance_score, reason, actionable, hidden_signal,
+                 created_at, updated_at
+          FROM articles
+          ${whereSql}
+          ORDER BY publish_time DESC NULLS LAST
+          LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}
+        `
+        const countQuery = `SELECT COUNT(*) FROM articles ${whereSql}`
+        const params: (string | number)[] = [...whereParams, limit, (page - 1) * limit]
+
+        const countResult = await client.query(countQuery, whereParams)
         const total = parseInt(countResult.rows[0]?.count || '0', 10)
 
         const result = await client.query(query, params)
@@ -100,6 +111,7 @@ export async function GET(request: NextRequest) {
           tags: Array.isArray(row.tags) ? row.tags : [],
           core_event: row.description || '',
           hidden_signal: row.hidden_signal || '',
+          importance_score: typeof row.importance_score === 'number' ? row.importance_score : undefined,
           actionable: row.actionable || '',
           reason: row.reason || '',
           cover_url: row.pic_url || '',
@@ -107,13 +119,8 @@ export async function GET(request: NextRequest) {
           source_label: row.source_feed_name || '',
         }))
 
-        const filtered = formatted.filter(
-          (e) => matchesDate({ publish_time: e.time } as any, date) && matchesSearch(e as any, search)
-        )
-        const sorted = sortArticles(filtered as any)
-
         return NextResponse.json({
-          data: sorted,
+          data: formatted,
           total,
           page,
           hasMore: (page - 1) * limit + formatted.length < total,
@@ -148,6 +155,7 @@ export async function GET(request: NextRequest) {
     tags: Array.isArray(e.tags) ? e.tags : [],
     core_event: e.description,
     hidden_signal: e.hidden_signal,
+    importance_score: e.importance_score,
     actionable: e.actionable,
     reason: e.reason,
     cover_url: e.pic_url,

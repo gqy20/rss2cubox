@@ -11,6 +11,12 @@ function extractBvid(value: string): string {
   return match ? match[0].toUpperCase() : ''
 }
 
+function getImportanceScore(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  const score = Math.round(value)
+  return score >= 1 && score <= 5 ? score : null
+}
+
 type FeedCardProps = {
   row: Row
   idx: number
@@ -40,6 +46,7 @@ const FeedCard = React.memo(function FeedCard({
   const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
   const isHovered = hoveredRowKey === rowKey
   const hasAiContent = Boolean(row.core_event || row.actionable || row.reason)
+  const importanceScore = getImportanceScore(row.importance_score)
   const isYoutubeRow = /youtube\.com\/watch|youtu\.be\//i.test(row.url || '')
   const isBiliRow = /(?:bilibili\.com|b23\.tv)\//i.test(row.url || '')
   const bvid = extractBvid(row.url || '')
@@ -84,23 +91,17 @@ const FeedCard = React.memo(function FeedCard({
               {row.source}
             </span>
             {row.enriched && (
-              <span
-                title="已完成全文深化分析"
-                style={{
-                  fontSize: 10,
-                  fontWeight: 800,
-                  letterSpacing: 0.5,
-                  textTransform: 'uppercase',
-                  color: '#34d399',
-                  border: '1px solid rgba(52, 211, 153, 0.4)',
-                  background: 'rgba(52, 211, 153, 0.08)',
-                  padding: '2px 6px',
-                  borderRadius: 999,
-                  lineHeight: 1.2,
-                  flexShrink: 0,
-                }}
-              >
+              <span className="enriched-badge" title="已完成全文深化分析">
                 Enriched
+              </span>
+            )}
+            {importanceScore && (
+              <span
+                className={`importance-badge score-${importanceScore}`}
+                title={`重要度 ${importanceScore}/5`}
+                aria-label={`重要度 ${importanceScore}/5`}
+              >
+                S{importanceScore}
               </span>
             )}
             <span suppressHydrationWarning className="node-time" title={`${row.time} ${formatShortTime(row.time)}`}>
