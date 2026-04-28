@@ -22,7 +22,6 @@ from rss2cubox.webpage_reader import read_webpage_text
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
-GLOBAL_AGENT_TIMEOUT_SECONDS = max(60, int(os.getenv("GLOBAL_AGENT_TIMEOUT_SECONDS", "300")))
 _global_agent_max_budget_raw = os.getenv("GLOBAL_AGENT_MAX_BUDGET_USD", "50.0").strip()
 try:
     GLOBAL_AGENT_MAX_BUDGET_USD = float(_global_agent_max_budget_raw) if _global_agent_max_budget_raw else None
@@ -235,19 +234,16 @@ async def _run_agent(
     )
 
     try:
-        with anyio.fail_after(GLOBAL_AGENT_TIMEOUT_SECONDS):
-            async for message in query(prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)), options=options):
-                if isinstance(message, ResultMessage):
-                    if message.structured_output is not None:
-                        result = _normalize_global_payload(message.structured_output)
-                        print("[global_agent] structured_output: ok", flush=True)
-                        return result
-                    if message.is_error:
-                        print(f"[global_agent] error: {message.subtype or 'unknown'}", flush=True)
-                        return None
-                    print(f"[global_agent] no_structured_output: {message.subtype or 'unknown'}", flush=True)
-    except TimeoutError:
-        print("[global_agent] timeout", flush=True)
+        async for message in query(prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)), options=options):
+            if isinstance(message, ResultMessage):
+                if message.structured_output is not None:
+                    result = _normalize_global_payload(message.structured_output)
+                    print("[global_agent] structured_output: ok", flush=True)
+                    return result
+                if message.is_error:
+                    print(f"[global_agent] error: {message.subtype or 'unknown'}", flush=True)
+                    return None
+                print(f"[global_agent] no_structured_output: {message.subtype or 'unknown'}", flush=True)
     except Exception as e:
         if stderr_lines:
             print(f"[global_agent] error: {' | '.join(stderr_lines[-8:])}", flush=True)

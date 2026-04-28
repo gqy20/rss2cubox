@@ -49,15 +49,18 @@ ENRICH_OUTPUT_SCHEMA = {
         "actionable": {"type": "string", "maxLength": 100},
         "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 5},
         "importance_score": {"type": "integer", "minimum": 1, "maximum": 5},
+        "content_source": {"type": "string", "enum": ["full_text", "summary_only"]},
     },
-    "required": ["core_event", "reason", "hidden_signal", "actionable", "tags", "importance_score"],
+    "required": ["core_event", "reason", "hidden_signal", "actionable", "tags", "importance_score", "content_source"],
 }
 
 
 SYSTEM_PROMPT = (
     "你是一位顶级科技产业分析师，正在对一篇已通过初筛的高价值文章进行深度精读。\n"
-    "你已拥有文章的标题与初步摘要，现在优先通过 read_webpage 工具获取原文全文。\n"
+    "你已拥有文章的标题与初步摘要，但你必须先调用 read_webpage 工具获取原文全文，才能进行后续分析。\n"
     "（该工具优先走 Jina Reader 返回 Markdown；若目标站点屏蔽了 Jina，会自动降级到 Playwright 真实浏览器渲染。）\n"
+    "【强制要求】在输出任何 JSON 分析结果之前，你必须先成功调用 read_webpage 获取并阅读完原文全文。\n"
+    "如果 read_webpage 工具调用失败（即返回「网页读取失败」），你必须重试一次；若仍然失败，则输出 JSON 但 core_event、reason、hidden_signal、actionable 字段必须注明「原文读取失败，仅基于摘要」。\n"
     "阅读完毕后，直接以 JSON 格式输出分析结果。\n"
     "字段要求：\n"
     "- core_event：冷静客观地用一句话描述事实（≤60字）\n"
@@ -66,7 +69,8 @@ SYSTEM_PROMPT = (
     "- actionable：工程师/独立开发者应如何行动？（≤60字）\n"
     "- tags：输出 1-3 个精准标签，必须是字符串数组\n"
     "- importance_score：文章重要程度，1-5 分（1=一般资讯，2=值得关注，3=重要，4=非常重要，5=重大突破/必读）\n"
-    "所有输出必须使用简体中文。如果读取网页失败，请基于已有标题和摘要尽力输出。"
+    "- content_source：必须注明本次分析的文本来源，值为「full_text」表示使用了全文，值为「summary_only」表示仅使用了摘要\n"
+    "所有输出必须使用简体中文。"
 )
 
 
@@ -77,9 +81,9 @@ def _build_user_prompt(item: dict, original: dict) -> str:
         f"初步摘要：{item.get('description', '')[:500]}\n"
         f"初步核心事件：{original.get('core_event', '')}\n\n"
         "步骤：\n"
-        "1. 调用 read_webpage 读取原文（传入上方原文链接）。\n"
-        "2. 无论读取是否成功，直接输出 JSON 格式的分析结果。\n"
-        "   如果读取失败，基于已有标题、摘要和初步分析输出 JSON。"
+        "1. 首先调用 read_webpage 工具读取原文全文（传入上方原文链接）。\n"
+        "2. 仔细阅读完整内容后，再输出 JSON 格式的分析结果。\n"
+        "3. content_source 字段必须如实填写：使用了全文填「full_text」，仅摘要则填「summary_only」。"
     )
 
 
