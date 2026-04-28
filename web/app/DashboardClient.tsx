@@ -18,6 +18,7 @@ import {
   Check,
   AlertCircle,
   Download,
+  CalendarDays,
 } from 'lucide-react'
 import {
   Logo,
@@ -30,7 +31,7 @@ import {
 import FeedCard from './FeedCard'
 import type { Row, Metrics, GlobalInsights, InsightKey } from './types'
 import { loadAllGlobalInsights, type InsightHistoryItem } from '../lib/signalStore'
-import { Button, MenuPanel } from './ui'
+import { Button, MenuPanel, PopoverMenu } from './ui'
 
 type ChartsSectionProps = {
   trendData: Array<{ name: string; total: number; analyzed: number }>
@@ -146,6 +147,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [dateMenuOpen, setDateMenuOpen] = useState(false)
+  const [dateQuery, setDateQuery] = useState('')
 
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [shouldLoadCharts, setShouldLoadCharts] = useState(false)
@@ -342,6 +344,15 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       loaded: !!dateMap.get(dayKey)?.length,
     }))
   }, [isSearchMode, allDates, displayedRows, todayKey, yesterdayKey, metrics.daily_totals])
+
+  const filteredDateOptions = useMemo(() => {
+    const query = dateQuery.trim().toLowerCase()
+    if (!query) return allDates
+    return allDates.filter((dayKey) => {
+      const label = formatGroupTitle(dayKey, todayKey, yesterdayKey)
+      return dayKey.includes(query) || label.toLowerCase().includes(query)
+    })
+  }, [allDates, dateQuery, todayKey, yesterdayKey])
 
   const insightPanels = useMemo(
     () => [
@@ -696,13 +707,40 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             <Button active={filter === 'analyzed'} onClick={() => setFilter('analyzed')}>已分析</Button>
             <Button active={timeScope === 'today'} onClick={() => setTimeScope((prev) => (prev === 'today' ? 'all' : 'today'))}>今日</Button>
             <Button onClick={jumpToTodayGroup}>定位今天</Button>
-            <div className="date-jump-menu">
-              <button className="date-jump-trigger" onClick={() => setDateMenuOpen((prev) => !prev)} aria-expanded={dateMenuOpen}>
-                日期跳转
-              </button>
-              {dateMenuOpen && (
+            <PopoverMenu
+              open={dateMenuOpen}
+              onOpenChange={(open) => {
+                setDateMenuOpen(open)
+                if (!open) setDateQuery('')
+              }}
+              trigger={(
+                <button className="date-jump-trigger" aria-expanded={dateMenuOpen}>
+                  <CalendarDays size={13} /> 日期跳转
+                </button>
+              )}
+            >
+              <div className="date-jump-panel">
+                <input
+                  className="date-jump-search"
+                  value={dateQuery}
+                  onChange={(e) => setDateQuery(e.target.value)}
+                  placeholder="搜索日期，例如 4/21"
+                />
+                <div className="date-jump-quick">
+                  {[todayKey, yesterdayKey].map((dayKey) => (
+                    <button
+                      key={dayKey}
+                      onClick={() => {
+                        jumpToDateGroup(dayKey)
+                        setDateMenuOpen(false)
+                      }}
+                    >
+                      {formatGroupTitle(dayKey, todayKey, yesterdayKey)}
+                    </button>
+                  ))}
+                </div>
                 <MenuPanel className="date-jump-list">
-                  {allDates.map((dayKey) => (
+                  {filteredDateOptions.map((dayKey) => (
                     <button
                       key={dayKey}
                       onClick={() => {
@@ -715,8 +753,8 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
                     </button>
                   ))}
                 </MenuPanel>
-              )}
-            </div>
+              </div>
+            </PopoverMenu>
             <Button onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
               <Download size={13} /> 导出
             </Button>

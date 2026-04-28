@@ -1,6 +1,7 @@
 'use client'
 
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import * as Popover from '@radix-ui/react-popover'
 
 function cx(...values: Array<string | false | null | undefined>): string {
   return values.filter(Boolean).join(' ')
@@ -69,4 +70,33 @@ type MenuPanelProps = {
 
 export function MenuPanel({ children, className }: MenuPanelProps) {
   return <div className={cx('menu-panel', className)}>{children}</div>
+}
+
+type PopoverMenuProps = {
+  trigger: ReactNode
+  children: ReactNode
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  align?: 'start' | 'center' | 'end'
+  className?: string
+}
+
+export function PopoverMenu({
+  trigger,
+  children,
+  open,
+  onOpenChange,
+  align = 'start',
+  className,
+}: PopoverMenuProps) {
+  return (
+    <Popover.Root open={open} onOpenChange={onOpenChange}>
+      <Popover.Trigger asChild>{trigger}</Popover.Trigger>
+      <Popover.Portal>
+        <Popover.Content className={cx('popover-panel', className)} align={align} sideOffset={8}>
+          {children}
+        </Popover.Content>
+      </Popover.Portal>
+    </Popover.Root>
+  )
 }

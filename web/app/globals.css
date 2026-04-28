@@ -532,10 +532,6 @@ body {
   color: #bffbf3;
 }
 
-.history-menu {
-  position: relative;
-}
-
 .history-menu-trigger {
   min-width: 112px;
   height: 30px;
@@ -564,18 +560,31 @@ body {
 }
 
 .history-menu-list {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  z-index: 40;
   width: 150px;
   max-height: 240px;
   overflow: auto;
   padding: 6px;
+}
+
+.popover-panel {
+  z-index: 80;
   border: 1px solid rgba(178, 190, 205, 0.18);
   border-radius: 8px;
   background: rgba(12, 17, 24, 0.98);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.38);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.4);
+  animation: menu-fade-in 120ms ease-out;
+}
+
+@keyframes menu-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .menu-panel {
@@ -1035,11 +1044,10 @@ body {
   color: #d8c7ff !important;
 }
 
-.date-jump-menu {
-  position: relative;
-}
-
 .date-jump-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 30px;
   border: 1px solid rgba(178, 190, 205, 0.18);
   border-radius: 999px;
@@ -1071,18 +1079,49 @@ body {
 }
 
 .date-jump-list {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 50;
-  width: 184px;
-  max-height: 320px;
+  width: 100%;
+  max-height: 260px;
   overflow: auto;
-  padding: 6px;
-  border: 1px solid rgba(178, 190, 205, 0.18);
-  border-radius: 8px;
-  background: rgba(12, 17, 24, 0.98);
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.4);
+}
+
+.date-jump-panel {
+  width: 230px;
+  padding: 8px;
+}
+
+.date-jump-search {
+  width: 100%;
+  height: 32px;
+  border: 1px solid rgba(178, 190, 205, 0.16);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+  outline: 0;
+  padding: 0 10px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.date-jump-search:focus {
+  border-color: rgba(79, 209, 197, 0.42);
+}
+
+.date-jump-quick {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.date-jump-quick button {
+  border: 1px solid rgba(79, 209, 197, 0.2);
+  border-radius: 7px;
+  background: rgba(79, 209, 197, 0.08);
+  color: #c7fff8;
+  padding: 7px 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .date-jump-list button {
