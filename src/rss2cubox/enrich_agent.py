@@ -159,7 +159,7 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
         allowed_tools=allowed_tools,
         mcp_servers={"enrich-tools": server},
         permission_mode="acceptEdits",
-        max_turns=6,
+        max_turns=10,
         max_budget_usd=ENRICH_MAX_BUDGET_USD,
         cwd=Path.cwd(),
         setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
@@ -170,16 +170,13 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     )
 
     try:
-        with anyio.fail_after(ENRICH_ITEM_TIMEOUT_SECONDS):
-            async for message in query(prompt=_build_user_prompt(item, original), options=options):
-                if isinstance(message, ResultMessage):
-                    if message.structured_output is not None:
-                        return message.structured_output, "ok"
-                    if message.is_error:
-                        return None, message.subtype or "error"
-                    return None, message.subtype or "no_structured_output"
-    except TimeoutError:
-        return None, "timeout"
+        async for message in query(prompt=_build_user_prompt(item, original), options=options):
+            if isinstance(message, ResultMessage):
+                if message.structured_output is not None:
+                    return message.structured_output, "ok"
+                if message.is_error:
+                    return None, message.subtype or "error"
+                return None, message.subtype or "no_structured_output"
     except Exception as e:
         if stderr_lines:
             print(f"[enrich_agent] eid={eid_short} error: {' | '.join(stderr_lines[-5:])}", flush=True)
