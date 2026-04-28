@@ -1,7 +1,7 @@
 import DashboardClient from './DashboardClient'
 
 import { loadGlobalInsights, loadIcArticles } from '../lib/signalStore'
-import { BUSINESS_TZ, getBusinessDayKey } from '../lib/time'
+import { getBusinessDayKey } from '../lib/time'
 import type { GlobalInsights, Row } from './types'
 
 export const revalidate = 1800 // 30 minutes; GitHub Actions triggers on-demand revalidation after each sync
@@ -11,8 +11,16 @@ function asStringArray(value: unknown): string[] {
   return value.map((v) => String(v)).filter((v) => v.trim().length > 0)
 }
 
+function getDayKey(value: Date | string): string {
+  return getBusinessDayKey(value)
+}
+
 function hasAiSummary(row: Pick<Row, 'core_event' | 'hidden_signal' | 'actionable' | 'reason'>): boolean {
   return Boolean(row.core_event || row.hidden_signal || row.actionable || row.reason)
+}
+
+function formatAxisDay(value: Date): string {
+  return value.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai', month: 'numeric', day: 'numeric' })
 }
 
 function dedupeRows(rows: Row[]): Row[] {
@@ -27,47 +35,21 @@ function dedupeRows(rows: Row[]): Row[] {
   return out
 }
 
-function resolveSource(row: Record<string, unknown>): string {
-  const label = String(row.source_label || row.source || '').trim()
-  if (label) return label
-  const feed = String(row.source_feed || '').trim()
-  if (feed) {
-    try { return new URL('https://x.com' + feed).pathname.split('/')[1] || feed } catch { return feed }
-  }
-  try { return new URL(String(row.url || '')).hostname } catch { return 'unknown' }
-}
-
-function getDayKey(date: Date | string): string {
-  return getBusinessDayKey(date)
-}
-
-function formatAxisDay(value: Date): string {
-  if (Number.isNaN(value.getTime())) return ''
-  const parts = new Intl.DateTimeFormat('zh-CN', {
-    timeZone: BUSINESS_TZ,
-    month: 'numeric',
-    day: 'numeric',
-  }).formatToParts(value)
-  const m = parts.find((p) => p.type === 'month')?.value || ''
-  const d = parts.find((p) => p.type === 'day')?.value || ''
-  return `${m}月${d}日`
-}
-
 function buildMetrics(rows: Row[]) {
   const now = new Date()
   const today = getDayKey(now)
   const yesterday = getDayKey(new Date(now.getTime() - 86400000))
-  
+
   const sourceCount: Record<string, number> = {}
   let totalToday = 0, totalYesterday = 0
   let analyzedToday = 0, analyzedYesterday = 0
   const sourceToday = new Set<string>()
   const sourceYesterday = new Set<string>()
-  
+
   for (const r of rows) {
     const source = r.source || 'unknown'
     sourceCount[source] = (sourceCount[source] ?? 0) + 1
-    
+
     const dayKey = getDayKey(r.time)
     if (!dayKey) continue
     const analyzed = hasAiSummary(r)
@@ -81,12 +63,12 @@ function buildMetrics(rows: Row[]) {
       sourceYesterday.add(source)
     }
   }
-  
+
   const topSources = Object.entries(sourceCount)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10)
     .map(([source, count]) => ({ source, count }))
-    
+
   // 计算最近7天的趋势数据
   const dayMap = new Map<string, { name: string; total: number; analyzed: number }>()
   const base = new Date()
@@ -97,7 +79,7 @@ function buildMetrics(rows: Row[]) {
     const dayKey = getDayKey(d)
     dayMap.set(dayKey, { name: formatAxisDay(d), total: 0, analyzed: 0 })
   }
-  
+
   for (const r of rows) {
     const dayKey = getDayKey(r.time)
     if (!dayKey) continue
@@ -107,7 +89,7 @@ function buildMetrics(rows: Row[]) {
       if (hasAiSummary(r)) slot.analyzed++
     }
   }
-  
+
   const trendData = Array.from(dayMap.values())
 
   // 计算每日数据量（用于右侧分组显示）
@@ -151,7 +133,7 @@ async function loadDashboardData(): Promise<{
       id: e.id,
       title: e.title,
       url: e.url,
-      source: resolveSource(e as unknown as Record<string, unknown>),
+      source: e.source,
       time: e.time,
       exported: e.exported,
       status: e.status,

@@ -1,6 +1,9 @@
 'use client'
 
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useSearch } from '../hooks/useSearch'
+import { useGroupData } from '../hooks/useGroupData'
+import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import dynamic from 'next/dynamic'
 import {
   Filter,
@@ -48,17 +51,6 @@ const ChartsSection = dynamic<ChartsSectionProps>(() => import('./charts-section
   ),
 })
 
-type GroupData = {
-  loading: boolean
-  loaded: boolean
-  items: Row[]
-  hasMore: boolean
-}
-
-type GroupPaging = {
-  page: number
-}
-
 type Props = {
   serverTime?: string
   initialRows: Row[]
@@ -66,8 +58,6 @@ type Props = {
   metrics: Metrics
   insights?: GlobalInsights | null
 }
-
-const SEARCH_PAGE_SIZE = 50
 
 type ParsedInsightItem = {
   title: string
@@ -130,21 +120,22 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     })
   }
 
-  // 按日期分组的数据状态
-  const [groupData, setGroupData] = useState<Record<string, GroupData>>({})
-  const [groupPaging, setGroupPaging] = useState<Record<string, GroupPaging>>({})
+  // Hook: 搜索状态管理（替换 7 个独立 state + debounce + abort + auto-fetch）
+  const { search, debouncedSearch, searchRows, searchPage, searchTotal, searchHasMore, searchLoading, isSearchMode, setSearch, fetchSearchPage } = useSearch()
+
+  // 分组数据状态（组件拥有，支持 SSR props 初始化）
+  const [groupData, setGroupData] = useState<Record<string, { loading: boolean; loaded: boolean; items: Row[]; hasMore: boolean }>>({})
+  const [groupPaging, setGroupPaging] = useState<Record<string, { page: number }>>({})
+  const allDates = useMemo(() => Object.keys(metrics.daily_totals || {}).sort((a, b) => b.localeCompare(a)), [metrics.daily_totals])
+
+  // Hook: 分组数据操作（外部状态注入模式，回调操作组件的 state）
+  const { loadGroupData, loadMoreForGroup, nextUnloadedDate } = useGroupData({ groupData, setGroupData, groupPaging, setGroupPaging, allDates })
+
   const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState<'all' | 'analyzed'>('all')
   const [timeScope, setTimeScope] = useState<'all' | 'today'>('all')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
-  const [search, setSearch] = useState('')
-  const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [searchRows, setSearchRows] = useState<Row[]>([])
-  const [searchPage, setSearchPage] = useState(1)
-  const [searchTotal, setSearchTotal] = useState(0)
-  const [searchHasMore, setSearchHasMore] = useState(false)
-  const [searchLoading, setSearchLoading] = useState(false)
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
@@ -176,7 +167,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const timelineRef = useRef<HTMLDivElement>(null)
   const loadMoreRef = useRef<HTMLDivElement>(null)
   const groupRefs = useRef<Record<string, HTMLDivElement | null>>({})
-  const searchAbortRef = useRef<AbortController | null>(null)
   const hoverCloseTimers = useRef<Record<string, ReturnType<typeof setTimeout>>>({})
 
   // Side Effects
@@ -190,11 +180,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   useEffect(() => {
     timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [filter, timeScope, selectedSource, selectedTag, search])
-
-  useEffect(() => {
-    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 280)
-    return () => clearTimeout(timer)
-  }, [search])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -220,7 +205,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   useEffect(() => {
     return () => {
       Object.values(hoverCloseTimers.current).forEach((timer) => clearTimeout(timer))
-      searchAbortRef.current?.abort()
     }
   }, [])
 
@@ -245,7 +229,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   // Derived State
 
   const todayKey = useMemo(() => getDayKey(now ?? new Date()), [now])
-  const isSearchMode = search.trim().length > 0
   const yesterdayKey = useMemo(() => {
     const d = new Date(now ?? new Date())
     d.setDate(d.getDate() - 1)
@@ -296,11 +279,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     return top5
   }, [metrics.top_source_counts])
 
-  // 所有日期列表（从服务端获取）
-  const allDates = useMemo(() => {
-    return Object.keys(metrics.daily_totals || {}).sort((a, b) => b.localeCompare(a))
-  }, [metrics.daily_totals])
-
   // 按日期分组：搜索模式仅显示命中日期，非搜索模式显示所有日期并懒加载
   const groupedRows = useMemo(() => {
     const dateMap = new Map<string, Row[]>()
@@ -349,151 +327,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   ] as const
 
   // Handlers
-
-  const fetchSearchPage = useCallback(async (page: number, append: boolean) => {
-    const keyword = debouncedSearch.trim()
-    if (!keyword) return
-
-    searchAbortRef.current?.abort()
-    const controller = new AbortController()
-    searchAbortRef.current = controller
-
-    if (append) setLoadingMore(true)
-    else setSearchLoading(true)
-
-    try {
-      const res = await fetch(
-        `/api/signals?page=${page}&limit=${SEARCH_PAGE_SIZE}&search=${encodeURIComponent(keyword)}`,
-        { signal: controller.signal },
-      )
-      const data = await res.json()
-      if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')
-
-      const rows = data.data as Row[]
-      setSearchRows((prev) => (append ? [...prev, ...rows] : rows))
-      setSearchPage(page)
-      setSearchTotal(Number(data.total || 0))
-      setSearchHasMore(Boolean(data.hasMore))
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') return
-      console.error('Failed to search signals:', error)
-      if (!append) {
-        setSearchRows([])
-        setSearchTotal(0)
-      }
-      setSearchHasMore(false)
-    } finally {
-      setSearchLoading(false)
-      setLoadingMore(false)
-    }
-  }, [debouncedSearch])
-
-  useEffect(() => {
-    if (!debouncedSearch.trim()) {
-      searchAbortRef.current?.abort()
-      setSearchRows([])
-      setSearchPage(1)
-      setSearchTotal(0)
-      setSearchHasMore(false)
-      setSearchLoading(false)
-      return
-    }
-    void fetchSearchPage(1, false)
-  }, [debouncedSearch, fetchSearchPage])
-
-  // 加载指定日期的数据
-  const loadGroupData = useCallback(async (dayKey: string) => {
-    const current = groupData[dayKey]
-    if (current?.loading || current?.loaded) return
-
-    setGroupData((prev) => ({
-      ...prev,
-      [dayKey]: { loading: true, loaded: false, items: [], hasMore: false },
-    }))
-
-    try {
-      const res = await fetch(`/api/signals?page=1&limit=50&date=${dayKey}`)
-      const data = await res.json()
-      if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')
-      setGroupData((prev) => ({
-        ...prev,
-        [dayKey]: {
-          loading: false,
-          loaded: true,
-          items: data.data,
-          hasMore: data.hasMore,
-        },
-      }))
-      setGroupPaging((prev) => ({
-        ...prev,
-        [dayKey]: { page: 1 },
-      }))
-    } catch (error) {
-      console.error('Failed to load group:', error)
-      setGroupData((prev) => ({
-        ...prev,
-        [dayKey]: { loading: false, loaded: false, items: [], hasMore: false },
-      }))
-    }
-  }, [groupData])
-
-  const loadMoreForGroup = useCallback(async (dayKey: string) => {
-    const current = groupData[dayKey]
-    if (!current?.loaded || current.loading || !current.hasMore) return
-
-    const currentPage = groupPaging[dayKey]?.page || 1
-    const nextPage = currentPage + 1
-
-    setGroupData((prev) => ({
-      ...prev,
-      [dayKey]: {
-        ...(prev[dayKey] || { loaded: true, items: [], hasMore: false }),
-        loading: true,
-      },
-    }))
-
-    try {
-      const res = await fetch(`/api/signals?page=${nextPage}&limit=50&date=${dayKey}`)
-      const data = await res.json()
-      if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')
-
-      setGroupData((prev) => {
-        const prevItems = prev[dayKey]?.items || []
-        const merged = [...prevItems, ...(data.data as Row[])]
-        return {
-          ...prev,
-          [dayKey]: {
-            loading: false,
-            loaded: true,
-            items: merged,
-            hasMore: Boolean(data.hasMore),
-          },
-        }
-      })
-      setGroupPaging((prev) => ({
-        ...prev,
-        [dayKey]: { page: nextPage },
-      }))
-    } catch (error) {
-      console.error('Failed to load more group data:', error)
-      setGroupData((prev) => ({
-        ...prev,
-        [dayKey]: {
-          ...(prev[dayKey] || { loaded: true, items: [], hasMore: false }),
-          loading: false,
-        },
-      }))
-    }
-  }, [groupData, groupPaging])
-
-  const nextUnloadedDate = useMemo(() => {
-    if (isSearchMode) return null
-    for (const dayKey of allDates) {
-      const group = groupData[dayKey]
-      if (!group?.loaded && !group?.loading) return dayKey
-    }
-    return null
-  }, [isSearchMode, allDates, groupData])
 
   const getTailVisibleGroupId = useCallback((): string | null => {
     const root = timelineRef.current
@@ -548,38 +381,14 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     void loadGroupData(nextUnloadedDate).finally(() => setLoadingMore(false))
   }, [loadingMore, isSearchMode, searchHasMore, searchLoading, fetchSearchPage, searchPage, getTailVisibleGroupId, groupData, todayKey, loadMoreForGroup, nextUnloadedDate, loadGroupData])
 
-  useEffect(() => {
-    const root = timelineRef.current
-    const target = loadMoreRef.current
-    if (!root || !target) return
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const first = entries[0]
-        if (!first?.isIntersecting) return
-        maybeLoadMore()
-      },
-      { root, rootMargin: '0px 0px 240px 0px', threshold: 0.01 },
-    )
-
-    observer.observe(target)
-    return () => observer.disconnect()
-  }, [maybeLoadMore])
-
-  useEffect(() => {
-    const root = timelineRef.current
-    if (!root) return
-
-    const onScroll = () => {
-      const remaining = root.scrollHeight - root.scrollTop - root.clientHeight
-      if (remaining <= 240) maybeLoadMore()
-    }
-
-    root.addEventListener('scroll', onScroll, { passive: true })
-    // If content is initially short and sentinel stays visible, proactively trigger loading.
-    onScroll()
-    return () => root.removeEventListener('scroll', onScroll)
-  }, [maybeLoadMore])
+  // Hook: 统一无限滚动（替换原来的 IO + scroll 双监听）
+  useInfiniteScroll({
+    rootRef: timelineRef,
+    sentinelRef: loadMoreRef,
+    onLoadMore: maybeLoadMore,
+    loading: loadingMore,
+    rootMargin: '0px 0px 240px 0px',
+  })
 
   const clearAllFilters = () => {
     setSearch(''); setSelectedSource(null); setSelectedTag(null); setFilter('all'); setTimeScope('all')
