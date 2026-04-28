@@ -229,6 +229,43 @@ def dedupe_run_candidates(
     return unique_candidates, run_deduped
 
 
+def load_local_state(
+    db_url: str | None = None,
+) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    """Load processed articles state from local PostgreSQL database.
+
+    Used for deduplication when IC_API_URL is not configured.
+
+    Args:
+        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+
+    Returns:
+        tuple:
+            - processed: dict[eid -> record] with id and exported fields
+            - feed_cursor: dict[source_feed_id -> latest_publish_time_iso]
+    """
+    from rss2cubox.db_client import get_all_article_ids, get_feed_cursors
+
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+
+    if not db_url:
+        return {}, {}
+
+    article_ids = get_all_article_ids(db_url)
+
+    processed: dict[str, dict[str, Any]] = {}
+    for eid in article_ids:
+        processed[eid] = {
+            "id": eid,
+            "exported": True,
+        }
+
+    feed_cursor = get_feed_cursors(db_url)
+
+    return processed, feed_cursor
+
+
 def load_ic_state(
     *,
     api_url: str | None,
@@ -236,6 +273,11 @@ def load_ic_state(
     request_get: Any,
     page_size: int = 100,
 ) -> tuple[dict[str, dict[str, Any]], dict[str, str]]:
+    # Priority: local database > IC API
+    processed, feed_cursor = load_local_state()
+    if processed:
+        return processed, feed_cursor
+
     if not api_url:
         return {}, {}
 

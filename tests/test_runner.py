@@ -1,5 +1,6 @@
 import json
 import os
+import unittest.mock
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -263,12 +264,14 @@ def test_load_ic_state_builds_processed_and_feed_cursor() -> None:
             return EmptyResp()
         return Resp()
 
-    processed, feed_cursor = sync_pipeline.load_ic_state(
-        api_url="https://ic.example/api/v1/articles/batch",
-        source_type="gqy",
-        request_get=fake_get,
-        page_size=2,
-    )
+    # Mock load_local_state to return empty so IC API is used
+    with unittest.mock.patch.object(sync_pipeline, "load_local_state", return_value=({}, {})):
+        processed, feed_cursor = sync_pipeline.load_ic_state(
+            api_url="https://ic.example/api/v1/articles/batch",
+            source_type="gqy",
+            request_get=fake_get,
+            page_size=2,
+        )
 
     assert len(processed) == 2
     assert sync_pipeline.stable_id({"link": "https://example.com/a"}) in processed

@@ -341,6 +341,79 @@ def _parse_publish_time(value: Any) -> datetime | None:
     return None
 
 
+# ── Deduplication Queries ────────────────────────────────────────────────────
+
+
+def get_all_article_ids(db_url: str | None = None) -> set[str]:
+    """Get all processed article IDs from local PostgreSQL.
+
+    Used for deduplication before sending to IC API.
+
+    Args:
+        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+
+    Returns:
+        Set of all article IDs (stable_id / eid).
+    """
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+
+    if not db_url:
+        logging.warning("LOCAL_DB_URL not set, returning empty article IDs set")
+        return set()
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT id FROM articles WHERE id IS NOT NULL AND id != ''")
+            rows = cur.fetchall()
+            return {str(row[0]) for row in rows}
+    except Exception as e:
+        logging.warning(f"Failed to get article IDs from local DB: {e}")
+        return set()
+
+
+def get_feed_cursors(db_url: str | None = None) -> dict[str, str]:
+    """Get the latest publish_time for each source_feed_id.
+
+    Used for feed_cursor-based incremental fetching, matching the IC API behavior.
+
+    Args:
+        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+
+    Returns:
+        dict mapping source_feed_id to latest publish_time ISO string.
+    """
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+
+    if not db_url:
+        logging.warning("LOCAL_DB_URL not set, returning empty feed cursors")
+        return {}
+
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT source_feed_id, MAX(publish_time) AS latest_time
+                FROM articles
+                WHERE source_feed_id IS NOT NULL
+                  AND source_feed_id != ''
+                  AND publish_time IS NOT NULL
+                GROUP BY source_feed_id
+                """
+            )
+            rows = cur.fetchall()
+            return {
+                str(row[0]): row[1].isoformat() if row[1] else ""
+                for row in rows
+            }
+    except Exception as e:
+        logging.warning(f"Failed to get feed cursors from local DB: {e}")
+        return {}
+
+
 # ── Global Insights ──────────────────────────────────────────────────────────
 
 GLOBAL_INSIGHTS_SCHEMA = """

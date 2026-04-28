@@ -244,3 +244,104 @@ class TestSchema:
         from rss2cubox.db_client import ARTICLES_SCHEMA
 
         assert "PRIMARY KEY" in ARTICLES_SCHEMA.upper()
+
+
+class TestGetAllArticleIds:
+    """Test get_all_article_ids for deduplication."""
+
+    def test_get_all_article_ids_returns_set(self):
+        """Should return a set of article IDs."""
+        conn, cur = make_mock_conn()
+        cur.fetchall.return_value = [("eid_1",), ("eid_2",), ("eid_3",)]
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import get_all_article_ids
+            result = get_all_article_ids(db_url="postgresql://localhost/test")
+
+            assert isinstance(result, set)
+            assert len(result) == 3
+            assert "eid_1" in result
+            assert "eid_2" in result
+            assert "eid_3" in result
+
+    def test_get_all_article_ids_uses_correct_query(self):
+        """Should query id column with proper filtering."""
+        conn, cur = make_mock_conn()
+        cur.fetchall.return_value = []
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import get_all_article_ids
+            get_all_article_ids(db_url="postgresql://localhost/test")
+
+            cur.execute.assert_called()
+            call_args = cur.execute.call_args
+            sql = call_args[0][0]
+            params = call_args[0][1] if len(call_args[0]) > 1 else None
+            assert "SELECT id FROM articles" in sql
+            assert "id IS NOT NULL" in sql
+            assert "id != ''" in sql
+
+    def test_get_all_article_ids_returns_empty_set_on_error(self):
+        """Should return empty set when database query fails."""
+        with patch("rss2cubox.db_client.psycopg.connect", side_effect=Exception("Connection failed")):
+            from rss2cubox.db_client import get_all_article_ids
+            result = get_all_article_ids(db_url="postgresql://localhost/test")
+
+            assert result == set()
+
+    def test_get_all_article_ids_returns_empty_set_when_no_url(self):
+        """Should return empty set when LOCAL_DB_URL is not set."""
+        with patch.dict("os.environ", {}, clear=True):
+            from rss2cubox.db_client import get_all_article_ids
+            result = get_all_article_ids(db_url=None)
+
+            assert result == set()
+
+
+class TestGetFeedCursors:
+    """Test get_feed_cursors for feed cursor-based incremental fetching."""
+
+    def test_get_feed_cursors_returns_dict(self):
+        """Should return dict mapping source_feed_id to latest time."""
+        conn, cur = make_mock_conn()
+        cur.fetchall.return_value = [
+            ("https://rss.arxiv.org/rss/cs.LG", datetime(2026, 4, 28, 12, 0, 0)),
+            ("https://rsshub.app/sspai/index", datetime(2026, 4, 27, 10, 30, 0)),
+        ]
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import get_feed_cursors
+            result = get_feed_cursors(db_url="postgresql://localhost/test")
+
+            assert isinstance(result, dict)
+            assert len(result) == 2
+            assert "https://rss.arxiv.org/rss/cs.LG" in result
+            assert "https://rsshub.app/sspai/index" in result
+
+    def test_get_feed_cursors_uses_group_by_query(self):
+        """Should use GROUP BY source_feed_id with MAX(publish_time)."""
+        conn, cur = make_mock_conn()
+        cur.fetchall.return_value = []
+        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+            from rss2cubox.db_client import get_feed_cursors
+            get_feed_cursors(db_url="postgresql://localhost/test")
+
+            cur.execute.assert_called()
+            call_args = cur.execute.call_args
+            sql = call_args[0][0]
+            assert "GROUP BY source_feed_id" in sql
+            assert "MAX(publish_time)" in sql
+            assert "source_feed_id IS NOT NULL" in sql
+
+    def test_get_feed_cursors_returns_empty_dict_on_error(self):
+        """Should return empty dict when database query fails."""
+        with patch("rss2cubox.db_client.psycopg.connect", side_effect=Exception("Connection failed")):
+            from rss2cubox.db_client import get_feed_cursors
+            result = get_feed_cursors(db_url="postgresql://localhost/test")
+
+            assert result == {}
+
+    def test_get_feed_cursors_returns_empty_dict_when_no_url(self):
+        """Should return empty dict when LOCAL_DB_URL is not set."""
+        with patch.dict("os.environ", {}, clear=True):
+            from rss2cubox.db_client import get_feed_cursors
+            result = get_feed_cursors(db_url=None)
+
+            assert result == {}
