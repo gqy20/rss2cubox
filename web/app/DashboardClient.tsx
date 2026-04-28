@@ -148,6 +148,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [dateMenuOpen, setDateMenuOpen] = useState(false)
   const [dateQuery, setDateQuery] = useState('')
+  const [activeDateKey, setActiveDateKey] = useState<string | null>(null)
 
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [shouldLoadCharts, setShouldLoadCharts] = useState(false)
@@ -353,6 +354,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       return dayKey.includes(query) || label.toLowerCase().includes(query)
     })
   }, [allDates, dateQuery, todayKey, yesterdayKey])
+  const recentDateOptions = useMemo(() => allDates.slice(0, 7), [allDates])
 
   const insightPanels = useMemo(
     () => [
@@ -439,6 +441,34 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     loading: loadingMore,
     rootMargin: '0px 0px 240px 0px',
   })
+
+  useEffect(() => {
+    const root = timelineRef.current
+    if (!root) return
+
+    const updateActiveDate = () => {
+      const rootRect = root.getBoundingClientRect()
+      const anchorY = rootRect.top + 96
+      let candidate: string | null = null
+      let candidateTop = -Infinity
+
+      for (const group of groupedRows) {
+        const el = groupRefs.current[group.id]
+        if (!el) continue
+        const rect = el.getBoundingClientRect()
+        if (rect.top <= anchorY && rect.bottom >= rootRect.top && rect.top > candidateTop) {
+          candidate = group.id
+          candidateTop = rect.top
+        }
+      }
+
+      setActiveDateKey(candidate ?? groupedRows[0]?.id ?? null)
+    }
+
+    updateActiveDate()
+    root.addEventListener('scroll', updateActiveDate, { passive: true })
+    return () => root.removeEventListener('scroll', updateActiveDate)
+  }, [groupedRows])
 
   const clearAllFilters = () => {
     setSearch(''); setSelectedSource(null); setSelectedTag(null); setFilter('all'); setTimeScope('all')
@@ -767,6 +797,20 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{displayedRows.length}</span>
             {isSearchMode && <span> / {searchTotal}</span>} 条结果
           </div>
+          {recentDateOptions.length > 0 && (
+            <div className="date-strip" aria-label="最近日期快捷跳转">
+              {recentDateOptions.map((dayKey) => (
+                <button
+                  key={dayKey}
+                  className={activeDateKey === dayKey ? 'active' : ''}
+                  onClick={() => jumpToDateGroup(dayKey)}
+                >
+                  <span>{formatGroupTitle(dayKey, todayKey, yesterdayKey)}</span>
+                  <strong>{metrics.daily_totals?.[dayKey] || 0}</strong>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="timeline-container" ref={timelineRef}>
