@@ -1438,6 +1438,8 @@ body {
   cursor: pointer;
   transition: background 0.15s;
   user-select: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .hashtag:hover {
@@ -1467,6 +1469,7 @@ body {
 .signal-meta-list {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
   min-width: 0;
 }
@@ -1721,8 +1724,8 @@ body {
 
 /* Performance optimization: skip rendering off-screen content */
 .timeline-item {
-  content-visibility: auto;
-  contain-intrinsic-size: 0 200px;
+  /*   */
+   
 }
 
 /* Performance optimization: reduce motion for users who prefer it */

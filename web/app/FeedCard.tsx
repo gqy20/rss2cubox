@@ -221,6 +221,18 @@ const FeedCard = React.memo(function FeedCard({
               <span
                 key={i}
                 className={`hashtag${selectedTag === tag ? ' hashtag-active' : ''}`}
+                title={tag}
+                style={{
+                  height: '20px',
+                  lineHeight: '16px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  boxSizing: 'border-box',
+                  whiteSpace: 'nowrap',
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis'
+                }}
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -282,7 +294,26 @@ const FeedCard = React.memo(function FeedCard({
             <div className="signal-meta-group">
               <strong className="signal-meta-label">实体</strong>
               <div className="signal-meta-list">
-                {entities.map((entity) => <span key={entity} className="hashtag">{entity}</span>)}
+                {entities.map((entity) => (
+                  <span
+                    key={entity}
+                    className="hashtag"
+                    title={entity}
+                    style={{
+                      height: '20px',
+                      lineHeight: '16px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      boxSizing: 'border-box',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {String(entity).trim().replace(/\s+/g, ' ')}
+                  </span>
+                ))}
               </div>
             </div>
           )}
@@ -290,7 +321,26 @@ const FeedCard = React.memo(function FeedCard({
             <div className="signal-meta-group">
               <strong className="signal-meta-label">追踪</strong>
               <div className="signal-meta-list">
-                {watchKeywords.map((keyword) => <span key={keyword} className="hashtag">{keyword}</span>)}
+                {watchKeywords.map((keyword) => (
+                  <span
+                    key={keyword}
+                    className="hashtag"
+                    title={keyword}
+                    style={{
+                      height: '20px',
+                      lineHeight: '16px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      boxSizing: 'border-box',
+                      whiteSpace: 'nowrap',
+                      maxWidth: '100%',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}
+                  >
+                    {String(keyword).trim().replace(/\s+/g, ' ')}
+                  </span>
+                ))}
               </div>
             </div>
           )}
