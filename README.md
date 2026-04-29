@@ -42,6 +42,12 @@ https://hub.slarker.me
 https://rsshub.pseudoyu.com
 ```
 
+**Bilibili 路由说明**：本项目使用自定义 fork 的 RSSHub（[gqy20/RSSHub](https://github.com/gqy20/RSSHub)），包含以下改进：
+- `video-browser` 路由：使用 Puppeteer 渲染页面提取视频数据，绕过 Bilibili API 的 WBI 签名反爬
+- 修复标题提取逻辑：解决部分 UID 返回空结果的问题
+
+feeds.txt 中的 Bilibili 路由使用 `/bilibili/user/video-browser/:uid` 格式。
+
 ## 3) 必要环境变量
 
 ```bash

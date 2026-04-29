@@ -1,5 +1,6 @@
 # RSSHub public instance pool (one URL per line)
 # 常用实例放前面（按成功率排序）
+# 自定义 fork（gqy20/RSSHub）：包含 bilibili video-browser 路由
 https://rss.spriple.org
 https://rsshub.rssforever.com
 https://hub.slarker.me
