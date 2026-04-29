@@ -55,4 +55,38 @@ describe('FeedCard enrich fields', () => {
     expect(screen.getByText('Bedrock')).toBeInTheDocument()
     expect(screen.getByText('未来30天会出现更多云厂商 Agent runtime 集成。')).toBeInTheDocument()
   })
+
+  it('treats entity-only metadata as expandable signal details', () => {
+    const row: Row = {
+      id: 'r2',
+      title: 'Model context protocol update',
+      url: 'https://example.com/mcp',
+      source: 'Example',
+      time: '2026-04-29T10:00:00.000',
+      hidden_signal: 'MCP 生态继续扩展。',
+      entities: ['MCP', 'OpenAI'],
+    }
+
+    render(
+      <FeedCard
+        row={row}
+        idx={0}
+        groupId="2026-04-29"
+        now={new Date('2026-04-29T10:30:00.000')}
+        hoveredRowKey="r2"
+        selectedTag={null}
+        onHoverEnter={vi.fn()}
+        onHoverLeave={vi.fn()}
+        onToggleOpen={vi.fn()}
+        onTagClick={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('button', { expanded: true })).toBeInTheDocument()
+    expect(screen.getByText('收起详情')).toBeInTheDocument()
+    expect(screen.getByText('实体')).toBeInTheDocument()
+    expect(screen.getByText('MCP')).toBeInTheDocument()
+    expect(screen.getByText('OpenAI')).toBeInTheDocument()
+    expect(screen.queryByText('追踪')).not.toBeInTheDocument()
+  })
 })

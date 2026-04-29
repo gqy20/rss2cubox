@@ -1449,6 +1449,28 @@ body {
   color: #d8e8ff !important;
 }
 
+.signal-meta-group {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 6px;
+  align-items: start;
+  margin-top: 8px;
+}
+
+.signal-meta-label {
+  color: #8aa3be;
+  font-size: 12px;
+  line-height: 22px;
+  font-weight: 700;
+}
+
+.signal-meta-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
 .t-reason-preview {
   display: block;
   font-size: 12px;

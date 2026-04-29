@@ -88,7 +88,6 @@ const FeedCard = React.memo(function FeedCard({
   const hasSummary = hasAiSummary(row)
   const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
   const isHovered = hoveredRowKey === rowKey
-  const hasAiContent = Boolean(row.core_event || row.actionable || row.reason)
   const importanceScore = getImportanceScore(row.importance_score)
   const signalTypeLabel = getSignalTypeLabel(row.signal_type)
   const contentSourceLabel = getContentSourceLabel(row.content_source)
@@ -98,6 +97,17 @@ const FeedCard = React.memo(function FeedCard({
   const impactHorizonLabel = getImpactHorizonLabel(row.impact_horizon)
   const entities = Array.isArray(row.entities) ? row.entities.filter(Boolean).slice(0, 4) : []
   const watchKeywords = Array.isArray(row.watch_keywords) ? row.watch_keywords.filter(Boolean).slice(0, 4) : []
+  const hasPrimaryAiContent = Boolean(row.core_event || row.actionable || row.reason)
+  const hasSignalMetadata = Boolean(
+    evidenceStrength ||
+    noveltyScore ||
+    confidence ||
+    impactHorizonLabel ||
+    entities.length > 0 ||
+    watchKeywords.length > 0 ||
+    row.prediction,
+  )
+  const hasExpandableContent = hasPrimaryAiContent || hasSignalMetadata
   const isYoutubeRow = /youtube\.com\/watch|youtu\.be\//i.test(row.url || '')
   const isBiliRow = /(?:bilibili\.com|b23\.tv)\//i.test(row.url || '')
   const bvid = extractBvid(row.url || '')
@@ -122,18 +132,18 @@ const FeedCard = React.memo(function FeedCard({
         onMouseEnter={() => onHoverEnter(rowKey)}
         onMouseLeave={() => onHoverLeave(rowKey)}
         onClick={() => {
-          if (hasAiContent) onToggleOpen(rowKey)
+          if (hasExpandableContent) onToggleOpen(rowKey)
         }}
         onKeyDown={(e) => {
-          if (!hasAiContent) return
+          if (!hasExpandableContent) return
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             onToggleOpen(rowKey)
           }
         }}
-        role={hasAiContent ? 'button' : undefined}
-        tabIndex={hasAiContent ? 0 : undefined}
-        aria-expanded={hasAiContent ? isHovered : undefined}
+        role={hasExpandableContent ? 'button' : undefined}
+        tabIndex={hasExpandableContent ? 0 : undefined}
+        aria-expanded={hasExpandableContent ? isHovered : undefined}
       >
         <div className="t-header" style={{ marginBottom: 6 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
@@ -223,13 +233,17 @@ const FeedCard = React.memo(function FeedCard({
           </div>
         )}
 
-        {!hasAiContent && (row.hidden_signal || row.core_event || row.actionable) && (
+        {!hasPrimaryAiContent && (row.hidden_signal || row.core_event || row.actionable) && (
           <p className="t-reason-preview t-reason-single" style={{ margin: 0 }}>
             {row.hidden_signal || row.core_event || row.actionable}
           </p>
         )}
 
-        {hasAiContent && <p className="t-expand-hint">{isHovered ? '收起 AI 分析' : '点击查看 AI 分析'}</p>}
+        {hasExpandableContent && (
+          <p className="t-expand-hint">
+            {isHovered ? '收起详情' : hasPrimaryAiContent ? '点击查看 AI 分析' : '点击查看信号元数据'}
+          </p>
+        )}
 
         <div className={`t-ai-content${isHovered ? ' expanded' : ''}`}>
           {(evidenceStrength || noveltyScore || confidence || impactHorizonLabel) && (
@@ -265,15 +279,19 @@ const FeedCard = React.memo(function FeedCard({
             </div>
           )}
           {entities.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-              <strong style={{ color: '#8aa3be', fontSize: 12, lineHeight: '22px' }}>实体</strong>
-              {entities.map((entity) => <span key={entity} className="hashtag">{entity}</span>)}
+            <div className="signal-meta-group">
+              <strong className="signal-meta-label">实体</strong>
+              <div className="signal-meta-list">
+                {entities.map((entity) => <span key={entity} className="hashtag">{entity}</span>)}
+              </div>
             </div>
           )}
           {watchKeywords.length > 0 && (
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
-              <strong style={{ color: '#8aa3be', fontSize: 12, lineHeight: '22px' }}>追踪</strong>
-              {watchKeywords.map((keyword) => <span key={keyword} className="hashtag">{keyword}</span>)}
+            <div className="signal-meta-group">
+              <strong className="signal-meta-label">追踪</strong>
+              <div className="signal-meta-list">
+                {watchKeywords.map((keyword) => <span key={keyword} className="hashtag">{keyword}</span>)}
+              </div>
             </div>
           )}
           {row.prediction && (
