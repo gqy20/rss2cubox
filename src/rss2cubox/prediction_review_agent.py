@@ -40,7 +40,12 @@ SYSTEM_PROMPT = (
 )
 
 
-def run_prediction_review_agent(prediction: dict[str, Any], articles: list[dict[str, Any]]) -> dict[str, Any]:
+def run_prediction_review_agent(
+    prediction: dict[str, Any],
+    articles: list[dict[str, Any]],
+    *,
+    log_event: Any | None = None,
+) -> dict[str, Any]:
     prompt = json.dumps(
         {
             "prediction": prediction,
@@ -53,6 +58,21 @@ def run_prediction_review_agent(prediction: dict[str, Any], articles: list[dict[
         },
         ensure_ascii=False,
     )
+
+    def sdk_logger(event: str, **fields: Any) -> None:
+        if log_event is None:
+            return
+        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
+        log_event(
+            level,
+            event,
+            stage="agent_sdk",
+            agent="prediction_review",
+            prediction_id=prediction.get("id"),
+            article_count=len(articles),
+            **fields,
+        )
+
     payload = anyio.run(partial(
         run_json_agent,
         prompt=prompt,
@@ -60,6 +80,7 @@ def run_prediction_review_agent(prediction: dict[str, Any], articles: list[dict[
         schema=PREDICTION_REVIEW_OUTPUT_SCHEMA,
         max_turns=20,
         max_budget_usd=_budget("PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD", 10.0),
+        sdk_log=sdk_logger,
     ))
     return _validate_payload(payload, prediction, {str(article["id"]) for article in articles if article.get("id")})
 

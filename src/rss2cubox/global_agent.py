@@ -130,6 +130,7 @@ def _normalize_global_payload(payload: dict[str, Any]) -> dict[str, list[str]]:
 async def _run_agent(
     high_value_items: list[dict],
     history_signals: dict[str, list[str]],
+    log_event: Any | None = None,
 ) -> dict[str, Any] | None:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
@@ -215,6 +216,19 @@ async def _run_agent(
 
     stderr_lines, stderr_logger = _make_stderr_logger("global_agent")
 
+    def sdk_logger(event: str, **fields: Any) -> None:
+        if log_event is None:
+            return
+        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
+        log_event(
+            level,
+            event,
+            stage="agent_sdk",
+            agent="global",
+            source_count=len(high_value_items),
+            **fields,
+        )
+
     try:
         structured_output = await run_json_agent(
             prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)),
@@ -227,6 +241,7 @@ async def _run_agent(
             cwd=Path.cwd(),
             setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
             stderr=stderr_logger,
+            sdk_log=sdk_logger,
         )
         result = _normalize_global_payload(structured_output)
         print("[global_agent] structured_output: ok", flush=True)
@@ -255,6 +270,7 @@ async def _run_agent(
 def run_global_analysis(
     analyses: dict[str, dict],
     candidates: list[dict],
+    log_event: Any | None = None,
 ) -> None:
     """
     从本次 pipeline 的分析结果中筛出可用于全局分析的条目，
@@ -305,7 +321,10 @@ def run_global_analysis(
 
     print(f"[global_agent] 启动全局 Agent 分析，共 {len(high_value)} 条候选情报...", flush=True)
 
-    result = anyio.run(_run_agent, high_value, history_signals)
+    if log_event is None:
+        result = anyio.run(_run_agent, high_value, history_signals)
+    else:
+        result = anyio.run(_run_agent, high_value, history_signals, log_event)
 
     if not result:
         print("[global_agent] Agent 未返回有效报告", flush=True)

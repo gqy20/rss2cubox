@@ -273,7 +273,7 @@ def main() -> None:
 
     # 全局 Agent 深度分析（如失败不影响主流程）
     try:
-        run_global_analysis(analyses=analyses, candidates=candidates_for_run)
+        run_global_analysis(analyses=analyses, candidates=candidates_for_run, log_event=log_event)
     except Exception as e:
         log_event("WARN", "global_agent_failed", stage="global_agent", error=str(e))
 

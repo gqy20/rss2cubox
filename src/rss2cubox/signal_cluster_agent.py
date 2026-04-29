@@ -97,6 +97,7 @@ def run_signal_cluster_agent(
     *,
     existing_clusters: list[dict[str, Any]] | None = None,
     now: datetime | None = None,
+    log_event: Any | None = None,
 ) -> dict[str, list[dict[str, Any]]]:
     if not articles:
         return {"clusters": [], "links": []}
@@ -115,6 +116,21 @@ def run_signal_cluster_agent(
         },
         ensure_ascii=False,
     )
+
+    def sdk_logger(event: str, **fields: Any) -> None:
+        if log_event is None:
+            return
+        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
+        log_event(
+            level,
+            event,
+            stage="agent_sdk",
+            agent="signal_cluster",
+            article_count=len(articles),
+            existing_cluster_count=len(existing_clusters or []),
+            **fields,
+        )
+
     payload = anyio.run(partial(
         run_json_agent,
         prompt=prompt,
@@ -122,6 +138,7 @@ def run_signal_cluster_agent(
         schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
         max_turns=20,
         max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
+        sdk_log=sdk_logger,
     ))
     return _validate_payload(payload, {str(article["id"]) for article in articles if article.get("id")})
 

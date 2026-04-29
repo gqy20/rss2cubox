@@ -98,7 +98,11 @@ def main() -> None:
             stats["articles"] = len(articles)
             if articles:
                 existing_clusters = get_existing_signal_clusters(limit=PREDICTION_LOOP_EXISTING_CLUSTER_LIMIT)
-                cluster_result = run_signal_cluster_agent(articles, existing_clusters=existing_clusters)
+                cluster_result = run_signal_cluster_agent(
+                    articles,
+                    existing_clusters=existing_clusters,
+                    log_event=log_event,
+                )
                 cluster_ids = save_signal_clusters(cluster_result)
                 stats["clusters"] = len(cluster_result.get("clusters", []))
                 stats["links"] = len(cluster_result.get("links", []))
@@ -117,7 +121,7 @@ def main() -> None:
             due_predictions = get_due_trend_predictions(limit=PREDICTION_LOOP_REVIEW_LIMIT)
             for prediction in due_predictions:
                 articles = get_prediction_window_articles(prediction, limit=PREDICTION_LOOP_REVIEW_ARTICLE_LIMIT)
-                review = run_prediction_review_agent(prediction, articles)
+                review = run_prediction_review_agent(prediction, articles, log_event=log_event)
                 if save_prediction_review(review):
                     stats["reviews"] += 1
             _mark_stage_done("review")
@@ -135,6 +139,7 @@ def main() -> None:
                     clusters,
                     historical_reviews=historical_reviews,
                     max_predictions=PREDICTION_LOOP_MAX_PREDICTIONS,
+                    log_event=log_event,
                 )
                 if predictions:
                     if not cluster_ids:

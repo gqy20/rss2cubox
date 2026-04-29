@@ -15,7 +15,7 @@ def test_prediction_loop_runner_runs_all_agents_in_one_pass(monkeypatch):
     monkeypatch.setattr(prediction_loop_runner, "save_signal_clusters", lambda result: {"3:test": 1})
     monkeypatch.setattr(prediction_loop_runner, "get_due_trend_predictions", lambda **kwargs: [{"id": 2, "signal_cluster_id": 1}])
     monkeypatch.setattr(prediction_loop_runner, "get_prediction_window_articles", lambda prediction, **kwargs: [{"id": "a1"}])
-    monkeypatch.setattr(prediction_loop_runner, "run_prediction_review_agent", lambda prediction, articles: {"prediction_id": 2})
+    monkeypatch.setattr(prediction_loop_runner, "run_prediction_review_agent", lambda prediction, articles, **kwargs: {"prediction_id": 2})
     monkeypatch.setattr(prediction_loop_runner, "save_prediction_review", lambda review: True)
     monkeypatch.setattr(prediction_loop_runner, "get_signal_clusters_for_prediction", lambda **kwargs: [{"id": 1, "cluster_key": "3:test"}])
     monkeypatch.setattr(prediction_loop_runner, "get_recent_prediction_reviews", lambda **kwargs: [{"score": 4}])

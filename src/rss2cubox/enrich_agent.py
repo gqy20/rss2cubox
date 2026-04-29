@@ -161,7 +161,7 @@ def _has_enrich_content(payload: dict[str, Any] | None) -> bool:
     return bool(payload and (payload.get("core_event") or payload.get("hidden_signal") or payload.get("reason")))
 
 
-async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
+async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) -> tuple[dict | None, str]:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
     直接信任 structured_output，失败即返回错误。
@@ -207,6 +207,20 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
     eid_short = item.get("eid", "")[:8]
     stderr_lines, stderr_logger = _make_stderr_logger(f"enrich_agent:{eid_short}")
 
+    def sdk_logger(event: str, **fields: Any) -> None:
+        if log_event is None:
+            return
+        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
+        log_event(
+            level,
+            event,
+            stage="agent_sdk",
+            agent="enrich",
+            eid=item.get("eid", ""),
+            url=expected_url,
+            **fields,
+        )
+
     try:
         structured_output = await run_json_agent(
             prompt=_build_user_prompt(item, original),
@@ -221,6 +235,7 @@ async def _enrich_one(item: dict, original: dict) -> tuple[dict | None, str]:
             stderr=stderr_logger,
             # 显式传递 ANTHROPIC_API_KEY 使 .env 拥有最高优先级
             env={k: v for k, v in os.environ.items() if k == "ANTHROPIC_API_KEY"},
+            sdk_log=sdk_logger,
         )
         return structured_output, "ok"
     except Exception as e:
@@ -254,7 +269,7 @@ async def _enrich_all(
                 url=str(item.get("url", "")).strip(),
             )
             try:
-                enriched, reason = await _enrich_one(item, original)
+                enriched, reason = await _enrich_one(item, original, log_event)
                 duration_ms = int((time.perf_counter() - started_at) * 1000)
                 if enriched:
                     merged = {**original}

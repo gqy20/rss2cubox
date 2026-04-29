@@ -65,6 +65,7 @@ def run_trend_prediction_agent(
     now: datetime | None = None,
     horizon_days: int = 7,
     max_predictions: int = 5,
+    log_event: Any | None = None,
 ) -> list[dict[str, Any]]:
     if not clusters:
         return []
@@ -88,6 +89,22 @@ def run_trend_prediction_agent(
         },
         ensure_ascii=False,
     )
+
+    def sdk_logger(event: str, **fields: Any) -> None:
+        if log_event is None:
+            return
+        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
+        log_event(
+            level,
+            event,
+            stage="agent_sdk",
+            agent="trend_prediction",
+            cluster_count=len(clusters),
+            historical_review_count=len(historical_reviews or []),
+            max_predictions=max_predictions,
+            **fields,
+        )
+
     payload = anyio.run(partial(
         run_json_agent,
         prompt=prompt,
@@ -95,6 +112,7 @@ def run_trend_prediction_agent(
         schema=TREND_PREDICTION_OUTPUT_SCHEMA,
         max_turns=20,
         max_budget_usd=_budget("TREND_PREDICTION_AGENT_MAX_BUDGET_USD", 10.0),
+        sdk_log=sdk_logger,
     ))
     predictions = payload.get("predictions")
     if not isinstance(predictions, list):
