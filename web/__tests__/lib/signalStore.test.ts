@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { loadIcArticles, loadGlobalInsights } from '@/lib/signalStore'
+import { loadIcArticles, loadLocalArticles, loadGlobalInsights } from '@/lib/signalStore'
 
 // Mock fetch for signalStore tests
 const mockFetch = vi.fn()
@@ -73,5 +73,59 @@ describe('loadGlobalInsights', () => {
     const result = await loadGlobalInsights()
     expect(result).toBeNull()
     if (originalUrl !== undefined) process.env.NEON_DATABASE_URL = originalUrl
+  })
+})
+
+describe('loadLocalArticles', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('loads only the first page for dashboard SSR', async () => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [
+          {
+            id: 'a1',
+            title: 'Local Article',
+            url: 'https://example.com/local',
+            source: 'Local Source',
+            time: '2026-04-29T10:00:00.000',
+            tags: ['agent'],
+            core_event: 'Core event',
+            hidden_signal: 'Hidden signal',
+            actionable: 'Act now',
+            reason: 'Important',
+            signal_type: 3,
+            evidence_strength: 4,
+            novelty_score: 5,
+            impact_horizon: 3,
+            confidence: 4,
+            entities: ['OpenAI'],
+            watch_keywords: ['coding agent'],
+            prediction: '未来会出现更多工程实践。',
+          },
+        ],
+        cursor: 'next-cursor',
+        hasMore: true,
+        total: 27682,
+      }),
+    })
+
+    const result = await loadLocalArticles('http://localhost:3424')
+
+    expect(mockFetch).toHaveBeenCalledTimes(1)
+    expect(mockFetch).toHaveBeenCalledWith('/api/signals/local?limit=50')
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({
+      id: 'a1',
+      signal_type: 3,
+      evidence_strength: 4,
+      novelty_score: 5,
+      impact_horizon: 3,
+      confidence: 4,
+      entities: ['OpenAI'],
+      watch_keywords: ['coding agent'],
+      prediction: '未来会出现更多工程实践。',
+    })
   })
 })

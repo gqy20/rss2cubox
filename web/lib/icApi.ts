@@ -2,7 +2,7 @@
 // Unifies the duplicated logic between signalStore.ts and api/signals/route.ts
 
 export type IcArticle = {
-  id: number | string
+  id?: number | string
   title?: string | null
   source_feed_id?: string | null
   source_feed_name?: string | null
@@ -15,6 +15,15 @@ export type IcArticle = {
   actionable?: string | null
   hidden_signal?: string | null
   importance_score?: number | null
+  content_source?: string | null
+  signal_type?: number | null
+  evidence_strength?: number | null
+  novelty_score?: number | null
+  impact_horizon?: number | null
+  confidence?: number | null
+  entities?: string[] | null
+  watch_keywords?: string[] | null
+  prediction?: string | null
   created_at?: string | null
 }
 
@@ -42,6 +51,15 @@ export type EventRow = {
   core_event: string
   hidden_signal: string
   importance_score?: number
+  content_source?: string
+  signal_type?: number
+  evidence_strength?: number
+  novelty_score?: number
+  impact_horizon?: number
+  confidence?: number
+  entities?: string[]
+  watch_keywords?: string[]
+  prediction?: string
   actionable: string
   reason: string
   exported_at?: string
@@ -137,6 +155,15 @@ export function normalizeArticle(data: IcArticle): EventRow {
     core_event: String(data.description || ''),
     hidden_signal: String(data.hidden_signal || ''),
     importance_score: typeof data.importance_score === 'number' ? data.importance_score : undefined,
+    content_source: String(data.content_source || ''),
+    signal_type: typeof data.signal_type === 'number' ? data.signal_type : undefined,
+    evidence_strength: typeof data.evidence_strength === 'number' ? data.evidence_strength : undefined,
+    novelty_score: typeof data.novelty_score === 'number' ? data.novelty_score : undefined,
+    impact_horizon: typeof data.impact_horizon === 'number' ? data.impact_horizon : undefined,
+    confidence: typeof data.confidence === 'number' ? data.confidence : undefined,
+    entities: Array.isArray(data.entities) ? data.entities.map((v) => String(v)) : [],
+    watch_keywords: Array.isArray(data.watch_keywords) ? data.watch_keywords.map((v) => String(v)) : [],
+    prediction: String(data.prediction || ''),
     actionable: String(data.actionable || ''),
     reason: String(data.reason || ''),
     exported_at: '',

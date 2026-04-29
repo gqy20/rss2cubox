@@ -28,13 +28,30 @@ export async function GET() {
       `)
       const analyzed = parseInt(analyzedResult.rows[0]?.count || '0', 10)
 
-      // Count articles written today. The local DB stores timestamps without
-      // timezone, so use the stored local date directly.
+      // Use the same display-time semantics as the signal stream:
+      // publish_time when present, otherwise created_at.
       const todayResult = await client.query(`
-        SELECT COUNT(*) FROM articles
-        WHERE DATE(created_at) = CURRENT_DATE
+        SELECT
+          COUNT(*) FILTER (WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE) as today,
+          COUNT(*) FILTER (WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE - INTERVAL '1 day') as yesterday,
+          COUNT(*) FILTER (
+            WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE
+              AND ((description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != ''))
+          ) as analyzed_today,
+          COUNT(*) FILTER (
+            WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE - INTERVAL '1 day'
+              AND ((description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != ''))
+          ) as analyzed_yesterday,
+          COUNT(DISTINCT source_feed_id) FILTER (WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE AND source_feed_id IS NOT NULL AND source_feed_id != '') as sources_today,
+          COUNT(DISTINCT source_feed_id) FILTER (WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE - INTERVAL '1 day' AND source_feed_id IS NOT NULL AND source_feed_id != '') as sources_yesterday
+        FROM articles
       `)
-      const today = parseInt(todayResult.rows[0]?.count || '0', 10)
+      const today = parseInt(todayResult.rows[0]?.today || '0', 10)
+      const yesterday = parseInt(todayResult.rows[0]?.yesterday || '0', 10)
+      const analyzedToday = parseInt(todayResult.rows[0]?.analyzed_today || '0', 10)
+      const analyzedYesterday = parseInt(todayResult.rows[0]?.analyzed_yesterday || '0', 10)
+      const sourcesToday = parseInt(todayResult.rows[0]?.sources_today || '0', 10)
+      const sourcesYesterday = parseInt(todayResult.rows[0]?.sources_yesterday || '0', 10)
 
       // Count unique sources
       const sourcesResult = await client.query(`
@@ -43,7 +60,20 @@ export async function GET() {
       `)
       const sources = parseInt(sourcesResult.rows[0]?.count || '0', 10)
 
-      // Calculate ingest trend data for last 30 days.
+      const topSourcesResult = await client.query(`
+        SELECT COALESCE(NULLIF(source_feed_name, ''), NULLIF(source_feed_id, ''), 'unknown') as source,
+               COUNT(*) as count
+        FROM articles
+        GROUP BY COALESCE(NULLIF(source_feed_name, ''), NULLIF(source_feed_id, ''), 'unknown')
+        ORDER BY COUNT(*) DESC
+        LIMIT 10
+      `)
+      const topSourceCounts = topSourcesResult.rows.map((row) => ({
+        source: String(row.source || 'unknown'),
+        count: parseInt(row.count, 10),
+      }))
+
+      // Calculate display-time trend data for last 30 days.
       // Keep zero-count days so the 7d/30d chart toggle has a stable timeline.
       const trendResult = await client.query(`
         WITH days AS (
@@ -55,12 +85,12 @@ export async function GET() {
         ),
         daily AS (
           SELECT
-            DATE(created_at) as day,
+            DATE(COALESCE(publish_time, created_at)) as day,
             COUNT(*) as total,
             SUM(CASE WHEN (description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != '') THEN 1 ELSE 0 END) as analyzed
           FROM articles
-          WHERE created_at >= (CURRENT_DATE - INTERVAL '29 days')
-          GROUP BY DATE(created_at)
+          WHERE COALESCE(publish_time, created_at) >= (CURRENT_DATE - INTERVAL '29 days')
+          GROUP BY DATE(COALESCE(publish_time, created_at))
         )
         SELECT
           days.day,
@@ -76,12 +106,32 @@ export async function GET() {
         analyzed: parseInt(row.analyzed, 10),
       }))
 
+      const dailyTotalsResult = await client.query(`
+        SELECT to_char(DATE(COALESCE(publish_time, created_at)), 'YYYY-MM-DD') as day, COUNT(*) as total
+        FROM articles
+        GROUP BY DATE(COALESCE(publish_time, created_at))
+        ORDER BY day DESC
+      `)
+      const dailyTotals = Object.fromEntries(
+        dailyTotalsResult.rows.map((row) => [
+          String(row.day),
+          parseInt(row.total, 10),
+        ]),
+      )
+
       return NextResponse.json({
         total,
         analyzed,
         today,
+        yesterday,
+        analyzedToday,
+        analyzedYesterday,
+        sourcesToday,
+        sourcesYesterday,
         sources,
+        topSourceCounts,
         trendData,
+        dailyTotals,
       })
     } finally {
       client.release()

@@ -17,6 +17,49 @@ function getImportanceScore(value: unknown): number | null {
   return score >= 1 && score <= 5 ? score : null
 }
 
+function boundedScore(value: unknown): number | null {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return null
+  const score = Math.round(value)
+  return score >= 1 && score <= 5 ? score : null
+}
+
+const SIGNAL_TYPE_LABELS: Record<number, string> = {
+  1: '模型能力',
+  2: '基础设施',
+  3: '开发者工作流',
+  4: '产品应用',
+  5: '开源生态',
+  6: '研究算法',
+  7: '安全风险',
+  8: '监管政策',
+  9: '商业组织',
+  10: '数据评测',
+  11: '具身智能',
+  12: '其他',
+}
+
+const IMPACT_HORIZON_LABELS: Record<number, string> = {
+  1: '天级影响',
+  2: '周级影响',
+  3: '月级影响',
+  4: '季度影响',
+  5: '年级影响',
+}
+
+function getSignalTypeLabel(value: unknown): string {
+  return typeof value === 'number' ? SIGNAL_TYPE_LABELS[value] || '' : ''
+}
+
+function getImpactHorizonLabel(value: unknown): string {
+  return typeof value === 'number' ? IMPACT_HORIZON_LABELS[value] || '' : ''
+}
+
+function getContentSourceLabel(value: unknown): string {
+  if (value === 'full_text') return '全文'
+  if (value === 'summary_only') return '摘要'
+  return ''
+}
+
 type FeedCardProps = {
   row: Row
   idx: number
@@ -47,6 +90,14 @@ const FeedCard = React.memo(function FeedCard({
   const isHovered = hoveredRowKey === rowKey
   const hasAiContent = Boolean(row.core_event || row.actionable || row.reason)
   const importanceScore = getImportanceScore(row.importance_score)
+  const signalTypeLabel = getSignalTypeLabel(row.signal_type)
+  const contentSourceLabel = getContentSourceLabel(row.content_source)
+  const evidenceStrength = boundedScore(row.evidence_strength)
+  const noveltyScore = boundedScore(row.novelty_score)
+  const confidence = boundedScore(row.confidence)
+  const impactHorizonLabel = getImpactHorizonLabel(row.impact_horizon)
+  const entities = Array.isArray(row.entities) ? row.entities.filter(Boolean).slice(0, 4) : []
+  const watchKeywords = Array.isArray(row.watch_keywords) ? row.watch_keywords.filter(Boolean).slice(0, 4) : []
   const isYoutubeRow = /youtube\.com\/watch|youtu\.be\//i.test(row.url || '')
   const isBiliRow = /(?:bilibili\.com|b23\.tv)\//i.test(row.url || '')
   const bvid = extractBvid(row.url || '')
@@ -102,6 +153,16 @@ const FeedCard = React.memo(function FeedCard({
                 aria-label={`重要度 ${importanceScore}/5`}
               >
                 S{importanceScore}
+              </span>
+            )}
+            {signalTypeLabel && (
+              <span className="enriched-badge" title="信号类型">
+                {signalTypeLabel}
+              </span>
+            )}
+            {contentSourceLabel && (
+              <span className="enriched-badge" title="分析来源">
+                {contentSourceLabel}
               </span>
             )}
             <span suppressHydrationWarning className="node-time" title={`${row.time} ${formatShortTime(row.time)}`}>
@@ -171,6 +232,14 @@ const FeedCard = React.memo(function FeedCard({
         {hasAiContent && <p className="t-expand-hint">{isHovered ? '收起 AI 分析' : '点击查看 AI 分析'}</p>}
 
         <div className={`t-ai-content${isHovered ? ' expanded' : ''}`}>
+          {(evidenceStrength || noveltyScore || confidence || impactHorizonLabel) && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+              {evidenceStrength && <span className="hashtag">证据 {evidenceStrength}/5</span>}
+              {noveltyScore && <span className="hashtag">新颖 {noveltyScore}/5</span>}
+              {confidence && <span className="hashtag">置信 {confidence}/5</span>}
+              {impactHorizonLabel && <span className="hashtag">{impactHorizonLabel}</span>}
+            </div>
+          )}
           {row.core_event && (
             <div className="t-ai-box" style={{ padding: 10, marginBottom: 8, background: 'rgba(52, 211, 153, 0.04)', borderLeft: '2px solid #34d399', borderRadius: '0 4px 4px 0' }}>
               <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
@@ -192,6 +261,26 @@ const FeedCard = React.memo(function FeedCard({
               <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
                 <strong style={{ color: '#60a5fa', marginRight: 6 }}>分析</strong>
                 {row.reason}
+              </p>
+            </div>
+          )}
+          {entities.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              <strong style={{ color: '#8aa3be', fontSize: 12, lineHeight: '22px' }}>实体</strong>
+              {entities.map((entity) => <span key={entity} className="hashtag">{entity}</span>)}
+            </div>
+          )}
+          {watchKeywords.length > 0 && (
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 8 }}>
+              <strong style={{ color: '#8aa3be', fontSize: 12, lineHeight: '22px' }}>追踪</strong>
+              {watchKeywords.map((keyword) => <span key={keyword} className="hashtag">{keyword}</span>)}
+            </div>
+          )}
+          {row.prediction && (
+            <div className="t-ai-box" style={{ padding: 10, marginTop: 8, background: 'rgba(167, 139, 250, 0.04)', borderLeft: '2px solid #a78bfa', borderRadius: '0 4px 4px 0' }}>
+              <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
+                <strong style={{ color: '#a78bfa', marginRight: 6 }}>后续观察</strong>
+                {row.prediction}
               </p>
             </div>
           )}

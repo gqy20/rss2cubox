@@ -40,30 +40,16 @@ function getApiBaseUrl(apiBaseUrl?: string): string {
 
 export async function loadLocalArticles(apiBaseUrl?: string): Promise<EventRow[]> {
   const baseUrl = getApiBaseUrl(apiBaseUrl)
-  const allItems: EventRow[] = []
-  const pageSize = 100
-  let cursor: string | null = null
-  let hasMore = true
-
-  while (hasMore) {
-    const urlStr = baseUrl
-      ? `${baseUrl}/api/signals/local?limit=${pageSize}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`
-      : `/api/signals/local?limit=${pageSize}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ''}`
-    const response = await fetch(urlStr)
-    if (!response.ok) {
-      throw new Error(`Local API failed: ${response.status}`)
-    }
-    const jsonData = await response.json() as { data?: EventRow[], cursor?: string | null, hasMore?: boolean }
-    if (jsonData.data && jsonData.data.length > 0) {
-      allItems.push(...jsonData.data)
-      hasMore = jsonData.hasMore ?? false
-      cursor = jsonData.cursor ?? null
-    } else {
-      hasMore = false
-    }
+  const pageSize = 50
+  const urlStr = baseUrl
+    ? `${baseUrl}/api/signals/local?limit=${pageSize}`
+    : `/api/signals/local?limit=${pageSize}`
+  const response = await fetch(urlStr)
+  if (!response.ok) {
+    throw new Error(`Local API failed: ${response.status}`)
   }
-
-  return allItems
+  const jsonData = await response.json() as { data?: EventRow[] }
+  return Array.isArray(jsonData.data) ? jsonData.data : []
 }
 
 export async function loadArticles(apiBaseUrl?: string): Promise<EventRow[]> {
@@ -78,8 +64,15 @@ export type LocalStats = {
   total: number
   analyzed: number
   today: number
+  yesterday?: number
+  analyzedToday?: number
+  analyzedYesterday?: number
+  sourcesToday?: number
+  sourcesYesterday?: number
   sources: number
+  topSourceCounts?: Array<{ source: string; count: number }>
   trendData?: Array<{ name: string; total: number; analyzed: number }>
+  dailyTotals?: Record<string, number>
 }
 
 export async function loadLocalStats(apiBaseUrl?: string): Promise<LocalStats | null> {

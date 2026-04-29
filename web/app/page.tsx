@@ -74,10 +74,11 @@ function buildMetrics(rows: Row[], localStats?: LocalStats | null) {
     }
   }
 
-  const topSources = Object.entries(sourceCount)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 10)
-    .map(([source, count]) => ({ source, count }))
+  const topSources = localStats?.topSourceCounts
+    ?? Object.entries(sourceCount)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10)
+      .map(([source, count]) => ({ source, count }))
 
   // 计算最近30天的趋势数据，客户端再切换展示 7/30 天
   const dayMap = new Map<string, { name: string; total: number; analyzed: number }>()
@@ -126,15 +127,15 @@ function buildMetrics(rows: Row[], localStats?: LocalStats | null) {
     total_all: signalsTotal,
     analyzed_total: analyzedTotal,
     total_today: localStats?.today ?? totalToday,
-    total_yesterday: totalYesterday,
-    analyzed_today: analyzedToday,
-    analyzed_yesterday: analyzedYesterday,
-    sources_today: sourceToday.size,
-    sources_yesterday: sourceYesterday.size,
+    total_yesterday: localStats?.yesterday ?? totalYesterday,
+    analyzed_today: localStats?.analyzedToday ?? analyzedToday,
+    analyzed_yesterday: localStats?.analyzedYesterday ?? analyzedYesterday,
+    sources_today: localStats?.sourcesToday ?? sourceToday.size,
+    sources_yesterday: localStats?.sourcesYesterday ?? sourceYesterday.size,
     // 趋势数据
     timeline_points: trendData,
     // 每日数据量
-    daily_totals: dailyCounts,
+    daily_totals: localStats?.dailyTotals ?? dailyCounts,
   }
 }
 
@@ -175,6 +176,15 @@ async function loadDashboardData(apiBaseUrl?: string): Promise<{
       actionable: e.actionable,
       reason: e.reason,
       cover_url: e.cover_url,
+      content_source: e.content_source,
+      signal_type: e.signal_type,
+      evidence_strength: e.evidence_strength,
+      novelty_score: e.novelty_score,
+      impact_horizon: e.impact_horizon,
+      confidence: e.confidence,
+      entities: e.entities,
+      watch_keywords: e.watch_keywords,
+      prediction: e.prediction,
     })),
   )
   const insights = rawInsights
@@ -204,7 +214,7 @@ export default async function Page() {
     <main className="main">
       <DashboardClient
         initialRows={paginatedRows}
-        totalCount={rows.length}
+        totalCount={data.signals_total ?? rows.length}
         metrics={data}
         insights={insights}
         serverTime={serverTime}

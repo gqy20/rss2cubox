@@ -7,6 +7,15 @@ export type Row = {
   exported?: boolean
   enriched?: boolean
   importance_score?: number
+  content_source?: string
+  signal_type?: number
+  evidence_strength?: number
+  novelty_score?: number
+  impact_horizon?: number
+  confidence?: number
+  entities?: string[]
+  watch_keywords?: string[]
+  prediction?: string
   status?: string
   reason?: string
   tags?: string[]

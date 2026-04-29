@@ -26,6 +26,16 @@ function buildSearchWhere(search: string, paramIndex: number): { sql: string; va
   }
 }
 
+function asStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+  return value.map((item) => String(item)).filter((item) => item.trim().length > 0)
+}
+
+function asNumber(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isFinite(value)) return value
+  return undefined
+}
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
   const rawLimit = parseInt(searchParams.get('limit') || '50', 10)
@@ -85,6 +95,8 @@ export async function GET(request: NextRequest) {
         SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
                title, url, pic_url, description, publish_time, tags,
                importance_score, reason, actionable, hidden_signal,
+               content_source, signal_type, evidence_strength, novelty_score,
+               impact_horizon, confidence, entities, watch_keywords, prediction,
                to_char(COALESCE(publish_time, created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS display_time,
                created_at, updated_at
         FROM articles
@@ -121,7 +133,16 @@ export async function GET(request: NextRequest) {
         tags: Array.isArray(row.tags) ? row.tags : [],
         core_event: row.description || '',
         hidden_signal: row.hidden_signal || '',
-        importance_score: typeof row.importance_score === 'number' ? row.importance_score : undefined,
+        importance_score: asNumber(row.importance_score),
+        content_source: row.content_source || '',
+        signal_type: asNumber(row.signal_type),
+        evidence_strength: asNumber(row.evidence_strength),
+        novelty_score: asNumber(row.novelty_score),
+        impact_horizon: asNumber(row.impact_horizon),
+        confidence: asNumber(row.confidence),
+        entities: asStringArray(row.entities),
+        watch_keywords: asStringArray(row.watch_keywords),
+        prediction: row.prediction || '',
         actionable: row.actionable || '',
         reason: row.reason || '',
         cover_url: row.pic_url || '',
