@@ -36,7 +36,7 @@ async def run_json_agent(
         setting_sources=setting_sources,
         stderr=stderr,
         output_format={"type": "json_schema", "schema": schema},
-        env=env,
+        env=env or {},
     )
 
     async for message in query(prompt=prompt, options=options):

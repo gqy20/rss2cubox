@@ -424,6 +424,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
@@ -449,6 +450,59 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     assert len(posted_batches) == 1
     assert posted_batches[0][0] == "https://fake.api.com/api/v1/articles/batch"
     assert posted_batches[0][1][0]["url"] == "https://example.com/1"
+
+
+def test_main_ic_push_disabled_skips_ic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """IC_PUSH_ENABLED=false 时跳过 IC 推送，只写本地 DB。"""
+    feeds_file = tmp_path / "feeds.txt"
+    feeds_file.write_text("https://feed.example/rss\n", encoding="utf-8")
+
+    entries = [
+        {"id": "1", "link": "https://example.com/1", "title": "First", "summary": "A"},
+    ]
+
+    ic_posted = []
+    local_saved = []
+
+    def fake_fetch(url: str):  # noqa: ANN001
+        return SimpleNamespace(bozo=False, entries=entries)
+
+    def fake_post_articles_in_chunks(**kwargs):  # noqa: ANN001
+        ic_posted.append(kwargs)
+        return ["ok"]
+
+    def fake_save_articles(records):  # noqa: ANN001
+        local_saved.extend(records)
+
+    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
+    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
+    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
+    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", False)
+    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
+    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
+    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
+        item["eid"]: {
+            "reason": "高价值",
+            "actionable": "跟进",
+            "hidden_signal": "信号",
+            "tags": ["rss"],
+            "core_event": item["title"],
+        }
+        for item in kwargs["candidates"]
+    })
+    monkeypatch.setattr(runner.sync_pipeline, "post_articles_in_chunks", fake_post_articles_in_chunks)
+    monkeypatch.setattr(runner, "save_articles", fake_save_articles)
+    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
+    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+
+    runner.main()
+
+    assert len(ic_posted) == 0
+    assert len(local_saved) == 1
+    assert local_saved[0]["url"] == "https://example.com/1"
 
 
 def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -495,6 +549,7 @@ def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypa
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner, "FEED_CURSOR_LOOKBACK_HOURS", 24)
     monkeypatch.setattr(
@@ -555,6 +610,7 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
     monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
@@ -608,6 +664,7 @@ def test_main_skips_articles_already_in_ic(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(
         runner.sync_pipeline,
@@ -637,6 +694,16 @@ def test_main_skips_articles_already_in_ic(tmp_path: Path, monkeypatch: pytest.M
 
     posted_urls = [article["url"] for batch in posted_batches for article in batch]
     assert posted_urls == ["https://example.com/new"]
+
+
+def test_run_json_agent_env_none_does_not_crash(monkeypatch: pytest.MonkeyPatch) -> None:
+    """env=None 不应导致 'NoneType object is not a mapping' 崩溃。"""
+    from rss2cubox.agent_sdk_runner import run_json_agent
+    import inspect
+
+    source = inspect.getsource(run_json_agent)
+    # 防御性检查：env= 传入 ClaudeAgentOptions 时必须用 or {} 保护
+    assert "env=env or {}" in source, "env 参数应使用 `env or {}` 防止 None 崩溃"
 
 
 def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -706,6 +773,7 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner, "FEED_FETCH_CONCURRENCY", 4)
     monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))

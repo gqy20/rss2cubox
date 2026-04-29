@@ -59,6 +59,7 @@ def _build_run_id(now: datetime) -> str:
     )
 
 IC_API_URL = os.getenv("IC_API_URL", "").strip()
+IC_PUSH_ENABLED = os.getenv("IC_PUSH_ENABLED", "true").strip().lower() in ("1", "true", "yes")
 IC_SOURCE_TYPE = os.getenv("IC_SOURCE_TYPE", "gqy").strip() or "gqy"
 KEYWORDS_INCLUDE = [k.strip() for k in os.getenv("KEYWORDS_INCLUDE", "").split(",") if k.strip()]
 KEYWORDS_EXCLUDE = [k.strip() for k in os.getenv("KEYWORDS_EXCLUDE", "").split(",") if k.strip()]
@@ -112,7 +113,7 @@ def main() -> None:
     )
     stage_metrics = StageMetrics()
     processed, feed_cursor = sync_pipeline.load_ic_state(
-        api_url=IC_API_URL,
+        api_url=IC_API_URL if IC_PUSH_ENABLED else "",
         source_type=IC_SOURCE_TYPE,
         request_get=requests.get,
     )
@@ -157,6 +158,7 @@ def main() -> None:
         ai_enabled=stats["ai_enabled"],
         ai_model=ANTHROPIC_MODEL if stats["ai_enabled"] else "",
         feed_fetch_concurrency=FEED_FETCH_CONCURRENCY,
+        ic_push_enabled=IC_PUSH_ENABLED,
     )
 
     candidates = feed_sources.collect_candidates_from_feeds(
@@ -229,35 +231,38 @@ def main() -> None:
         article_records.append(article)
 
     if article_records:
-        sync_pipeline.post_articles_in_chunks(
-            api_url=IC_API_URL,
-            request_post=requests.post,
-            articles=[
-                {
-                    key: value
-                    for key, value in row.items()
-                    if key
-                    in {
-                        "source_type",
-                        "source_feed_id",
-                        "source_feed_name",
-                        "source_article_id",
-                        "title",
-                        "url",
-                        "pic_url",
-                        "description",
-                        "publish_time",
-                        "tags",
-                        "reason",
-                        "actionable",
-                        "hidden_signal",
+        if IC_PUSH_ENABLED:
+            sync_pipeline.post_articles_in_chunks(
+                api_url=IC_API_URL,
+                request_post=requests.post,
+                articles=[
+                    {
+                        key: value
+                        for key, value in row.items()
+                        if key
+                        in {
+                            "source_type",
+                            "source_feed_id",
+                            "source_feed_name",
+                            "source_article_id",
+                            "title",
+                            "url",
+                            "pic_url",
+                            "description",
+                            "publish_time",
+                            "tags",
+                            "reason",
+                            "actionable",
+                            "hidden_signal",
+                        }
                     }
-                }
-                for row in article_records
-            ],
-            chunk_size=5,
-        )
-        # 同时写入本地 PostgreSQL（可选，失败不影响主流程）
+                    for row in article_records
+                ],
+                chunk_size=5,
+            )
+        else:
+            log_event("INFO", "ic_push_skipped", stage="push", reason="IC_PUSH_ENABLED=false")
+        # 写入本地 PostgreSQL（可选，失败不影响主流程）
         try:
             save_articles(article_records)
         except Exception as e:
