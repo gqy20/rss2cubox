@@ -140,6 +140,8 @@
 /bilibili/user/video/3546645734099512 # 智谱AI
 /bilibili/user/video/319759808 # 神秘的鱼仔
 /bilibili/user/video/52807953 # 创哥的AI实验室
+/bilibili/user/video/280780745 # 张小珺商业访谈录
+/bilibili/user/video/325864133 # 飞天闪客
 # 小红书（RSSHub）
 # 路由：/xiaohongshu/user/:user_id/notes
 # 说明：:user_id 为 24 位，需从小红书用户主页 URL 中提取

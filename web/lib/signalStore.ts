@@ -22,7 +22,7 @@ function getSourceType(): string {
 }
 
 function getApiSource(): string {
-  return process.env.API_SOURCE || 'ic'
+  return process.env.API_SOURCE || 'local'
 }
 
 export async function loadIcArticles(): Promise<EventRow[]> {
@@ -35,7 +35,7 @@ function getApiBaseUrl(apiBaseUrl?: string): string {
     return '' // Browser will use relative URL
   }
   // Server-side: need absolute URL
-  return apiBaseUrl || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
+  return apiBaseUrl || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3424'
 }
 
 export async function loadLocalArticles(apiBaseUrl?: string): Promise<EventRow[]> {
@@ -96,7 +96,23 @@ export async function loadLocalStats(apiBaseUrl?: string): Promise<LocalStats | 
   }
 }
 
-export async function loadGlobalInsights(): Promise<GlobalInsights | null> {
+export async function loadGlobalInsights(apiBaseUrl?: string): Promise<GlobalInsights | null> {
+  const baseUrl = getApiBaseUrl(apiBaseUrl)
+  const url = baseUrl
+    ? `${baseUrl}/api/signals/global-insights?limit=1`
+    : '/api/signals/global-insights?limit=1'
+
+  try {
+    const response = await fetch(url)
+    if (response.ok) {
+      const jsonData = await response.json() as { data?: InsightHistoryItem[] }
+      const latest = jsonData.data?.[0]?.data
+      if (latest) return latest
+    }
+  } catch {
+    // Fall back to the direct Neon reader below for older deployments.
+  }
+
   const sql = getInsightsSql()
   if (!sql) return null
   const rows = await sql`
@@ -115,7 +131,7 @@ export type InsightHistoryItem = {
 
 export async function loadAllGlobalInsights(limit: number = 30): Promise<InsightHistoryItem[]> {
   // 通过 API 路由获取，避免在客户端直接暴露数据库连接
-  const baseUrl = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000')
+  const baseUrl = typeof window !== 'undefined' ? '' : (process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3424')
   const url = baseUrl ? `${baseUrl}/api/signals/global-insights` : '/api/signals/global-insights'
 
   try {

@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid date format, expected YYYY-MM-DD' }, { status: 400 })
   }
 
-  const apiSource = process.env.API_SOURCE || 'ic'
+  const apiSource = process.env.API_SOURCE || 'local'
 
   if (apiSource === 'local') {
     // Use local PostgreSQL
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
         const whereParams: string[] = []
         if (date) {
           whereParams.push(date)
-          whereParts.push(`publish_time >= $${whereParams.length}::date AND publish_time < $${whereParams.length}::date + INTERVAL '1 day'`)
+          whereParts.push(`COALESCE(publish_time, created_at) >= $${whereParams.length}::date AND COALESCE(publish_time, created_at) < $${whereParams.length}::date + INTERVAL '1 day'`)
         }
 
         const searchWhere = buildSearchWhere(search, whereParams.length + 1)
@@ -78,10 +78,11 @@ export async function GET(request: NextRequest) {
           SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
                  title, url, pic_url, description, publish_time, tags,
                  importance_score, reason, actionable, hidden_signal,
+                 to_char(COALESCE(publish_time, created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS display_time,
                  created_at, updated_at
           FROM articles
           ${whereSql}
-          ORDER BY publish_time DESC NULLS LAST
+          ORDER BY COALESCE(publish_time, created_at) DESC NULLS LAST, id DESC
           LIMIT $${whereParams.length + 1} OFFSET $${whereParams.length + 2}
         `
         const countQuery = `SELECT COUNT(*) FROM articles ${whereSql}`
@@ -105,7 +106,7 @@ export async function GET(request: NextRequest) {
           title: row.title || '',
           url: row.url || '',
           source: normalizeSource({ source_feed_name: row.source_feed_name, source_feed_id: row.source_feed_id, url: row.url } as any),
-          time: formatTime(row.publish_time),
+          time: row.display_time || '',
           exported: true,
           status: 'exported',
           tags: Array.isArray(row.tags) ? row.tags : [],

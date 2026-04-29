@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 function getRequestBaseUrl(requestHeaders: Headers): string {
   const host = requestHeaders.get('x-forwarded-host') || requestHeaders.get('host')
-  if (!host) return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'
+  if (!host) return process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3424'
 
   const forwardedProto = requestHeaders.get('x-forwarded-proto')
   const protocol = forwardedProto || (/^(localhost|127\.0\.0\.1)(:\d+)?$/.test(host) ? 'http' : 'https')
@@ -151,7 +151,7 @@ async function loadDashboardData(apiBaseUrl?: string): Promise<{
     const results = await Promise.allSettled([
       loadArticles(apiBaseUrl),
       loadLocalStats(apiBaseUrl),
-      loadGlobalInsights()
+      loadGlobalInsights(apiBaseUrl)
     ])
     events = results[0].status === 'fulfilled' ? results[0].value : []
     localStats = results[1].status === 'fulfilled' ? results[1].value : null

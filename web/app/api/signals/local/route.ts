@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
 
       if (date) {
         baseParams.push(date)
-        baseWhereParts.push(`publish_time >= $${baseParams.length}::date AND publish_time < $${baseParams.length}::date + INTERVAL '1 day'`)
+        baseWhereParts.push(`COALESCE(publish_time, created_at) >= $${baseParams.length}::date AND COALESCE(publish_time, created_at) < $${baseParams.length}::date + INTERVAL '1 day'`)
       }
 
       const searchWhere = buildSearchWhere(search, baseParams.length + 1)
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
         queryParams.push(cursorTime, cursorId)
         const timeParam = queryParams.length - 1
         const idParam = queryParams.length
-        queryWhereParts.push(`(publish_time < $${timeParam}::timestamp OR (publish_time = $${timeParam}::timestamp AND id < $${idParam}))`)
+        queryWhereParts.push(`(COALESCE(publish_time, created_at) < $${timeParam}::timestamp OR (COALESCE(publish_time, created_at) = $${timeParam}::timestamp AND id < $${idParam}))`)
       }
 
       const whereSql = queryWhereParts.length ? `WHERE ${queryWhereParts.join(' AND ')}` : ''
@@ -85,10 +85,11 @@ export async function GET(request: NextRequest) {
         SELECT id, source_type, source_feed_id, source_feed_name, source_article_id,
                title, url, pic_url, description, publish_time, tags,
                importance_score, reason, actionable, hidden_signal,
+               to_char(COALESCE(publish_time, created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS display_time,
                created_at, updated_at
         FROM articles
         ${whereSql}
-        ORDER BY publish_time DESC NULLS LAST, id DESC
+        ORDER BY COALESCE(publish_time, created_at) DESC NULLS LAST, id DESC
         LIMIT $${queryParams.length + 1}
       `
       const countQuery = `SELECT COUNT(*) FROM articles ${countWhereSql}`
@@ -114,7 +115,7 @@ export async function GET(request: NextRequest) {
         title: row.title || '',
         url: row.url || '',
         source: normalizeSource({ source_feed_name: row.source_feed_name, source_feed_id: row.source_feed_id, url: row.url } as any),
-        time: formatTime(row.publish_time),
+        time: row.display_time || '',
         exported: true,
         status: 'exported',
         tags: Array.isArray(row.tags) ? row.tags : [],
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
         cover_url: row.pic_url || '',
         source_feed: row.source_feed_id || '',
         source_label: row.source_feed_name || '',
-        publish_time: formatTime(row.publish_time),
+        publish_time: row.display_time || '',
       }))
 
       // Next cursor: composite of last item's publish_time and id for stable pagination

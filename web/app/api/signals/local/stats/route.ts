@@ -28,10 +28,11 @@ export async function GET() {
       `)
       const analyzed = parseInt(analyzedResult.rows[0]?.count || '0', 10)
 
-      // Count today's articles (using Asia/Shanghai timezone to match frontend)
+      // Count articles written today. The local DB stores timestamps without
+      // timezone, so use the stored local date directly.
       const todayResult = await client.query(`
         SELECT COUNT(*) FROM articles
-        WHERE publish_time >= (CURRENT_DATE AT TIME ZONE 'Asia/Shanghai')
+        WHERE DATE(created_at) = CURRENT_DATE
       `)
       const today = parseInt(todayResult.rows[0]?.count || '0', 10)
 
@@ -42,7 +43,7 @@ export async function GET() {
       `)
       const sources = parseInt(sourcesResult.rows[0]?.count || '0', 10)
 
-      // Calculate trend data for last 30 days (using Asia/Shanghai timezone).
+      // Calculate ingest trend data for last 30 days.
       // Keep zero-count days so the 7d/30d chart toggle has a stable timeline.
       const trendResult = await client.query(`
         WITH days AS (
@@ -54,12 +55,12 @@ export async function GET() {
         ),
         daily AS (
           SELECT
-            DATE(publish_time AT TIME ZONE 'Asia/Shanghai') as day,
+            DATE(created_at) as day,
             COUNT(*) as total,
             SUM(CASE WHEN (description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != '') THEN 1 ELSE 0 END) as analyzed
           FROM articles
-          WHERE publish_time >= (CURRENT_DATE AT TIME ZONE 'Asia/Shanghai' - INTERVAL '29 days')
-          GROUP BY DATE(publish_time AT TIME ZONE 'Asia/Shanghai')
+          WHERE created_at >= (CURRENT_DATE - INTERVAL '29 days')
+          GROUP BY DATE(created_at)
         )
         SELECT
           days.day,
