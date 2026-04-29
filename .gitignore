@@ -9,6 +9,10 @@ build/
 # logs
 logs/
 
+# local runtime state
+.rss2cubox-local.lock
+.rss2cubox-prediction-loop/
+
 # web
 web/node_modules/
 web/.next/
