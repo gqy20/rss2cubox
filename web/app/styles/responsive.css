@@ -4,29 +4,9 @@
     gap: 20px;
   }
 
-  .workflow-sidebar {
-    width: 300px;
-    min-width: 300px;
-  }
-
-  .workflow-sidebar.collapsed {
-    width: 0;
-    min-width: 0;
-    margin-right: -20px;
-  }
-
   .dashboard-right {
     min-width: 340px;
     padding-left: 18px;
-  }
-
-  .insight-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .insight-panel-card {
-    min-height: 340px;
-    max-height: 460px;
   }
 }
 
@@ -49,24 +29,6 @@
     overflow: visible;
   }
 
-  .workflow-sidebar {
-    width: 100%;
-    min-width: 0;
-    height: auto;
-    position: static;
-  }
-
-  .workflow-sidebar.collapsed {
-    width: 100%;
-    min-width: 0;
-    margin-right: 0;
-  }
-
-  .workflow-sidebar-toggle.floating {
-    left: 10px;
-    top: 14px;
-  }
-
   .dashboard-right {
     min-width: 0;
     border-left: none;
@@ -81,28 +43,6 @@
   .dashboard-left {
     height: auto;
     overflow: visible;
-  }
-
-  .cta-panel {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .cta-actions {
-    width: 100%;
-  }
-
-  .insight-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .workflow-tools {
-    align-items: flex-start;
-  }
-
-  .insight-panel-head {
-    align-items: flex-start;
-    flex-wrap: wrap;
   }
 
   .kpi {
@@ -134,12 +74,6 @@
   .timeline-content {
     padding: 11px 12px;
   }
-}
-
-/* Performance optimization: skip rendering off-screen content */
-.timeline-item {
-  /*   */
-   
 }
 
 /* Performance optimization: reduce motion for users who prefer it */

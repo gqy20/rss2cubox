@@ -100,17 +100,17 @@ type DashboardHeaderProps = {
 
 function DashboardHeader({ generatedAt, onExport }: DashboardHeaderProps) {
   return (
-    <div className="header-container" style={{ marginBottom: 18 }}>
+    <div className="header-container dashboard-header">
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="dashboard-brand">
           <Logo size={40} />
           <h1 className="h1">RSS 信号控制台</h1>
         </div>
-        <div className="muted" style={{ marginTop: 6, marginLeft: 52 }}>
+        <div className="muted dashboard-updated">
           <span suppressHydrationWarning>最后更新：{generatedAt}</span>
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div className="dashboard-header-actions">
         <div className="live-status">
           <span className="status-dot" />
           <span>批量分析结果</span>
@@ -190,7 +190,7 @@ function InsightBriefing({ activePanel, visiblePanels, onSelectInsightKey, onCop
 
 function DeferredCharts({ onLoad }: { onLoad: () => void }) {
   return (
-    <section className="charts-grid" style={{ marginBottom: 18 }}>
+    <section className="charts-grid charts-section-spaced">
       <div className="glass chart-card chart-deferred-card">
         <div className="chart-deferred-title">查看趋势</div>
         <p className="chart-deferred-copy">展开最近信号的总量变化与已分析占比。</p>
@@ -429,22 +429,22 @@ function SignalToolbar({
   searchTotal,
 }: SignalToolbarProps) {
   return (
-    <div className="controls-bar" style={{ borderBottom: '1px solid var(--panel-border)', paddingBottom: 14, marginBottom: 0, flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-        <h2 style={{ fontSize: '20px', margin: 0, fontWeight: 700 }}>实时情报流</h2>
+    <div className="controls-bar signal-toolbar">
+      <div className="signal-toolbar-head">
+        <h2 className="signal-toolbar-title">实时情报流</h2>
       </div>
 
-      <div style={{ width: '100%', position: 'relative' }}>
-        <Search size={16} color="#8aa3be" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
+      <div className="signal-search">
+        <Search className="signal-search-icon" size={16} color="#8aa3be" />
         <input ref={searchRef} className="search-input search-input-primary" placeholder="搜索标题、来源、标签…（/ 或 Cmd/Ctrl+K）" value={search} onChange={(e) => onSearchChange(e.target.value)} />
         {search && (
-          <button onClick={() => onSearchChange('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#8aa3be', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}>
+          <button className="signal-search-clear" onClick={() => onSearchChange('')} aria-label="清除搜索">
             ×
           </button>
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
+      <div className="signal-filter-row">
         <Filter size={15} color="#8aa3be" />
         <Button active={filter === 'analyzed'} onClick={() => onFilterChange('analyzed')}>已分析</Button>
         <Button active={filter === 'high_value'} onClick={() => onFilterChange('high_value')}>高价值</Button>
@@ -468,8 +468,8 @@ function SignalToolbar({
         {(search || selectedSource || selectedTag || filter !== 'all') && <Button onClick={onClearAll}>清除</Button>}
       </div>
 
-      <div style={{ fontSize: 12, color: '#8aa3be', width: '100%' }}>
-        共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{resultCount}</span>
+      <div className="result-summary">
+        共 <span className="result-count">{resultCount}</span>
         {isSearchMode && <span> / {searchTotal}</span>} 条结果
       </div>
     </div>
@@ -588,7 +588,7 @@ function SignalStream({
 }: SignalStreamProps) {
   return (
     <div className="timeline-container" ref={timelineRef}>
-      <section className="timeline" style={{ marginTop: 12 }}>
+      <section className="timeline">
         {displayedRows.length === 0 && !hasLoadingGroup && (
           <EmptyState search={search} selectedSource={selectedSource} selectedTag={selectedTag} onClearAll={onClearAll} />
         )}
@@ -623,7 +623,7 @@ function SignalStream({
             />
           )
         })}
-        <div ref={loadMoreRef} style={{ height: 1 }} />
+        <div ref={loadMoreRef} className="timeline-sentinel" />
         {searchLoading && isSearchMode && <StreamStatus>正在检索全量数据...</StreamStatus>}
         {loadingMore && <StreamStatus>正在加载更多...</StreamStatus>}
       </section>
@@ -659,7 +659,7 @@ function SignalGroup({ group, isLoading, collapsed, onToggle, refCallback, now, 
       {!collapsed && (
         <div className="feed-group-body">
           {isLoading && group.items.length === 0 && (
-            <div style={{ color: '#8aa3be', fontSize: 12, padding: '8px 2px 10px' }}>正在加载...</div>
+            <div className="group-loading">正在加载...</div>
           )}
           {group.items.map((row, idx) => {
             const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
@@ -702,11 +702,11 @@ function EmptyState({ search, selectedSource, selectedTag, onClearAll }: EmptySt
         : null
 
   return (
-    <div style={{ textAlign: 'center', padding: '60px 20px', color: '#8aa3be' }}>
-      <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>◎</div>
-      <div style={{ fontSize: 14 }}>{reason ? `${reason} 暂无匹配信号` : '暂无信号数据'}</div>
+    <div className="empty-state">
+      <div className="empty-state-icon">◎</div>
+      <div className="empty-state-text">{reason ? `${reason} 暂无匹配信号` : '暂无信号数据'}</div>
       {reason && (
-        <button onClick={onClearAll} style={{ marginTop: 12, background: 'none', border: '1px solid #8aa3be', color: '#8aa3be', padding: '4px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 13 }}>
+        <button className="empty-state-clear" onClick={onClearAll}>
           清除所有筛选
         </button>
       )}
@@ -716,7 +716,7 @@ function EmptyState({ search, selectedSource, selectedTag, onClearAll }: EmptySt
 
 function StreamStatus({ children }: { children: ReactNode }) {
   return (
-    <div style={{ textAlign: 'center', fontSize: 12, color: '#8aa3be', padding: '8px 0 14px' }}>
+    <div className="stream-status">
       {children}
     </div>
   )

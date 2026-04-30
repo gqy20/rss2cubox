@@ -58,11 +58,11 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
   }, [insightHistory, selectedInsightIdx])
 
   return (
-    <section className="charts-grid" style={{ marginBottom: 18 }}>
+    <section className="charts-grid charts-section-spaced">
       <div className="glass chart-card">
         {/* 图表Header：标题 + 时间范围 + 信号时段 */}
         <div className="chart-card-head">
-          <h3 className="chart-title" style={{ margin: 0 }}>
+          <h3 className="chart-title">
             <Zap size={18} color="#2dd4bf" /> 信号爆发趋势
           </h3>
           <div className="chart-head-actions">
@@ -112,7 +112,7 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
             )}
           </div>
         </div>
-        <div style={{ width: '100%', height: 250, marginTop: 14 }}>
+        <div className="chart-body chart-body-spaced">
           <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
             <AreaChart data={trendData} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
               <defs>
@@ -141,7 +141,7 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
         <h3 className="chart-title">
           <Radar size={18} color="#60a5fa" /> 情报源分布
         </h3>
-        <div style={{ width: '100%', height: 250 }}>
+        <div className="chart-body">
           <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
             <PieChart>
               <Pie
@@ -153,7 +153,7 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
                 paddingAngle={4}
                 dataKey="value"
                 stroke="none"
-                style={{ cursor: 'pointer' }}
+                className="source-pie"
                 onClick={(_, index) => {
                   const src = sourceData[index]?.name
                   if (!src) return

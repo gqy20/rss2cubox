@@ -8,113 +8,35 @@
   overflow: hidden;
 }
 
-.workflow-sidebar {
-  width: 340px;
-  min-width: 340px;
-  height: calc(100vh - 56px);
-  position: sticky;
-  top: 28px;
-  align-self: flex-start;
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
-  gap: 10px;
-}
-
-.workflow-sidebar.collapsed {
-  width: 0;
-  min-width: 0;
-  margin-right: -28px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  box-shadow: none;
-  pointer-events: none;
-}
-
-.workflow-sidebar-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.workflow-sidebar-toggle.floating {
-  position: fixed;
-  left: 14px;
-  top: 22px;
-  z-index: 60;
-  pointer-events: auto;
-}
-
-.workflow-sidebar-title {
-  font-size: 13px;
-  color: #cfe0f5;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.workflow-sidebar-section {
-  border: 1px solid rgba(138, 163, 190, 0.2);
-  border-radius: 10px;
-  background: rgba(8, 16, 30, 0.45);
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.workflow-sidebar-label {
-  display: inline-flex;
-  width: fit-content;
-  font-size: 11px;
-  color: #9ff3e6;
-  border: 1px solid rgba(45, 212, 191, 0.4);
-  background: rgba(45, 212, 191, 0.12);
-  border-radius: 999px;
-  padding: 2px 7px;
-}
-
-.workflow-sidebar-main-title {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.35;
-}
-
-.workflow-sidebar-sub {
-  margin: 0;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-.workflow-sidebar-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.workflow-sidebar-actions .cta-btn {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  text-align: center;
-}
-
-.workflow-sidebar-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  min-height: 40px;
-}
-
 .header-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 14px;
+}
+
+.dashboard-header {
+  margin-bottom: 18px;
+}
+
+.dashboard-brand,
+.dashboard-header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-brand {
+  gap: 12px;
+}
+
+.dashboard-header-actions {
+  gap: 8px;
+}
+
+.dashboard-updated {
+  margin-top: 6px;
+  margin-left: 52px;
 }
 
 .h1 {

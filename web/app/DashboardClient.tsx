@@ -37,11 +37,11 @@ type ChartsSectionProps = {
 const ChartsSection = dynamic<ChartsSectionProps>(() => import('./charts-section').then((m) => m.default), {
   ssr: false,
   loading: () => (
-    <section className="charts-grid" style={{ marginBottom: 18 }}>
-      <div className="glass chart-card" style={{ display: 'grid', placeItems: 'center', minHeight: 280, color: '#8aa3be' }}>
+    <section className="charts-grid charts-section-spaced">
+      <div className="glass chart-card chart-loading-card">
         图表加载中...
       </div>
-      <div className="glass chart-card" style={{ display: 'grid', placeItems: 'center', minHeight: 280, color: '#8aa3be' }}>
+      <div className="glass chart-card chart-loading-card">
         图表加载中...
       </div>
     </section>

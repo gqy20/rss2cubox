@@ -6,6 +6,75 @@
   gap: 10px;
 }
 
+.signal-toolbar {
+  border-bottom: 1px solid var(--panel-border);
+  padding-bottom: 14px;
+  margin-bottom: 0;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.signal-toolbar-head,
+.signal-filter-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.signal-toolbar-head {
+  justify-content: space-between;
+}
+
+.signal-toolbar-title {
+  font-size: 20px;
+  margin: 0;
+  font-weight: 700;
+}
+
+.signal-search {
+  width: 100%;
+  position: relative;
+}
+
+.signal-search-icon,
+.signal-search-clear {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.signal-search-icon {
+  left: 12px;
+  pointer-events: none;
+}
+
+.signal-search-clear {
+  right: 12px;
+  background: none;
+  border: none;
+  color: #8aa3be;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  padding: 0;
+}
+
+.signal-filter-row {
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.result-summary {
+  font-size: 12px;
+  color: #8aa3be;
+  width: 100%;
+}
+
+.result-count {
+  color: #2dd4bf;
+  font-weight: 600;
+}
+
 .filter-btn {
   background: rgba(178, 190, 205, 0.08);
   border: 1px solid rgba(178, 190, 205, 0.16);
@@ -121,6 +190,15 @@
   background: rgba(167, 139, 250, 0.18) !important;
   border-color: rgba(167, 139, 250, 0.46) !important;
   color: #d8c7ff !important;
+}
+
+.icon-only-btn {
+  width: 30px;
+  height: 30px;
+  padding: 0 !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .date-jump-trigger {
@@ -560,4 +638,50 @@
 
 .timeline-container::-webkit-scrollbar-thumb:hover {
   background: rgba(138, 163, 190, 0.52);
+}
+
+.timeline-sentinel {
+  height: 1px;
+}
+
+.group-loading,
+.stream-status {
+  color: #8aa3be;
+  font-size: 12px;
+}
+
+.group-loading {
+  padding: 8px 2px 10px;
+}
+
+.stream-status {
+  text-align: center;
+  padding: 8px 0 14px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #8aa3be;
+}
+
+.empty-state-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.4;
+}
+
+.empty-state-text {
+  font-size: 14px;
+}
+
+.empty-state-clear {
+  margin-top: 12px;
+  background: none;
+  border: 1px solid #8aa3be;
+  color: #8aa3be;
+  padding: 4px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 13px;
 }
