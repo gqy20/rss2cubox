@@ -72,6 +72,38 @@ def test_resolve_feed_urls_with_rsshub_route() -> None:
     ]
 
 
+def test_bilibili_video_browser_uses_bilibili_instances(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RSSHUB_PRIVATE_INSTANCES", "https://private.rsshub.test")
+    monkeypatch.setenv("RSSHUB_BILIBILI_INSTANCES", "https://bili.rsshub.test")
+    pool = feed_sources.RSSHubInstancePool(instances=["https://private.rsshub.test", "https://general.rsshub.test"])
+
+    assert feed_sources.resolve_feed_urls("rsshub", "/bilibili/user/video-browser/123456", pool) == [
+        "https://private.rsshub.test/bilibili/user/video-browser/123456",
+        "https://bili.rsshub.test/bilibili/user/video-browser/123456",
+        "https://general.rsshub.test/bilibili/user/video-browser/123456",
+    ]
+
+
+def test_bilibili_special_instances_ignore_global_cooldown(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("RSSHUB_PRIVATE_INSTANCES", "https://private.rsshub.test")
+    pool = feed_sources.RSSHubInstancePool(instances=["https://private.rsshub.test"], cooldown_seconds=300)
+    pool.mark_failure("https://private.rsshub.test")
+    events: list[str] = []
+
+    selected, parsed, attempt = feed_sources.parse_feed_with_fallback(
+        "rsshub",
+        "/bilibili/user/video-browser/123456",
+        pool,
+        fetcher=lambda _url: SimpleNamespace(bozo=False, entries=[{"id": "1"}]),
+        log_event=lambda _level, event, **_kwargs: events.append(event),
+    )
+
+    assert selected == "https://private.rsshub.test/bilibili/user/video-browser/123456"
+    assert parsed is not None
+    assert attempt == 1
+    assert "feed_candidate_skipped_cooldown" not in events
+
+
 def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyPatch) -> None:
     instances = ["https://bad.rsshub.test", "https://ok.rsshub.test"]
     pool = feed_sources.RSSHubInstancePool(instances=instances, cooldown_seconds=1)
@@ -97,6 +129,7 @@ def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyP
 def test_load_rsshub_instances_from_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     pool = tmp_path / "rsshub_instances.txt"
     pool.write_text("# comment\nhttps://x.rsshub.test/\nhttps://y.rsshub.test\n", encoding="utf-8")
+    monkeypatch.delenv("RSSHUB_PRIVATE_INSTANCES", raising=False)
     monkeypatch.delenv("RSSHUB_INSTANCES", raising=False)
 
     assert feed_sources.load_rsshub_instances(pool) == ["https://x.rsshub.test", "https://y.rsshub.test"]

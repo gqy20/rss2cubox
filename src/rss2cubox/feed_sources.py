@@ -57,7 +57,7 @@ def _env_instances(name: str, default: list[str]) -> list[str]:
 
 def _route_bucket(route: str) -> str:
     text = str(route or "").strip()
-    if text.startswith("/bilibili/user/video/"):
+    if text.startswith(("/bilibili/user/video/", "/bilibili/user/video-browser/")):
         return "bilibili_user_video"
     if text.startswith("/twitter/user/"):
         return "twitter_user"
@@ -67,7 +67,8 @@ def _route_bucket(route: str) -> str:
 def _route_special_instances(route: str) -> list[str]:
     bucket = _route_bucket(route)
     if bucket == "bilibili_user_video":
-        return _env_instances("RSSHUB_BILIBILI_INSTANCES", DEFAULT_BILIBILI_SPECIAL_INSTANCES)
+        private = _parse_instance_list(os.getenv("RSSHUB_PRIVATE_INSTANCES", "").strip())
+        return private + _env_instances("RSSHUB_BILIBILI_INSTANCES", DEFAULT_BILIBILI_SPECIAL_INSTANCES)
     if bucket == "twitter_user":
         return _env_instances("RSSHUB_TWITTER_INSTANCES", DEFAULT_TWITTER_SPECIAL_INSTANCES)
     return []
@@ -359,10 +360,11 @@ def parse_feed_with_fallback(
     log_event: Any,
 ) -> tuple[str | None, Any | None, int]:
     candidates = resolve_feed_urls(feed_kind, feed_value, rsshub_pool)
+    special_instances = set(_route_special_instances(feed_value))
     for idx, candidate_url in enumerate(candidates, start=1):
         instance = candidate_url.split("/", 3)[:3]
         instance_base = "/".join(instance) if len(instance) >= 3 else candidate_url
-        if feed_kind == "rsshub" and rsshub_pool.should_skip(instance_base):
+        if feed_kind == "rsshub" and instance_base not in special_instances and rsshub_pool.should_skip(instance_base):
             log_event(
                 "INFO",
                 "feed_candidate_skipped_cooldown",
