@@ -1,14 +1,23 @@
 import { NextResponse } from 'next/server'
 import { Pool } from 'pg'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const pool = new Pool({
   connectionString: process.env.LOCAL_DB_URL,
 })
 
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+}
+
 export async function GET() {
   const dbUrl = process.env.LOCAL_DB_URL
   if (!dbUrl) {
-    return NextResponse.json({ error: 'LOCAL_DB_URL not configured' }, { status: 500 })
+    return NextResponse.json({ error: 'LOCAL_DB_URL not configured' }, { status: 500, headers: NO_STORE_HEADERS })
   }
 
   try {
@@ -132,12 +141,12 @@ export async function GET() {
         topSourceCounts,
         trendData,
         dailyTotals,
-      })
+      }, { headers: NO_STORE_HEADERS })
     } finally {
       client.release()
     }
   } catch (error) {
     console.error('Local DB stats error:', error)
-    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch stats' }, { status: 500, headers: NO_STORE_HEADERS })
   }
 }

@@ -114,7 +114,7 @@ describe('loadLocalArticles', () => {
     const result = await loadLocalArticles('http://localhost:3424')
 
     expect(mockFetch).toHaveBeenCalledTimes(1)
-    expect(mockFetch).toHaveBeenCalledWith('/api/signals/local?limit=50')
+    expect(mockFetch).toHaveBeenCalledWith('/api/signals/local?limit=50', { cache: 'no-store' })
     expect(result).toHaveLength(1)
     expect(result[0]).toMatchObject({
       id: 'a1',

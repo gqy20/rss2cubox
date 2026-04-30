@@ -40,6 +40,8 @@ export function useGroupData(options: UseGroupDataOptions = {}): UseGroupDataRet
     initialGroups = {},
     initialPaging = {},
     allDates = [],
+    groupData: externalGroupData,
+    groupPaging: externalGroupPaging,
     setGroupData: externalSetGroupData,
     setGroupPaging: externalSetGroupPaging,
   } = options
@@ -48,9 +50,9 @@ export function useGroupData(options: UseGroupDataOptions = {}): UseGroupDataRet
   const [internalGroupData, internalSetGroupData] = useState<Record<string, GroupData>>(initialGroups)
   const [internalGroupPaging, internalSetGroupPaging] = useState<Record<string, GroupPaging>>(initialPaging)
 
-  const groupData = externalSetGroupData ? initialGroups : internalGroupData
+  const groupData = externalSetGroupData ? (externalGroupData ?? initialGroups) : internalGroupData
   const setGroupData = externalSetGroupData || internalSetGroupData
-  const groupPaging = externalSetGroupPaging ? initialPaging : internalGroupPaging
+  const groupPaging = externalSetGroupPaging ? (externalGroupPaging ?? initialPaging) : internalGroupPaging
   const setGroupPaging = externalSetGroupPaging || internalSetGroupPaging
 
   const loadGroupData = useCallback(async (dayKey: string) => {
@@ -63,7 +65,7 @@ export function useGroupData(options: UseGroupDataOptions = {}): UseGroupDataRet
     }))
 
     try {
-      const res = await fetch(`/api/signals?page=1&limit=50&date=${dayKey}`)
+      const res = await fetch(`/api/signals?page=1&limit=50&date=${dayKey}`, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')
       setGroupData((prev) => ({
@@ -93,7 +95,7 @@ export function useGroupData(options: UseGroupDataOptions = {}): UseGroupDataRet
     }))
 
     try {
-      const res = await fetch(`/api/signals?page=${nextPage}&limit=50&date=${dayKey}`)
+      const res = await fetch(`/api/signals?page=${nextPage}&limit=50&date=${dayKey}`, { cache: 'no-store' })
       const data = await res.json()
       if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')
 

@@ -2,9 +2,18 @@ import { NextResponse } from 'next/server'
 import { neon } from '@neondatabase/serverless'
 import { Pool } from 'pg'
 
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const localPool = new Pool({
   connectionString: process.env.LOCAL_DB_URL,
 })
+
+const NO_STORE_HEADERS = {
+  'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+  Pragma: 'no-cache',
+  Expires: '0',
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url)
@@ -31,7 +40,7 @@ export async function GET(request: Request) {
           data: row.data,
         }))
 
-        return NextResponse.json({ data: result })
+        return NextResponse.json({ data: result }, { headers: NO_STORE_HEADERS })
       } finally {
         client.release()
       }
@@ -42,7 +51,7 @@ export async function GET(request: Request) {
 
   const neonDbUrl = process.env.NEON_DATABASE_URL
   if (!neonDbUrl) {
-    return NextResponse.json({ error: 'LOCAL_DB_URL or NEON_DATABASE_URL not configured' }, { status: 500 })
+    return NextResponse.json({ error: 'LOCAL_DB_URL or NEON_DATABASE_URL not configured' }, { status: 500, headers: NO_STORE_HEADERS })
   }
 
   try {
@@ -59,9 +68,9 @@ export async function GET(request: Request) {
       data: row.data,
     }))
 
-    return NextResponse.json({ data: result })
+    return NextResponse.json({ data: result }, { headers: NO_STORE_HEADERS })
   } catch (error) {
     console.error('Failed to fetch global_insights:', error)
-    return NextResponse.json({ error: 'Failed to fetch global_insights' }, { status: 500 })
+    return NextResponse.json({ error: 'Failed to fetch global_insights' }, { status: 500, headers: NO_STORE_HEADERS })
   }
 }

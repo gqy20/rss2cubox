@@ -48,7 +48,30 @@ describe('useGroupData', () => {
     expect(result.current.groupData['2025-05-20'].hasMore).toBe(true)
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/signals?page=1&limit=50&date=2025-05-20',
+      { cache: 'no-store' },
     )
+  })
+
+  it('uses externally controlled group state when provided', async () => {
+    const setGroupData = vi.fn()
+    const setGroupPaging = vi.fn()
+
+    const { result } = renderHook(() =>
+      useGroupData({
+        groupData: {
+          '2025-06-01': { loading: false, loaded: true, items: [], hasMore: false },
+        },
+        groupPaging: { '2025-06-01': { page: 1 } },
+        setGroupData,
+        setGroupPaging,
+      })
+    )
+
+    await act(async () => { await result.current.loadGroupData('2025-06-01') })
+
+    expect(mockFetch).not.toHaveBeenCalled()
+    expect(setGroupData).not.toHaveBeenCalled()
+    expect(setGroupPaging).not.toHaveBeenCalled()
   })
 
   it('should not reload already loaded group', async () => {

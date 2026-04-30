@@ -30,8 +30,10 @@ import {
 } from './utils'
 import FeedCard from './FeedCard'
 import type { Row, Metrics, GlobalInsights, InsightKey } from './types'
-import { loadAllGlobalInsights, type InsightHistoryItem } from '../lib/signalStore'
+import { loadAllGlobalInsights, type InsightHistoryItem, type LocalStats } from '../lib/signalStore'
 import { Button, MenuPanel, PopoverMenu } from './ui'
+
+const LIVE_REFRESH_INTERVAL_MS = 60_000
 
 type ChartsSectionProps = {
   trendData: Array<{ name: string; total: number; analyzed: number }>
@@ -111,7 +113,29 @@ function normalizeInsightItems(items: unknown[]): ParsedInsightItem[] {
     .filter((item) => item.title.length > 0)
 }
 
-export default function DashboardClient({ initialRows, totalCount, metrics, insights, serverTime }: Props) {
+function statsToMetrics(stats: LocalStats, previous: Metrics): Metrics {
+  return {
+    ...previous,
+    generated_at: new Date().toISOString(),
+    signals_total: stats.total,
+    exported_total: stats.total,
+    active_sources_total: stats.sources,
+    top_source_counts: stats.topSourceCounts ?? previous.top_source_counts,
+    total_all: stats.total,
+    analyzed_total: stats.analyzed,
+    total_today: stats.today,
+    total_yesterday: stats.yesterday,
+    analyzed_today: stats.analyzedToday,
+    analyzed_yesterday: stats.analyzedYesterday,
+    sources_today: stats.sourcesToday,
+    sources_yesterday: stats.sourcesYesterday,
+    timeline_points: stats.trendData ?? previous.timeline_points,
+    daily_totals: stats.dailyTotals ?? previous.daily_totals,
+  }
+}
+
+export default function DashboardClient({ initialRows, totalCount, metrics: initialMetrics, insights, serverTime }: Props) {
+  const [metrics, setMetrics] = useState<Metrics>(initialMetrics)
   const formatGeneratedAt = (value?: string) => {
     if (!value) return '未知'
     const dt = new Date(value)
@@ -148,7 +172,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [dateMenuOpen, setDateMenuOpen] = useState(false)
   const [dateQuery, setDateQuery] = useState('')
-  const [activeDateKey, setActiveDateKey] = useState<string | null>(null)
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
 
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [shouldLoadCharts, setShouldLoadCharts] = useState(false)
@@ -185,7 +209,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
   useEffect(() => {
     const today = getDayKey(new Date())
     const todayItems = initialRows.filter((r) => getDayKey(r.time) === today)
-    const todayCount = metrics.daily_totals?.[today] || 0
+    const todayCount = initialMetrics.daily_totals?.[today] || 0
     setGroupData({
       [today]: {
         loading: false,
@@ -197,7 +221,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     setGroupPaging({
       [today]: { page: 1 },
     })
-  }, [initialRows, metrics.daily_totals])
+  }, [initialRows, initialMetrics.daily_totals])
   
   const searchRef = useRef<HTMLInputElement>(null)
   const chartsTriggerRef = useRef<HTMLDivElement>(null)
@@ -272,6 +296,54 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     return getDayKey(d)
   }, [now])
 
+  const refreshDashboardData = useCallback(async () => {
+    try {
+      const [statsRes, todayRowsRes] = await Promise.all([
+        fetch('/api/signals/local/stats', { cache: 'no-store' }),
+        fetch(`/api/signals?page=1&limit=50&date=${todayKey}`, { cache: 'no-store' }),
+      ])
+
+      if (statsRes.ok) {
+        const stats = await statsRes.json() as LocalStats
+        setMetrics((prev) => statsToMetrics(stats, prev))
+      }
+
+      if (todayRowsRes.ok) {
+        const todayPayload = await todayRowsRes.json() as { data?: Row[]; hasMore?: boolean }
+        if (Array.isArray(todayPayload.data)) {
+          setGroupData((prev) => ({
+            ...prev,
+            [todayKey]: {
+              loading: false,
+              loaded: true,
+              items: todayPayload.data ?? [],
+              hasMore: Boolean(todayPayload.hasMore),
+            },
+          }))
+          setGroupPaging((prev) => ({ ...prev, [todayKey]: { page: 1 } }))
+        }
+      }
+    } catch (error) {
+      console.error('Failed to refresh dashboard data:', error)
+    }
+  }, [todayKey])
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (document.visibilityState === 'visible') void refreshDashboardData()
+    }, LIVE_REFRESH_INTERVAL_MS)
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') void refreshDashboardData()
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [refreshDashboardData])
+
   // 情报源列表（用于筛选）
   const topSourceNames = useMemo(() => {
     const sources = metrics.top_source_counts || []
@@ -293,6 +365,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     if (filter === 'analyzed') result = result.filter((r) => hasAiSummary(r))
     if (filter === 'high_value') result = result.filter((r) => (r.importance_score ?? 0) >= 4)
     if (timeScope === 'today') result = result.filter((r) => getDayKey(r.time) === todayKey)
+    if (!isSearchMode && selectedDateKey) result = result.filter((r) => getDayKey(r.time) === selectedDateKey)
     if (selectedSource) {
       if (selectedSource === '__others__') {
         const topSet = new Set(topSourceNames)
@@ -303,7 +376,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     }
     if (selectedTag) result = result.filter((r) => (r.tags || []).includes(selectedTag))
     return result.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-  }, [isSearchMode, searchRows, loadedRows, filter, timeScope, selectedSource, selectedTag, todayKey, topSourceNames])
+  }, [isSearchMode, searchRows, loadedRows, filter, timeScope, selectedDateKey, selectedSource, selectedTag, todayKey, topSourceNames])
 
   // 趋势数据来自服务端（基于全部数据），图表按当前范围展示最近 7/30 天
   const trendData = useMemo(() => {
@@ -342,14 +415,16 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
         }))
     }
 
-    return allDates.map((dayKey) => ({
+    const visibleDates = selectedDateKey ? [selectedDateKey] : (timeScope === 'today' ? [todayKey] : allDates)
+
+    return visibleDates.map((dayKey) => ({
       id: dayKey,
       title: formatGroupTitle(dayKey, todayKey, yesterdayKey),
       items: dateMap.get(dayKey) || [],
       total: metrics.daily_totals?.[dayKey] || 0,
       loaded: !!dateMap.get(dayKey)?.length,
     }))
-  }, [isSearchMode, allDates, displayedRows, todayKey, yesterdayKey, metrics.daily_totals])
+  }, [isSearchMode, allDates, selectedDateKey, timeScope, displayedRows, todayKey, yesterdayKey, metrics.daily_totals])
 
   const filteredDateOptions = useMemo(() => {
     const query = dateQuery.trim().toLowerCase()
@@ -359,7 +434,10 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       return dayKey.includes(query) || label.toLowerCase().includes(query)
     })
   }, [allDates, dateQuery, todayKey, yesterdayKey])
-  const recentDateOptions = useMemo(() => allDates.slice(0, 7), [allDates])
+  const hasLoadingGroup = useMemo(
+    () => groupedRows.some((group) => groupData[group.id]?.loading),
+    [groupedRows, groupData],
+  )
 
   const insightPanels = useMemo(
     () => [
@@ -377,9 +455,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
 
   // KPI 使用服务端计算的完整数据
   const kpis = [
-    { key: 'all', title: '有效信号', value: metrics.signals_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setTimeScope('all') } },
-    { key: 'analyzed', title: '已分析', value: metrics.analyzed_total ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setTimeScope('all') } },
-    { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setTimeScope('today') } },
+    { key: 'all', title: '有效信号', value: metrics.signals_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setTimeScope('all'); setSelectedDateKey(null) } },
+    { key: 'analyzed', title: '已分析', value: metrics.analyzed_total ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setTimeScope('all'); setSelectedDateKey(null) } },
+    { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setTimeScope('all'); setSelectedDateKey(todayKey); setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false })); void loadGroupData(todayKey); timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) } },
     { key: 'source', title: '活跃情报源', value: metrics.active_sources_total ?? 0, tone: '#a78bfa', delta: null, onClick: () => setSelectedSource(null) },
   ] as const
 
@@ -416,6 +494,20 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       return
     }
 
+    if (selectedDateKey) {
+      const selectedGroup = groupData[selectedDateKey]
+      if (!selectedGroup?.loaded && !selectedGroup?.loading) {
+        setLoadingMore(true)
+        void loadGroupData(selectedDateKey).finally(() => setLoadingMore(false))
+        return
+      }
+      if (selectedGroup?.loaded && !selectedGroup.loading && selectedGroup.hasMore) {
+        setLoadingMore(true)
+        void loadMoreForGroup(selectedDateKey).finally(() => setLoadingMore(false))
+      }
+      return
+    }
+
     const tailGroupId = getTailVisibleGroupId()
     if (tailGroupId) {
       const tailGroup = groupData[tailGroupId]
@@ -436,7 +528,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     if (!nextUnloadedDate) return
     setLoadingMore(true)
     void loadGroupData(nextUnloadedDate).finally(() => setLoadingMore(false))
-  }, [loadingMore, isSearchMode, searchHasMore, searchLoading, fetchSearchPage, searchPage, getTailVisibleGroupId, groupData, todayKey, loadMoreForGroup, nextUnloadedDate, loadGroupData])
+  }, [loadingMore, isSearchMode, searchHasMore, searchLoading, fetchSearchPage, searchPage, selectedDateKey, groupData, loadGroupData, loadMoreForGroup, getTailVisibleGroupId, todayKey, nextUnloadedDate])
 
   // Hook: 统一无限滚动（替换原来的 IO + scroll 双监听）
   useInfiniteScroll({
@@ -447,47 +539,22 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
     rootMargin: '0px 0px 240px 0px',
   })
 
-  useEffect(() => {
-    const root = timelineRef.current
-    if (!root) return
-
-    const updateActiveDate = () => {
-      const rootRect = root.getBoundingClientRect()
-      const anchorY = rootRect.top + 96
-      let candidate: string | null = null
-      let candidateTop = -Infinity
-
-      for (const group of groupedRows) {
-        const el = groupRefs.current[group.id]
-        if (!el) continue
-        const rect = el.getBoundingClientRect()
-        if (rect.top <= anchorY && rect.bottom >= rootRect.top && rect.top > candidateTop) {
-          candidate = group.id
-          candidateTop = rect.top
-        }
-      }
-
-      setActiveDateKey(candidate ?? groupedRows[0]?.id ?? null)
-    }
-
-    updateActiveDate()
-    root.addEventListener('scroll', updateActiveDate, { passive: true })
-    return () => root.removeEventListener('scroll', updateActiveDate)
-  }, [groupedRows])
-
   const clearAllFilters = () => {
-    setSearch(''); setSelectedSource(null); setSelectedTag(null); setFilter('all'); setTimeScope('all')
+    setSearch(''); setSelectedSource(null); setSelectedTag(null); setSelectedDateKey(null); setFilter('all'); setTimeScope('all')
   }
 
   const jumpToTodayGroup = useCallback(() => {
     if (isSearchMode) {
       setSearch('')
-      return
     }
+
+    setSelectedDateKey(todayKey)
+    setTimeScope('all')
+    setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false }))
+    timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
 
     const todayGroupRef = groupRefs.current[todayKey]
     if (todayGroupRef) {
-      setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false }))
       todayGroupRef.scrollIntoView({ behavior: 'smooth', block: 'start' })
       return
     }
@@ -500,13 +567,15 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
         })
       })
     }
-  }, [isSearchMode, todayKey, groupData, loadGroupData])
+  }, [isSearchMode, todayKey, groupData, loadGroupData, setSearch])
 
   const jumpToDateGroup = useCallback((dayKey: string) => {
     if (!dayKey) return
     if (isSearchMode) {
       setSearch('')
     }
+    setSelectedDateKey(dayKey)
+    setTimeScope('all')
 
     const scrollToGroup = () => {
       setCollapsedGroups((prev) => ({ ...prev, [dayKey]: false }))
@@ -525,6 +594,8 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
       scrollToGroup()
       return
     }
+
+    timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
   }, [isSearchMode, groupData, loadGroupData, setSearch])
 
   const openRowHover = (key: string) => {
@@ -741,7 +812,17 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             <Button active={filter === 'all'} onClick={() => setFilter('all')}>全量</Button>
             <Button active={filter === 'analyzed'} onClick={() => setFilter('analyzed')}>已分析</Button>
             <Button active={filter === 'high_value'} onClick={() => setFilter('high_value')}>高价值</Button>
-            <Button active={timeScope === 'today'} onClick={() => setTimeScope((prev) => (prev === 'today' ? 'all' : 'today'))}>今日</Button>
+            <Button active={selectedDateKey === todayKey || timeScope === 'today'} onClick={() => {
+              if (selectedDateKey === todayKey || timeScope === 'today') {
+                setSelectedDateKey(null)
+                setTimeScope('all')
+              } else {
+                setSelectedDateKey(todayKey)
+                setTimeScope('all')
+                void loadGroupData(todayKey)
+                timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+              }
+            }}>今日</Button>
             <Button onClick={jumpToTodayGroup}>定位今天</Button>
             <PopoverMenu
               open={dateMenuOpen}
@@ -794,34 +875,21 @@ export default function DashboardClient({ initialRows, totalCount, metrics, insi
             <Button onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
               <Download size={13} /> 导出
             </Button>
+            {selectedDateKey && <Button tone="purple" onClick={() => setSelectedDateKey(null)}>{formatGroupTitle(selectedDateKey, todayKey, yesterdayKey)} ×</Button>}
             {selectedSource && <Button tone="purple" onClick={() => setSelectedSource(null)}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
             {selectedTag && <Button tone="purple" onClick={() => setSelectedTag(null)}>#{selectedTag} ×</Button>}
-            {(search || selectedSource || selectedTag || timeScope === 'today' || filter !== 'all') && <Button onClick={clearAllFilters}>清除</Button>}
+            {(search || selectedDateKey || selectedSource || selectedTag || timeScope === 'today' || filter !== 'all') && <Button onClick={clearAllFilters}>清除</Button>}
           </div>
 
           <div style={{ fontSize: 12, color: '#8aa3be', width: '100%' }}>
             共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{displayedRows.length}</span>
             {isSearchMode && <span> / {searchTotal}</span>} 条结果
           </div>
-          {recentDateOptions.length > 0 && (
-            <div className="date-strip" aria-label="最近日期快捷跳转">
-              {recentDateOptions.map((dayKey) => (
-                <button
-                  key={dayKey}
-                  className={activeDateKey === dayKey ? 'active' : ''}
-                  onClick={() => jumpToDateGroup(dayKey)}
-                >
-                  <span>{formatGroupTitle(dayKey, todayKey, yesterdayKey)}</span>
-                  <strong>{metrics.daily_totals?.[dayKey] || 0}</strong>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         <div className="timeline-container" ref={timelineRef}>
           <section className="timeline" style={{ marginTop: 12 }}>
-            {displayedRows.length === 0 && (() => {
+            {displayedRows.length === 0 && !hasLoadingGroup && (() => {
               const reason = search.trim() ? `「${search.trim()}」` : selectedTag ? `#${selectedTag}` : selectedSource ? `「${selectedSource === '__others__' ? '其他来源' : selectedSource}」` : null
               return (
                 <div style={{ textAlign: 'center', padding: '60px 20px', color: '#8aa3be' }}>

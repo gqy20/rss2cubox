@@ -67,7 +67,7 @@ export function useSearch(options: UseSearchOptions = {}): UseSearchReturn {
     try {
       const res = await fetch(
         `/api/signals?page=${page}&limit=${pageSize}&search=${encodeURIComponent(keyword)}`,
-        { signal: controller.signal },
+        { signal: controller.signal, cache: 'no-store' },
       )
       const data = await res.json()
       if (!res.ok || !Array.isArray(data.data)) throw new Error(data?.error || 'Invalid response')

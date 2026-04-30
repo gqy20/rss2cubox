@@ -44,7 +44,7 @@ export async function loadLocalArticles(apiBaseUrl?: string): Promise<EventRow[]
   const urlStr = baseUrl
     ? `${baseUrl}/api/signals/local?limit=${pageSize}`
     : `/api/signals/local?limit=${pageSize}`
-  const response = await fetch(urlStr)
+  const response = await fetch(urlStr, { cache: 'no-store' })
   if (!response.ok) {
     throw new Error(`Local API failed: ${response.status}`)
   }
@@ -81,7 +81,7 @@ export async function loadLocalStats(apiBaseUrl?: string): Promise<LocalStats | 
     ? `${baseUrl}/api/signals/local/stats`
     : '/api/signals/local/stats'
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, { cache: 'no-store' })
     if (!response.ok) return null
     return await response.json() as LocalStats
   } catch {
@@ -96,7 +96,7 @@ export async function loadGlobalInsights(apiBaseUrl?: string): Promise<GlobalIns
     : '/api/signals/global-insights?limit=1'
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, { cache: 'no-store' })
     if (response.ok) {
       const jsonData = await response.json() as { data?: InsightHistoryItem[] }
       const latest = jsonData.data?.[0]?.data
@@ -128,7 +128,7 @@ export async function loadAllGlobalInsights(limit: number = 30): Promise<Insight
   const url = baseUrl ? `${baseUrl}/api/signals/global-insights` : '/api/signals/global-insights'
 
   try {
-    const response = await fetch(url)
+    const response = await fetch(url, { cache: 'no-store' })
     if (!response.ok) {
       console.error('Failed to fetch global insights:', response.status)
       return []
