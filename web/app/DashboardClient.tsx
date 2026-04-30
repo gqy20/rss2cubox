@@ -11,7 +11,6 @@ import {
   Radio,
   Lightbulb,
   Search,
-  ArrowUpDown,
   Copy,
   ChevronDown,
   ChevronUp,
@@ -759,9 +758,6 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
         <div className="controls-bar" style={{ borderBottom: '1px solid var(--panel-border)', paddingBottom: 14, marginBottom: 0, flexDirection: 'column', gap: 10 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
             <h2 style={{ fontSize: '20px', margin: 0, fontWeight: 700 }}>实时情报流</h2>
-            <div className="filter-btn" style={{ padding: '5px 10px', fontSize: 12, display: 'flex', alignItems: 'center', gap: 4, cursor: 'default' }}>
-              <ArrowUpDown size={12} /> 按时间
-            </div>
           </div>
 
           <div style={{ width: '100%', position: 'relative' }}>

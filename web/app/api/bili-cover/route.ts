@@ -100,16 +100,20 @@ async function proxyImage(picUrl: string): Promise<NextResponse | null> {
   })
 }
 
+async function fallbackOrPlaceholder(fallbackPic: string): Promise<NextResponse> {
+  if (fallbackPic) {
+    const fallback = await proxyImage(fallbackPic)
+    if (fallback) return fallback
+  }
+  return placeholderCoverResponse()
+}
+
 export async function GET(req: NextRequest) {
   const bvid = req.nextUrl.searchParams.get('bvid') ?? ''
   const fallbackPic = normalizeFallbackPic(req.nextUrl.searchParams.get('pic') ?? '')
 
   if (!BV_RE.test(bvid)) {
-    if (fallbackPic) {
-      const fallback = await proxyImage(fallbackPic)
-      if (fallback) return fallback
-    }
-    return placeholderCoverResponse()
+    return fallbackOrPlaceholder(fallbackPic)
   }
 
   try {
@@ -121,22 +125,14 @@ export async function GET(req: NextRequest) {
     })
 
     if (!apiRes.ok) {
-      if (fallbackPic) {
-        const fallback = await proxyImage(fallbackPic)
-        if (fallback) return fallback
-      }
-      return placeholderCoverResponse()
+      return fallbackOrPlaceholder(fallbackPic)
     }
 
     const json = (await apiRes.json()) as { code?: number; data?: { pic?: string } }
     const pic = json?.data?.pic
 
     if (json?.code !== 0 || !pic || typeof pic !== 'string') {
-      if (fallbackPic) {
-        const fallback = await proxyImage(fallbackPic)
-        if (fallback) return fallback
-      }
-      return placeholderCoverResponse()
+      return fallbackOrPlaceholder(fallbackPic)
     }
 
     const picUrl = pic.replace(/^http:/, 'https:')
@@ -152,10 +148,6 @@ export async function GET(req: NextRequest) {
     }
     return image
   } catch {
-    if (fallbackPic) {
-      const fallback = await proxyImage(fallbackPic)
-      if (fallback) return fallback
-    }
-    return placeholderCoverResponse()
+    return fallbackOrPlaceholder(fallbackPic)
   }
 }

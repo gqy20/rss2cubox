@@ -4,10 +4,7 @@ import path from 'node:path'
 
 describe('signals route search coverage', () => {
   it('searches every article table field exposed by local storage', () => {
-    const source = readFileSync(
-      path.join(process.cwd(), 'app/api/signals/route.ts'),
-      'utf8',
-    )
+    const source = readFileSync(path.join(process.cwd(), 'lib/localArticleRows.ts'), 'utf8')
 
     for (const field of [
       'id',

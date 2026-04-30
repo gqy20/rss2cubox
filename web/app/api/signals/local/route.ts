@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Pool } from 'pg'
-import { normalizeSource } from '../../../../lib/icApi'
+import { buildArticleSearchWhere, formatLocalArticleRow } from '../../../../lib/localArticleRows'
 
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
@@ -13,57 +13,6 @@ const NO_STORE_HEADERS = {
   'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
   Pragma: 'no-cache',
   Expires: '0',
-}
-
-function buildSearchWhere(search: string, paramIndex: number): { sql: string; value: string } | null {
-  if (!search) return null
-  return {
-    sql: `(
-      id ILIKE $${paramIndex}
-      OR source_type ILIKE $${paramIndex}
-      OR source_article_id ILIKE $${paramIndex}
-      OR title ILIKE $${paramIndex}
-      OR source_feed_name ILIKE $${paramIndex}
-      OR source_feed_id ILIKE $${paramIndex}
-      OR content_source ILIKE $${paramIndex}
-      OR hidden_signal ILIKE $${paramIndex}
-      OR description ILIKE $${paramIndex}
-      OR reason ILIKE $${paramIndex}
-      OR actionable ILIKE $${paramIndex}
-      OR prediction ILIKE $${paramIndex}
-      OR disconfirming_evidence ILIKE $${paramIndex}
-      OR cluster_hint ILIKE $${paramIndex}
-      OR url ILIKE $${paramIndex}
-      OR pic_url ILIKE $${paramIndex}
-      OR publish_time::text ILIKE $${paramIndex}
-      OR created_at::text ILIKE $${paramIndex}
-      OR updated_at::text ILIKE $${paramIndex}
-      OR importance_score::text ILIKE $${paramIndex}
-      OR signal_type::text ILIKE $${paramIndex}
-      OR evidence_type::text ILIKE $${paramIndex}
-      OR evidence_strength::text ILIKE $${paramIndex}
-      OR novelty_score::text ILIKE $${paramIndex}
-      OR impact_horizon::text ILIKE $${paramIndex}
-      OR audience::text ILIKE $${paramIndex}
-      OR market_stage::text ILIKE $${paramIndex}
-      OR confidence::text ILIKE $${paramIndex}
-      OR entities::text ILIKE $${paramIndex}
-      OR watch_keywords::text ILIKE $${paramIndex}
-      OR enrich_meta::text ILIKE $${paramIndex}
-      OR tags::text ILIKE $${paramIndex}
-    )`,
-    value: `%${search}%`,
-  }
-}
-
-function asStringArray(value: unknown): string[] {
-  if (!Array.isArray(value)) return []
-  return value.map((item) => String(item)).filter((item) => item.trim().length > 0)
-}
-
-function asNumber(value: unknown): number | undefined {
-  if (typeof value === 'number' && Number.isFinite(value)) return value
-  return undefined
 }
 
 export async function GET(request: NextRequest) {
@@ -104,7 +53,7 @@ export async function GET(request: NextRequest) {
         baseWhereParts.push(`COALESCE(publish_time, created_at) >= $${baseParams.length}::date AND COALESCE(publish_time, created_at) < $${baseParams.length}::date + INTERVAL '1 day'`)
       }
 
-      const searchWhere = buildSearchWhere(search, baseParams.length + 1)
+      const searchWhere = buildArticleSearchWhere(search, baseParams.length + 1)
       if (searchWhere) {
         baseParams.push(searchWhere.value)
         baseWhereParts.push(searchWhere.sql)
@@ -145,39 +94,8 @@ export async function GET(request: NextRequest) {
       const result = await client.query(query, queryParams)
       const articles = result.rows
 
-      // Format response
-      const formatTime = (dt: any): string => {
-        if (!dt) return ''
-        if (typeof dt === 'string') return dt
-        if (typeof dt.toISOString === 'function') return dt.toISOString()
-        return String(dt)
-      }
       const formatted = articles.map((row) => ({
-        id: row.id,
-        title: row.title || '',
-        url: row.url || '',
-        source: normalizeSource({ source_feed_name: row.source_feed_name, source_feed_id: row.source_feed_id, url: row.url } as any),
-        time: row.display_time || '',
-        exported: true,
-        status: 'exported',
-        tags: Array.isArray(row.tags) ? row.tags : [],
-        core_event: row.description || '',
-        hidden_signal: row.hidden_signal || '',
-        importance_score: asNumber(row.importance_score),
-        content_source: row.content_source || '',
-        signal_type: asNumber(row.signal_type),
-        evidence_strength: asNumber(row.evidence_strength),
-        novelty_score: asNumber(row.novelty_score),
-        impact_horizon: asNumber(row.impact_horizon),
-        confidence: asNumber(row.confidence),
-        entities: asStringArray(row.entities),
-        watch_keywords: asStringArray(row.watch_keywords),
-        prediction: row.prediction || '',
-        actionable: row.actionable || '',
-        reason: row.reason || '',
-        cover_url: row.pic_url || '',
-        source_feed: row.source_feed_id || '',
-        source_label: row.source_feed_name || '',
+        ...formatLocalArticleRow(row),
         publish_time: row.display_time || '',
       }))
 
