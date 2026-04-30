@@ -112,7 +112,9 @@ const FeedCard = React.memo(function FeedCard({
   const isBiliRow = /(?:bilibili\.com|b23\.tv)\//i.test(row.url || '')
   const bvid = extractBvid(row.url || '')
   const directCoverUrl = String(row.cover_url || '').replace(/^http:\/\//i, 'https://')
-  const proxyCoverUrl = bvid ? `/api/bili-cover?bvid=${encodeURIComponent(bvid)}` : ''
+  const proxyCoverUrl = bvid
+    ? `/api/bili-cover?bvid=${encodeURIComponent(bvid)}${directCoverUrl ? `&pic=${encodeURIComponent(directCoverUrl)}` : ''}`
+    : ''
   const coverUrl = isBiliRow ? (proxyCoverUrl || directCoverUrl) : (directCoverUrl || proxyCoverUrl)
   const hasCover = Boolean(coverUrl) && (
     isYoutubeRow || isBiliRow ||

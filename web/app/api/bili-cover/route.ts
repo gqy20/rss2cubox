@@ -69,10 +69,46 @@ function placeholderCoverResponse() {
   })
 }
 
+function normalizeFallbackPic(value: string): string {
+  if (!value) return ''
+  try {
+    const url = new URL(value.replace(/^http:/i, 'https:'))
+    if (!/\.hdslb\.com$/i.test(url.hostname)) return ''
+    if (!url.pathname.startsWith('/bfs/')) return ''
+    return url.toString()
+  } catch {
+    return ''
+  }
+}
+
+async function proxyImage(picUrl: string): Promise<NextResponse | null> {
+  const imgRes = await fetch(picUrl, { headers: BILI_HEADERS })
+
+  if (!imgRes.ok) {
+    return null
+  }
+
+  const contentType = imgRes.headers.get('content-type') ?? 'image/jpeg'
+  const body = await imgRes.arrayBuffer()
+
+  return new NextResponse(body, {
+    status: 200,
+    headers: {
+      'Content-Type': contentType,
+      'Cache-Control': 'public, max-age=3600, s-maxage=3600',
+    },
+  })
+}
+
 export async function GET(req: NextRequest) {
   const bvid = req.nextUrl.searchParams.get('bvid') ?? ''
+  const fallbackPic = normalizeFallbackPic(req.nextUrl.searchParams.get('pic') ?? '')
 
   if (!BV_RE.test(bvid)) {
+    if (fallbackPic) {
+      const fallback = await proxyImage(fallbackPic)
+      if (fallback) return fallback
+    }
     return placeholderCoverResponse()
   }
 
@@ -85,6 +121,10 @@ export async function GET(req: NextRequest) {
     })
 
     if (!apiRes.ok) {
+      if (fallbackPic) {
+        const fallback = await proxyImage(fallbackPic)
+        if (fallback) return fallback
+      }
       return placeholderCoverResponse()
     }
 
@@ -92,29 +132,30 @@ export async function GET(req: NextRequest) {
     const pic = json?.data?.pic
 
     if (json?.code !== 0 || !pic || typeof pic !== 'string') {
+      if (fallbackPic) {
+        const fallback = await proxyImage(fallbackPic)
+        if (fallback) return fallback
+      }
       return placeholderCoverResponse()
     }
 
     const picUrl = pic.replace(/^http:/, 'https:')
 
     // Step 2: 代理图片字节，绕过 Bilibili 防盗链
-    const imgRes = await fetch(picUrl, { headers: BILI_HEADERS })
-
-    if (!imgRes.ok) {
+    const image = await proxyImage(picUrl)
+    if (!image && fallbackPic) {
+      const fallback = await proxyImage(fallbackPic)
+      if (fallback) return fallback
+    }
+    if (!image) {
       return placeholderCoverResponse()
     }
-
-    const contentType = imgRes.headers.get('content-type') ?? 'image/jpeg'
-    const body = await imgRes.arrayBuffer()
-
-    return new NextResponse(body, {
-      status: 200,
-      headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'public, max-age=3600, s-maxage=3600',
-      },
-    })
+    return image
   } catch {
+    if (fallbackPic) {
+      const fallback = await proxyImage(fallbackPic)
+      if (fallback) return fallback
+    }
     return placeholderCoverResponse()
   }
 }

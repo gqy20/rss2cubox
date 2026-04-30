@@ -30,7 +30,9 @@ describe('FeedCard enrich fields', () => {
     )
 
     const cover = screen.getByRole('img', { name: row.title })
-    expect(cover).toHaveAttribute('src', '/api/bili-cover?bvid=BV1HHOTBEEXZ')
+    expect(cover.getAttribute('src')).toBe(
+      `/api/bili-cover?bvid=BV1HHOTBEEXZ&pic=${encodeURIComponent(row.cover_url || '')}`,
+    )
     expect(cover).toHaveAttribute('referrerPolicy', 'no-referrer')
   })
 
