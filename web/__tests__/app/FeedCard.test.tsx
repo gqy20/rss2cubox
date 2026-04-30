@@ -4,6 +4,36 @@ import FeedCard from '@/app/FeedCard'
 import type { Row } from '@/app/types'
 
 describe('FeedCard enrich fields', () => {
+  it('uses the Bilibili cover proxy before hdslb direct links', () => {
+    const row: Row = {
+      id: 'bili1',
+      title: 'Kimi K2.6 Agent 集群全面升级啦！',
+      url: 'https://www.bilibili.com/video/BV1HhoTBeEXZ',
+      source: 'Kimi智能助手',
+      time: '2026-04-30T10:00:00.000',
+      cover_url: 'https://i2.hdslb.com/bfs/archive/2ef0756b42691c518ead507e618296ba4aa39dc4.jpg',
+    }
+
+    render(
+      <FeedCard
+        row={row}
+        idx={0}
+        groupId="2026-04-30"
+        now={new Date('2026-04-30T10:30:00.000')}
+        hoveredRowKey=""
+        selectedTag={null}
+        onHoverEnter={vi.fn()}
+        onHoverLeave={vi.fn()}
+        onToggleOpen={vi.fn()}
+        onTagClick={vi.fn()}
+      />,
+    )
+
+    const cover = screen.getByRole('img', { name: row.title })
+    expect(cover).toHaveAttribute('src', '/api/bili-cover?bvid=BV1HHOTBEEXZ')
+    expect(cover).toHaveAttribute('referrerPolicy', 'no-referrer')
+  })
+
   it('surfaces the most actionable enrich metadata', () => {
     const row: Row = {
       id: 'r1',

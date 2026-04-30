@@ -112,9 +112,8 @@ const FeedCard = React.memo(function FeedCard({
   const isBiliRow = /(?:bilibili\.com|b23\.tv)\//i.test(row.url || '')
   const bvid = extractBvid(row.url || '')
   const directCoverUrl = String(row.cover_url || '').replace(/^http:\/\//i, 'https://')
-  // Keep old stable priority: direct cover first, proxy only when missing.
   const proxyCoverUrl = bvid ? `/api/bili-cover?bvid=${encodeURIComponent(bvid)}` : ''
-  const coverUrl = directCoverUrl || proxyCoverUrl
+  const coverUrl = isBiliRow ? (proxyCoverUrl || directCoverUrl) : (directCoverUrl || proxyCoverUrl)
   const hasCover = Boolean(coverUrl) && (
     isYoutubeRow || isBiliRow ||
     /^\/api\/bili-cover\?/i.test(coverUrl) ||
@@ -200,10 +199,10 @@ const FeedCard = React.memo(function FeedCard({
               loading="lazy"
               width={480}
               height={270}
+              referrerPolicy={isBiliRow ? 'no-referrer' : undefined}
               onError={(e) => {
-                // Fallback to proxy when direct cover fails (e.g. anti-hotlink), and vice versa.
                 const current = e.currentTarget.getAttribute('src') || ''
-                if (proxyCoverUrl && current !== proxyCoverUrl) {
+                if (!isBiliRow && proxyCoverUrl && current !== proxyCoverUrl) {
                   e.currentTarget.setAttribute('src', proxyCoverUrl)
                   return
                 }
