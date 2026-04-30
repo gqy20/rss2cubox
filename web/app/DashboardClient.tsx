@@ -172,7 +172,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
   const [dateMenuOpen, setDateMenuOpen] = useState(false)
   const [dateQuery, setDateQuery] = useState('')
-  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(null)
+  const [selectedDateKey, setSelectedDateKey] = useState<string | null>(() => getDayKey(new Date()))
 
   const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [shouldLoadCharts, setShouldLoadCharts] = useState(false)
