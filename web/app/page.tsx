@@ -144,13 +144,16 @@ async function loadDashboardData(apiBaseUrl?: string): Promise<{
   metrics: ReturnType<typeof buildMetrics>
   insights: GlobalInsights | null
 }> {
+  // 获取今天的日期字符串（Asia/Shanghai 时区）
+  const today = getDayKey(new Date())
+
   let events: ReturnType<typeof loadArticles> extends Promise<infer T> ? T : never = []
   let rawInsights: GlobalInsights | null = null
   let localStats: LocalStats | null = null
   try {
-    // 并行加载：文章列表（只用于展示）、统计数据（用于准确计数）、全局洞察
+    // 并行加载：文章列表（只加载今天的数据用于初始展示）、统计数据（用于准确计数）、全局洞察
     const results = await Promise.allSettled([
-      loadArticles(apiBaseUrl),
+      loadArticles(apiBaseUrl, today),
       loadLocalStats(apiBaseUrl),
       loadGlobalInsights(apiBaseUrl)
     ])
@@ -214,7 +217,6 @@ export default async function Page() {
     <main className="main">
       <DashboardClient
         initialRows={paginatedRows}
-        totalCount={data.signals_total ?? rows.length}
         metrics={data}
         insights={insights}
         serverTime={serverTime}

@@ -38,12 +38,13 @@ function getApiBaseUrl(apiBaseUrl?: string): string {
   return apiBaseUrl || process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3424'
 }
 
-export async function loadLocalArticles(apiBaseUrl?: string): Promise<EventRow[]> {
+export async function loadLocalArticles(apiBaseUrl?: string, date?: string): Promise<EventRow[]> {
   const baseUrl = getApiBaseUrl(apiBaseUrl)
   const pageSize = 50
+  const dateParam = date ? `&date=${date}` : ''
   const urlStr = baseUrl
-    ? `${baseUrl}/api/signals/local?limit=${pageSize}`
-    : `/api/signals/local?limit=${pageSize}`
+    ? `${baseUrl}/api/signals/local?limit=${pageSize}${dateParam}`
+    : `/api/signals/local?limit=${pageSize}${dateParam}`
   const response = await fetch(urlStr, { cache: 'no-store' })
   if (!response.ok) {
     throw new Error(`Local API failed: ${response.status}`)
@@ -52,10 +53,10 @@ export async function loadLocalArticles(apiBaseUrl?: string): Promise<EventRow[]
   return Array.isArray(jsonData.data) ? jsonData.data : []
 }
 
-export async function loadArticles(apiBaseUrl?: string): Promise<EventRow[]> {
+export async function loadArticles(apiBaseUrl?: string, date?: string): Promise<EventRow[]> {
   const source = getApiSource()
   if (source === 'local') {
-    return loadLocalArticles(apiBaseUrl)
+    return loadLocalArticles(apiBaseUrl, date)
   }
   return loadIcArticles()
 }

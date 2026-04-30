@@ -64,7 +64,6 @@ const ChartsSection = dynamic<ChartsSectionProps>(() => import('./charts-section
 type Props = {
   serverTime?: string
   initialRows: Row[]
-  totalCount: number
   metrics: Metrics
   insights?: GlobalInsights | null
 }
@@ -134,7 +133,7 @@ function statsToMetrics(stats: LocalStats, previous: Metrics): Metrics {
   }
 }
 
-export default function DashboardClient({ initialRows, totalCount, metrics: initialMetrics, insights, serverTime }: Props) {
+export default function DashboardClient({ initialRows, metrics: initialMetrics, insights, serverTime }: Props) {
   const [metrics, setMetrics] = useState<Metrics>(initialMetrics)
   const formatGeneratedAt = (value?: string) => {
     if (!value) return '未知'
@@ -153,7 +152,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
   }
 
   // Hook: 搜索状态管理（替换 7 个独立 state + debounce + abort + auto-fetch）
-  const { search, debouncedSearch, searchRows, searchPage, searchTotal, searchHasMore, searchLoading, isSearchMode, setSearch, fetchSearchPage } = useSearch()
+  const { search, searchRows, searchPage, searchTotal, searchHasMore, searchLoading, isSearchMode, setSearch, fetchSearchPage } = useSearch()
 
   // 分组数据状态（组件拥有，支持 SSR props 初始化）
   const [groupData, setGroupData] = useState<Record<string, { loading: boolean; loaded: boolean; items: Row[]; hasMore: boolean }>>({})
@@ -165,7 +164,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
 
   const [loadingMore, setLoadingMore] = useState(false)
   const [filter, setFilter] = useState<'all' | 'analyzed' | 'high_value'>('all')
-  const [timeScope, setTimeScope] = useState<'all' | 'today'>('all')
   const [selectedSource, setSelectedSource] = useState<string | null>(null)
   const [selectedTag, setSelectedTag] = useState<string | null>(null)
   const [hoveredRowKey, setHoveredRowKey] = useState<string | null>(null)
@@ -183,14 +181,12 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
   const [insightsHistory, setInsightsHistory] = useState<InsightHistoryItem[]>([])
   const [selectedInsightIdx, setSelectedInsightIdx] = useState<number>(0)
   const [selectedInsightKey, setSelectedInsightKey] = useState<InsightKey>('daily_advices')
-  const [insightsLoading, setInsightsLoading] = useState(false)
 
   // 趋势图表时间范围状态
   const [timeRange, setTimeRange] = useState<'7d' | '30d'>('7d')
 
   // 加载 Insights 历史记录
   useEffect(() => {
-    setInsightsLoading(true)
     loadAllGlobalInsights(30)
       .then((history) => {
         setInsightsHistory(history)
@@ -199,13 +195,12 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
         }
       })
       .catch(() => console.error('Failed to load insights history'))
-      .finally(() => setInsightsLoading(false))
   }, [])
 
   // 当前选中的 insights
   const currentInsights = insightsHistory[selectedInsightIdx]?.data ?? insights ?? null
 
-  // 初始化：只加载今天的 20 条数据
+  // 初始化：只加载今天的数据
   useEffect(() => {
     const today = getDayKey(new Date())
     const todayItems = initialRows.filter((r) => getDayKey(r.time) === today)
@@ -240,7 +235,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
 
   useEffect(() => {
     timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [filter, timeScope, selectedSource, selectedTag, search])
+  }, [filter, selectedSource, selectedTag, search])
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -364,7 +359,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
     let result = [...baseRows]
     if (filter === 'analyzed') result = result.filter((r) => hasAiSummary(r))
     if (filter === 'high_value') result = result.filter((r) => (r.importance_score ?? 0) >= 4)
-    if (timeScope === 'today') result = result.filter((r) => getDayKey(r.time) === todayKey)
     if (!isSearchMode && selectedDateKey) result = result.filter((r) => getDayKey(r.time) === selectedDateKey)
     if (selectedSource) {
       if (selectedSource === '__others__') {
@@ -376,7 +370,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
     }
     if (selectedTag) result = result.filter((r) => (r.tags || []).includes(selectedTag))
     return result.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
-  }, [isSearchMode, searchRows, loadedRows, filter, timeScope, selectedDateKey, selectedSource, selectedTag, todayKey, topSourceNames])
+  }, [isSearchMode, searchRows, loadedRows, filter, selectedDateKey, selectedSource, selectedTag, topSourceNames])
 
   // 趋势数据来自服务端（基于全部数据），图表按当前范围展示最近 7/30 天
   const trendData = useMemo(() => {
@@ -415,7 +409,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
         }))
     }
 
-    const visibleDates = selectedDateKey ? [selectedDateKey] : (timeScope === 'today' ? [todayKey] : allDates)
+    const visibleDates = selectedDateKey ? [selectedDateKey] : allDates
 
     return visibleDates.map((dayKey) => ({
       id: dayKey,
@@ -424,7 +418,7 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
       total: metrics.daily_totals?.[dayKey] || 0,
       loaded: !!dateMap.get(dayKey)?.length,
     }))
-  }, [isSearchMode, allDates, selectedDateKey, timeScope, displayedRows, todayKey, yesterdayKey, metrics.daily_totals])
+  }, [isSearchMode, allDates, selectedDateKey, displayedRows, todayKey, yesterdayKey, metrics.daily_totals])
 
   const filteredDateOptions = useMemo(() => {
     const query = dateQuery.trim().toLowerCase()
@@ -455,9 +449,9 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
 
   // KPI 使用服务端计算的完整数据
   const kpis = [
-    { key: 'all', title: '有效信号', value: metrics.signals_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setTimeScope('all'); setSelectedDateKey(null) } },
-    { key: 'analyzed', title: '已分析', value: metrics.analyzed_total ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setTimeScope('all'); setSelectedDateKey(null) } },
-    { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setTimeScope('all'); setSelectedDateKey(todayKey); setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false })); void loadGroupData(todayKey); timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) } },
+    { key: 'all', title: '有效信号', value: metrics.signals_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setSelectedDateKey(null) } },
+    { key: 'analyzed', title: '已分析', value: metrics.analyzed_total ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setSelectedDateKey(null) } },
+    { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setSelectedDateKey(todayKey); setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false })); void loadGroupData(todayKey); timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) } },
     { key: 'source', title: '活跃情报源', value: metrics.active_sources_total ?? 0, tone: '#a78bfa', delta: null, onClick: () => setSelectedSource(null) },
   ] as const
 
@@ -540,34 +534,8 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
   })
 
   const clearAllFilters = () => {
-    setSearch(''); setSelectedSource(null); setSelectedTag(null); setSelectedDateKey(null); setFilter('all'); setTimeScope('all')
+    setSearch(''); setSelectedSource(null); setSelectedTag(null); setSelectedDateKey(null); setFilter('all')
   }
-
-  const jumpToTodayGroup = useCallback(() => {
-    if (isSearchMode) {
-      setSearch('')
-    }
-
-    setSelectedDateKey(todayKey)
-    setTimeScope('all')
-    setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false }))
-    timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-
-    const todayGroupRef = groupRefs.current[todayKey]
-    if (todayGroupRef) {
-      todayGroupRef.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      return
-    }
-
-    if (!groupData[todayKey]?.loaded && !groupData[todayKey]?.loading) {
-      void loadGroupData(todayKey).then(() => {
-        setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false }))
-        requestAnimationFrame(() => {
-          groupRefs.current[todayKey]?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-        })
-      })
-    }
-  }, [isSearchMode, todayKey, groupData, loadGroupData, setSearch])
 
   const jumpToDateGroup = useCallback((dayKey: string) => {
     if (!dayKey) return
@@ -575,7 +543,6 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
       setSearch('')
     }
     setSelectedDateKey(dayKey)
-    setTimeScope('all')
 
     const scrollToGroup = () => {
       setCollapsedGroups((prev) => ({ ...prev, [dayKey]: false }))
@@ -809,21 +776,17 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
 
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
             <Filter size={15} color="#8aa3be" />
-            <Button active={filter === 'all'} onClick={() => setFilter('all')}>全量</Button>
             <Button active={filter === 'analyzed'} onClick={() => setFilter('analyzed')}>已分析</Button>
             <Button active={filter === 'high_value'} onClick={() => setFilter('high_value')}>高价值</Button>
-            <Button active={selectedDateKey === todayKey || timeScope === 'today'} onClick={() => {
-              if (selectedDateKey === todayKey || timeScope === 'today') {
+            <Button active={selectedDateKey === todayKey} onClick={() => {
+              if (selectedDateKey === todayKey) {
                 setSelectedDateKey(null)
-                setTimeScope('all')
               } else {
                 setSelectedDateKey(todayKey)
-                setTimeScope('all')
                 void loadGroupData(todayKey)
                 timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
               }
             }}>今日</Button>
-            <Button onClick={jumpToTodayGroup}>定位今天</Button>
             <PopoverMenu
               open={dateMenuOpen}
               onOpenChange={(open) => {
@@ -875,14 +838,26 @@ export default function DashboardClient({ initialRows, totalCount, metrics: init
             <Button onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
               <Download size={13} /> 导出
             </Button>
-            {selectedDateKey && <Button tone="purple" onClick={() => setSelectedDateKey(null)}>{formatGroupTitle(selectedDateKey, todayKey, yesterdayKey)} ×</Button>}
             {selectedSource && <Button tone="purple" onClick={() => setSelectedSource(null)}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
             {selectedTag && <Button tone="purple" onClick={() => setSelectedTag(null)}>#{selectedTag} ×</Button>}
-            {(search || selectedDateKey || selectedSource || selectedTag || timeScope === 'today' || filter !== 'all') && <Button onClick={clearAllFilters}>清除</Button>}
+            {(search || selectedSource || selectedTag || filter !== 'all') && <Button onClick={clearAllFilters}>清除</Button>}
           </div>
 
           <div style={{ fontSize: 12, color: '#8aa3be', width: '100%' }}>
-            共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>{displayedRows.length}</span>
+            共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>
+              {isSearchMode ? displayedRows.length : (() => {
+                // 当选择日期时，显示该日期的真实总数
+                if (selectedDateKey) {
+                  return metrics.daily_totals?.[selectedDateKey] ?? displayedRows.length
+                }
+                // 当有其他筛选条件时，显示已加载的数量
+                if (selectedSource || selectedTag || filter !== 'all') {
+                  return displayedRows.length
+                }
+                // 无筛选条件时，显示所有日期的总数
+                return Object.values(metrics.daily_totals || {}).reduce((sum, count) => sum + count, 0)
+              })()}
+            </span>
             {isSearchMode && <span> / {searchTotal}</span>} 条结果
           </div>
         </div>
