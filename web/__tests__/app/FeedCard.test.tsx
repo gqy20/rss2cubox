@@ -31,9 +31,39 @@ describe('FeedCard enrich fields', () => {
 
     const cover = screen.getByRole('img', { name: row.title })
     expect(cover.getAttribute('src')).toBe(
-      `/api/bili-cover?bvid=BV1HHOTBEEXZ&pic=${encodeURIComponent(row.cover_url || '')}`,
+      `/api/bili-cover?bvid=BV1HhoTBeEXZ&pic=${encodeURIComponent(row.cover_url || '')}`,
     )
     expect(cover).toHaveAttribute('referrerPolicy', 'no-referrer')
+  })
+
+  it('preserves Bilibili bvid casing in cover proxy URLs', () => {
+    const row: Row = {
+      id: 'bili2',
+      title: '德国把蟑螂改造成间谍，战争可能从垃圾堆开始❗️',
+      url: 'https://www.bilibili.com/video/BV1LTPCzGE8v',
+      source: '鱼C-小甲鱼',
+      time: '2026-04-28T09:32:04.177',
+    }
+
+    render(
+      <FeedCard
+        row={row}
+        idx={0}
+        groupId="2026-04-28"
+        now={new Date('2026-04-30T10:30:00.000')}
+        hoveredRowKey=""
+        selectedTag={null}
+        onHoverEnter={vi.fn()}
+        onHoverLeave={vi.fn()}
+        onToggleOpen={vi.fn()}
+        onTagClick={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('img', { name: row.title })).toHaveAttribute(
+      'src',
+      '/api/bili-cover?bvid=BV1LTPCzGE8v',
+    )
   })
 
   it('surfaces the most actionable enrich metadata', () => {

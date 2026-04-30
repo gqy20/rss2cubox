@@ -8,7 +8,7 @@ import type { Row } from './types'
 function extractBvid(value: string): string {
   const text = String(value || '')
   const match = text.match(/BV[A-Za-z0-9]{8,}/i)
-  return match ? match[0].toUpperCase() : ''
+  return match ? match[0] : ''
 }
 
 function getImportanceScore(value: unknown): number | null {
