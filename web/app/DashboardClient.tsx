@@ -6,31 +6,19 @@ import { useGroupData } from '../hooks/useGroupData'
 import { useInfiniteScroll } from '../hooks/useInfiniteScroll'
 import dynamic from 'next/dynamic'
 import {
-  Filter,
   TrendingUp,
   Radio,
   Lightbulb,
-  Search,
-  Copy,
-  ChevronDown,
-  ChevronUp,
-  Check,
-  AlertCircle,
-  Download,
-  CalendarDays,
 } from 'lucide-react'
 import {
-  Logo,
-  AnimatedNumber,
   getDayKey,
   formatGroupTitle,
   formatKpiDelta,
   hasAiSummary,
 } from './utils'
-import FeedCard from './FeedCard'
 import type { Row, Metrics, GlobalInsights, InsightKey } from './types'
 import { loadAllGlobalInsights, type InsightHistoryItem, type LocalStats } from '../lib/signalStore'
-import { Button, MenuPanel, PopoverMenu } from './ui'
+import { DashboardLeft, DashboardRight, type KpiItem, type ParsedInsightItem } from './DashboardSections'
 
 const LIVE_REFRESH_INTERVAL_MS = 60_000
 
@@ -65,11 +53,6 @@ type Props = {
   initialRows: Row[]
   metrics: Metrics
   insights?: GlobalInsights | null
-}
-
-type ParsedInsightItem = {
-  title: string
-  content?: string
 }
 
 function parseInsightString(raw: string): ParsedInsightItem {
@@ -447,12 +430,12 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
   )
 
   // KPI 使用服务端计算的完整数据
-  const kpis = [
+  const kpis: KpiItem[] = [
     { key: 'all', title: '有效信号', value: metrics.signals_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setSelectedDateKey(null) } },
     { key: 'analyzed', title: '已分析', value: metrics.analyzed_total ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setSelectedDateKey(null) } },
     { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setSelectedDateKey(todayKey); setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false })); void loadGroupData(todayKey); timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) } },
     { key: 'source', title: '活跃情报源', value: metrics.active_sources_total ?? 0, tone: '#a78bfa', delta: null, onClick: () => setSelectedSource(null) },
-  ] as const
+  ]
 
   // Handlers
 
@@ -639,86 +622,20 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
     setMessage('success', `已下载 ${label} JSON（${rowsToDownload.length} 条）`)
   }
 
-  // Render
-
   return (
     <>
-      <div className="dashboard-left">
-        <div className="header-container" style={{ marginBottom: 18 }}>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Logo size={40} />
-              <h1 className="h1">RSS 信号控制台</h1>
-            </div>
-            <div className="muted" style={{ marginTop: 6, marginLeft: 52 }}>
-              <span suppressHydrationWarning>最后更新：{formatGeneratedAt(metrics.generated_at)}</span>
-            </div>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div className="live-status">
-              <span className="status-dot" />
-              <span>批量分析结果</span>
-            </div>
-            <Button onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
-              <Download size={13} /> 导出 JSON
-            </Button>
-          </div>
-        </div>
-
-        <section className="kpi">
-          {kpis.map((item) => (
-            <button key={item.key} className="glass kpi-card" onClick={item.onClick}>
-              <div className="kpi-title">{item.title}</div>
-              <div className="kpi-value" style={{ color: item.tone }}>
-                <AnimatedNumber value={item.value} />
-              </div>
-              {item.delta && <div className={`kpi-delta ${item.delta.trend}`}>{item.delta.text}</div>}
-            </button>
-          ))}
-        </section>
-
-        {activeInsightPanel && (
-          <section className="glass briefing-panel">
-            <div className="briefing-head">
-              <div className="briefing-title-row">
-                <h2 className="briefing-title">{activeInsightPanel.title}</h2>
-                <div className="briefing-tabs" role="tablist" aria-label="洞察类别">
-                  {visibleInsightPanels
-                    .filter((panel) => panel.key !== activeInsightPanel.key)
-                    .map((panel) => (
-                      <button
-                        key={panel.key}
-                        role="tab"
-                        aria-selected={false}
-                        className="briefing-tab"
-                        onClick={() => setSelectedInsightKey(panel.key)}
-                      >
-                        {panel.icon}
-                        <span>{panel.title}</span>
-                      </button>
-                    ))}
-                </div>
-              </div>
-              <Button iconOnly onClick={() => copyInsightText(activeInsightPanel.title, activeInsightPanel.items)} title="复制" aria-label="复制">
-                <Copy size={14} />
-              </Button>
-            </div>
-            <ol className="briefing-list">
-              {activeInsightPanel.items.slice(0, 5).map((item, i) => (
-                <li key={`${activeInsightPanel.key}-${i}-${item.title}`}>
-                  <span className="briefing-index">{String(i + 1).padStart(2, '0')}</span>
-                  <div>
-                    <div className="briefing-item-title">{item.title}</div>
-                    {item.content && <p className="briefing-item-content">{item.content}</p>}
-                  </div>
-                </li>
-              ))}
-            </ol>
-          </section>
-        )}
-
-        <div ref={chartsTriggerRef}>
-          {shouldLoadCharts ? (
+      <DashboardLeft
+        generatedAt={formatGeneratedAt(metrics.generated_at)}
+        kpis={kpis}
+        activeInsightPanel={activeInsightPanel}
+        visibleInsightPanels={visibleInsightPanels}
+        onSelectInsightKey={setSelectedInsightKey}
+        onCopyInsight={copyInsightText}
+        onExport={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}
+        chartsTriggerRef={chartsTriggerRef}
+        shouldLoadCharts={shouldLoadCharts}
+        onLoadCharts={() => setShouldLoadCharts(true)}
+        chartsNode={
             <ChartsSection
               trendData={trendData}
               sourceData={sourceData}
@@ -730,214 +647,62 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
               selectedInsightIdx={selectedInsightIdx}
               onSelectInsight={setSelectedInsightIdx}
             />
-          ) : (
-            <section className="charts-grid" style={{ marginBottom: 18 }}>
-              <div className="glass chart-card chart-deferred-card">
-                <div className="chart-deferred-title">查看趋势</div>
-                <p className="chart-deferred-copy">展开最近信号的总量变化与已分析占比。</p>
-                <Button onClick={() => setShouldLoadCharts(true)}>立即加载图表</Button>
-              </div>
-              <div className="glass chart-card chart-deferred-card">
-                <div className="chart-deferred-title">查看来源分布</div>
-                <p className="chart-deferred-copy">按来源筛选情报流，快速聚焦高频信号源。</p>
-                <Button onClick={() => setShouldLoadCharts(true)}>立即加载图表</Button>
-              </div>
-            </section>
-          )}
-        </div>
+        }
+        actionMessage={actionMessage}
+      />
 
-        {actionMessage && (
-          <div className={`action-message ${actionMessage.type === 'success' ? 'success' : 'error'}`}>
-            {actionMessage.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
-            <span>{actionMessage.text}</span>
-          </div>
-        )}
-      </div>
-
-      <div className="dashboard-right">
-        <div className="controls-bar" style={{ borderBottom: '1px solid var(--panel-border)', paddingBottom: 14, marginBottom: 0, flexDirection: 'column', gap: 10 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-            <h2 style={{ fontSize: '20px', margin: 0, fontWeight: 700 }}>实时情报流</h2>
-          </div>
-
-          <div style={{ width: '100%', position: 'relative' }}>
-            <Search size={16} color="#8aa3be" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }} />
-            <input ref={searchRef} className="search-input search-input-primary" placeholder="搜索标题、来源、标签…（/ 或 Cmd/Ctrl+K）" value={search} onChange={(e) => setSearch(e.target.value)} />
-            {search && (
-              <button onClick={() => setSearch('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#8aa3be', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: 0 }}>
-                ×
-              </button>
-            )}
-          </div>
-
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center', width: '100%', flexWrap: 'wrap' }}>
-            <Filter size={15} color="#8aa3be" />
-            <Button active={filter === 'analyzed'} onClick={() => setFilter('analyzed')}>已分析</Button>
-            <Button active={filter === 'high_value'} onClick={() => setFilter('high_value')}>高价值</Button>
-            <Button active={selectedDateKey === todayKey} onClick={() => {
-              if (selectedDateKey === todayKey) {
-                setSelectedDateKey(null)
-              } else {
-                setSelectedDateKey(todayKey)
-                void loadGroupData(todayKey)
-                timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-              }
-            }}>今日</Button>
-            <PopoverMenu
-              open={dateMenuOpen}
-              onOpenChange={(open) => {
-                setDateMenuOpen(open)
-                if (!open) setDateQuery('')
-              }}
-              trigger={(
-                <button className="date-jump-trigger" aria-expanded={dateMenuOpen}>
-                  <CalendarDays size={13} /> 日期跳转
-                </button>
-              )}
-            >
-              <div className="date-jump-panel">
-                <input
-                  className="date-jump-search"
-                  value={dateQuery}
-                  onChange={(e) => setDateQuery(e.target.value)}
-                  placeholder="搜索日期，例如 4/21"
-                />
-                <div className="date-jump-quick">
-                  {[todayKey, yesterdayKey].map((dayKey) => (
-                    <button
-                      key={dayKey}
-                      onClick={() => {
-                        jumpToDateGroup(dayKey)
-                        setDateMenuOpen(false)
-                      }}
-                    >
-                      {formatGroupTitle(dayKey, todayKey, yesterdayKey)}
-                    </button>
-                  ))}
-                </div>
-                <MenuPanel className="date-jump-list">
-                  {filteredDateOptions.map((dayKey) => (
-                    <button
-                      key={dayKey}
-                      onClick={() => {
-                        jumpToDateGroup(dayKey)
-                        setDateMenuOpen(false)
-                      }}
-                    >
-                      <span>{formatGroupTitle(dayKey, todayKey, yesterdayKey)}</span>
-                      <strong>{metrics.daily_totals?.[dayKey] || 0}</strong>
-                    </button>
-                  ))}
-                </MenuPanel>
-              </div>
-            </PopoverMenu>
-            <Button onClick={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}>
-              <Download size={13} /> 导出
-            </Button>
-            {selectedSource && <Button tone="purple" onClick={() => setSelectedSource(null)}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
-            {selectedTag && <Button tone="purple" onClick={() => setSelectedTag(null)}>#{selectedTag} ×</Button>}
-            {(search || selectedSource || selectedTag || filter !== 'all') && <Button onClick={clearAllFilters}>清除</Button>}
-          </div>
-
-          <div style={{ fontSize: 12, color: '#8aa3be', width: '100%' }}>
-            共 <span style={{ color: '#2dd4bf', fontWeight: 600 }}>
-              {isSearchMode ? displayedRows.length : (() => {
-                // 当选择日期时，显示该日期的真实总数
-                if (selectedDateKey) {
-                  return metrics.daily_totals?.[selectedDateKey] ?? displayedRows.length
-                }
-                // 当有其他筛选条件时，显示已加载的数量
-                if (selectedSource || selectedTag || filter !== 'all') {
-                  return displayedRows.length
-                }
-                // 无筛选条件时，显示所有日期的总数
-                return Object.values(metrics.daily_totals || {}).reduce((sum, count) => sum + count, 0)
-              })()}
-            </span>
-            {isSearchMode && <span> / {searchTotal}</span>} 条结果
-          </div>
-        </div>
-
-        <div className="timeline-container" ref={timelineRef}>
-          <section className="timeline" style={{ marginTop: 12 }}>
-            {displayedRows.length === 0 && !hasLoadingGroup && (() => {
-              const reason = search.trim() ? `「${search.trim()}」` : selectedTag ? `#${selectedTag}` : selectedSource ? `「${selectedSource === '__others__' ? '其他来源' : selectedSource}」` : null
-              return (
-                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#8aa3be' }}>
-                  <div style={{ fontSize: 40, marginBottom: 12, opacity: 0.4 }}>◎</div>
-                  <div style={{ fontSize: 14 }}>{reason ? `${reason} 暂无匹配信号` : '暂无信号数据'}</div>
-                  {reason && (
-                    <button onClick={clearAllFilters} style={{ marginTop: 12, background: 'none', border: '1px solid #8aa3be', color: '#8aa3be', padding: '4px 12px', borderRadius: 20, cursor: 'pointer', fontSize: 13 }}>
-                      清除所有筛选
-                    </button>
-                  )}
-                </div>
-              )
-            })()}
-
-            {groupedRows.map((group) => {
-              const groupState = groupData[group.id]
-              const isLoading = isSearchMode ? false : (groupState?.loading ?? false)
-              const isLoaded = isSearchMode ? true : (groupState?.loaded ?? false)
-              return (
-              <div key={group.id} className="feed-group" ref={(el) => { groupRefs.current[group.id] = el }}>
-                <button className="feed-group-head" onClick={() => {
-                  // 如果分组未加载，点击时加载数据
-                  if (!isSearchMode && !isLoaded && !isLoading) {
-                    void loadGroupData(group.id)
-                    setCollapsedGroups((prev) => ({ ...prev, [group.id]: false }))
-                    return
-                  }
-                  setCollapsedGroups((prev) => ({ ...prev, [group.id]: !prev[group.id] }))
-                }}>
-                  <span className="feed-group-title">{group.title}</span>
-                  <span className="feed-group-meta">{group.total} 条</span>
-                  {collapsedGroups[group.id] ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
-                </button>
-                {!collapsedGroups[group.id] && (
-                  <div className="feed-group-body">
-                    {isLoading && group.items.length === 0 && (
-                      <div style={{ color: '#8aa3be', fontSize: 12, padding: '8px 2px 10px' }}>正在加载...</div>
-                    )}
-                    {group.items.map((row, idx) => {
-                      const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
-                      return (
-                        <FeedCard
-                          key={`${group.id}-${rowKey}-${idx}`}
-                          row={row}
-                          idx={idx}
-                          groupId={group.id}
-                          now={now}
-                          hoveredRowKey={hoveredRowKey}
-                          selectedTag={selectedTag}
-                          onHoverEnter={openRowHover}
-                          onHoverLeave={closeRowHover}
-                          onToggleOpen={toggleRowOpen}
-                          onTagClick={(tag) => setSelectedTag((prev) => (prev === tag ? null : tag))}
-                        />
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-              )
-            })}
-
-            {/* 无限滚动触发器 */}
-            <div ref={loadMoreRef} style={{ height: 1 }} />
-            {searchLoading && isSearchMode && (
-              <div style={{ textAlign: 'center', fontSize: 12, color: '#8aa3be', padding: '8px 0 14px' }}>
-                正在检索全量数据...
-              </div>
-            )}
-            {loadingMore && (
-              <div style={{ textAlign: 'center', fontSize: 12, color: '#8aa3be', padding: '8px 0 14px' }}>
-                正在加载更多...
-              </div>
-            )}
-          </section>
-        </div>
-      </div>
+      <DashboardRight
+        search={search}
+        searchRef={searchRef}
+        onSearchChange={setSearch}
+        filter={filter}
+        onFilterChange={setFilter}
+        selectedDateKey={selectedDateKey}
+        todayKey={todayKey}
+        yesterdayKey={yesterdayKey}
+        dateMenuOpen={dateMenuOpen}
+        onDateMenuOpenChange={setDateMenuOpen}
+        dateQuery={dateQuery}
+        onDateQueryChange={setDateQuery}
+        filteredDateOptions={filteredDateOptions}
+        metrics={metrics}
+        selectedSource={selectedSource}
+        selectedTag={selectedTag}
+        onClearSource={() => setSelectedSource(null)}
+        onClearTag={() => setSelectedTag(null)}
+        onClearAll={clearAllFilters}
+        onToggleToday={() => {
+          if (selectedDateKey === todayKey) {
+            setSelectedDateKey(null)
+          } else {
+            setSelectedDateKey(todayKey)
+            void loadGroupData(todayKey)
+            timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+          }
+        }}
+        onJumpToDate={jumpToDateGroup}
+        onExport={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}
+        displayedRows={displayedRows}
+        isSearchMode={isSearchMode}
+        searchTotal={searchTotal}
+        hasLoadingGroup={hasLoadingGroup}
+        groupedRows={groupedRows}
+        groupData={groupData}
+        collapsedGroups={collapsedGroups}
+        setCollapsedGroups={setCollapsedGroups}
+        loadGroupData={loadGroupData}
+        timelineRef={timelineRef}
+        loadMoreRef={loadMoreRef}
+        groupRefs={groupRefs}
+        now={now}
+        hoveredRowKey={hoveredRowKey}
+        onHoverEnter={openRowHover}
+        onHoverLeave={closeRowHover}
+        onToggleOpen={toggleRowOpen}
+        onTagClick={(tag) => setSelectedTag((prev) => (prev === tag ? null : tag))}
+        searchLoading={searchLoading}
+        loadingMore={loadingMore}
+      />
     </>
   )
 }
