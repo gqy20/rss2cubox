@@ -6,6 +6,8 @@ export type IcArticle = {
   title?: string | null
   source_feed_id?: string | null
   source_feed_name?: string | null
+  source_type?: string | null
+  source_article_id?: string | null
   url?: string | null
   pic_url?: string | null
   description?: string | null
@@ -17,14 +19,21 @@ export type IcArticle = {
   importance_score?: number | null
   content_source?: string | null
   signal_type?: number | null
+  evidence_type?: number | null
   evidence_strength?: number | null
   novelty_score?: number | null
   impact_horizon?: number | null
+  audience?: number[] | null
+  market_stage?: number | null
   confidence?: number | null
   entities?: string[] | null
+  cluster_hint?: string | null
   watch_keywords?: string[] | null
   prediction?: string | null
+  disconfirming_evidence?: string | null
+  enrich_meta?: Record<string, unknown> | null
   created_at?: string | null
+  updated_at?: string | null
 }
 
 export type IcListResponse = {
@@ -110,15 +119,36 @@ export function matchesSearch(article: IcArticle, search: string): boolean {
   const needle = search.toLowerCase()
   const fields = [
     article.title,
+    article.id,
+    article.source_type,
     article.source_feed_name,
     article.source_feed_id,
+    article.source_article_id,
+    article.content_source,
     article.hidden_signal,
     article.description,
     article.reason,
     article.actionable,
+    article.prediction,
+    article.disconfirming_evidence,
+    article.cluster_hint,
     article.url,
     article.pic_url,
     article.publish_time,
+    article.created_at,
+    article.updated_at,
+    article.importance_score,
+    article.signal_type,
+    article.evidence_type,
+    article.evidence_strength,
+    article.novelty_score,
+    article.impact_horizon,
+    article.market_stage,
+    article.confidence,
+    Array.isArray(article.audience) ? article.audience.join(' ') : '',
+    Array.isArray(article.entities) ? article.entities.join(' ') : '',
+    Array.isArray(article.watch_keywords) ? article.watch_keywords.join(' ') : '',
+    article.enrich_meta ? JSON.stringify(article.enrich_meta) : '',
   ]
   if (fields.some((v) => String(v || '').toLowerCase().includes(needle))) return true
   return Array.isArray(article.tags) && article.tags.some((tag) => String(tag).toLowerCase().includes(needle))

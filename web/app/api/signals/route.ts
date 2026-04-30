@@ -28,16 +28,37 @@ function buildSearchWhere(search: string, paramIndex: number): { sql: string; va
   if (!search) return null
   return {
     sql: `(
-      title ILIKE $${paramIndex}
+      id ILIKE $${paramIndex}
+      OR source_type ILIKE $${paramIndex}
+      OR source_article_id ILIKE $${paramIndex}
+      OR title ILIKE $${paramIndex}
       OR source_feed_name ILIKE $${paramIndex}
       OR source_feed_id ILIKE $${paramIndex}
+      OR content_source ILIKE $${paramIndex}
       OR hidden_signal ILIKE $${paramIndex}
       OR description ILIKE $${paramIndex}
       OR reason ILIKE $${paramIndex}
       OR actionable ILIKE $${paramIndex}
+      OR prediction ILIKE $${paramIndex}
+      OR disconfirming_evidence ILIKE $${paramIndex}
+      OR cluster_hint ILIKE $${paramIndex}
       OR url ILIKE $${paramIndex}
       OR pic_url ILIKE $${paramIndex}
       OR publish_time::text ILIKE $${paramIndex}
+      OR created_at::text ILIKE $${paramIndex}
+      OR updated_at::text ILIKE $${paramIndex}
+      OR importance_score::text ILIKE $${paramIndex}
+      OR signal_type::text ILIKE $${paramIndex}
+      OR evidence_type::text ILIKE $${paramIndex}
+      OR evidence_strength::text ILIKE $${paramIndex}
+      OR novelty_score::text ILIKE $${paramIndex}
+      OR impact_horizon::text ILIKE $${paramIndex}
+      OR audience::text ILIKE $${paramIndex}
+      OR market_stage::text ILIKE $${paramIndex}
+      OR confidence::text ILIKE $${paramIndex}
+      OR entities::text ILIKE $${paramIndex}
+      OR watch_keywords::text ILIKE $${paramIndex}
+      OR enrich_meta::text ILIKE $${paramIndex}
       OR tags::text ILIKE $${paramIndex}
     )`,
     value: `%${search}%`,

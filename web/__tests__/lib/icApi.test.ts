@@ -96,6 +96,13 @@ describe('matchesSearch', () => {
     actionable: 'Try it out',
     url: 'https://openai.com/gpt-5',
     tags: ['ai', 'llm'],
+    content_source: 'full_text',
+    entities: ['OpenAI'],
+    watch_keywords: ['agentic search'],
+    prediction: 'Search will become broader',
+    cluster_hint: 'agent workflow',
+    disconfirming_evidence: 'limited rollout',
+    enrich_meta: { provider: 'test-runner' },
   }
 
   it('should match by title (case insensitive)', () => {
@@ -112,6 +119,14 @@ describe('matchesSearch', () => {
 
   it('should match by reason', () => {
     expect(matchesSearch(article, 'impact')).toBe(true)
+  })
+
+  it('should match by enrichment fields', () => {
+    expect(matchesSearch(article, 'agentic search')).toBe(true)
+    expect(matchesSearch(article, 'broader')).toBe(true)
+    expect(matchesSearch(article, 'agent workflow')).toBe(true)
+    expect(matchesSearch(article, 'limited rollout')).toBe(true)
+    expect(matchesSearch(article, 'test-runner')).toBe(true)
   })
 
   it('should return true for empty search', () => {
