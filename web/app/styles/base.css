@@ -1,0 +1,48 @@
+:root {
+  --bg: #07090d;
+  --bg-soft: #0d1118;
+  --panel: rgba(18, 24, 32, 0.82);
+  --panel-soft: rgba(22, 29, 38, 0.66);
+  --panel-border: rgba(178, 190, 205, 0.14);
+  --text: #edf1f7;
+  --muted: #8f9caf;
+  --accent: #4fd1c5;
+  --signal-strong: #5ee0a5;
+  --signal-mid: #7aa7ff;
+  --signal-muted: #8b95a4;
+  --glass-border: rgba(178, 190, 205, 0.13);
+  --glass-border-hover: rgba(229, 236, 247, 0.24);
+  --glass-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
+  --glass-shadow-hover: 0 18px 46px rgba(0, 0, 0, 0.34);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'SF Pro Display', 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
+  background:
+    radial-gradient(circle at 16% -12%, rgba(79, 209, 197, 0.08), transparent 34%),
+    radial-gradient(circle at 92% 4%, rgba(122, 167, 255, 0.07), transparent 30%),
+    linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 72%);
+  color: var(--text);
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.glass {
+  background: var(--panel);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  box-shadow: var(--glass-shadow);
+  transition: background 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease, transform 0.22s ease;
+}
+
+.glass:hover {
+  border-color: var(--glass-border-hover);
+  box-shadow: var(--glass-shadow-hover);
+}
