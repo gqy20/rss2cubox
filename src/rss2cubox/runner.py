@@ -28,6 +28,7 @@ import requests
 from rss2cubox import feed_sources, sync_pipeline
 from rss2cubox import enrich_agent
 from rss2cubox.db_client import save_articles
+from rss2cubox.db import record_feed_stat
 from rss2cubox.global_agent import run_global_analysis
 from rss2cubox.feed_sources import RSSHubInstancePool
 from rss2cubox.metrics import (
@@ -161,6 +162,11 @@ def main() -> None:
         ic_push_enabled=IC_PUSH_ENABLED,
     )
 
+    _db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    _stat_recorder = None
+    if _db_url:
+        def _stat_recorder(**kw):
+            record_feed_stat(_db_url, run_id=_run_id, **kw)
     candidates = feed_sources.collect_candidates_from_feeds(
         feed_specs=feed_specs,
         analyzed=processed,
@@ -186,6 +192,7 @@ def main() -> None:
         feed_failure_backoff_seconds=sync_pipeline.feed_failure_backoff_seconds,
         log_event=log_event,
         now_utc=now_utc,
+        record_stat=_stat_recorder,
     )
 
     candidates, run_deduped = sync_pipeline.dedupe_run_candidates(candidates, stats["per_feed_drop_reasons"])

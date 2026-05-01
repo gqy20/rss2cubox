@@ -565,6 +565,7 @@ def collect_candidates_from_feeds(
     feed_failure_backoff_seconds: Any,
     log_event: Any,
     now_utc: datetime,
+    record_stat: Any = None,
 ) -> list[dict[str, Any]]:
     candidates: list[dict[str, Any]] = []
     pending_specs: list[tuple[int, dict[str, str]]] = []
@@ -657,6 +658,13 @@ def collect_candidates_from_feeds(
         feed_kind = result["kind"]
         if not result.get("ok", False):
             stats["feeds_invalid"] += 1
+            if record_stat:
+                record_stat(
+                    feed_url=feed_url,
+                    status="failed" if result.get("error") != "feed_invalid" else "parse_error",
+                    duration_ms=result.get("duration_ms", 0),
+                    error_msg=str(result.get("error", "")),
+                )
             previous_count = int(feed_failures.get(feed_url, {}).get("count", 0))
             failure_count = previous_count + 1
             cooldown_seconds = feed_failure_backoff_seconds(
@@ -702,6 +710,16 @@ def collect_candidates_from_feeds(
         stats["missing_link"] += int(result.get("missing_link", 0))
         stats["keyword_filtered"] += int(result.get("keyword_filtered", 0))
         stats["cursor_skipped"] += int(result.get("cursor_skipped", 0))
+
+        if record_stat:
+            record_stat(
+                feed_url=feed_url,
+                status="empty" if result.get("candidates", 0) == 0 else "ok",
+                fetched=result.get("fetched", 0),
+                candidates=result.get("candidates", 0),
+                duration_ms=result.get("duration_ms", 0),
+                resolved_url=selected_url,
+            )
         stage_metrics.observe("fetch", int(result.get("duration_ms", 0)))
         candidates.extend(result.get("candidate_items", []))
 
