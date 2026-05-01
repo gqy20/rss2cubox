@@ -316,3 +316,94 @@ https://machinelearningmastery.com/feed # Machine Learning Mastery
 # 新增：中文 AI 频道
 /youtube/channel/UCBFkCZVCfwi4YL21zCcnjxQ # 跟李沐学AI（Deep Learning 101）
 /youtube/channel/UCIDll3SRcbHwwcXbrwvBZNw # 橘鸦Juya（AI早报视频版）
+# 新增：从橘鸦早报提取的信源
+https://openclaw.ai/rss.xml # OpenClaw Blog（AI Agent）
+https://zed.dev/blog.rss # Zed Editor Blog
+https://techcrunch.com/feed/ # TechCrunch
+https://research.ibm.com/rss # IBM Research
+https://qwenlm.github.io/blog/index.xml # Qwen Blog（通义千问）
+https://github.com/NousResearch/hermes-agent/releases.atom # Hermes Agent Releases（Nous Research）
+# 新增：从橘鸦早报 issue 66-73 提取的信源
+https://blogs.microsoft.com/rss # Microsoft Blog
+https://github.blog/feed # GitHub Blog（产品&新闻）
+https://about.fb.com/feed # Meta Blog
+https://blog.comfy.org/feed # ComfyUI Blog（Substack）
+https://developers.googleblog.com/feed # Google Developer Blog
+https://github.com/open-webui/open-webui/releases.atom # Open WebUI Releases
+# 新增：从橘鸦早报 issue 62-65 提取的信源
+https://github.com/browser-use/browser-use/releases.atom # browser-use（AI 浏览器自动化）
+https://github.com/CherryHQ/cherry-studio/releases.atom # Cherry Studio（AI 客户端）
+https://blogs.opera.com/news/feed # Opera Blog
+https://www.businessinsider.com/rss # Business Insider
+# 新增：类似橘鸦的 AI 聚合信源
+https://www.bensbites.com/feed # Ben's Bites（AI 创业 & 工具，Substack）
+# 新增：从已有聚合源反向挖掘的源头
+# — 从 agents-radar 提取的 AI CLI/Agent 工具 GitHub Releases
+https://github.com/openai/codex/releases.atom # OpenAI Codex（AI 编程 Agent）
+https://github.com/google-gemini/gemini-cli/releases.atom # Gemini CLI（Google AI CLI）
+https://github.com/github/copilot-cli/releases.atom # GitHub Copilot CLI
+https://github.com/MoonshotAI/kimi-cli/releases.atom # Kimi CLI（月之暗面）
+https://github.com/anomalyco/opencode/releases.atom # OpenCode（开源 AI IDE）
+https://github.com/exa-labs/exa-js/releases.atom # Exa JS（AI 搜索 API）
+# — 从 Ben's Bites 引用链提取的博客
+https://blog.usv.com/feed # USV Blog（Union Square Ventures，AI/科技投资洞察）
+https://www.aboutamazon.com/news/rss # Amazon News（AWS AI、芯片、零售动态）
+# 新增：调研发现的 AI 聚合信源
+https://the-decoder.com/feed/ # The Decoder（AI 新闻，德/英双语，活跃 2026）
+https://www.artificialintelligence-news.com/feed/ # AI News - TechForge（企业 AI 聚焦）
+https://aiweekly.co/feed # AI Weekly（AI 周报，44K+ 订阅者）
+# 新增：从 3 个新聚合源反向挖掘的源头
+# — 从 AI Weekly 引用链提取
+https://sherwood.news/rss.xml # Sherwood News（科技/市场/加密新闻，Robinhood 旗下）
+# — 从 The Decoder & AI Weekly 共同引用
+https://huggingface.co/blog/feed.xml # Hugging Face Blog（AI/ML 研究与产品更新）
+# ======== 全渠道信源发现：OPML 挖矿 + 公司博客矩阵 + 学术/播客/VC/政策 ========
+# — AI 公司官方博客（新发现）
+https://openai.com/blog/rss.xml # OpenAI Blog（产品+研究，与 /news/rss 互补）
+https://www.together.ai/blog/rss.xml # Together AI Blog（开源模型生态）
+https://www.microsoft.com/en-us/research/feed/ # Microsoft Research（前沿研究）
+https://blogs.nvidia.com/feed/ # NVIDIA Blog（GPU/芯片/AI 硬件，与企业开发者博客互补）
+https://blog.langchain.dev/rss/ # LangChain Blog（LLM 应用开发框架）
+https://mistral.ai/news/index.xml # Mistral AI News（欧洲开源模型先锋）
+https://stability.ai/blog?format=rss # Stability AI Blog（生成式 AI / 图像/视频）
+https://txt.cohere.com/rss/ # Cohere Blog（企业 LLM / RAG / Embeddings）
+https://blog.llamaindex.ai/feed # LlamaIndex Blog（数据框架 / RAG 工具链）
+https://machinelearning.apple.com/rss.xml # Apple Machine Learning Research
+https://aws.amazon.com/blogs/machine-learning/feed/ # AWS Machine Learning Blog
+https://www.amazon.science/index.rss # Amazon Science（跨学科研究，与 Amazon News 互补）
+# — 学术机构与研究实验室
+https://ai.stanford.edu/blog/feed.xml # Stanford AI Lab Blog（SAIL）
+https://news.mit.edu/rss/topic/artificial-intelligence2 # MIT News — AI 专题
+https://allenai.org/blog/feed # AI2 Blog（Allen Institute for AI，研究驱动）
+https://blog.eleuther.ai/index.xml # Eleuther AI Blog（开源 AI 研究）
+# — AI 媒体与社区（高价值聚合/分析）
+https://venturebeat.com/category/ai/feed/ # VentureBeat — AI 分类
+https://thegradient.pub/rss/ # The Gradient（AI 学术深度文章）
+https://feed.infoq.com/ai-ml-data-eng/ # InfoQ — AI/ML/Data Engineering
+https://www.semianalysis.com/feed/ # SemiAnalysis（AI 芯片/半导体行业深度分析）
+https://lastweekin.ai/feed # Last Week in AI（AI 周报摘要）
+https://importai.substack.com/feed # Import AI（Jack Clark，AI 行业内部视角）
+https://www.interconnects.ai/feed # Interconnects（Nathan Lambert，AI 开源生态分析）
+https://www.404media.co/rss/ # 404 Media（AI 科技快讯，独立媒体）
+# — AI 播客
+https://changelog.com/practicalai/feed # Practical AI Podcast（Changelog，ML/DL/NLP 全领域）
+https://twimlai.com/feed # TWIML AI Podcast（Sam Charrington，765+ 期产业+学术）
+# — VC / 投资人博客
+https://greylock.com/blog/feed/ # Greylock Partners Blog（企业级 AI 投资）
+https://review.firstround.com/feed/ # First Round Review（创业洞察 + 技术深度）
+# — 政策 / 监管 / 权威科技媒体
+https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss # IEEE Spectrum — AI 专题
+https://www.technologyreview.com/feed # MIT Technology Review（权威科技深度报道）
+https://www.nist.gov/news-events/news/rss.xml # NIST News（含 AI 标准/安全/评估政策）
+# — 论文（社区维护）
+https://papers.takara.ai/api/feed # Hugging Face Daily Papers（社区维护，每日论文更新）
+# — 高价值个人博客（AI 商业/教育/实践）
+https://www.oneusefulthing.org/feed # One Useful Thing（Ethan Mollick，沃顿教授 AI 商业实验）
+https://scottaaronson.blog/?feed=rss2 # Shtetl-Optimized（Scott Aaronson，量子计算/AI 理论）
+https://blog.bytebytego.com/feed # ByteByteGo（系统设计 + AI 架构，图文并茂）
+https://www.fast.ai/index.xml # Fast.AI（Jeremy Howard，实用深度学习教程）
+# — 综合科技媒体（补充覆盖面）
+https://www.theverge.com/rss/full.xml # The Verge（消费科技 + AI）
+https://futurism.com/feed # Futurism（未来科技 + AI 聚焦）
+https://api.quantamagazine.org/feed/ # Quanta Magazine（数学/CS/理论科学，纯数学驱动的 AI 洞察）
+https://www.lesswrong.com/feed.xml?view=curated-rss # LessWrong（理性社区，AI 对齐/安全讨论）
