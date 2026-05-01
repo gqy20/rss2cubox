@@ -291,3 +291,21 @@ https://machinelearningmastery.com/feed # Machine Learning Mastery
 /youtube/channel/UC2ojq-nuP8ceeHqiroeKhBA # YouTube @nateherk
 /youtube/channel/UCNJ1Ymd5yFuUPtn21xtRbbw # YouTube @aiexplained-official
 /youtube/channel/UChpleBmo18P08aKCIgti38g # YouTube @mreflow（Matt Wolfe）
+# 新增：论文解读 / 前沿研究
+/youtube/channel/UCZHmQk67mSJgfCCTn7xBfew # Yannic Kilcher（论文深度解读）
+/youtube/channel/UCbfYPyITQ-7l4upoX8nvctg # Two Minute Papers（AI 研究速览）
+/youtube/channel/UCHhYXsLBEVVnbvsq57n1MTQ # AI Advantage（论文+实战）
+# 新增：大模型原理 / 从零实现
+/youtube/channel/UCXUPKJO5MZQN11PqgIvyuvQ # Andrej Karpathy（卡帕西）
+/youtube/channel/UCYO_jab_esuFRV4b17AJtAw # 3Blue1Brown（可视化数学）
+/youtube/channel/UCtYLUTtgS3k1Fg4y5tAhLbw # StatQuest with Josh Starmer
+# 新增：工程实战 / LLM 应用开发
+/youtube/channel/UCNU_lfiiWBdtULKOw6X0Dig # Krish Naik（GenAI 全栈教程）
+/youtube/channel/UCfzlCWGWYyIQ0aLC5w48gBQ # Sentdex（Python + ML 实战）
+/youtube/channel/UCtatfZMf-8EkIwASXM4ts0A # AssemblyAI（LLM 工程实践）
+# 新增：行业深度对话 / 播客
+/youtube/channel/UCSHZKyawb77ixDdsGog4iWA # Lex Fridman Podcast
+/youtube/channel/UCXl4i9dYBrFOabk0xGmbkRA # Dwarkesh Patel Podcast
+/youtube/channel/UCSI7h9hydQ40K5MJHnCrQvw # No Priors（Elad Gil & Sarah Guo）
+# 新增：中文 AI 频道
+/youtube/channel/UCBFkCZVCfwi4YL21zCcnjxQ # 跟李沐学AI（Deep Learning 101）
