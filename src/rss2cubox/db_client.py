@@ -1269,7 +1269,7 @@ def save_global_insights(
                 """,
                 (
                     payload.get("generated_at"),
-                    json.dumps(payload, ensure_ascii=False),
+                    payload,
                 ),
             )
             conn.commit()
