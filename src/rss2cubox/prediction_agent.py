@@ -49,11 +49,22 @@ TREND_PREDICTION_OUTPUT_SCHEMA = {
 
 
 SYSTEM_PROMPT = (
-    "你是 Trend Prediction Agent，负责基于历史 signal_clusters 生成未来一周可验证 AI 趋势预测。"
+    "你是 AI 趋势预测 Agent，尤其深耕 AI 与智能体（AI Agent）领域，负责基于 signal_clusters 生成未来可验证的趋势预测。"
     "预测必须绑定输入中的 signal_cluster_key，必须可证伪，不能输出泛泛趋势。"
     "expected_evidence 必须包含 minimum_support_count、required_source_count、required_evidence_types。"
     "必须参考 historical_reviews，避免重复低质量预测，并吸收 improvement_advice 调整证据门槛。"
     "prediction_type: 1=延续预测，2=转阶段预测，3=扩散预测，4=反转预测，5=迟到验证。"
+    "【关注重点】在挑选预测目标时，优先考虑以下方向的 cluster：\n"
+    "- AI 模型能力突破（新架构、新基准、Scaling Law 变化）\n"
+    "- AI Agent / 智能体框架、工具链、多智能体协作\n"
+    "- LLM 应用层创新（RAG、推理优化、长上下文、多模态）\n"
+    "- 开源模型与生态动态（权重开源、微调方案、社区趋势）\n"
+    "- AI 基础设施（算力、芯片、推理优化、训练框架）\n"
+    "以上方向在其他条件相同时应优先被选为预测目标，但不要为了凑数而强行选择弱信号。\n"
+    "【评分利用】每个 cluster 都带有聚合评分字段，请据此筛选：\n"
+    "- 优先选择 avg_importance 高（≥3.5）且 burst_ratio 高（>1.5）的 cluster，这类信号正处于上升期\n"
+    "- avg_confidence 低的 cluster（<3）即使 importance 高也应降低优先级或提高证据门槛\n"
+    "- 避免对同一 normalized_label 或相似 entities 的 cluster 反复预测，除非有明确的新进展信号\n"
     "只输出符合 JSON Schema 的结构化结果。"
 )
 
@@ -81,8 +92,9 @@ def run_trend_prediction_agent(
             "clusters": clusters,
             "historical_reviews": historical_reviews or [],
             "instructions": [
-                "只从输入 clusters 中选择值得预测的信号。",
+                "只从输入 clusters 中选择值得预测的信号，优先选择 AI/智能体方向且评分高的 cluster。",
                 "每条预测必须绑定 signal_cluster_key。",
+                "利用 cluster 的 avg_importance、burst_ratio、avg_confidence 做筛选排序，不要忽略这些字段。",
                 "参考 historical_reviews 中的 score、why_score、improvement_advice，避免重复已失败模式。",
                 "不要输出超过 max_predictions 条。",
             ],

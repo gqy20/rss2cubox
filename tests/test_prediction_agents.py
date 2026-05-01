@@ -134,7 +134,7 @@ def test_trend_prediction_agent_creates_verifiable_prediction_from_active_cluste
     ]
 
     async def fake_run_json_agent(**kwargs):  # noqa: ANN001
-        assert "Trend Prediction Agent" in kwargs["system_prompt"]
+        assert "AI 趋势预测 Agent" in kwargs["system_prompt"]
         return {
             "predictions": [{
                 "signal_cluster_key": "3:异步软件工程代理",

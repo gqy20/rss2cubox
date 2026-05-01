@@ -92,6 +92,9 @@ def build_cluster_key(article: dict[str, Any]) -> str:
     return f"{signal_type}:{normalize_cluster_label(raw_label)}"
 
 
+SIGNAL_CLUSTER_MAX_ARTICLES = max(10, int(os.getenv("SIGNAL_CLUSTER_MAX_ARTICLES", "200")))
+
+
 def run_signal_cluster_agent(
     articles: list[dict[str, Any]],
     *,
@@ -101,6 +104,10 @@ def run_signal_cluster_agent(
 ) -> dict[str, list[dict[str, Any]]]:
     if not articles:
         return {"clusters": [], "links": []}
+
+    # 按 importance_score 降序预筛，保留高价值文章
+    articles.sort(key=lambda a: a.get("importance_score", 0), reverse=True)
+    articles = articles[:SIGNAL_CLUSTER_MAX_ARTICLES]
 
     now_dt = now or datetime.now(timezone.utc)
     prompt = json.dumps(
@@ -136,7 +143,7 @@ def run_signal_cluster_agent(
         prompt=prompt,
         system_prompt=SYSTEM_PROMPT,
         schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
-        max_turns=20,
+        max_turns=200,
         max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
         sdk_log=sdk_logger,
     ))
