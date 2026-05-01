@@ -382,6 +382,11 @@ def run_global_analysis(
         print("[global_agent] Agent 未返回有效报告", flush=True)
         return
 
+    total_items = len(result.get("trends", [])) + len(result.get("weak_signals", [])) + len(result.get("daily_advices", []))
+    if total_items == 0:
+        print(f"[global_agent] Agent 返回空结果（trends/weak_signals/daily_advices 均为空），跳过写入，source_count={len(high_value)}", flush=True)
+        return
+
     payload = {
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "source_count": len(high_value),
