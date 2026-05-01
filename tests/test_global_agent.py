@@ -129,19 +129,27 @@ class TestGlobalAgentIntegration:
 
         monkeypatch.setattr(global_agent, "_run_agent", fake_run)
 
-        analyses = {"e1": {"hidden_signal": "hs", "core_event": "ce"}}
-        candidates = [{"eid": "e1", "url": "https://example.com", "title": "T"}]
+        analyses = {
+            "e1": {"hidden_signal": "hs", "core_event": "ce"},
+            "e2": {"hidden_signal": "hs2", "core_event": "ce2"},
+            "e3": {"hidden_signal": "hs3", "core_event": "ce3"},
+        }
+        candidates = [
+            {"eid": "e1", "url": "https://example.com/1", "title": "T1"},
+            {"eid": "e2", "url": "https://example.com/2", "title": "T2"},
+            {"eid": "e3", "url": "https://example.com/3", "title": "T3"},
+        ]
 
         monkeypatch.delenv("NEON_DATABASE_URL", raising=False)
 
         result = global_agent.run_global_analysis(analyses=analyses, candidates=candidates)
 
         assert result is None
-        assert captured["items"] == [
-            {
-                "url": "https://example.com",
-                "title": "T",
-                "hidden_signal": "hs",
-                "core_event": "ce",
-            }
-        ]
+        assert len(captured["items"]) == 3
+        item = captured["items"][0]
+        assert item["url"] == "https://example.com/1"
+        assert item["title"] == "T1"
+        assert item["hidden_signal"] == "hs"
+        assert item["core_event"] == "ce"
+        assert "importance_score" in item
+        assert "key_topics" not in item or isinstance(item.get("key_topics"), list)

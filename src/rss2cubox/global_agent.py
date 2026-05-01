@@ -23,6 +23,7 @@ from rss2cubox.webpage_reader import read_webpage_text
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
+GLOBAL_AGENT_MIN_CANDIDATES = max(1, int(os.getenv("GLOBAL_AGENT_MIN_CANDIDATES", "3")))
 _global_agent_max_budget_raw = os.getenv("GLOBAL_AGENT_MAX_BUDGET_USD", "50.0").strip()
 try:
     GLOBAL_AGENT_MAX_BUDGET_USD = float(_global_agent_max_budget_raw) if _global_agent_max_budget_raw else None
@@ -45,15 +46,30 @@ GLOBAL_OUTPUT_SCHEMA = {
             "type": "array",
             "items": {"type": "string"},
         },
+        "key_topics": {
+            "type": "array",
+            "items": {"type": "string"},
+        },
+        "confidence_level": {
+            "type": "string",
+            "enum": ["high", "medium", "low"],
+        },
     },
     "required": ["trends", "weak_signals", "daily_advices"],
 }
 
 SYSTEM_PROMPT = (
-    "你是一位顶级科技产业与投资分析师，专注从海量 RSS 信息流中提炼宏观趋势与深层弱信号。"
+    "你是一位顶级科技产业与投资分析师，尤其深耕 AI 与智能体（AI Agent）领域，专注从海量 RSS 信息流中提炼宏观趋势与深层弱信号。"
     "你拥有 read_webpage 工具，可随时获取任何 URL 的完整正文（优先走 Jina Reader 返回 Markdown；"
     "若目标站点屏蔽了 Jina（如掘金返回 451），工具会自动降级到 Playwright 真实浏览器渲染并提取正文）。"
     "对于值得深挖的情报，主动调用 read_webpage 阅读原文，不要仅凭摘要做判断。"
+    "【关注重点】在提炼趋势和弱信号时，请特别关注以下方向：\n"
+    "- AI 模型能力突破（新架构、新基准、Scaling Law 变化）\n"
+    "- AI Agent / 智能体框架、工具链、多智能体协作、Agent 运行时\n"
+    "- LLM 应用层创新（RAG、推理优化、长上下文、多模态）\n"
+    "- 开源模型与生态动态（权重开源、微调方案、社区趋势）\n"
+    "- AI 基础设施（算力、芯片、推理优化、训练框架）\n"
+    "以上方向的信号应在 trends 和 weak_signals 中获得适当体现，但不要刻意拔高——仍需基于事实客观判断。\n"
     "完成所有分析后，直接输出结构化 JSON 格式的报告。"
     "所有输出文字必须使用简体中文，语言专业、精炼，不要废话。"
 )
@@ -76,6 +92,8 @@ def _build_user_prompt(signals_file: str, history_file: str, total: int) -> str:
    - trends: 宏观技术/行业趋势归纳，3-5 条，每条 ≤ 80 字
    - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条 ≤ 80 字
    - daily_advices: 给工程师/独立开发者的今日行动建议，2-4 条，每条 ≤ 60 字
+   - key_topics: 本次分析的核心主题标签，2-4 个关键词/短语（如 "AI Agent 竞争"、"多模态推理"、"开源模型定价"）
+   - confidence_level: 整体分析置信度，只输出 "high" / "medium" / "low" 三者之一
 
 所有内容必须使用简体中文。"""
 
@@ -119,11 +137,15 @@ def _normalize_text_list(value: Any, key_hint: str) -> list[str]:
     return out
 
 
-def _normalize_global_payload(payload: dict[str, Any]) -> dict[str, list[str]]:
+def _normalize_global_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {
         "trends": _normalize_text_list(payload.get("trends", []), "trend"),
         "weak_signals": _normalize_text_list(payload.get("weak_signals", []), "signal"),
         "daily_advices": _normalize_text_list(payload.get("daily_advices", []), "advice"),
+        "key_topics": _normalize_text_list(payload.get("key_topics", []), "topic"),
+        "confidence_level": payload.get("confidence_level", "medium")
+        if payload.get("confidence_level") in ("high", "medium", "low")
+        else "medium",
     }
 
 
@@ -151,6 +173,17 @@ async def _run_agent(
             "title": r.get("title", ""),
             "hidden_signal": r.get("hidden_signal", ""),
             "core_event": r.get("core_event", ""),
+            "reason": r.get("reason", ""),
+            "importance_score": r.get("importance_score"),
+            "novelty_score": r.get("novelty_score"),
+            "signal_type": r.get("signal_type"),
+            "confidence": r.get("confidence"),
+            "evidence_strength": r.get("evidence_strength"),
+            "tags": r.get("tags", []),
+            "entities": r.get("entities", []),
+            "cluster_hint": r.get("cluster_hint", ""),
+            "actionable": r.get("actionable", ""),
+            "market_stage": r.get("market_stage"),
         }
         for r in high_value_items
     ]
@@ -297,6 +330,17 @@ def run_global_analysis(
             "title": c.get("title", ""),
             "hidden_signal": hidden_signal,
             "core_event": core_event,
+            "reason": reason,
+            "importance_score": analysis.get("importance_score"),
+            "novelty_score": analysis.get("novelty_score"),
+            "signal_type": analysis.get("signal_type"),
+            "confidence": analysis.get("confidence"),
+            "evidence_strength": analysis.get("evidence_strength"),
+            "tags": analysis.get("tags", []),
+            "entities": analysis.get("entities", []),
+            "cluster_hint": analysis.get("cluster_hint", ""),
+            "actionable": analysis.get("actionable", ""),
+            "market_stage": analysis.get("market_stage"),
         })
 
     if not high_value:
@@ -305,6 +349,14 @@ def run_global_analysis(
 
     # 保持主流程顺序，取前 200 条
     high_value = high_value[:200]
+
+    # 候选数量不足最低阈值时跳过（避免低源数量导致高空白率）
+    if len(high_value) < GLOBAL_AGENT_MIN_CANDIDATES:
+        print(
+            f"[global_agent] 候选情报 {len(high_value)} 条不足最低阈值 {GLOBAL_AGENT_MIN_CANDIDATES}，跳过全局分析",
+            flush=True,
+        )
+        return
 
     # 从数据库读取所有历史 signals
     history_signals = {"trends": [], "weak_signals": [], "daily_advices": []}
@@ -336,6 +388,8 @@ def run_global_analysis(
         "trends": result.get("trends", []),
         "weak_signals": result.get("weak_signals", []),
         "daily_advices": result.get("daily_advices", []),
+        "key_topics": result.get("key_topics", []),
+        "confidence_level": result.get("confidence_level", "medium"),
     }
     neon_url = os.getenv("NEON_DATABASE_URL", "").strip()
     if neon_url:
