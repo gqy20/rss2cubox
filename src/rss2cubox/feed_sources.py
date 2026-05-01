@@ -664,6 +664,8 @@ def collect_candidates_from_feeds(
                     status="failed" if result.get("error") != "feed_invalid" else "parse_error",
                     duration_ms=result.get("duration_ms", 0),
                     error_msg=str(result.get("error", "")),
+                    resolved_url=result.get("resolved_url"),
+                    selected_attempt=result.get("selected_attempt", 0),
                 )
             previous_count = int(feed_failures.get(feed_url, {}).get("count", 0))
             failure_count = previous_count + 1
@@ -719,6 +721,7 @@ def collect_candidates_from_feeds(
                 candidates=result.get("candidates", 0),
                 duration_ms=result.get("duration_ms", 0),
                 resolved_url=selected_url,
+                selected_attempt=int(result.get("selected_attempt", 0)),
             )
         stage_metrics.observe("fetch", int(result.get("duration_ms", 0)))
         candidates.extend(result.get("candidate_items", []))

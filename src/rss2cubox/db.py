@@ -33,7 +33,8 @@ CREATE TABLE IF NOT EXISTS feed_stats (
     candidates    INTEGER NOT NULL DEFAULT 0,
     duration_ms   INTEGER NOT NULL DEFAULT 0,
     error_msg     TEXT,
-    resolved_url  TEXT
+    resolved_url  TEXT,
+    selected_attempt INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE INDEX IF NOT EXISTS idx_feed_stats_ran_at ON feed_stats(ran_at DESC);
@@ -173,6 +174,7 @@ def record_feed_stat(
     duration_ms: int = 0,
     error_msg: str | None = None,
     resolved_url: str | None = None,
+    selected_attempt: int = 0,
 ) -> None:
     """写入单次 feed 抓取统计（幂等：同一 run_id + feed_url 重复写入会 UPDATE）"""
     try:
@@ -181,18 +183,19 @@ def record_feed_stat(
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO feed_stats (run_id, feed_url, status, fetched, candidates, duration_ms, error_msg, resolved_url)
-                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+                    INSERT INTO feed_stats (run_id, feed_url, status, fetched, candidates, duration_ms, error_msg, resolved_url, selected_attempt)
+                    VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
                     ON CONFLICT (run_id, feed_url)
                     DO UPDATE SET
-                        status     = EXCLUDED.status,
-                        fetched    = EXCLUDED.fetched,
-                        candidates = EXCLUDED.candidates,
-                        duration_ms= EXCLUDED.duration_ms,
-                        error_msg  = EXCLUDED.error_msg,
-                        resolved_url=EXCLUDED.resolved_url
+                        status          = EXCLUDED.status,
+                        fetched         = EXCLUDED.fetched,
+                        candidates      = EXCLUDED.candidates,
+                        duration_ms     = EXCLUDED.duration_ms,
+                        error_msg       = EXCLUDED.error_msg,
+                        resolved_url    = EXCLUDED.resolved_url,
+                        selected_attempt = EXCLUDED.selected_attempt
                     """,
-                    (run_id, feed_url, status, fetched, candidates, duration_ms, error_msg, resolved_url),
+                    (run_id, feed_url, status, fetched, candidates, duration_ms, error_msg, resolved_url, selected_attempt),
                 )
             conn.commit()
     except Exception:
@@ -221,6 +224,7 @@ def query_feed_health(
                        COALESCE(SUM(fetched), 0)                 AS total_fetched,
                        COALESCE(SUM(candidates), 0)              AS total_candidates,
                        COALESCE(AVG(duration_ms), 0)::int         AS avg_duration_ms,
+                       COALESCE(AVG(selected_attempt), 0)::int      AS avg_attempt,
                        MAX(ran_at)                              AS last_run_at,
                        MIN(ran_at)                              AS first_run_at
                 FROM feed_stats
