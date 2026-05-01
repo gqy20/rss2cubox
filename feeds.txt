@@ -28,6 +28,9 @@
 /modelscope/models # ModelScope 新模型
 /huggingface/blog # Hugging Face Blog（RSSHub）
 /hackernews # Hacker News
+/hackernews/show # Hacker News Show HN
+/zhihu/hot # 知乎热榜
+/solidot # Solidot 科技新闻
 /reddit/r/MachineLearning # Reddit r/MachineLearning
 /producthunt/today # Product Hunt 今日
 /github/trending/daily/python # GitHub Trending Python（日）
@@ -36,6 +39,9 @@
 /github/topics/autonomous-agent # GitHub Topic Autonomous-Agent
 /github/topics/ai-agent # GitHub Topic AI-Agent
 /github/topics/agents # GitHub Topic Agents
+/github/topics/machine-learning # GitHub Topic Machine Learning
+/github/topics/deep-learning # GitHub Topic Deep Learning
+/github/trending/daily/typescript # GitHub Trending TypeScript（日）
 /hellogithub/volume # HelloGitHub 月刊
 /hellogithub/home/featured # HelloGitHub 精选
 /juejin/aicoding # 掘金 AI Coding
@@ -309,3 +315,4 @@ https://machinelearningmastery.com/feed # Machine Learning Mastery
 /youtube/channel/UCSI7h9hydQ40K5MJHnCrQvw # No Priors（Elad Gil & Sarah Guo）
 # 新增：中文 AI 频道
 /youtube/channel/UCBFkCZVCfwi4YL21zCcnjxQ # 跟李沐学AI（Deep Learning 101）
+/youtube/channel/UCIDll3SRcbHwwcXbrwvBZNw # 橘鸦Juya（AI早报视频版）
