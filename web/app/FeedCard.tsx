@@ -2,6 +2,7 @@
 
 import React from 'react'
 import { ExternalLink } from 'lucide-react'
+import MarkdownRenderer from './MarkdownRenderer'
 import { SourceLogo, formatRelativeTime, formatShortTime, hasAiSummary } from './utils'
 import type { Row } from './types'
 
@@ -247,9 +248,9 @@ const FeedCard = React.memo(function FeedCard({
         )}
 
         {!hasPrimaryAiContent && (row.hidden_signal || row.core_event || row.actionable) && (
-          <p className="t-reason-preview t-reason-single" style={{ margin: 0 }}>
-            {row.hidden_signal || row.core_event || row.actionable}
-          </p>
+          <div className="t-reason-preview t-reason-single" style={{ margin: 0 }}>
+            <MarkdownRenderer inline>{row.hidden_signal || row.core_event || row.actionable}</MarkdownRenderer>
+          </div>
         )}
 
         {hasExpandableContent && (
@@ -269,26 +270,20 @@ const FeedCard = React.memo(function FeedCard({
           )}
           {row.core_event && (
             <div className="t-ai-box" style={{ padding: 10, marginBottom: 8, background: 'rgba(52, 211, 153, 0.04)', borderLeft: '2px solid #34d399', borderRadius: '0 4px 4px 0' }}>
-              <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
-                <strong style={{ color: '#34d399', marginRight: 6 }}>核心</strong>
-                {row.core_event}
-              </p>
+              <span style={{ fontSize: 13, color: '#34d399', fontWeight: 700, marginRight: 6 }}>核心</span>
+              <MarkdownRenderer inline>{row.core_event}</MarkdownRenderer>
             </div>
           )}
           {row.actionable && (
             <div className="t-ai-box" style={{ padding: 10, background: 'rgba(250, 204, 21, 0.04)', borderLeft: '2px solid #facc15', borderRadius: '0 4px 4px 0', marginBottom: row.reason ? 8 : 0 }}>
-              <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
-                <strong style={{ color: '#facc15', marginRight: 6 }}>建议</strong>
-                {row.actionable}
-              </p>
+              <span style={{ fontSize: 13, color: '#facc15', fontWeight: 700, marginRight: 6 }}>建议</span>
+              <MarkdownRenderer inline>{row.actionable}</MarkdownRenderer>
             </div>
           )}
           {row.reason && (
             <div className="t-ai-box" style={{ padding: 10, background: 'rgba(96, 165, 250, 0.04)', borderLeft: '2px solid #60a5fa', borderRadius: '0 4px 4px 0' }}>
-              <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
-                <strong style={{ color: '#60a5fa', marginRight: 6 }}>分析</strong>
-                {row.reason}
-              </p>
+              <span style={{ fontSize: 13, color: '#60a5fa', fontWeight: 700, marginRight: 6 }}>分析</span>
+              <MarkdownRenderer inline>{row.reason}</MarkdownRenderer>
             </div>
           )}
           {entities.length > 0 && (
@@ -347,10 +342,8 @@ const FeedCard = React.memo(function FeedCard({
           )}
           {row.prediction && (
             <div className="t-ai-box" style={{ padding: 10, marginTop: 8, background: 'rgba(167, 139, 250, 0.04)', borderLeft: '2px solid #a78bfa', borderRadius: '0 4px 4px 0' }}>
-              <p className="ai-text" style={{ fontSize: 13, color: '#e2e8f0', margin: 0 }}>
-                <strong style={{ color: '#a78bfa', marginRight: 6 }}>后续观察</strong>
-                {row.prediction}
-              </p>
+              <span style={{ fontSize: 13, color: '#a78bfa', fontWeight: 700, marginRight: 6 }}>后续观察</span>
+              <MarkdownRenderer inline>{row.prediction}</MarkdownRenderer>
             </div>
           )}
         </div>

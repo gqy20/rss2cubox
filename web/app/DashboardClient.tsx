@@ -78,20 +78,35 @@ function parseInsightString(raw: string): ParsedInsightItem {
 }
 
 function normalizeInsightItems(items: unknown[]): ParsedInsightItem[] {
+  if (!Array.isArray(items)) return []
   return items
-    .map((item) => {
-      if (typeof item === 'string') return parseInsightString(item)
-      if (item && typeof item === 'object') {
-        const value = item as Record<string, unknown>
-        const title = String(value.title || '').trim()
-        const content = String(value.content || '').trim()
+    .map((item): ParsedInsightItem | null => {
+      // 新格式: { text, source_urls?, source_titles? }
+      if (item && typeof item === 'object' && !Array.isArray(item)) {
+        const obj = item as Record<string, unknown>
+        if ('text' in obj && typeof obj.text === 'string') {
+          const text = obj.text.trim()
+          if (!text) return null
+          const urls = Array.isArray(obj.source_urls)
+            ? obj.source_urls.filter((u): u is string => typeof u === 'string' && Boolean(u.trim()))
+            : []
+          const titles = Array.isArray(obj.source_titles)
+            ? obj.source_titles.filter((t): t is string => typeof t === 'string' && Boolean(t.trim()))
+            : []
+          return { title: text, content: undefined, sourceUrls: urls, sourceTitles: titles }
+        }
+        // 旧对象格式: { title, content? }
+        const title = String(obj.title ?? '').trim()
+        const content = String(obj.content ?? '').trim()
         if (title) return { title, content: content || undefined }
         if (content) return { title: content }
-        return { title: JSON.stringify(item) }
+        return null
       }
+      // 旧格式: 纯字符串
+      if (typeof item === 'string') return parseInsightString(item)
       return { title: String(item ?? '').trim() }
     })
-    .filter((item) => item.title.length > 0)
+    .filter((item): item is ParsedInsightItem => item !== null && item.title.length > 0)
 }
 
 function statsToMetrics(stats: LocalStats, previous: Metrics): Metrics {
@@ -573,7 +588,17 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
 
   const copyInsightText = async (title: string, items: ParsedInsightItem[]) => {
     const text = `${title}\n\n${items
-      .map((item, i) => `${i + 1}. ${item.title}${item.content ? `\n   ${item.content}` : ''}`)
+      .map((item, i) => {
+        let line = `${i + 1}. ${item.title}`
+        if (item.content) line += `\n   ${item.content}`
+        if (item.sourceUrls && item.sourceUrls.length > 0) {
+          line += '\n   来源: ' + item.sourceUrls.map((url, j) => {
+            const label = item.sourceTitles?.[j] || url
+            return `${label} (${url})`
+          }).join(' | ')
+        }
+        return line
+      })
       .join('\n')}`
 
     const fallbackCopy = () => {

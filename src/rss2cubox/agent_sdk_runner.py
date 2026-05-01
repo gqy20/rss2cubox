@@ -1,9 +1,19 @@
 """Shared Claude Agent SDK JSON runner."""
 from __future__ import annotations
 
+import json
+import re
 import time
 from pathlib import Path
 from typing import Any, Callable
+
+
+class _StructuredOutputError(RuntimeError):
+    """Schema 验证失败时抛出，携带原始输出文本供 fallback 解析。"""
+
+    def __init__(self, raw_text: str, reason: str = ""):
+        self.raw_text = raw_text
+        super().__init__(reason)
 
 
 async def run_json_agent(
@@ -142,9 +152,11 @@ async def run_json_agent(
                 )
                 if message.structured_output is not None:
                     return message.structured_output
+                # 保留原始文本供 fallback 解析使用
+                raw_result = getattr(message, "result", None) or ""
                 if message.is_error:
                     raise RuntimeError(message.subtype or "agent_error")
-                raise RuntimeError(message.subtype or "no_structured_output")
+                raise _StructuredOutputError(raw_result, message.subtype or "no_structured_output")
     except Exception as exc:
         emit(
             "agent_sdk_error",

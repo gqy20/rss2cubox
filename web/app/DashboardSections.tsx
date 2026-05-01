@@ -2,6 +2,7 @@
 
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react'
 import { AlertCircle, CalendarDays, Check, ChevronDown, ChevronUp, Copy, Download, Filter, Search } from 'lucide-react'
+import MarkdownRenderer from './MarkdownRenderer'
 import FeedCard from './FeedCard'
 import type { Metrics, Row, InsightKey } from './types'
 import { AnimatedNumber, formatGroupTitle, Logo } from './utils'
@@ -11,6 +12,8 @@ import type { InsightHistoryItem } from '../lib/signalStore'
 export type ParsedInsightItem = {
   title: string
   content?: string
+  sourceUrls?: string[]
+  sourceTitles?: string[]
 }
 
 export type InsightPanel = {
@@ -178,8 +181,24 @@ function InsightBriefing({ activePanel, visiblePanels, onSelectInsightKey, onCop
           <li key={`${activePanel.key}-${i}-${item.title}`}>
             <span className="briefing-index">{String(i + 1).padStart(2, '0')}</span>
             <div>
-              <div className="briefing-item-title">{item.title}</div>
-              {item.content && <p className="briefing-item-content">{item.content}</p>}
+              <div className="briefing-item-title"><MarkdownRenderer inline>{item.title}</MarkdownRenderer></div>
+              {item.content && <div className="briefing-item-content"><MarkdownRenderer inline>{item.content}</MarkdownRenderer></div>}
+              {item.sourceUrls && item.sourceUrls.length > 0 && (
+                <div className="briefing-sources">
+                  {item.sourceUrls.map((url, j) => (
+                    <a
+                      key={j}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="briefing-source-link"
+                      title={item.sourceTitles?.[j] || url}
+                    >
+                      {item.sourceTitles?.[j] || new URL(url).hostname.replace('www.', '')}
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
           </li>
         ))}

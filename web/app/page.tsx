@@ -21,6 +21,43 @@ function asStringArray(value: unknown): string[] {
   return value.map((v) => String(v)).filter((v) => v.trim().length > 0)
 }
 
+/**
+ * 归一化后端 insight 字段，兼容新旧格式：
+ *   新格式: { text, source_urls?, source_titles? }[]
+ *   旧格式: string[]
+ * 返回统一的前端展示格式 SignalItem[]
+ */
+function normalizeInsightField(raw: unknown): Array<{ text: string; source_urls?: string[]; source_titles?: string[] }> {
+  if (!Array.isArray(raw)) return []
+  return raw
+    .map((item) => {
+      if (typeof item === 'string') {
+        const t = item.trim()
+        return t.length > 0 ? { text: t } : null
+      }
+      if (item && typeof item === 'object' && !Array.isArray(item)) {
+        const obj = item as Record<string, unknown>
+        // 新格式
+        if ('text' in obj && typeof obj.text === 'string') {
+          const text = obj.text.trim()
+          if (!text) return null
+          const urls = Array.isArray(obj.source_urls)
+            ? obj.source_urls.filter((u): u is string => typeof u === 'string' && Boolean(u.trim()))
+            : []
+          const titles = Array.isArray(obj.source_titles)
+            ? obj.source_titles.filter((t): t is string => typeof t === 'string' && Boolean(t.trim()))
+            : []
+          return { text, source_urls: urls, source_titles: titles }
+        }
+        // 旧对象格式 { title, content } — 降级
+        const title = String(obj.title ?? '').trim()
+        if (title) return { text: title }
+      }
+      return null
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+}
+
 function getDayKey(value: Date | string): string {
   return getBusinessDayKey(value)
 }
@@ -194,9 +231,9 @@ async function loadDashboardData(apiBaseUrl?: string): Promise<{
     ? {
         generated_at: rawInsights.generated_at,
         source_count: rawInsights.source_count,
-        trends: asStringArray(rawInsights.trends),
-        weak_signals: asStringArray(rawInsights.weak_signals),
-        daily_advices: asStringArray(rawInsights.daily_advices),
+        trends: normalizeInsightField(rawInsights.trends),
+        weak_signals: normalizeInsightField(rawInsights.weak_signals),
+        daily_advices: normalizeInsightField(rawInsights.daily_advices),
       }
     : null
   return { rows, metrics: buildMetrics(rows, localStats), insights }

@@ -48,12 +48,18 @@ export type Metrics = {
   daily_totals?: Record<string, number>
 }
 
+export type SignalItem = {
+  text: string
+  source_urls?: string[]
+  source_titles?: string[]
+}
+
 export type GlobalInsights = {
   generated_at?: string
   source_count?: number
-  trends?: string[]
-  weak_signals?: string[]
-  daily_advices?: string[]
+  trends?: SignalItem[] | string[]
+  weak_signals?: SignalItem[] | string[]
+  daily_advices?: SignalItem[] | string[]
 }
 
 export type InsightKey = 'trends' | 'weak_signals' | 'daily_advices'

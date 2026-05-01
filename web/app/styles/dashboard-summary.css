@@ -198,6 +198,35 @@
   overflow-wrap: break-word;
 }
 
+.briefing-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.briefing-source-link {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(45, 212, 191, 0.08);
+  color: #2dd4bf;
+  font-size: 11px;
+  line-height: 1.4;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.briefing-source-link:hover {
+  background: rgba(45, 212, 191, 0.18);
+  color: #5eead4;
+}
+
 .action-message {
   position: fixed;
   top: 18px;
@@ -225,4 +254,99 @@
   background: rgba(248, 113, 113, 0.12);
   border: 1px solid rgba(248, 113, 113, 0.26);
   color: #fecaca;
+}
+
+/* ── Markdown 渲染内容样式 ── */
+.md-content {
+  line-height: 1.55;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.md-content > p:first-child {
+  margin-top: 0;
+}
+
+.md-content > p:last-child {
+  margin-bottom: 0;
+}
+
+.md-content ul,
+.md-content ol {
+  padding-left: 18px;
+  margin: 4px 0;
+}
+
+.md-content li {
+  margin-bottom: 2px;
+  line-height: 1.5;
+}
+
+.md-content code:not(pre code) {
+  background: rgba(99, 110, 123, 0.22);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.88em;
+  color: #c9d1d9;
+}
+
+.md-content pre {
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 6px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  margin: 6px 0;
+}
+
+.md-content pre code {
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.md-content blockquote {
+  border-left: 3px solid rgba(79, 209, 197, 0.4);
+  padding: 4px 10px;
+  margin: 6px 0;
+  background: rgba(17, 23, 32, 0.5);
+  border-radius: 0 4px 4px 0;
+  color: #a2aec0;
+}
+
+.md-content a {
+  color: #2dd4bf;
+  text-decoration: underline;
+  text-decoration-color: rgba(45, 212, 191, 0.35);
+}
+
+.md-content a:hover {
+  color: #5eead4;
+  text-decoration-color: rgba(94, 234, 212, 0.55);
+}
+
+.md-content table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin: 6px 0;
+}
+
+.md-content th,
+.md-content td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid rgba(178, 190, 205, 0.08);
+}
+
+.md-content th {
+  color: #aeb9c8;
+  font-weight: 600;
+  border-bottom-color: rgba(178, 190, 205, 0.2);
+}
+
+.md-content hr {
+  border: none;
+  border-top: 1px solid rgba(178, 190, 205, 0.12);
+  margin: 8px 0;
 }
