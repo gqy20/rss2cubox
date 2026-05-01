@@ -30,21 +30,39 @@ try:
 except ValueError:
     GLOBAL_AGENT_MAX_BUDGET_USD = None
 
+_SIGNAL_ITEM_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "text": {"type": "string", "maxLength": 200},
+        "source_urls": {
+            "type": "array",
+            "items": {"type": "string", "format": "uri"},
+            "maxItems": 10,
+        },
+        "source_titles": {
+            "type": "array",
+            "items": {"type": "string", "maxLength": 200},
+            "maxItems": 10,
+        },
+    },
+    "required": ["text"],
+}
+
 # JSON Schema 用于 output_format（CLI 层自动验证）
 GLOBAL_OUTPUT_SCHEMA = {
     "type": "object",
     "properties": {
         "trends": {
             "type": "array",
-            "items": {"type": "string"},
+            "items": _SIGNAL_ITEM_SCHEMA,
         },
         "weak_signals": {
             "type": "array",
-            "items": {"type": "string"},
+            "items": _SIGNAL_ITEM_SCHEMA,
         },
         "daily_advices": {
             "type": "array",
-            "items": {"type": "string"},
+            "items": _SIGNAL_ITEM_SCHEMA,
         },
         "key_topics": {
             "type": "array",
@@ -70,6 +88,11 @@ SYSTEM_PROMPT = (
     "- 开源模型与生态动态（权重开源、微调方案、社区趋势）\n"
     "- AI 基础设施（算力、芯片、推理优化、训练框架）\n"
     "以上方向的信号应在 trends 和 weak_signals 中获得适当体现，但不要刻意拔高——仍需基于事实客观判断。\n"
+    "【溯源要求】输出每条 trend / weak_signal / daily_advice 时，必须同时标注支撑来源：\n"
+    "- source_urls: 支撑该结论的原文 URL 列表（从输入情报中选取最相关的 1-5 条）\n"
+    "- source_titles: 对应的文章标题（与 source_urls 一一对应）\n"
+    "- 如果某条结论是综合推断、无法归因到具体文章，source_urls 可为空数组 []\n"
+    "- 绝对不要编造 URL，只使用输入数据中已存在的 url 字段\n"
     "完成所有分析后，直接输出结构化 JSON 格式的报告。"
     "所有输出文字必须使用简体中文，语言专业、精炼，不要废话。"
 )
@@ -89,11 +112,12 @@ def _build_user_prompt(signals_file: str, history_file: str, total: int) -> str:
 2. 再使用 Read 工具读取历史 signals {history_file}
 3. 从中挑选最值得深挖的 {deep_read_target} 条左右条目，使用 read_webpage 工具阅读原文完整内容。
 4. 综合所有信息后，直接输出结构化 JSON 格式的报告：
-   - trends: 宏观技术/行业趋势归纳，3-5 条，每条 ≤ 80 字
-   - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条 ≤ 80 字
-   - daily_advices: 给工程师/独立开发者的今日行动建议，2-4 条，每条 ≤ 60 字
+   - trends: 宏观技术/行业趋势归纳，3-5 条，每条为 {{text, source_urls, source_titles}} 对象
+   - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条为 {{text, source_urls, source_titles}} 对象
+   - daily_advices: 给工程师/独立开发者的今日行动建议，2-4 条，每条为 {{text, source_urls, source_titles}} 对象
    - key_topics: 本次分析的核心主题标签，2-4 个关键词/短语（如 "AI Agent 竞争"、"多模态推理"、"开源模型定价"）
    - confidence_level: 整体分析置信度，只输出 "high" / "medium" / "low" 三者之一
+   每条趋势/弱信号/建议必须附带 source_urls 和 source_titles，引用自你读取过的候选情报中的真实 URL
 
 所有内容必须使用简体中文。"""
 
@@ -137,11 +161,45 @@ def _normalize_text_list(value: Any, key_hint: str) -> list[str]:
     return out
 
 
+def _normalize_signal_item(item: Any) -> dict[str, Any] | None:
+    """归一化单条信号：兼容 string（旧格式）和 dict（新格式带溯源）。"""
+    if isinstance(item, str):
+        text = item.strip()
+        return {"text": text, "source_urls": [], "source_titles": []} if text else None
+
+    if not isinstance(item, dict):
+        return None
+
+    text = str(item.get("text", "")).strip()
+    if not text:
+        return None
+
+    urls = item.get("source_urls", [])
+    titles = item.get("source_titles", [])
+
+    if isinstance(urls, list):
+        urls = [str(u).strip() for u in urls if isinstance(u, str) and u.strip()]
+    else:
+        urls = []
+
+    if isinstance(titles, list):
+        titles = [str(t).strip() for t in titles if isinstance(t, str) and t.strip()]
+    else:
+        titles = []
+
+    max_len = min(len(urls), len(titles), 10)
+    return {
+        "text": text[:200],
+        "source_urls": urls[:max_len],
+        "source_titles": titles[:max_len],
+    }
+
+
 def _normalize_global_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {
-        "trends": _normalize_text_list(payload.get("trends", []), "trend"),
-        "weak_signals": _normalize_text_list(payload.get("weak_signals", []), "signal"),
-        "daily_advices": _normalize_text_list(payload.get("daily_advices", []), "advice"),
+        "trends": [_normalize_signal_item(x) for x in payload.get("trends", []) if _normalize_signal_item(x)],
+        "weak_signals": [_normalize_signal_item(x) for x in payload.get("weak_signals", []) if _normalize_signal_item(x)],
+        "daily_advices": [_normalize_signal_item(x) for x in payload.get("daily_advices", []) if _normalize_signal_item(x)],
         "key_topics": _normalize_text_list(payload.get("key_topics", []), "topic"),
         "confidence_level": payload.get("confidence_level", "medium")
         if payload.get("confidence_level") in ("high", "medium", "low")
