@@ -862,7 +862,7 @@
   .predictions-sidebar,
   .predictions-main .pred-section,
   .pred-kpi-value,
-  .predictins-sidebar .pred-status-bar-segment {
+  .predictions-sidebar .pred-status-bar-segment {
     animation: none !important;
   }
 
@@ -873,18 +873,27 @@
 }
 
 /* ═══════════════════════════════════════════
-   Responsive
+   Responsive (Phase 4)
    ═══════════════════════════════════════════ */
 
 @media (max-width: 1080px) {
   .predictions-sidebar {
     width: 240px;
   }
+
+  .pred-cluster-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 920px) {
   .predictions-layout {
     flex-direction: column;
+    gap: var(--space-lg);
+  }
+
+  .predictions-main {
+    gap: var(--space-xl);
   }
 
   .predictions-sidebar {
@@ -896,30 +905,79 @@
     padding-top: var(--space-lg);
     max-height: none;
     flex-direction: row;
-    flex-wrap: wrap;
-    gap: var(--space-md);
+    flex-wrap: nowrap;
+    gap: var(--space-sm);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    /* Hide scrollbar but keep functionality */
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .predictions-sidebar::-webkit-scrollbar {
+    display: none;
   }
 
   .pred-kpi-card {
-    flex: 1;
-    min-width: 160px;
+    flex: 0 0 auto;
+    min-width: 180px;
+    scroll-snap-align: start;
   }
 
   .pred-nav-links {
     display: none;
   }
 
-  .pred-cluster-grid {
-    grid-template-columns: 1fr;
+  .pred-section-head h2 {
+    font-size: 18px;
+  }
+
+  /* Review card: stack on tablet */
+  .pred-review-card {
+    flex-direction: column;
+    gap: var(--space-md);
+  }
+
+  .pred-review-head {
+    margin-bottom: 0;
   }
 }
 
 @media (max-width: 640px) {
+  .predictions-layout {
+    gap: var(--space-md);
+    margin-top: var(--space-sm);
+  }
+
+  .predictions-main {
+    gap: var(--space-lg);
+  }
+
   .predictions-sidebar {
     flex-direction: column;
+    overflow-x: visible;
   }
 
   .pred-kpi-card {
     min-width: 100%;
+  }
+
+  .pred-section-head h2 {
+    font-size: var(--fs-title);
+  }
+
+  .pred-prediction-card,
+  .pred-review-card {
+    padding: var(--space-md);
+  }
+
+  .pred-cluster-card {
+    padding: var(--space-md);
+  }
+
+  .pred-time-muted {
+    font-size: 10px;
   }
 }
