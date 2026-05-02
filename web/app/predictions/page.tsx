@@ -350,7 +350,7 @@ export default function PredictionsPage() {
                     <div
                       key={cluster.id}
                       className={`pred-cluster-card${expandedCluster === cluster.id ? ' expanded' : ''}`}
-                      onClick={() => setExpandedCluster(expendedCluster === cluster.id ? null : cluster.id)}
+                      onClick={() => setExpandedCluster(expandedCluster === cluster.id ? null : cluster.id)}
                     >
                       <div className="pred-cluster-head">
                         <div className="pred-cluster-title-row">
