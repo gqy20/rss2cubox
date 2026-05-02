@@ -90,7 +90,7 @@ def test_bilibili_special_instances_ignore_global_cooldown(monkeypatch: pytest.M
     pool.mark_failure("https://private.rsshub.test")
     events: list[str] = []
 
-    selected, parsed, attempt = feed_sources.parse_feed_with_fallback(
+    selected, parsed, attempt, _attempts = feed_sources.parse_feed_with_fallback(
         "rsshub",
         "/bilibili/user/video-browser/123456",
         pool,
@@ -113,7 +113,7 @@ def test_parse_feed_with_fallback_uses_next_instance(monkeypatch: pytest.MonkeyP
             raise RuntimeError("boom")
         return SimpleNamespace(bozo=False, entries=[{"id": "1", "link": "https://example.com/1"}])
 
-    selected, parsed, attempt = feed_sources.parse_feed_with_fallback(
+    selected, parsed, attempt, _attempts = feed_sources.parse_feed_with_fallback(
         "rsshub",
         "/sspai/index",
         pool,

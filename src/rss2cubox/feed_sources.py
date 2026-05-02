@@ -358,7 +358,13 @@ def parse_feed_with_fallback(
     *,
     fetcher: Any,
     log_event: Any,
-) -> tuple[str | None, Any | None, int]:
+) -> tuple[str | None, Any | None, int, list[dict[str, Any]]]:
+    """返回 (selected_url, parsed, attempt_index, attempts)
+
+    attempts 是每次候选实例尝试的记录列表，每条包含:
+      candidate_url, attempt_index, status, duration_ms, error
+    """
+    attempts: list[dict[str, Any]] = []
     candidates = resolve_feed_urls(feed_kind, feed_value, rsshub_pool)
     special_instances = set(_route_special_instances(feed_value))
     for idx, candidate_url in enumerate(candidates, start=1):
@@ -373,6 +379,13 @@ def parse_feed_with_fallback(
                 candidate=_mask_url(candidate_url),
                 attempt=idx,
             )
+            attempts.append({
+                "candidate_url": candidate_url,
+                "attempt_index": idx,
+                "status": "skipped",
+                "duration_ms": 0,
+                "error": None,
+            })
             continue
         retry_limit = _candidate_retry_limit(feed_value, instance_base)
         for retry_attempt in range(1, retry_limit + 1):
@@ -402,7 +415,14 @@ def parse_feed_with_fallback(
                         selected=_mask_url(candidate_url),
                         attempt=idx,
                     )
-                return candidate_url, parsed, idx
+                attempts.append({
+                    "candidate_url": candidate_url,
+                    "attempt_index": idx,
+                    "status": "ok",
+                    "duration_ms": duration_ms,
+                    "error": None,
+                })
+                return candidate_url, parsed, idx, attempts
             except Exception as exc:  # noqa: BLE001
                 duration_ms = int((time.perf_counter() - start) * 1000)
                 is_last = retry_attempt >= retry_limit
@@ -420,9 +440,17 @@ def parse_feed_with_fallback(
                     duration_ms=duration_ms,
                     error=str(exc),
                 )
+                if is_last:
+                    attempts.append({
+                        "candidate_url": candidate_url,
+                        "attempt_index": idx,
+                        "status": "failed",
+                        "duration_ms": duration_ms,
+                        "error": str(exc)[:500],
+                    })
                 if not is_last:
                     time.sleep(min(1.5, 0.35 * retry_attempt))
-    return None, None, 0
+    return None, None, 0, attempts
 
 
 def parse_feed_spec(
@@ -460,7 +488,7 @@ def parse_feed_spec(
         cutoff_dt = cursor_dt - timedelta(hours=max(0, feed_cursor_lookback_hours))
 
     log_event("INFO", "feed_fetch_start", stage="fetch", feed=feed_url, kind=feed_kind)
-    selected_url, parsed, selected_attempt = parse_feed_with_fallback(
+    selected_url, parsed, selected_attempt, attempts = parse_feed_with_fallback(
         feed_kind,
         feed_url,
         rsshub_pool,
@@ -474,6 +502,7 @@ def parse_feed_spec(
             "feed": feed_url,
             "duration_ms": int((time.perf_counter() - feed_start) * 1000),
             "error": "feed_invalid",
+            "attempts": attempts,
         }
 
     candidates: list[dict[str, Any]] = []
@@ -536,6 +565,7 @@ def parse_feed_spec(
         "duration_ms": feed_duration_ms,
         "feed_max_seen_ts": feed_max_seen_ts.isoformat() if feed_max_seen_ts else "",
         "candidate_items": candidates,
+        "attempts": attempts,
     }
 
 
@@ -650,23 +680,27 @@ def collect_candidates_from_feeds(
                 "feed": feed_url,
                 "duration_ms": 0,
                 "error": str(exc),
+                "attempts": [],
             }
 
     for idx in sorted(parse_results):
         result = parse_results[idx]
         feed_url = result["feed"]
         feed_kind = result["kind"]
+        attempts = result.get("attempts", [])
+
         if not result.get("ok", False):
             stats["feeds_invalid"] += 1
             if record_stat:
-                record_stat(
-                    feed_url=feed_url,
-                    status="failed" if result.get("error") != "feed_invalid" else "parse_error",
-                    duration_ms=result.get("duration_ms", 0),
-                    error_msg=str(result.get("error", "")),
-                    resolved_url=result.get("resolved_url"),
-                    selected_attempt=result.get("selected_attempt", 0),
-                )
+                for attempt in attempts:
+                    record_stat(
+                        feed_url=feed_url,
+                        candidate_url=attempt.get("candidate_url", ""),
+                        attempt_index=attempt.get("attempt_index", 0),
+                        status=attempt.get("status", "parse_error"),
+                        duration_ms=attempt.get("duration_ms", 0),
+                        error_msg=attempt.get("error"),
+                    )
             previous_count = int(feed_failures.get(feed_url, {}).get("count", 0))
             failure_count = previous_count + 1
             cooldown_seconds = feed_failure_backoff_seconds(
@@ -714,15 +748,19 @@ def collect_candidates_from_feeds(
         stats["cursor_skipped"] += int(result.get("cursor_skipped", 0))
 
         if record_stat:
-            record_stat(
-                feed_url=feed_url,
-                status="empty" if result.get("candidates", 0) == 0 else "ok",
-                fetched=result.get("fetched", 0),
-                candidates=result.get("candidates", 0),
-                duration_ms=result.get("duration_ms", 0),
-                resolved_url=selected_url,
-                selected_attempt=int(result.get("selected_attempt", 0)),
-            )
+            feed_status = "empty" if result.get("candidates", 0) == 0 else "ok"
+            for attempt in attempts:
+                is_final = attempt.get("candidate_url") == selected_url and attempt.get("status") == "ok"
+                record_stat(
+                    feed_url=feed_url,
+                    candidate_url=attempt.get("candidate_url", ""),
+                    attempt_index=attempt.get("attempt_index", 0),
+                    status=feed_status if is_final else attempt.get("status", "failed"),
+                    fetched=result.get("fetched", 0) if is_final else 0,
+                    candidates=result.get("candidates", 0) if is_final else 0,
+                    duration_ms=attempt.get("duration_ms", 0),
+                    error_msg=attempt.get("error"),
+                )
         stage_metrics.observe("fetch", int(result.get("duration_ms", 0)))
         candidates.extend(result.get("candidate_items", []))
 

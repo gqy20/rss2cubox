@@ -24,21 +24,21 @@ CREATE INDEX IF NOT EXISTS idx_global_insights_generated_at ON global_insights(g
 
 FEED_STATS_DDL = """
 CREATE TABLE IF NOT EXISTS feed_stats (
-    id            SERIAL PRIMARY KEY,
-    ran_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    run_id        TEXT NOT NULL DEFAULT '',
-    feed_url      TEXT NOT NULL,
-    status        TEXT NOT NULL CHECK (status IN ('ok','failed','timeout','empty','parse_error')),
-    fetched       INTEGER NOT NULL DEFAULT 0,
-    candidates    INTEGER NOT NULL DEFAULT 0,
-    duration_ms   INTEGER NOT NULL DEFAULT 0,
-    error_msg     TEXT,
-    resolved_url  TEXT,
-    selected_attempt INTEGER NOT NULL DEFAULT 0
+    id              SERIAL PRIMARY KEY,
+    ran_at          TIMESTAMPTZ NOT NULL DEFAULT now(),
+    run_id          TEXT NOT NULL DEFAULT '',
+    feed_url        TEXT NOT NULL,
+    candidate_url   TEXT NOT NULL DEFAULT '',
+    attempt_index   INTEGER NOT NULL DEFAULT 0,
+    status          TEXT NOT NULL CHECK (status IN ('ok','failed','timeout','empty','parse_error','skipped')),
+    fetched         INTEGER NOT NULL DEFAULT 0,
+    candidates      INTEGER NOT NULL DEFAULT 0,
+    duration_ms     INTEGER NOT NULL DEFAULT 0,
+    error_msg       TEXT
 );
 
 CREATE INDEX IF NOT EXISTS idx_feed_stats_ran_at ON feed_stats(ran_at DESC);
-CREATE UNIQUE INDEX IF NOT EXISTS idx_feed_stats_run_feed ON feed_stats(run_id, feed_url);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_feed_stats_run_feed_candidate ON feed_stats(run_id, feed_url, candidate_url);
 """
 
 
@@ -168,34 +168,33 @@ def record_feed_stat(
     *,
     run_id: str,
     feed_url: str,
+    candidate_url: str = "",
+    attempt_index: int = 0,
     status: str,
     fetched: int = 0,
     candidates: int = 0,
     duration_ms: int = 0,
     error_msg: str | None = None,
-    resolved_url: str | None = None,
-    selected_attempt: int = 0,
 ) -> None:
-    """写入单次 feed 抓取统计（幂等：同一 run_id + feed_url 重复写入会 UPDATE）"""
+    """写入单次候选实例尝试记录（幂等：同一 run_id + feed_url + candidate_url 重复写入会 UPDATE）"""
     try:
         with psycopg.connect(db_url) as conn:
             _ensure_feed_stats_schema(conn)
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    INSERT INTO feed_stats (run_id, feed_url, status, fetched, candidates, duration_ms, error_msg, resolved_url, selected_attempt)
+                    INSERT INTO feed_stats (run_id, feed_url, candidate_url, attempt_index, status, fetched, candidates, duration_ms, error_msg)
                     VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)
-                    ON CONFLICT (run_id, feed_url)
+                    ON CONFLICT (run_id, feed_url, candidate_url)
                     DO UPDATE SET
                         status          = EXCLUDED.status,
                         fetched         = EXCLUDED.fetched,
                         candidates      = EXCLUDED.candidates,
                         duration_ms     = EXCLUDED.duration_ms,
                         error_msg       = EXCLUDED.error_msg,
-                        resolved_url    = EXCLUDED.resolved_url,
-                        selected_attempt = EXCLUDED.selected_attempt
+                        attempt_index   = EXCLUDED.attempt_index
                     """,
-                    (run_id, feed_url, status, fetched, candidates, duration_ms, error_msg, resolved_url, selected_attempt),
+                    (run_id, feed_url, candidate_url, attempt_index, status, fetched, candidates, duration_ms, error_msg),
                 )
             conn.commit()
     except Exception:
@@ -215,23 +214,23 @@ def query_feed_health(
             cur.execute(
                 """
                 SELECT feed_url,
-                       COUNT(*)               AS total_runs,
+                       COUNT(*)               AS total_attempts,
                        COUNT(*) FILTER (WHERE status = 'ok')       AS ok_runs,
                        COUNT(*) FILTER (WHERE status = 'failed')   AS failed_runs,
                        COUNT(*) FILTER (WHERE status = 'timeout')  AS timeout_runs,
                        COUNT(*) FILTER (WHERE status = 'empty')    AS empty_runs,
                        COUNT(*) FILTER (WHERE status = 'parse_error') AS parse_error_runs,
-                       COALESCE(SUM(fetched), 0)                 AS total_fetched,
-                       COALESCE(SUM(candidates), 0)              AS total_candidates,
-                       COALESCE(AVG(duration_ms), 0)::int         AS avg_duration_ms,
-                       COALESCE(AVG(selected_attempt), 0)::int      AS avg_attempt,
+                       COUNT(*) FILTER (WHERE status = 'skipped')  AS skipped_runs,
+                       COALESCE(SUM(fetched) FILTER (WHERE status = 'ok'), 0) AS total_fetched,
+                       COALESCE(SUM(candidates) FILTER (WHERE status = 'ok'), 0) AS total_candidates,
+                       COALESCE(AVG(duration_ms) FILTER (WHERE status IN ('ok','empty')), 0)::int AS avg_duration_ms,
                        MAX(ran_at)                              AS last_run_at,
                        MIN(ran_at)                              AS first_run_at
                 FROM feed_stats
                 WHERE ran_at > now() - interval '%s days'
                 GROUP BY feed_url
                 HAVING COUNT(*) >= %s
-                ORDER BY ok_runs::float / NULLIF(total_runs, 0) ASC NULLS LAST, total_runs DESC
+                ORDER BY ok_runs::float / NULLIF(total_attempts, 0) ASC NULLS LAST, total_attempts DESC
                 """,
                 (days, min_runs),
             )
