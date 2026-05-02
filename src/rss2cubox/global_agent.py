@@ -496,20 +496,21 @@ def run_global_analysis(
         "key_topics": result.get("key_topics", []),
         "confidence_level": result.get("confidence_level", "medium"),
     }
-    neon_url = os.getenv("NEON_DATABASE_URL", "").strip()
-    if neon_url:
-        try:
-            from rss2cubox.db import save_global_insights
-            save_global_insights(neon_url, payload)
-            print("[global_agent] 全局分析完成，insights 已写入 Neon DB", flush=True)
-        except Exception as e:
-            print(f"[global_agent] Neon DB 写入失败: {e}", flush=True)
-    else:
-        print("[global_agent] 全局分析完成，但未配置 NEON_DATABASE_URL，结果未保存", flush=True)
-
-    # 同时写入本地 PostgreSQL（可选，失败不影响主流程）
+    # 写入本地 PostgreSQL
     try:
         from rss2cubox.db_client import save_global_insights as save_local_insights
         save_local_insights(payload)
+        print("[global_agent] 全局分析完成，insights 已写入本地 DB", flush=True)
     except Exception as e:
-        print(f"[global_agent] 本地 DB 写入失败（可忽略）: {e}", flush=True)
+        print(f"[global_agent] 本地 DB 写入失败: {e}", flush=True)
+
+    # 可选写入 Neon DB（需同时配置 NEON_DATABASE_URL 和 NEON_PUSH_ENABLED=true）
+    if os.getenv("NEON_PUSH_ENABLED", "false").strip().lower() in ("1", "true", "yes"):
+        neon_url = os.getenv("NEON_DATABASE_URL", "").strip()
+        if neon_url:
+            try:
+                from rss2cubox.db import save_global_insights
+                save_global_insights(neon_url, payload)
+                print("[global_agent] insights 已写入 Neon DB", flush=True)
+            except Exception as e:
+                print(f"[global_agent] Neon DB 写入失败: {e}", flush=True)

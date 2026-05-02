@@ -91,7 +91,7 @@ def save_global_insights(db_url: str, payload: dict[str, Any]) -> None:
                 INSERT INTO global_insights (generated_at, data)
                 VALUES (%s::timestamptz, %s)
                 """,
-                (payload.get("generated_at"), payload),
+                (payload.get("generated_at"), json.dumps(payload, ensure_ascii=False)),
             )
         conn.commit()
 

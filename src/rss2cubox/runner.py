@@ -64,11 +64,11 @@ IC_PUSH_ENABLED = os.getenv("IC_PUSH_ENABLED", "true").strip().lower() in ("1", 
 IC_SOURCE_TYPE = os.getenv("IC_SOURCE_TYPE", "gqy").strip() or "gqy"
 KEYWORDS_INCLUDE = [k.strip() for k in os.getenv("KEYWORDS_INCLUDE", "").split(",") if k.strip()]
 KEYWORDS_EXCLUDE = [k.strip() for k in os.getenv("KEYWORDS_EXCLUDE", "").split(",") if k.strip()]
-MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "500"))
+MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "300"))
 
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
-AI_MAX_CANDIDATES = sync_pipeline.env_int("AI_MAX_CANDIDATES", 500)
+AI_MAX_CANDIDATES = sync_pipeline.env_int("AI_MAX_CANDIDATES", 300)
 FEED_CONNECT_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_CONNECT_TIMEOUT_SECONDS", 5.0)
 FEED_READ_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_READ_TIMEOUT_SECONDS", 30.0)
 FEED_FETCH_CONCURRENCY = max(1, sync_pipeline.env_int("FEED_FETCH_CONCURRENCY", 10))
