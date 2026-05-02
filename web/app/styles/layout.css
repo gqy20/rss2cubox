@@ -71,3 +71,23 @@
   background: #34d399;
   box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.08);
 }
+
+.predictions-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #8aa3be;
+  font-size: 13px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(138, 163, 190, 0.18);
+  background: rgba(138, 163, 190, 0.06);
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.predictions-nav-link:hover {
+  background: rgba(138, 163, 190, 0.14);
+  color: #f6f8fb;
+  border-color: rgba(138, 163, 190, 0.3);
+}

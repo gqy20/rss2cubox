@@ -1,7 +1,8 @@
 'use client'
 
+import Link from 'next/link'
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react'
-import { AlertCircle, CalendarDays, Check, ChevronDown, ChevronUp, Copy, Download, Filter, Search } from 'lucide-react'
+import { AlertCircle, Brain, CalendarDays, Check, ChevronDown, ChevronUp, Copy, Download, Filter, Search } from 'lucide-react'
 import MarkdownRenderer from './MarkdownRenderer'
 import FeedCard from './FeedCard'
 import type { Metrics, Row, InsightKey } from './types'
@@ -114,10 +115,9 @@ function DashboardHeader({ generatedAt, onExport }: DashboardHeaderProps) {
         </div>
       </div>
       <div className="dashboard-header-actions">
-        <div className="live-status">
-          <span className="status-dot" />
-          <span>批量分析结果</span>
-        </div>
+        <Link href="/predictions" className="predictions-nav-link">
+          <Brain size={13} /> 预测循环
+        </Link>
         <Button onClick={onExport}>
           <Download size={13} /> 导出 JSON
         </Button>

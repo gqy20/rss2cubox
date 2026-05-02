@@ -3,4 +3,5 @@
 @import './styles/dashboard-summary.css';
 @import './styles/charts-menus.css';
 @import './styles/signal-stream.css';
+@import './styles/predictions.css';
 @import './styles/responsive.css';
