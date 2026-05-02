@@ -261,6 +261,62 @@ def fetch_and_parse_feed(
     return parsed
 
 
+def fetch_and_check_update(
+    url: str,
+    *,
+    connect_timeout_seconds: float,
+    read_timeout_seconds: float,
+    cached_last_build_date: str | None,
+) -> tuple[Any, bool]:
+    """Fetch feed with lastBuildDate optimization.
+
+    Uses stream mode to check lastBuildDate before downloading full content.
+    Returns (parsed, was_modified) - parsed is None if feed was not modified.
+
+    Args:
+        url: Feed URL to fetch
+        connect_timeout_seconds: Connection timeout
+        read_timeout_seconds: Read timeout
+        cached_last_build_date: Previously cached lastBuildDate, or None to always fetch
+
+    Returns:
+        Tuple of (parsed_feed, was_modified) where:
+        - parsed_feed: The parsed feed, or None if not modified
+        - was_modified: True if feed content changed, False if skipped due to cache
+    """
+    import re
+    import feedparser
+
+    lbd_pattern = re.compile(rb"<lastBuildDate>([^<]+)</lastBuildDate>")
+
+    with requests.get(
+        url,
+        stream=True,
+        timeout=(connect_timeout_seconds, read_timeout_seconds),
+        headers={"user-agent": "rss2cubox/0.1 (+github-actions)"},
+    ) as response:
+        response.raise_for_status()
+        content: bytes = b""
+
+        for chunk in response.iter_content(chunk_size=4096):
+            content += chunk
+            match = lbd_pattern.search(content)
+            if match:
+                current_lbd = match.group(1).decode("utf-8")
+                if cached_last_build_date and current_lbd == cached_last_build_date:
+                    return None, False
+                for remaining in response.iter_content(chunk_size=65536):
+                    content += remaining
+                break
+
+        parsed = feedparser.parse(content)
+        if getattr(parsed, "bozo", False):
+            bozo_exc = getattr(parsed, "bozo_exception", None)
+            raise ValueError(f"invalid feed parse: {bozo_exc!r}")
+
+        return parsed, True
+
+
 def _extract_youtube_video_id(url: str) -> str:
     text = str(url or "").strip()
     if not text:
@@ -391,7 +447,13 @@ def parse_feed_with_fallback(
         for retry_attempt in range(1, retry_limit + 1):
             start = time.perf_counter()
             try:
-                parsed = fetcher(candidate_url)
+                result = fetcher(candidate_url)
+                # Support both old interface (returns parsed) and new (returns (parsed, was_modified))
+                if isinstance(result, tuple):
+                    parsed, was_modified = result
+                else:
+                    parsed = result
+                    was_modified = True
                 if feed_kind == "rsshub":
                     rsshub_pool.mark_success(instance_base)
                 duration_ms = int((time.perf_counter() - start) * 1000)
@@ -405,6 +467,7 @@ def parse_feed_with_fallback(
                     retry_attempt=retry_attempt,
                     retry_limit=retry_limit,
                     duration_ms=duration_ms,
+                    was_modified=was_modified,
                 )
                 if idx > 1:
                     log_event(
@@ -457,6 +520,7 @@ def parse_feed_spec(
     spec: dict[str, str],
     analyzed: dict[str, Any],
     feed_cursor: dict[str, Any],
+    last_build_cache: dict[str, str] | None,
     rsshub_pool: RSSHubInstancePool,
     *,
     feed_cursor_lookback_hours: int,
@@ -480,6 +544,7 @@ def parse_feed_spec(
     cursor_skipped = 0
     feed_start = time.perf_counter()
     feed_max_seen_ts: datetime | None = None
+    current_last_build_date: str | None = None
 
     cursor_raw = str(feed_cursor.get(feed_url, "")).strip()
     cursor_dt = parse_iso_datetime(cursor_raw)
@@ -495,6 +560,40 @@ def parse_feed_spec(
         fetcher=fetcher,
         log_event=log_event,
     )
+
+    # Handle the case where fetcher returns (parsed, was_modified)
+    was_modified = True
+    if isinstance(parsed, tuple):
+        parsed, was_modified = parsed
+
+    # If fetcher indicated no modification (304 Not Modified case), return early
+    if not was_modified and parsed is None:
+        log_event(
+            "INFO",
+            "feed_not_modified",
+            stage="fetch",
+            feed=feed_url,
+            cached_last_build_date=last_build_cache.get(feed_url) if last_build_cache else None,
+        )
+        return {
+            "ok": True,
+            "kind": feed_kind,
+            "feed": feed_url,
+            "resolved_url": selected_url,
+            "selected_attempt": selected_attempt,
+            "fetched": 0,
+            "candidates": 0,
+            "deduped": 0,
+            "missing_link": 0,
+            "keyword_filtered": 0,
+            "cursor_skipped": 0,
+            "duration_ms": int((time.perf_counter() - feed_start) * 1000),
+            "feed_max_seen_ts": "",
+            "not_modified": True,
+            "candidate_items": [],
+            "attempts": attempts,
+        }
+
     if selected_url is None or parsed is None:
         return {
             "ok": False,
@@ -504,6 +603,9 @@ def parse_feed_spec(
             "error": "feed_invalid",
             "attempts": attempts,
         }
+
+    # Extract lastBuildDate from parsed feed
+    current_last_build_date = parsed.feed.get("updated") if parsed else None
 
     candidates: list[dict[str, Any]] = []
     for entry in parsed.entries:
@@ -564,6 +666,7 @@ def parse_feed_spec(
         "cursor_skipped": cursor_skipped,
         "duration_ms": feed_duration_ms,
         "feed_max_seen_ts": feed_max_seen_ts.isoformat() if feed_max_seen_ts else "",
+        "last_build_date": current_last_build_date,
         "candidate_items": candidates,
         "attempts": attempts,
     }
@@ -574,6 +677,7 @@ def collect_candidates_from_feeds(
     feed_specs: list[dict[str, str]],
     analyzed: dict[str, Any],
     feed_cursor: dict[str, Any],
+    last_build_cache: dict[str, str] | None,
     feed_failures: dict[str, Any],
     rsshub_pool: RSSHubInstancePool,
     stats: dict[str, Any],
@@ -596,7 +700,7 @@ def collect_candidates_from_feeds(
     log_event: Any,
     now_utc: datetime,
     record_stat: Any = None,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], dict[str, str]]:
     candidates: list[dict[str, Any]] = []
     pending_specs: list[tuple[int, dict[str, str]]] = []
     pending_werss: list[tuple[int, dict[str, str]]] = []
@@ -634,6 +738,7 @@ def collect_candidates_from_feeds(
                 spec,
                 analyzed,
                 feed_cursor,
+                last_build_cache,
                 rsshub_pool,
                 feed_cursor_lookback_hours=feed_cursor_lookback_hours,
                 include_keywords=include_keywords,
@@ -642,10 +747,11 @@ def collect_candidates_from_feeds(
                 parse_entry_timestamp=parse_entry_timestamp,
                 stable_id=stable_id,
                 passes_filter=passes_filter,
-                fetcher=lambda url: fetch_and_parse_feed(
+                fetcher=lambda url: fetch_and_check_update(
                     url,
                     connect_timeout_seconds=connect_timeout_seconds,
                     read_timeout_seconds=read_timeout_seconds,
+                    cached_last_build_date=last_build_cache.get(spec["value"]) if last_build_cache else None,
                 ),
                 log_event=log_event,
             ): idx
@@ -782,4 +888,9 @@ def collect_candidates_from_feeds(
             if prev_dt is None or feed_max_seen_ts > prev_dt:
                 feed_cursor[feed_url] = feed_max_seen_ts.isoformat()
 
-    return candidates
+        # Update last_build_cache with current lastBuildDate
+        current_lbd = result.get("last_build_date")
+        if current_lbd:
+            last_build_cache[feed_url] = current_lbd
+
+    return candidates, last_build_cache

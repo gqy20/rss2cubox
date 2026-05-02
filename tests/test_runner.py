@@ -11,6 +11,16 @@ from rss2cubox import metrics
 from rss2cubox import runner
 
 
+class FeedParserDict(dict):
+    """A dict subclass that mimics feedparser.util.FeedParserDict for testing."""
+
+    def __getattr__(self, key):
+        try:
+            return self[key]
+        except KeyError:
+            raise AttributeError(key)
+
+
 def test_load_lines_ignores_blank_and_comment(tmp_path: Path) -> None:
     feeds = tmp_path / "feeds.txt"
     feeds.write_text("# comment\n\nhttps://a.example/rss\n  \nhttps://b.example/rss\n", encoding="utf-8")
@@ -443,9 +453,15 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
 
     posted_batches = []
 
-    def fake_fetch(url: str):  # noqa: ANN001
+    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
+        # Returns (parsed, was_modified) tuple - always fetch full content
         assert url == "https://feed.example/rss"
-        return SimpleNamespace(bozo=False, entries=entries)
+        # Return structure matching feedparser.parse() output
+        return FeedParserDict(
+            bozo=False,
+            entries=[FeedParserDict(e) for e in entries],
+            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")
+        ), True
 
     def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
         _ = request_post
@@ -460,7 +476,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
     monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
-    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         kwargs["candidates"][0]["eid"]: {
             "reason": "高价值",
@@ -497,8 +513,12 @@ def test_main_ic_push_disabled_skips_ic(tmp_path: Path, monkeypatch: pytest.Monk
     ic_posted = []
     local_saved = []
 
-    def fake_fetch(url: str):  # noqa: ANN001
-        return SimpleNamespace(bozo=False, entries=entries)
+    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
+        return FeedParserDict(
+            bozo=False,
+            entries=[FeedParserDict(e) for e in entries],
+            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")
+        ), True
 
     def fake_post_articles_in_chunks(**kwargs):  # noqa: ANN001
         ic_posted.append(kwargs)
@@ -515,7 +535,7 @@ def test_main_ic_push_disabled_skips_ic(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setattr(runner, "IC_PUSH_ENABLED", False)
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
-    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
             "reason": "高价值",
@@ -568,9 +588,13 @@ def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypa
 
     posted_batches = []
 
-    def fake_fetch(url: str):  # noqa: ANN001
+    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
         assert url == feed_url
-        return SimpleNamespace(bozo=False, entries=entries)
+        return FeedParserDict(
+            bozo=False,
+            entries=[FeedParserDict(e) for e in entries],
+            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")
+        ), True
 
     def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
         _ = (api_url, request_post)
@@ -590,7 +614,7 @@ def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypa
         "load_ic_state",
         lambda **kwargs: ({}, {feed_url: "2026-01-10T00:00:00+00:00"}),
     )
-    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
             "reason": "高价值",
@@ -630,8 +654,12 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     }
     posted_batches = []
 
-    def fake_fetch(url: str):  # noqa: ANN001
-        return SimpleNamespace(bozo=False, entries=entries_by_feed[url])
+    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
+        return FeedParserDict(
+            bozo=False,
+            entries=[FeedParserDict(e) for e in entries_by_feed[url]],
+            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")
+        ), True
 
     def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
         _ = (api_url, request_post)
@@ -646,7 +674,7 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
     monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
-    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
             "reason": "高价值",
@@ -683,9 +711,9 @@ def test_main_skips_articles_already_in_ic(tmp_path: Path, monkeypatch: pytest.M
     posted_batches = []
     existing_eid = sync_pipeline.stable_id({"link": "https://example.com/existing"})
 
-    def fake_fetch(url: str):  # noqa: ANN001
+    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
         assert url == feed_url
-        return SimpleNamespace(bozo=False, entries=entries)
+        return FeedParserDict(bozo=False, entries=[FeedParserDict(e) for e in entries], feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")), True
 
     def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
         _ = (api_url, request_post)
@@ -704,7 +732,7 @@ def test_main_skips_articles_already_in_ic(tmp_path: Path, monkeypatch: pytest.M
         "load_ic_state",
         lambda **kwargs: ({existing_eid: {"id": existing_eid, "exported": True}}, {}),
     )
-    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
             "reason": "高价值",
@@ -792,9 +820,10 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
     fetched = []
     posted_batches = []
 
-    def fake_fetch(url: str):  # noqa: ANN001
+    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
         fetched.append(url)
-        return SimpleNamespace(bozo=False, entries=[{"id": url, "link": f"{url}/1", "title": "t", "summary": "s"}])
+        entry = {"id": url, "link": f"{url}/1", "title": "t", "summary": "s"}
+        return FeedParserDict(bozo=False, entries=[FeedParserDict(entry)], feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")), True
 
     def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
         _ = (api_url, request_post)
@@ -810,7 +839,7 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
     monkeypatch.setattr(runner, "FEED_FETCH_CONCURRENCY", 4)
     monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
-    monkeypatch.setattr(feed_sources, "fetch_and_parse_feed", lambda url, **_kwargs: fake_fetch(url))
+    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
     monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
         item["eid"]: {
             "reason": "高价值",

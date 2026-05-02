@@ -167,10 +167,18 @@ def main() -> None:
     if _db_url:
         def _stat_recorder(**kw):
             record_feed_stat(_db_url, run_id=_run_id, **kw)
-    candidates = feed_sources.collect_candidates_from_feeds(
+    # Initialize last_build_cache from previous runs (stored in feed_cursor)
+    last_build_cache: dict[str, str] = {}
+    for feed_url in feed_cursor:
+        cached_lbd = feed_cursor[feed_url].get("last_build_date") if isinstance(feed_cursor[feed_url], dict) else None
+        if cached_lbd:
+            last_build_cache[feed_url] = cached_lbd
+
+    candidates, updated_last_build_cache = feed_sources.collect_candidates_from_feeds(
         feed_specs=feed_specs,
         analyzed=processed,
         feed_cursor=feed_cursor,
+        last_build_cache=last_build_cache,
         feed_failures=feed_failures,
         rsshub_pool=rsshub_pool,
         stats=stats,
@@ -194,6 +202,12 @@ def main() -> None:
         now_utc=now_utc,
         record_stat=_stat_recorder,
     )
+    # Update feed_cursor with last_build_cache for persistence
+    for feed_url, lbd in updated_last_build_cache.items():
+        if isinstance(feed_cursor.get(feed_url), dict):
+            feed_cursor[feed_url]["last_build_date"] = lbd
+        else:
+            feed_cursor[feed_url] = {"last_build_date": lbd}
 
     candidates, run_deduped = sync_pipeline.dedupe_run_candidates(candidates, stats["per_feed_drop_reasons"])
     stats["run_deduped"] += run_deduped
