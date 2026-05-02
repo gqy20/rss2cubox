@@ -349,8 +349,8 @@ export default function PredictionsPage() {
                   {clusters.map((cluster) => (
                     <div
                       key={cluster.id}
-                      className="pred-cluster-card"
-                      onClick={() => setExpandedCluster(expandedCluster === cluster.id ? null : cluster.id)}
+                      className={`pred-cluster-card${expandedCluster === cluster.id ? ' expanded' : ''}`}
+                      onClick={() => setExpandedCluster(expendedCluster === cluster.id ? null : cluster.id)}
                     >
                       <div className="pred-cluster-head">
                         <div className="pred-cluster-title-row">
@@ -401,7 +401,7 @@ export default function PredictionsPage() {
                       </div>
 
                       {expandedCluster === cluster.id && (
-                        <div className="pred-cluster-expanded">
+                        <div className={`pred-cluster-expanded${expandedCluster === cluster.id ? ' open' : ''}`}>
                           {cluster.watch_keywords && cluster.watch_keywords.length > 0 && (
                             <div className="pred-expanded-row">
                               <span className="pred-expanded-label">监控关键词</span>
@@ -456,7 +456,7 @@ export default function PredictionsPage() {
                   {predictions.map((pred) => (
                     <div
                       key={pred.id}
-                      className="pred-prediction-card"
+                      className={`pred-prediction-card${expandedPrediction === pred.id ? ' expanded' : ''}`}
                       onClick={() => setExpandedPrediction(expandedPrediction === pred.id ? null : pred.id)}
                     >
                       <div className="pred-prediction-head">
@@ -491,7 +491,7 @@ export default function PredictionsPage() {
                         <span className="pred-time-muted">创建于 {formatDate(pred.created_at)}</span>
                       </div>
                       {expandedPrediction === pred.id && (
-                        <div className="pred-cluster-expanded">
+                        <div className={`pred-cluster-expanded${expandedPrediction === pred.id ? ' open' : ''}`}>
                           {pred.watch_keywords && pred.watch_keywords.length > 0 && (
                             <div className="pred-expanded-row">
                               <span className="pred-expanded-label">监控关键词</span>

@@ -772,6 +772,107 @@
 }
 
 /* ═══════════════════════════════════════════
+   Motion / Animation (Phase 3)
+   ═══════════════════════════════════════════ */
+
+/* ── Page entrance: staggered fade-up ── */
+@keyframes pred-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.predictions-sidebar {
+  animation: pred-fade-up 0.4s var(--ease-out) both;
+}
+
+.predictions-main .pred-section:nth-child(1) {
+  animation: pred-fade-up 0.4s var(--ease-out) 0.05s both;
+}
+
+.predictions-main .pred-section:nth-child(2) {
+  animation: pred-fade-up 0.4s var(--ease-out) 0.12s both;
+}
+
+.predictions-main .pred-section:nth-child(3) {
+  animation: pred-fade-up 0.4s var(--ease-out) 0.19s both;
+}
+
+/* ── KPI count-up shimmer on load ── */
+@keyframes pred-shimmer {
+  0% { opacity: 0.4; }
+  60% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+.pred-kpi-value {
+  animation: pred-shimmer 0.5s var(--ease-out) both;
+}
+
+.pred-kpi-card:nth-child(2) .pred-kpi-value {
+  animation-delay: 0.08s;
+}
+
+.pred-kpi-card:nth-child(3) .pred-kpi-value {
+  animation-delay: 0.16s;
+}
+
+/* ── Status bar grow on load ── */
+@keyframes pred-bar-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+.predictions-sidebar .pred-status-bar-segment {
+  transform-origin: left;
+  animation: pred-bar-grow 0.6s var(--ease-out) 0.3s both;
+}
+
+/* ── Expand/collapse smooth transition ── */
+.pred-cluster-expanded,
+.pred-prediction-card > div:last-of-type:not(.pred-prediction-footer):not(.pred-prediction-head):not(.pred-prediction-body) {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--duration-slow) var(--ease-out);
+}
+
+.pred-cluster-expanded.open,
+.pred-prediction-card.expanded > div:last-of-type:not(.pred-prediction-footer):not(.pred-prediction-head):not(.pred-prediction-body) {
+  grid-template-rows: 1fr;
+}
+
+.pred-cluster-expanded > *,
+.pred-cluster-expanded.open > * {
+  overflow: hidden;
+}
+
+/* ── Card hover lift refinement ── */
+.pred-cluster-card,
+.pred-prediction-card {
+  will-change: background, border-color, box-shadow;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .predictions-sidebar,
+  .predictions-main .pred-section,
+  .pred-kpi-value,
+  .predictins-sidebar .pred-status-bar-segment {
+    animation: none !important;
+  }
+
+  .pred-cluster-expanded,
+  .pred-prediction-card > div:last-of-type {
+    transition: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
    Responsive
    ═══════════════════════════════════════════ */
 
