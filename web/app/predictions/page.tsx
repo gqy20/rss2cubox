@@ -87,11 +87,11 @@ const SIGNAL_TYPE_MAP: Record<number, string> = {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  new: 'var(--pred-status-new)',
-  warming: 'var(--pred-status-warming)',
-  bursting: 'var(--pred-status-bursting)',
-  mature: 'var(--pred-status-mature)',
-  declining: 'var(--pred-status-declining)',
+  new: 'var(--status-new)',
+  warming: 'var(--status-warming)',
+  bursting: 'var(--status-bursting)',
+  mature: 'var(--status-mature)',
+  declining: 'var(--status-declining)',
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -234,12 +234,6 @@ export default function PredictionsPage() {
         <div className="predictions-layout">
           {/* ── Left sidebar ── */}
           <aside className="predictions-sidebar">
-            {/* Back to home */}
-            <Link href="/" className="pred-nav-link" style={{ marginBottom: 4 }}>
-              <ArrowLeft size={14} />
-              返回主控制台
-            </Link>
-
             {/* KPI: Clusters */}
             <div className="pred-kpi-card pred-kpi-card-blue">
               <Sparkles size={14} className="pred-kpi-icon" />
