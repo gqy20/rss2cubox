@@ -27,6 +27,7 @@ type ChartsSectionProps = {
   sourceData: Array<{ name: string; value: number }>
   selectedSource: string | null
   onSelectSource: (source: string | null | ((prev: string | null) => string | null)) => void
+  onDateClick?: (dayKey: string) => void
   timeRange: '7d' | '30d'
   onTimeRangeChange: (range: '7d' | '30d') => void
   insightHistory?: InsightHistoryItem[]
@@ -372,7 +373,17 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
   // 趋势数据来自服务端（基于全部数据），图表按当前范围展示最近 7/30 天
   const trendData = useMemo(() => {
     const points = metrics.timeline_points || []
-    return points.slice(timeRange === '7d' ? -7 : -30)
+    const sliced = points.slice(timeRange === '7d' ? -7 : -30)
+    // 为缺少 dayKey 的数据点补上 dayKey（从 name "MM/DD" 反推）
+    const baseDate = new Date()
+    baseDate.setHours(0, 0, 0, 0)
+    return sliced.map((pt, i) => {
+      if (pt.dayKey) return pt
+      const d = new Date(baseDate)
+      d.setDate(baseDate.getDate() - (sliced.length - 1 - i))
+      const dk = getDayKey(d)
+      return { ...pt, dayKey: dk }
+    })
   }, [metrics.timeline_points, timeRange])
 
   // 情报源分布来自服务端（基于全部数据）
@@ -666,6 +677,7 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
               sourceData={sourceData}
               selectedSource={selectedSource}
               onSelectSource={setSelectedSource}
+              onDateClick={jumpToDateGroup}
               timeRange={timeRange}
               onTimeRangeChange={setTimeRange}
               insightHistory={insightsHistory}

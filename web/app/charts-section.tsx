@@ -19,7 +19,7 @@ import { Radar, Zap } from 'lucide-react'
 import { PIE_COLORS } from './utils'
 import { MenuPanel, PopoverMenu, SegmentedControl } from './ui'
 
-type TrendPoint = { name: string; total: number; analyzed: number }
+type TrendPoint = { name: string; dayKey?: string; total: number; analyzed: number }
 type SourcePoint = { name: string; value: number }
 
 type Props = {
@@ -27,6 +27,7 @@ type Props = {
   sourceData: SourcePoint[]
   selectedSource: string | null
   onSelectSource: (source: string | null | ((prev: string | null) => string | null)) => void
+  onDateClick?: (dayKey: string) => void
   timeRange: '7d' | '30d'
   onTimeRangeChange: (range: '7d' | '30d') => void
   insightHistory?: InsightHistoryItem[]
@@ -43,7 +44,7 @@ type InsightHistoryItem = {
   }
 }
 
-export default function ChartsSection({ trendData, sourceData, selectedSource, onSelectSource, timeRange, onTimeRangeChange, insightHistory, selectedInsightIdx, onSelectInsight }: Props) {
+export default function ChartsSection({ trendData, sourceData, selectedSource, onSelectSource, onDateClick, timeRange, onTimeRangeChange, insightHistory, selectedInsightIdx, onSelectInsight }: Props) {
   const [historyMenuOpen, setHistoryMenuOpen] = useState(false)
   const selectedHistoryLabel = useMemo(() => {
     const item = insightHistory?.[selectedInsightIdx]
@@ -114,7 +115,17 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
         </div>
         <div className="chart-body chart-body-spaced">
           <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
-            <AreaChart data={trendData} margin={{ top: 10, right: 8, left: -16, bottom: 0 }}>
+            <AreaChart
+              data={trendData}
+              margin={{ top: 10, right: 8, left: -12, bottom: 20 }}
+              onClick={(payload: Record<string, unknown>) => {
+                if (!onDateClick) return
+                const activePayload = payload?.activePayload as Array<{ payload?: TrendPoint }> | undefined
+                const point = activePayload?.[0]?.payload
+                if (point?.dayKey) onDateClick(point.dayKey)
+              }}
+              style={{ cursor: onDateClick ? 'pointer' : 'default' }}
+            >
               <defs>
                 <linearGradient id="colorHigh" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#34d399" stopOpacity={0.7} />
@@ -126,8 +137,8 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
-              <XAxis dataKey="name" stroke="#8aa3be" fontSize={12} tickLine={false} axisLine={false} />
-              <YAxis stroke="#8aa3be" fontSize={12} tickLine={false} axisLine={false} />
+              <XAxis dataKey="name" tick={{ fill: '#8aa3be', fontSize: 11 }} tickLine={false} axisLine={false} />
+              <YAxis tick={{ fill: '#8aa3be', fontSize: 11 }} tickLine={false} axisLine={false} width={36} />
               <Tooltip contentStyle={{ backgroundColor: 'rgba(13, 27, 42, 0.96)', border: '1px solid #1f3550', borderRadius: '8px', color: '#fff' }} itemStyle={{ color: '#e7edf5' }} />
               <Legend verticalAlign="top" height={28} iconType="circle" wrapperStyle={{ fontSize: 12, color: '#8aa3be' }} />
               <Area type="monotone" dataKey="total" name="总数" stroke="#60a5fa" fillOpacity={1} fill="url(#colorTotal)" />

@@ -5,7 +5,7 @@
   }
 
   .dashboard-right {
-    min-width: 340px;
+    min-width: 360px;
     padding-left: 18px;
   }
 }
@@ -13,6 +13,14 @@
 @media (max-width: 1120px) {
   .charts-grid {
     grid-template-columns: 1fr;
+  }
+
+  .chart-body {
+    height: 220px;
+  }
+
+  .chart-body .recharts-responsive-container {
+    min-height: 220px !important;
   }
 }
 

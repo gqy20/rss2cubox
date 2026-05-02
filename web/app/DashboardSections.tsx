@@ -2,12 +2,12 @@
 
 import Link from 'next/link'
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react'
-import { AlertCircle, Brain, CalendarDays, Check, ChevronDown, ChevronUp, Copy, Download, Filter, Search } from 'lucide-react'
+import { AlertCircle, Brain, CalendarDays, Check, Copy, Download, Search } from 'lucide-react'
 import MarkdownRenderer from './MarkdownRenderer'
 import FeedCard from './FeedCard'
 import type { Metrics, Row, InsightKey } from './types'
 import { AnimatedNumber, formatGroupTitle, Logo } from './utils'
-import { Button, MenuPanel, PopoverMenu } from './ui'
+import { Button, MenuPanel, PopoverMenu, SegmentedControl } from './ui'
 import type { InsightHistoryItem } from '../lib/signalStore'
 
 export type ParsedInsightItem = {
@@ -447,10 +447,34 @@ function SignalToolbar({
   isSearchMode,
   searchTotal,
 }: SignalToolbarProps) {
+  const hasActiveFilter = Boolean(search || selectedSource || selectedTag || filter !== 'all' || selectedDateKey)
+
   return (
     <div className="controls-bar signal-toolbar">
       <div className="signal-toolbar-head">
-        <h2 className="signal-toolbar-title">实时情报流</h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
+          <h2 className="signal-toolbar-title">实时情报流</h2>
+          <SegmentedControl
+            value={filter}
+            options={[
+              { value: 'all', label: '全部' },
+              { value: 'analyzed', label: '已分析' },
+              { value: 'high_value', label: '高价值' },
+            ]}
+            onChange={onFilterChange}
+            ariaLabel="信号筛选"
+            className="signal-segmented"
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <span className="result-summary" style={{ marginTop: 0, whiteSpace: 'nowrap' }}>
+            <span className="result-count">{resultCount}</span>
+            {isSearchMode && <span> / {searchTotal}</span>} 条
+          </span>
+          <button className="toolbar-icon-btn" onClick={onExport} title="导出 JSON">
+            <Download size={14} />
+          </button>
+        </div>
       </div>
 
       <div className="signal-search">
@@ -464,9 +488,6 @@ function SignalToolbar({
       </div>
 
       <div className="signal-filter-row">
-        <Filter size={15} color="#8aa3be" />
-        <Button active={filter === 'analyzed'} onClick={() => onFilterChange('analyzed')}>已分析</Button>
-        <Button active={filter === 'high_value'} onClick={() => onFilterChange('high_value')}>高价值</Button>
         <Button active={selectedDateKey === todayKey} onClick={onToggleToday}>今日</Button>
         <DateJumpMenu
           open={dateMenuOpen}
@@ -479,17 +500,14 @@ function SignalToolbar({
           yesterdayKey={yesterdayKey}
           onJumpToDate={onJumpToDate}
         />
-        <Button onClick={onExport}>
-          <Download size={13} /> 导出
-        </Button>
-        {selectedSource && <Button tone="purple" onClick={onClearSource}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
-        {selectedTag && <Button tone="purple" onClick={onClearTag}>#{selectedTag} ×</Button>}
-        {(search || selectedSource || selectedTag || filter !== 'all') && <Button onClick={onClearAll}>清除</Button>}
-      </div>
-
-      <div className="result-summary">
-        共 <span className="result-count">{resultCount}</span>
-        {isSearchMode && <span> / {searchTotal}</span>} 条结果
+        <div style={{ flex: 1 }} />
+        {hasActiveFilter && (
+          <>
+            {selectedSource && <Button tone="purple" onClick={onClearSource}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
+            {selectedTag && <Button tone="purple" onClick={onClearTag}>#{selectedTag} ×</Button>}
+            {(search || selectedSource || selectedTag || filter !== 'all') && <Button onClick={onClearAll}>清除</Button>}
+          </>
+        )}
       </div>
     </div>
   )
@@ -672,8 +690,7 @@ function SignalGroup({ group, isLoading, collapsed, onToggle, refCallback, now, 
     <div className="feed-group" ref={refCallback}>
       <button className="feed-group-head" onClick={onToggle}>
         <span className="feed-group-title">{group.title}</span>
-        <span className="feed-group-meta">{group.total} 条</span>
-        {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+        <span className="feed-group-meta">{group.total} 条 {collapsed ? '▶' : '▼'}</span>
       </button>
       {!collapsed && (
         <div className="feed-group-body">
