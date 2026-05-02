@@ -7,7 +7,7 @@ import MarkdownRenderer from './MarkdownRenderer'
 import FeedCard from './FeedCard'
 import type { Metrics, Row, InsightKey } from './types'
 import { AnimatedNumber, formatGroupTitle, Logo } from './utils'
-import { Button, MenuPanel, PopoverMenu, SegmentedControl } from './ui'
+import { Button, MenuPanel, PopoverMenu } from './ui'
 import type { InsightHistoryItem } from '../lib/signalStore'
 
 export type ParsedInsightItem = {
@@ -336,8 +336,6 @@ export function DashboardRight({
         search={search}
         searchRef={searchRef}
         onSearchChange={onSearchChange}
-        filter={filter}
-        onFilterChange={onFilterChange}
         selectedDateKey={selectedDateKey}
         todayKey={todayKey}
         yesterdayKey={yesterdayKey}
@@ -394,8 +392,6 @@ type SignalToolbarProps = Pick<
   | 'search'
   | 'searchRef'
   | 'onSearchChange'
-  | 'filter'
-  | 'onFilterChange'
   | 'selectedDateKey'
   | 'todayKey'
   | 'yesterdayKey'
@@ -424,8 +420,6 @@ function SignalToolbar({
   search,
   searchRef,
   onSearchChange,
-  filter,
-  onFilterChange,
   selectedDateKey,
   todayKey,
   yesterdayKey,
@@ -447,25 +441,12 @@ function SignalToolbar({
   isSearchMode,
   searchTotal,
 }: SignalToolbarProps) {
-  const hasActiveFilter = Boolean(search || selectedSource || selectedTag || filter !== 'all' || selectedDateKey)
+  const hasActiveFilter = Boolean(search || selectedSource || selectedTag || selectedDateKey)
 
   return (
     <div className="controls-bar signal-toolbar">
       <div className="signal-toolbar-head">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
-          <h2 className="signal-toolbar-title">实时情报流</h2>
-          <SegmentedControl
-            value={filter}
-            options={[
-              { value: 'all', label: '全部' },
-              { value: 'analyzed', label: '已分析' },
-              { value: 'high_value', label: '高价值' },
-            ]}
-            onChange={onFilterChange}
-            ariaLabel="信号筛选"
-            className="signal-segmented"
-          />
-        </div>
+        <h2 className="signal-toolbar-title">实时情报流</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
           <span className="result-summary" style={{ marginTop: 0, whiteSpace: 'nowrap' }}>
             <span className="result-count">{resultCount}</span>
@@ -505,7 +486,7 @@ function SignalToolbar({
           <>
             {selectedSource && <Button tone="purple" onClick={onClearSource}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
             {selectedTag && <Button tone="purple" onClick={onClearTag}>#{selectedTag} ×</Button>}
-            {(search || selectedSource || selectedTag || filter !== 'all') && <Button onClick={onClearAll}>清除</Button>}
+            {(search || selectedSource || selectedTag) && <Button onClick={onClearAll}>清除</Button>}
           </>
         )}
       </div>
