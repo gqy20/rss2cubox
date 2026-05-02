@@ -7,19 +7,12 @@ import type { Components } from 'react-markdown'
 
 type MarkdownRendererProps = {
   children?: ReactNode
-  /** 默认 false；设为 true 时禁用段落包裹（适合内联场景如标题行） */
+  /** 默认 false；设为 true 时块级元素（p/h1-h3等）降级为内联展示 */
   inline?: boolean
 }
 
-/**
- * 统一的 Markdown 渲染组件。
- * 用于 AI 生成的信号文本（洞察、核心事件、建议、分析等）。
- */
-const mdComponents: Components = {
-  h1: ({ children }) => <h1 style={{ fontSize: 16, fontWeight: 700, margin: '8px 0 4px', color: '#eef3fa' }}>{children}</h1>,
-  h2: ({ children }) => <h2 style={{ fontSize: 15, fontWeight: 700, margin: '6px 0 3px', color: '#eef3fa' }}>{children}</h2>,
-  h3: ({ children }) => <h3 style={{ fontSize: 14, fontWeight: 600, margin: '4px 0 2px', color: '#e2e8f0' }}>{children}</h3>,
-  p: ({ children }) => <p style={{ margin: '3px 0', lineHeight: 1.55 }}>{children}</p>,
+/** 共享的行内级组件样式 */
+const sharedComponents: Components = {
   strong: ({ children }) => <strong style={{ fontWeight: 700 }}>{children}</strong>,
   em: ({ children }) => <em>{children}</em>,
   code: ({ children, className }) =>
@@ -56,6 +49,24 @@ const mdComponents: Components = {
   del: ({ children }) => <del style={{ color: '#8aa3be' }}>{children}</del>,
 }
 
+/** 块级模式：保留 h1-h3 / p 等块级标签 */
+const blockComponents: Components = {
+  ...sharedComponents,
+  h1: ({ children }) => <h1 style={{ fontSize: 16, fontWeight: 700, margin: '8px 0 4px', color: '#eef3fa' }}>{children}</h1>,
+  h2: ({ children }) => <h2 style={{ fontSize: 15, fontWeight: 700, margin: '6px 0 3px', color: '#eef3fa' }}>{children}</h2>,
+  h3: ({ children }) => <h3 style={{ fontSize: 14, fontWeight: 600, margin: '4px 0 2px', color: '#e2e8f0' }}>{children}</h3>,
+  p: ({ children }) => <p style={{ margin: '3px 0', lineHeight: 1.55 }}>{children}</p>,
+}
+
+/** 内联模式：h/p 降级为 span，避免块级元素嵌套在行内容器中 */
+const inlineComponents: Components = {
+  ...sharedComponents,
+  h1: ({ children }) => <span style={{ fontSize: 16, fontWeight: 700, color: '#eef3fa' }}>{children}</span>,
+  h2: ({ children }) => <span style={{ fontSize: 15, fontWeight: 700, color: '#eef3fa' }}>{children}</span>,
+  h3: ({ children }) => <span style={{ fontSize: 14, fontWeight: 600, color: '#e2e8f0' }}>{children}</span>,
+  p: ({ children }) => <span style={{ display: 'inline-block', lineHeight: 1.55, marginBottom: 4 }}>{children}</span>,
+}
+
 function extractText(children: ReactNode): string | null {
   if (children == null) return null
   if (typeof children === 'string') return children.trim() || null
@@ -65,7 +76,6 @@ function extractText(children: ReactNode): string | null {
     const joined = parts.join('')
     return joined.trim() || null
   }
-  // ReactElement — 取其 props.children 递归提取
   if (typeof children === 'object' && 'props' in children) {
     return extractText((children as React.JSX.Element).props.children)
   }
@@ -76,19 +86,9 @@ export default function MarkdownRenderer({ children, inline }: MarkdownRendererP
   const text = extractText(children)
   if (!text) return null
 
-  if (inline) {
-    return (
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
-        {text}
-      </ReactMarkdown>
-    )
-  }
-
   return (
-    <div className="md-content">
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
-        {text}
-      </ReactMarkdown>
-    </div>
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={inline ? inlineComponents : blockComponents}>
+      {text}
+    </ReactMarkdown>
   )
 }
