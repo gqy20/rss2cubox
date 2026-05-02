@@ -9,7 +9,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
 
 
 TREND_PREDICTION_OUTPUT_SCHEMA = {
@@ -62,7 +62,7 @@ SYSTEM_PROMPT = (
     "- AI 基础设施（算力、芯片、推理优化、训练框架）\n"
     "以上方向在其他条件相同时应优先被选为预测目标，但不要为了凑数而强行选择弱信号。\n"
     "【评分利用】每个 cluster 都带有聚合评分字段，请据此筛选：\n"
-    "- 优先选择 avg_importance 高（≥3.5）且 burst_ratio 高（>1.5）的 cluster，这类信号正处于上升期\n"
+    "- 优先选择 avg_importance 高（≥3.5）的 cluster，这类信号重要性高\n"
     "- avg_confidence 低的 cluster（<3）即使 importance 高也应降低优先级或提高证据门槛\n"
     "- 避免对同一 normalized_label 或相似 entities 的 cluster 反复预测，除非有明确的新进展信号\n"
     "只输出符合 JSON Schema 的结构化结果。"
@@ -94,7 +94,7 @@ def run_trend_prediction_agent(
             "instructions": [
                 "只从输入 clusters 中选择值得预测的信号，优先选择 AI/智能体方向且评分高的 cluster。",
                 "每条预测必须绑定 signal_cluster_key。",
-                "利用 cluster 的 avg_importance、burst_ratio、avg_confidence 做筛选排序，不要忽略这些字段。",
+                "利用 cluster 的 avg_importance、avg_confidence 做筛选排序，不要忽略这些字段。",
                 "参考 historical_reviews 中的 score、why_score、improvement_advice，避免重复已失败模式。",
                 "不要输出超过 max_predictions 条。",
             ],
@@ -117,23 +117,38 @@ def run_trend_prediction_agent(
             **fields,
         )
 
-    payload = anyio.run(partial(
-        run_json_agent,
-        prompt=prompt,
-        system_prompt=SYSTEM_PROMPT,
-        schema=TREND_PREDICTION_OUTPUT_SCHEMA,
-        max_turns=20,
-        max_budget_usd=_budget("TREND_PREDICTION_AGENT_MAX_BUDGET_USD", 10.0),
-        sdk_log=sdk_logger,
-    ))
+    try:
+        payload = anyio.run(partial(
+            run_json_agent,
+            prompt=prompt,
+            system_prompt=SYSTEM_PROMPT,
+            schema=TREND_PREDICTION_OUTPUT_SCHEMA,
+            max_turns=20,
+            max_budget_usd=_budget("TREND_PREDICTION_AGENT_MAX_BUDGET_USD", 10.0),
+            sdk_log=sdk_logger,
+        ))
+    except _StructuredOutputError as e:
+        if log_event:
+            log_event("WARN", "trend_prediction_fallback_start", stage="agent_sdk", agent="trend_prediction")
+        fallback = extract_json_from_text(e.raw_text)
+        if isinstance(fallback, dict) and isinstance(fallback.get("predictions"), list):
+            payload = fallback
+            if log_event:
+                log_event("INFO", "trend_prediction_fallback_ok", stage="agent_sdk", agent="trend_prediction",
+                          prediction_count=len(payload.get("predictions", [])))
+        else:
+            if log_event:
+                log_event("WARN", "trend_prediction_fallback_failed", stage="agent_sdk", agent="trend_prediction",
+                          raw_preview=e.raw_text[:300])
+            raise
+
     predictions = payload.get("predictions")
     if not isinstance(predictions, list):
         raise RuntimeError("invalid_trend_prediction_payload")
+    # 过滤无效 prediction 而非丢弃全部
     valid_keys = {str(cluster.get("cluster_key")) for cluster in clusters if cluster.get("cluster_key")}
-    for prediction in predictions:
-        if str(prediction.get("signal_cluster_key")) not in valid_keys:
-            raise RuntimeError("prediction_unknown_cluster")
-    return predictions[:max_predictions]
+    valid = [p for p in predictions if str(p.get("signal_cluster_key")) in valid_keys]
+    return valid[:max_predictions]
 
 
 def _budget(name: str, default: float) -> float | None:

@@ -18,9 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-import re
-
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
 from rss2cubox.webpage_reader import read_webpage_text
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
@@ -197,35 +195,6 @@ def _normalize_signal_item(item: Any) -> dict[str, Any] | None:
     }
 
 
-def _extract_json_from_text(text: str) -> dict[str, Any] | None:
-    """从可能包含前缀文字或 markdown 代码块的文本中提取 JSON 对象。"""
-    if not text or not isinstance(text, str):
-        return None
-    # 策略1：查找 ```json ... ``` 代码块
-    code_block_match = re.search(r"```(?:json)?\s*\n(.*?)\n\s*```", text, re.DOTALL)
-    if code_block_match:
-        candidate = code_block_match.group(1).strip()
-        try:
-            return json.loads(candidate)
-        except json.JSONDecodeError:
-            pass
-    # 策略2：查找最外层 { ... }
-    brace_start = text.find("{")
-    if brace_start >= 0:
-        depth = 0
-        for i in range(brace_start, len(text)):
-            if text[i] == "{":
-                depth += 1
-            elif text[i] == "}":
-                depth -= 1
-                if depth == 0:
-                    candidate = text[brace_start : i + 1]
-                    try:
-                        return json.loads(candidate)
-                    except json.JSONDecodeError:
-                        break
-    return None
-
 
 def _normalize_global_payload(payload: dict[str, Any]) -> dict[str, Any]:
     return {
@@ -372,7 +341,7 @@ async def _run_agent(
     except _StructuredOutputError as e:
         # Schema 验证失败，尝试从原始文本中 fallback 提取 JSON
         print("[global_agent] structured_output 为空，尝试 fallback 解析...", flush=True)
-        fallback = _extract_json_from_text(e.raw_text)
+        fallback = extract_json_from_text(e.raw_text)
         if fallback and isinstance(fallback, dict):
             result = _normalize_global_payload(fallback)
             total = sum(len(result.get(k, [])) for k in ("trends", "weak_signals", "daily_advices"))

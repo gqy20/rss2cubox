@@ -10,7 +10,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
 
 
 SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
@@ -31,22 +31,12 @@ SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
                     "watch_keywords": {"type": "array", "items": {"type": "string"}},
                     "first_seen_at": {"type": "string"},
                     "last_seen_at": {"type": "string"},
-                    "article_count": {"type": "integer", "minimum": 1},
-                    "source_count": {"type": "integer", "minimum": 0},
                     "avg_importance": {"type": "number"},
-                    "avg_evidence_strength": {"type": "number"},
-                    "avg_novelty": {"type": "number"},
                     "avg_confidence": {"type": "number"},
-                    "recent_count_7d": {"type": "integer", "minimum": 0},
-                    "previous_count_7d": {"type": "integer", "minimum": 0},
-                    "burst_ratio": {"type": "number"},
                 },
                 "required": [
                     "cluster_key", "label", "normalized_label", "signal_type", "status",
-                    "summary", "entities", "watch_keywords", "first_seen_at", "last_seen_at",
-                    "article_count", "source_count", "avg_importance", "avg_evidence_strength",
-                    "avg_novelty", "avg_confidence", "recent_count_7d", "previous_count_7d",
-                    "burst_ratio",
+                    "summary", "entities", "watch_keywords",
                 ],
             },
         },
@@ -73,13 +63,16 @@ SYSTEM_PROMPT = (
     "不要做 embedding，不要臆造不存在的文章。输出必须符合 JSON Schema。"
     "cluster_key 必须稳定，格式为 '<signal_type>:<normalized_label>'。"
     "status 只能是 new、warming、bursting、cooling、mature、invalid。"
+    "只输出 cluster_key、label、normalized_label、signal_type、status、summary、entities、watch_keywords "
+    "以及可选的 first_seen_at、last_seen_at、avg_importance、avg_confidence。"
+    "不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count 等字段。"
 )
 
 
 def normalize_cluster_label(value: str) -> str:
     text = str(value or "").strip().lower()
     text = re.sub(r"\s+", "-", text)
-    text = re.sub(r"[^\w\u4e00-\u9fff-]+", "-", text)
+    text = re.sub(r"[^\w一-鿿-]+", "-", text)
     text = re.sub(r"-+", "-", text).strip("-")
     return text or "unknown"
 
@@ -119,6 +112,7 @@ def run_signal_cluster_agent(
                 "将相同或高度相关的长期信号归并为同一 cluster。",
                 "每篇文章必须在 links 中出现且 article_id 必须来自输入。",
                 "不要输出规则解释，只输出结构化 JSON。",
+                "不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count、article_count。",
             ],
         },
         ensure_ascii=False,
@@ -138,15 +132,32 @@ def run_signal_cluster_agent(
             **fields,
         )
 
-    payload = anyio.run(partial(
-        run_json_agent,
-        prompt=prompt,
-        system_prompt=SYSTEM_PROMPT,
-        schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
-        max_turns=200,
-        max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
-        sdk_log=sdk_logger,
-    ))
+    try:
+        payload = anyio.run(partial(
+            run_json_agent,
+            prompt=prompt,
+            system_prompt=SYSTEM_PROMPT,
+            schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
+            max_turns=200,
+            max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
+            sdk_log=sdk_logger,
+        ))
+    except _StructuredOutputError as e:
+        # Schema 验证失败，尝试从原始文本中 fallback 提取 JSON
+        if log_event:
+            log_event("WARN", "signal_cluster_fallback_start", stage="agent_sdk", agent="signal_cluster")
+        fallback = extract_json_from_text(e.raw_text)
+        if isinstance(fallback, dict) and isinstance(fallback.get("clusters"), list):
+            payload = fallback
+            if log_event:
+                log_event("INFO", "signal_cluster_fallback_ok", stage="agent_sdk", agent="signal_cluster",
+                          cluster_count=len(payload.get("clusters", [])))
+        else:
+            if log_event:
+                log_event("WARN", "signal_cluster_fallback_failed", stage="agent_sdk", agent="signal_cluster",
+                          raw_preview=e.raw_text[:300])
+            raise
+
     return _validate_payload(payload, {str(article["id"]) for article in articles if article.get("id")})
 
 
@@ -157,12 +168,14 @@ def _validate_payload(payload: dict[str, Any], article_ids: set[str]) -> dict[st
         raise RuntimeError("invalid_signal_cluster_payload")
 
     cluster_keys = {str(cluster.get("cluster_key")) for cluster in clusters if cluster.get("cluster_key")}
+    # 过滤无效 link 而非丢弃全部结果
+    valid_links = []
     for link in links:
-        if str(link.get("article_id")) not in article_ids:
-            raise RuntimeError("signal_cluster_link_unknown_article")
-        if str(link.get("cluster_key")) not in cluster_keys:
-            raise RuntimeError("signal_cluster_link_unknown_cluster")
-    return {"clusters": clusters, "links": links}
+        aid = str(link.get("article_id", ""))
+        ckey = str(link.get("cluster_key", ""))
+        if aid and aid in article_ids and ckey and ckey in cluster_keys:
+            valid_links.append(link)
+    return {"clusters": clusters, "links": valid_links}
 
 
 def _budget(name: str, default: float) -> float | None:

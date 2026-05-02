@@ -8,7 +8,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
 
 
 PREDICTION_REVIEW_OUTPUT_SCHEMA = {
@@ -73,28 +73,41 @@ def run_prediction_review_agent(
             **fields,
         )
 
-    payload = anyio.run(partial(
-        run_json_agent,
-        prompt=prompt,
-        system_prompt=SYSTEM_PROMPT,
-        schema=PREDICTION_REVIEW_OUTPUT_SCHEMA,
-        max_turns=20,
-        max_budget_usd=_budget("PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD", 10.0),
-        sdk_log=sdk_logger,
-    ))
+    try:
+        payload = anyio.run(partial(
+            run_json_agent,
+            prompt=prompt,
+            system_prompt=SYSTEM_PROMPT,
+            schema=PREDICTION_REVIEW_OUTPUT_SCHEMA,
+            max_turns=20,
+            max_budget_usd=_budget("PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD", 10.0),
+            sdk_log=sdk_logger,
+        ))
+    except _StructuredOutputError as e:
+        if log_event:
+            log_event("WARN", "prediction_review_fallback_start", stage="agent_sdk", agent="prediction_review")
+        fallback = extract_json_from_text(e.raw_text)
+        if isinstance(fallback, dict) and "score" in fallback:
+            payload = fallback
+            if log_event:
+                log_event("INFO", "prediction_review_fallback_ok", stage="agent_sdk", agent="prediction_review")
+        else:
+            if log_event:
+                log_event("WARN", "prediction_review_fallback_failed", stage="agent_sdk", agent="prediction_review",
+                          raw_preview=e.raw_text[:300])
+            raise
+
     return _validate_payload(payload, prediction, {str(article["id"]) for article in articles if article.get("id")})
 
 
 def _validate_payload(payload: dict[str, Any], prediction: dict[str, Any], article_ids: set[str]) -> dict[str, Any]:
     if payload.get("prediction_id") != prediction.get("id"):
         payload["prediction_id"] = prediction.get("id")
+    # 过滤无效 article id 而非丢弃全部
     for key in ("supporting_articles", "contradicting_articles"):
         values = payload.get(key)
-        if not isinstance(values, list):
-            raise RuntimeError("invalid_prediction_review_payload")
-        unknown = [value for value in values if str(value) not in article_ids]
-        if unknown:
-            raise RuntimeError("prediction_review_unknown_article")
+        if isinstance(values, list):
+            payload[key] = [v for v in values if str(v) in article_ids]
     return payload
 
 

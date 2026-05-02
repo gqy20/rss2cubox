@@ -65,6 +65,13 @@ def _stage_due(stage: str, interval_hours: int) -> bool:
     return age_seconds >= interval_hours * 3600
 
 
+def _force_stage_due(stage: str) -> None:
+    """删除 stage 的 marker 文件，使其在下次检查时强制触发。"""
+    marker = PREDICTION_LOOP_STATE_DIR / f"{stage}.last_run"
+    if marker.exists():
+        marker.unlink()
+
+
 def _mark_stage_done(stage: str) -> None:
     PREDICTION_LOOP_STATE_DIR.mkdir(parents=True, exist_ok=True)
     marker = PREDICTION_LOOP_STATE_DIR / f"{stage}.last_run"
@@ -106,6 +113,9 @@ def main() -> None:
                 cluster_ids = save_signal_clusters(cluster_result)
                 stats["clusters"] = len(cluster_result.get("clusters", []))
                 stats["links"] = len(cluster_result.get("links", []))
+                # cluster 产出了新结果 → 级联触发 generate（删除 marker 使其立即 due）
+                if cluster_ids:
+                    _force_stage_due("generate")
             else:
                 cluster_ids = {}
             _mark_stage_done("cluster")

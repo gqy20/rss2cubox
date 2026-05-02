@@ -488,59 +488,59 @@ class TestGlobalAgentIntegration:
 
 
 class TestExtractJsonFromText:
-    """Tests for _extract_json_from_text fallback JSON extraction."""
+    """Tests for extract_json_from_text fallback JSON extraction."""
 
     def test_pure_json(self) -> None:
-        from rss2cubox.global_agent import _extract_json_from_text
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
 
         text = '{"trends": [{"text": "test"}], "weak_signals": [], "daily_advices": []}'
-        result = _extract_json_from_text(text)
+        result = extract_json_from_text(text)
         assert result is not None
         assert result["trends"][0]["text"] == "test"
 
     def test_markdown_code_block(self) -> None:
-        from rss2cubox.global_agent import _extract_json_from_text
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
 
         text = '分析结果如下：\n\n```json\n{"trends": [{"text": "hello"}]}\n```\n\n以上是结论。'
-        result = _extract_json_from_text(text)
+        result = extract_json_from_text(text)
         assert result is not None
         assert result["trends"][0]["text"] == "hello"
 
     def test_code_block_without_json_label(self) -> None:
-        from rss2cubox.global_agent import _extract_json_from_text
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
 
         text = '```\n{"key": "value"}\n```'
-        result = _extract_json_from_text(text)
+        result = extract_json_from_text(text)
         assert result is not None
         assert result["key"] == "value"
 
     def test_prefixed_text_with_brace_extraction(self) -> None:
-        from rss2cubox.global_agent import _extract_json_from_text
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
 
         text = '这是分析报告：\n{"trends": [{"text": "趋势1"}], "weak_signals": []}\n结束。'
-        result = _extract_json_from_text(text)
+        result = extract_json_from_text(text)
         assert result is not None
         assert len(result["trends"]) == 1
 
     def test_empty_input(self) -> None:
-        from rss2cubox.global_agent import _extract_json_from_text
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
 
-        assert _extract_json_from_text("") is None
-        assert _extract_json_from_text(None) is None  # type: ignore[arg-type]
-        assert _extract_json_from_text("   ") is None
-        assert _extract_json_from_text("no json here") is None
+        assert extract_json_from_text("") is None
+        assert extract_json_from_text(None) is None  # type: ignore[arg-type]
+        assert extract_json_from_text("   ") is None
+        assert extract_json_from_text("no json here") is None
 
     def test_nested_objects_preserved(self) -> None:
-        from rss2cubox.global_agent import _extract_json_from_text
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
 
         text = '{"trends": [{"text": "t", "source_urls": ["https://a.com"], "source_titles": ["A"]}]}'
-        result = _extract_json_from_text(text)
+        result = extract_json_from_text(text)
         assert result is not None
         assert result["trends"][0]["source_urls"] == ["https://a.com"]
         assert result["trends"][0]["source_titles"] == ["A"]
 
     def test_realistic_model_output_format(self) -> None:
-        from rss2cubox.global_agent import _extract_json_from_text
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
 
         # 模拟 glm-5v-turbo 的实际输出格式：前缀文字 + json 代码块
         text = """基于已读取的情报，输出分析报告：
@@ -562,7 +562,7 @@ class TestExtractJsonFromText:
 ```
 
 以上为本次分析结果。"""
-        result = _extract_json_from_text(text)
+        result = extract_json_from_text(text)
         assert result is not None
         assert result["trends"][0]["text"] == "中端模型能力跃升"
         assert result["confidence_level"] == "high"

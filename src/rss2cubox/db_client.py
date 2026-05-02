@@ -1031,6 +1031,13 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
         return {}
 
     cluster_ids: dict[str, int] = {}
+    # 预计算每个 cluster_key 的 link 数量（用于 article_count）
+    link_counts: dict[str, int] = {}
+    for link in cluster_result.get("links", []):
+        ck = str(link.get("cluster_key") or "")
+        if ck:
+            link_counts[ck] = link_counts.get(ck, 0) + 1
+
     try:
         with psycopg.connect(db_url) as conn:
             cur = conn.cursor()
@@ -1039,6 +1046,7 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
             for cluster in cluster_result.get("clusters", []):
                 cluster_key = str(cluster.get("cluster_key") or "").strip()
                 normalized_label = str(cluster.get("normalized_label") or cluster_key.split(":", 1)[-1]).strip()
+                article_count = int(cluster.get("article_count") or link_counts.get(cluster_key, 0))
                 cur.execute(
                     """
                     INSERT INTO signal_clusters (
@@ -1079,7 +1087,7 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
                         "watch_keywords": json.dumps(_string_list(cluster.get("watch_keywords"), 20), ensure_ascii=False),
                         "first_seen_at": cluster.get("first_seen_at"),
                         "last_seen_at": cluster.get("last_seen_at"),
-                        "article_count": int(cluster.get("article_count") or 0),
+                        "article_count": article_count,
                         "source_count": int(cluster.get("source_count") or 0),
                         "avg_importance": cluster.get("avg_importance"),
                         "avg_evidence_strength": cluster.get("avg_evidence_strength"),
