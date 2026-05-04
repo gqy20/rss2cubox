@@ -188,7 +188,7 @@ const FeedCard = React.memo(function FeedCard({
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6, marginTop: 6 }}>
               {evidenceStrength && <span className="hashtag" style={{ fontSize: 10 }}>证据 {evidenceStrength}</span>}
               {noveltyScore && <span className="hashtag" style={{ fontSize: 10 }}>新颖 {noveltyScore}</span>}
-              {confidence && <span className="hashtag" style={{ fontSize: 10 }}>置信 {confidence}</span>}
+              {confidence && confidence >= 2 && <span className="hashtag" style={{ fontSize: 10 }}>置信 {confidence}</span>}
               {impactHorizonLabel && <span className="hashtag" style={{ fontSize: 10 }}>{impactHorizonLabel}</span>}
             </div>
           )}

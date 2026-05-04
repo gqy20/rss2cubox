@@ -378,7 +378,7 @@ export default function PredictionsPage() {
                             <MetricDots value={cluster.avg_importance} />
                           </div>
                         )}
-                        {cluster.avg_confidence != null && (
+                        {cluster.avg_confidence != null && cluster.avg_confidence >= 2 && (
                           <div className="pred-metric">
                             <span className="pred-metric-label">置信度</span>
                             <MetricDots value={cluster.avg_confidence} blue />
@@ -475,7 +475,7 @@ export default function PredictionsPage() {
                             <span className="pred-badge">{PREDICTION_TYPE_MAP[pred.prediction_type] || `类型${pred.prediction_type}`}</span>
                           )}
                           <span className="pred-badge pred-badge-muted">{pred.status}</span>
-                          {pred.confidence != null && (
+                          {pred.confidence != null && pred.confidence >= 2 && (
                             <span className="pred-badge pred-badge-muted">置信度 {pred.confidence}/5</span>
                           )}
                           {pred.cluster_label && (
