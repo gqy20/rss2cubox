@@ -492,6 +492,7 @@ def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
         lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
     )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
+    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
@@ -631,6 +632,7 @@ def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypa
         lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
     )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
+    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
@@ -691,6 +693,7 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
         lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
     )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
+    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
@@ -749,6 +752,7 @@ def test_main_skips_articles_already_in_ic(tmp_path: Path, monkeypatch: pytest.M
         lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
     )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
+    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
@@ -856,6 +860,7 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
         lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
     )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
+    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()

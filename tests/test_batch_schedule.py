@@ -87,6 +87,7 @@ def _mock_runner_main(monkeypatch: pytest.MonkeyPatch, feeds_file: Path, max_ite
         lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
     )
     monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
+    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
     monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     return posted_batches
