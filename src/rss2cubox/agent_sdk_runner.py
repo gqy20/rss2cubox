@@ -58,7 +58,7 @@ async def run_json_agent(
     max_turns: int = 20,
     max_budget_usd: float | None = None,
     cwd: Path | None = None,
-    setting_sources: list[str] | None = None,
+    setting_sources: list[str] | None = ["project"],
     stderr: Callable[[str], None] | None = None,
     env: dict[str, str] | None = None,
     sdk_log: Callable[..., None] | None = None,
