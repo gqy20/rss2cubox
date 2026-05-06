@@ -24,6 +24,8 @@ from rss2cubox.webpage_reader import read_webpage_text
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 GLOBAL_AGENT_MIN_CANDIDATES = max(1, int(os.getenv("GLOBAL_AGENT_MIN_CANDIDATES", "3")))
+GLOBAL_AGENT_BATCH_SIZE = max(1, int(os.getenv("GLOBAL_AGENT_BATCH_SIZE", "200")))
+GLOBAL_AGENT_MAX_CONCURRENT = max(1, int(os.getenv("GLOBAL_AGENT_MAX_CONCURRENT", "5")))
 _global_agent_max_budget_raw = os.getenv("GLOBAL_AGENT_MAX_BUDGET_USD", "50.0").strip()
 try:
     GLOBAL_AGENT_MAX_BUDGET_USD = float(_global_agent_max_budget_raw) if _global_agent_max_budget_raw else None
@@ -376,7 +378,7 @@ def run_global_analysis(
 ) -> None:
     """
     从本次 pipeline 的分析结果中筛出可用于全局分析的条目，
-    驱动 Claude Agent 进行二次深度分析并写入 Neon DB。
+    按 GLOBAL_AGENT_BATCH_SIZE 分批，并发驱动 Claude Agent 进行二次深度分析并写入 DB。
     """
     import anyio
 
@@ -416,10 +418,13 @@ def run_global_analysis(
         print("[global_agent] 无可用情报，跳过全局分析", flush=True)
         return
 
-    # 保持主流程顺序，取前 200 条
-    high_value = high_value[:200]
+    # 按批大小切分
+    batches: list[list[dict]] = [
+        high_value[i : i + GLOBAL_AGENT_BATCH_SIZE]
+        for i in range(0, len(high_value), GLOBAL_AGENT_BATCH_SIZE)
+    ]
 
-    # 候选数量不足最低阈值时跳过（避免低源数量导致高空白率）
+    # 候选总数不足最低阈值时跳过
     if len(high_value) < GLOBAL_AGENT_MIN_CANDIDATES:
         print(
             f"[global_agent] 候选情报 {len(high_value)} 条不足最低阈值 {GLOBAL_AGENT_MIN_CANDIDATES}，跳过全局分析",
@@ -427,7 +432,7 @@ def run_global_analysis(
         )
         return
 
-    # 从数据库读取所有历史 signals
+    # 从数据库读取所有历史 signals（只加载一次，所有批次共享）
     history_signals = {"trends": [], "weak_signals": [], "daily_advices": []}
     try:
         from rss2cubox.db_client import get_all_global_insights
@@ -440,46 +445,69 @@ def run_global_analysis(
     except Exception as e:
         print(f"[global_agent] 加载历史 signals 失败: {e}", flush=True)
 
-    print(f"[global_agent] 启动全局 Agent 分析，共 {len(high_value)} 条候选情报...", flush=True)
+    total_batches = len(batches)
+    print(f"[global_agent] 启动全局 Agent 分析：{len(high_value)} 条 → {total_batches} 批（每批≤{GLOBAL_AGENT_BATCH_SIZE}，并发{GLOBAL_AGENT_MAX_CONCURRENT}）...", flush=True)
 
-    if log_event is None:
-        result = anyio.run(_run_agent, high_value, history_signals)
-    else:
-        result = anyio.run(_run_agent, high_value, history_signals, log_event)
+    async def _run_batch(batch_idx: int, batch_items: list[dict]) -> dict[str, Any] | None:
+        """执行单批分析并写入 DB。"""
+        batch_result = await _run_agent(batch_items, history_signals, log_event)
+        if not batch_result:
+            print(f"[global_agent] 批次 {batch_idx + 1}/{total_batches} Agent 未返回有效报告", flush=True)
+            return None
 
-    if not result:
-        print("[global_agent] Agent 未返回有效报告", flush=True)
-        return
+        total_items = (
+            len(batch_result.get("trends", []))
+            + len(batch_result.get("weak_signals", []))
+            + len(batch_result.get("daily_advices", []))
+        )
+        if total_items == 0:
+            print(f"[global_agent] 批次 {batch_idx + 1}/{total_batches} 返回空结果，跳过写入", flush=True)
+            return None
 
-    total_items = len(result.get("trends", [])) + len(result.get("weak_signals", [])) + len(result.get("daily_advices", []))
-    if total_items == 0:
-        print(f"[global_agent] Agent 返回空结果（trends/weak_signals/daily_advices 均为空），跳过写入，source_count={len(high_value)}", flush=True)
-        return
+        payload = {
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "source_count": len(batch_items),
+            "trends": batch_result.get("trends", []),
+            "weak_signals": batch_result.get("weak_signals", []),
+            "daily_advices": batch_result.get("daily_advices", []),
+            "key_topics": batch_result.get("key_topics", []),
+            "confidence_level": batch_result.get("confidence_level", "medium"),
+        }
 
-    payload = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "source_count": len(high_value),
-        "trends": result.get("trends", []),
-        "weak_signals": result.get("weak_signals", []),
-        "daily_advices": result.get("daily_advices", []),
-        "key_topics": result.get("key_topics", []),
-        "confidence_level": result.get("confidence_level", "medium"),
-    }
-    # 写入本地 PostgreSQL
-    try:
-        from rss2cubox.db_client import save_global_insights as save_local_insights
-        save_local_insights(payload)
-        print("[global_agent] 全局分析完成，insights 已写入本地 DB", flush=True)
-    except Exception as e:
-        print(f"[global_agent] 本地 DB 写入失败: {e}", flush=True)
+        # 写入本地 PostgreSQL
+        try:
+            from rss2cubox.db_client import save_global_insights as save_local_insights
+            save_local_insights(payload)
+            print(f"[global_agent] 批次 {batch_idx + 1}/{total_batches} 完成（{len(batch_items)}条 → {total_items}条信号），已写入本地 DB", flush=True)
+        except Exception as e:
+            print(f"[global_agent] 批次 {batch_idx + 1}/{total_batches} 本地 DB 写入失败: {e}", flush=True)
 
-    # 可选写入 Neon DB（需同时配置 NEON_DATABASE_URL 和 NEON_PUSH_ENABLED=true）
-    if os.getenv("NEON_PUSH_ENABLED", "false").strip().lower() in ("1", "true", "yes"):
-        neon_url = os.getenv("NEON_DATABASE_URL", "").strip()
-        if neon_url:
-            try:
-                from rss2cubox.db import save_global_insights
-                save_global_insights(neon_url, payload)
-                print("[global_agent] insights 已写入 Neon DB", flush=True)
-            except Exception as e:
-                print(f"[global_agent] Neon DB 写入失败: {e}", flush=True)
+        # 可选写入 Neon DB
+        if os.getenv("NEON_PUSH_ENABLED", "false").strip().lower() in ("1", "true", "yes"):
+            neon_url = os.getenv("NEON_DATABASE_URL", "").strip()
+            if neon_url:
+                try:
+                    from rss2cubox.db import save_global_insights
+                    save_global_insights(neon_url, payload)
+                except Exception as e:
+                    print(f"[global_agent] 批次 {batch_idx + 1}/{total_batches} Neon DB 写入失败: {e}", flush=True)
+
+        return payload
+
+    async def _run_all_batches() -> None:
+        """用信号量控制并发度，并行执行所有批次。"""
+        semaphore = anyio.Semaphore(GLOBAL_AGENT_MAX_CONCURRENT)
+        results: list[dict[str, Any] | None] = [None] * total_batches
+
+        async def _limited_run(idx: int, items: list[dict]) -> None:
+            async with semaphore:
+                results[idx] = await _run_batch(idx, items)
+
+        async with anyio.create_task_group() as tg:
+            for idx, batch_items in enumerate(batches):
+                tg.start_soon(_limited_run, idx, batch_items)
+
+        succeeded = sum(1 for r in results if r is not None)
+        print(f"[global_agent] 全局分析完成：{succeeded}/{total_batches} 批成功", flush=True)
+
+    anyio.run(_run_all_batches)

@@ -68,7 +68,6 @@ MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "300"))
 
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
-AI_MAX_CANDIDATES = sync_pipeline.env_int("AI_MAX_CANDIDATES", 300)
 FEED_CONNECT_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_CONNECT_TIMEOUT_SECONDS", 5.0)
 FEED_READ_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_READ_TIMEOUT_SECONDS", 30.0)
 FEED_FETCH_CONCURRENCY = max(1, sync_pipeline.env_int("FEED_FETCH_CONCURRENCY", 10))
@@ -133,7 +132,7 @@ def main() -> None:
         max_items_per_run=MAX_ITEMS_PER_RUN,
         ai_enabled=enabled,
         ai_model=ANTHROPIC_MODEL,
-        ai_max_candidates=AI_MAX_CANDIDATES,
+        ai_max_candidates=MAX_ITEMS_PER_RUN,
         feed_connect_timeout_seconds=FEED_CONNECT_TIMEOUT_SECONDS,
         feed_read_timeout_seconds=FEED_READ_TIMEOUT_SECONDS,
         feed_fetch_concurrency=FEED_FETCH_CONCURRENCY,
@@ -213,7 +212,7 @@ def main() -> None:
     stats["run_deduped"] += run_deduped
     stats["candidates"] = len(candidates)
 
-    candidates_for_run = candidates[: max(1, AI_MAX_CANDIDATES)]
+    candidates_for_run = candidates[: max(1, MAX_ITEMS_PER_RUN)]
     stats["candidates_selected"] = len(candidates_for_run)
     if len(candidates_for_run) < len(candidates):
         log_event(
