@@ -25,7 +25,7 @@ GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in 
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 GLOBAL_AGENT_MIN_CANDIDATES = max(1, int(os.getenv("GLOBAL_AGENT_MIN_CANDIDATES", "3")))
 GLOBAL_AGENT_BATCH_SIZE = max(1, int(os.getenv("GLOBAL_AGENT_BATCH_SIZE", "200")))
-GLOBAL_AGENT_MAX_CONCURRENT = max(1, int(os.getenv("GLOBAL_AGENT_MAX_CONCURRENT", "5")))
+GLOBAL_AGENT_MAX_CONCURRENT = max(1, int(os.getenv("GLOBAL_AGENT_MAX_CONCURRENT", "10")))
 _global_agent_max_budget_raw = os.getenv("GLOBAL_AGENT_MAX_BUDGET_USD", "50.0").strip()
 try:
     GLOBAL_AGENT_MAX_BUDGET_USD = float(_global_agent_max_budget_raw) if _global_agent_max_budget_raw else None

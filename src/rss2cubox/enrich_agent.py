@@ -6,7 +6,7 @@
 
 设计原则：
 - 只精读通过粗筛的条目，不处理所有候选，控制时间和成本
-- 有限并发（ENRICH_MAX_WORKERS），默认 5
+- 有限并发（ENRICH_MAX_WORKERS），默认 10
 - 使用 output_format 让 CLI 自动验证 JSON Schema（内置 5 次重试）
 - 单条失败静默回退到原始粗筛结果
 - 可通过 ENRICH_AGENT_ENABLED=false 关闭
@@ -29,7 +29,7 @@ from rss2cubox.webpage_reader import read_webpage_text
 load_dotenv(override=True)
 
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
-ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "5")))
+ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
 ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "90")))
 ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
 JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")

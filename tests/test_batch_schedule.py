@@ -338,8 +338,8 @@ def test_enrich_max_workers_default_is_5() -> None:
     # 直接检查：os.getenv 的默认参数
     from rss2cubox import enrich_agent
     src = inspect.getsource(enrich_agent)
-    assert 'os.getenv("ENRICH_MAX_WORKERS", "5")' in src or 'os.getenv("ENRICH_MAX_WORKERS", 5)' in src or '"5"' in src.split('ENRICH_MAX_WORKERS')[1][:20], (
-        "ENRICH_MAX_WORKERS 的 os.getenv 默认值应为 '5'"
+    assert 'os.getenv("ENRICH_MAX_WORKERS", "10")' in src or 'os.getenv("ENRICH_MAX_WORKERS", 10)' in src or '"10"' in src.split('ENRICH_MAX_WORKERS')[1][:20], (
+        "ENRICH_MAX_WORKERS 的 os.getenv 默认值应为 '10'"
     )
 
 
