@@ -6,7 +6,7 @@ complementing the remote IC API. Useful for local development and debugging.
 import json
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 import psycopg
@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS articles (
     url                 TEXT,
     pic_url             TEXT,
     description         TEXT,
-    publish_time        TIMESTAMP,
+    publish_time        TIMESTAMPTZ,
     tags                JSONB DEFAULT '[]',
     importance_score    INTEGER DEFAULT 3,
     reason              TEXT,
@@ -43,8 +43,8 @@ CREATE TABLE IF NOT EXISTS articles (
     prediction          TEXT,
     disconfirming_evidence TEXT,
     enrich_meta         JSONB DEFAULT '{}',
-    created_at          TIMESTAMP DEFAULT NOW(),
-    updated_at          TIMESTAMP DEFAULT NOW()
+    created_at          TIMESTAMPTZ DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE articles
@@ -513,13 +513,14 @@ def _parse_json_value(value: Any, fallback: Any) -> Any:
 
 
 def _parse_publish_time(value: Any) -> datetime | None:
-    """Parse publish_time to datetime object."""
+    """Parse publish_time to timezone-aware UTC datetime."""
     if value is None:
         return None
     if isinstance(value, datetime):
+        if value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
         return value
     if isinstance(value, str):
-        # Try common formats
         formats = [
             "%Y-%m-%d %H:%M:%S",
             "%Y-%m-%dT%H:%M:%S",
@@ -527,7 +528,7 @@ def _parse_publish_time(value: Any) -> datetime | None:
         ]
         for fmt in formats:
             try:
-                return datetime.strptime(value, fmt)
+                return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
             except ValueError:
                 continue
     return None

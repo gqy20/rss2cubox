@@ -37,22 +37,23 @@ export async function GET() {
       `)
       const analyzed = parseInt(analyzedResult.rows[0]?.count || '0', 10)
 
-      // Use the same display-time semantics as the signal stream:
-      // publish_time when present, otherwise created_at.
+      // Use Beijing timezone for all date comparisons.
+      // Data is stored in UTC; convert to Asia/Shanghai before extracting date.
+      const TZ_CAST = "(COALESCE(publish_time, created_at) AT TIME ZONE 'Asia/Shanghai')"
       const todayResult = await client.query(`
         SELECT
-          COUNT(*) FILTER (WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE) as today,
-          COUNT(*) FILTER (WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE - INTERVAL '1 day') as yesterday,
+          COUNT(*) FILTER (WHERE ${TZ_CAST}::date = CURRENT_DATE) as today,
+          COUNT(*) FILTER (WHERE ${TZ_CAST}::date = CURRENT_DATE - INTERVAL '1 day') as yesterday,
           COUNT(*) FILTER (
-            WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE
+            WHERE ${TZ_CAST}::date = CURRENT_DATE
               AND ((description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != ''))
           ) as analyzed_today,
           COUNT(*) FILTER (
-            WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE - INTERVAL '1 day'
+            WHERE ${TZ_CAST}::date = CURRENT_DATE - INTERVAL '1 day'
               AND ((description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != ''))
           ) as analyzed_yesterday,
-          COUNT(DISTINCT source_feed_id) FILTER (WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE AND source_feed_id IS NOT NULL AND source_feed_id != '') as sources_today,
-          COUNT(DISTINCT source_feed_id) FILTER (WHERE DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE - INTERVAL '1 day' AND source_feed_id IS NOT NULL AND source_feed_id != '') as sources_yesterday
+          COUNT(DISTINCT source_feed_id) FILTER (WHERE ${TZ_CAST}::date = CURRENT_DATE AND source_feed_id IS NOT NULL AND source_feed_id != '') as sources_today,
+          COUNT(DISTINCT source_feed_id) FILTER (WHERE ${TZ_CAST}::date = CURRENT_DATE - INTERVAL '1 day' AND source_feed_id IS NOT NULL AND source_feed_id != '') as sources_yesterday
         FROM articles
       `)
       const today = parseInt(todayResult.rows[0]?.today || '0', 10)
@@ -94,12 +95,12 @@ export async function GET() {
         ),
         daily AS (
           SELECT
-            DATE(COALESCE(publish_time, created_at)) as day,
+            ${TZ_CAST}::date as day,
             COUNT(*) as total,
             SUM(CASE WHEN (description IS NOT NULL AND description != '') OR (hidden_signal IS NOT NULL AND hidden_signal != '') OR (actionable IS NOT NULL AND actionable != '') OR (reason IS NOT NULL AND reason != '') THEN 1 ELSE 0 END) as analyzed
           FROM articles
-          WHERE COALESCE(publish_time, created_at) >= (CURRENT_DATE - INTERVAL '29 days')
-          GROUP BY DATE(COALESCE(publish_time, created_at))
+          WHERE COALESCE(publish_time, created_at) >= NOW() - INTERVAL '29 days'
+          GROUP BY ${TZ_CAST}::date
         )
         SELECT
           days.day,
@@ -116,9 +117,9 @@ export async function GET() {
       }))
 
       const dailyTotalsResult = await client.query(`
-        SELECT to_char(DATE(COALESCE(publish_time, created_at)), 'YYYY-MM-DD') as day, COUNT(*) as total
+        SELECT to_char(${TZ_CAST}::date, 'YYYY-MM-DD') as day, COUNT(*) as total
         FROM articles
-        GROUP BY DATE(COALESCE(publish_time, created_at))
+        GROUP BY ${TZ_CAST}::date
         ORDER BY day DESC
       `)
       const dailyTotals = Object.fromEntries(

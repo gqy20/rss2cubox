@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
 
       if (date) {
         baseParams.push(date)
-        baseWhereParts.push(`COALESCE(publish_time, created_at) >= $${baseParams.length}::date AND COALESCE(publish_time, created_at) < $${baseParams.length}::date + INTERVAL '1 day'`)
+        baseWhereParts.push(`(COALESCE(publish_time, created_at) AT TIME ZONE 'Asia/Shanghai')::date = $${baseParams.length}::date`)
       }
 
       const searchWhere = buildArticleSearchWhere(search, baseParams.length + 1)
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
         queryParams.push(cursorTime, cursorId)
         const timeParam = queryParams.length - 1
         const idParam = queryParams.length
-        queryWhereParts.push(`(COALESCE(publish_time, created_at) < $${timeParam}::timestamp OR (COALESCE(publish_time, created_at) = $${timeParam}::timestamp AND id < $${idParam}))`)
+        queryWhereParts.push(`(COALESCE(publish_time, created_at) < $${timeParam}::timestamptz OR (COALESCE(publish_time, created_at) = $${timeParam}::timestamptz AND id < $${idParam}))`)
       }
 
       const whereSql = queryWhereParts.length ? `WHERE ${queryWhereParts.join(' AND ')}` : ''

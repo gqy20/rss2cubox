@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         const whereParams: string[] = []
         if (date) {
           whereParams.push(date)
-          whereParts.push(`COALESCE(publish_time, created_at) >= $${whereParams.length}::date AND COALESCE(publish_time, created_at) < $${whereParams.length}::date + INTERVAL '1 day'`)
+          whereParts.push(`(COALESCE(publish_time, created_at) AT TIME ZONE 'Asia/Shanghai')::date = $${whereParams.length}::date`)
         }
 
         const searchWhere = buildArticleSearchWhere(search, whereParams.length + 1)
