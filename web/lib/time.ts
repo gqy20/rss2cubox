@@ -1,7 +1,7 @@
 export const BUSINESS_TZ = 'Asia/Shanghai'
 
 const BUSINESS_LOCAL_DATETIME_RE =
-  /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2}))?)?$/
+  /^(\d{4})-(\d{2})-(\d{2})(?:[ T](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?)?$/
 
 export function parseBusinessDate(value: string | Date): Date {
   if (value instanceof Date) return value
@@ -9,11 +9,12 @@ export function parseBusinessDate(value: string | Date): Date {
   const match = text.match(BUSINESS_LOCAL_DATETIME_RE)
   if (!match) return new Date(text)
   const [, year, month, day, hour = '00', minute = '00', second = '00'] = match
+  // 数据库存储为 timestamptz+00 (UTC)，无时区后缀的输入视为 UTC
   const utcMillis = Date.UTC(
     Number(year),
     Number(month) - 1,
     Number(day),
-    Number(hour) - 8,
+    Number(hour),
     Number(minute),
     Number(second),
   )
