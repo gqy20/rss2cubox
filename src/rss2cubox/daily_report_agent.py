@@ -31,6 +31,8 @@ try:
 except ValueError:
     DAILY_REPORT_MAX_BUDGET_USD = 0.15
 
+DAILY_REPORT_ENABLE_SKILLS = os.getenv("DAILY_REPORT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
+
 _SIGNAL_ITEM_SCHEMA = {
     "type": "object",
     "properties": {
@@ -385,6 +387,8 @@ async def _run_agent(
         "Grep",
         "Glob",
     ]
+    if DAILY_REPORT_ENABLE_SKILLS:
+        allowed_tools.append("Skill")
 
     summary = day_data.get("today_articles_summary", {})
     cluster_snap = day_data.get("cluster_snapshot", {})
@@ -408,6 +412,22 @@ async def _run_agent(
         f"请先 Read 数据文件了解全貌，再选择性 read_webpage 深入核实，最后输出结构化 JSON。"
     )
 
+    def _make_stderr_logger(prefix: str, limit: int = 80) -> tuple[list[str], Any]:
+        lines: list[str] = []
+
+        def _log(line: str) -> None:
+            text = str(line).strip()
+            if not text:
+                return
+            lines.append(text)
+            if len(lines) > limit:
+                del lines[: len(lines) - limit]
+            print(f"[{prefix}] cli_stderr: {text}", flush=True)
+
+        return lines, _log
+
+    stderr_lines, stderr_logger = _make_stderr_logger("daily_report")
+
     def sdk_logger(event: str, **fields: Any) -> None:
         if log_event is None:
             return
@@ -424,6 +444,8 @@ async def _run_agent(
             max_turns=80,
             max_budget_usd=DAILY_REPORT_MAX_BUDGET_USD,
             cwd=Path.cwd(),
+            setting_sources=["project"] if DAILY_REPORT_ENABLE_SKILLS else None,
+            stderr=stderr_logger,
             sdk_log=sdk_logger,
         )
         result = {
