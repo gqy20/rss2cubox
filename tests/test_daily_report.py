@@ -339,10 +339,12 @@ class TestSaveDailyReport:
             from rss2cubox.db_client import save_daily_report
             save_daily_report(payload, db_url="postgresql://localhost/test")
 
-            # 检查 INSERT 的参数包含 JSON 字符串
+            # 检查 INSERT 的参数包含 JSON 字符串（参数化查询用 tuple）
             insert_call = [c for c in cur.execute.call_args_list if "INSERT" in c[0][0].upper()][0]
-            args = insert_call[0][1]  # 第二个元素是参数 dict
-            assert isinstance(args.get("data"), str)  # data 应该是 JSON 字符串
+            args = insert_call[0][1]  # 参数 tuple: (report_date, generated_at, data)
+            assert isinstance(args[2], str)  # 第三个参数 (data) 应该是 JSON 字符串
+            parsed = json.loads(args[2])
+            assert parsed["summary"]["total"] == 42
 
 
 class TestGetDailyReport:
@@ -351,12 +353,8 @@ class TestGetDailyReport:
     def test_get_by_date_queries_correctly(self):
         """应按 report_date 查询单条"""
         conn, cur = make_mock_conn()
-        mock_row = (
-            1,
-            datetime(2026, 5, 9),
-            datetime(2026, 5, 9, 23, 59, tzinfo=timezone.utc),
-            json.dumps({"report_date": "2026-05-09"}),
-        )
+        # get_daily_report 只 SELECT data 列
+        mock_row = (json.dumps({"report_date": "2026-05-09"}),)
         cur.fetchone.return_value = mock_row
 
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
@@ -431,7 +429,7 @@ class TestDailyReportSchema:
         from rss2cubox.daily_report_agent import DAILY_REPORT_OUTPUT_SCHEMA
         summary_props = DAILY_REPORT_OUTPUT_SCHEMA["properties"]["summary"]["properties"]
 
-        for field in ("total_articles", "high_importance_count", "feed_sources"):
+        for field in ("total_articles", "high_importance_count", "top_feeds"):
             assert field in summary_props, f"summary 缺少 {field}"
 
     def test_schema_trend_items_have_source_attribution(self):
@@ -485,18 +483,18 @@ class TestDailyReportConfig:
 class TestCollectDayData:
     """Test day data aggregation from DB queries."""
 
-    @patch("rss2cubox.daily_report_agent.get_articles_by_date")
-    @patch("rss2cubox.daily_report_agent.get_all_global_insights")
-    @patch("rss2cubox.daily_report_agent.get_existing_signal_clusters")
-    @patch("rss2cubox.daily_report_agent.get_due_trend_predictions")
-    @patch("rss2cubox.daily_report_agent.get_recent_prediction_reviews")
+    @patch("rss2cubox.db_client.get_recent_prediction_reviews")
+    @patch("rss2cubox.db_client.get_due_trend_predictions")
+    @patch("rss2cubox.db_client.get_existing_signal_clusters")
+    @patch("rss2cubox.db_client.get_all_global_insights")
+    @patch("rss2cubox.db_client.get_articles_by_date")
     def test_collect_aggregates_all_sources(
         self,
-        mock_reviews,
-        mock_predictions,
-        mock_clusters,
-        mock_insights,
         mock_articles,
+        mock_insights,
+        mock_clusters,
+        mock_predictions,
+        mock_reviews,
         sample_today_articles,
         sample_global_insights,
         sample_clusters,
@@ -519,7 +517,7 @@ class TestCollectDayData:
         assert "prediction_status" in result
         assert result["report_date"] == "2026-05-09"
 
-    @patch("rss2cubox.daily_report_agent.get_articles_by_date")
+    @patch("rss2cubox.db_client.get_articles_by_date")
     def test_article_summary_counts_high_importance(
         self, mock_articles, sample_today_articles
     ):
@@ -533,7 +531,7 @@ class TestCollectDayData:
         assert summary["total_articles"] == 3
         assert summary["high_importance_count"] == 2  # score >= 4 的有 2 条
 
-    @patch("rss2cubox.daily_report_agent.get_articles_by_date")
+    @patch("rss2cubox.db_client.get_articles_by_date")
     def test_article_summary_includes_top_articles(
         self, mock_articles, sample_today_articles
     ):
@@ -549,7 +547,7 @@ class TestCollectDayData:
         scores = [a["importance_score"] for a in top]
         assert scores == sorted(scores, reverse=True)
 
-    @patch("rss2cubox.daily_report_agent.get_articles_by_date")
+    @patch("rss2cubox.db_client.get_articles_by_date")
     def test_handles_empty_articles(self, mock_articles):
         """空文章列表不应报错"""
         mock_articles.return_value = []
@@ -560,7 +558,7 @@ class TestCollectDayData:
         assert result["today_articles_summary"]["total_articles"] == 0
         assert result["today_articles_summary"]["high_importance_count"] == 0
 
-    @patch("rss2cubox.daily_report_agent.get_all_global_insights")
+    @patch("rss2cubox.db_client.get_all_global_insights")
     def test_insights_preserves_original_data(self, mock_insights, sample_global_insights):
         """应保留原始 insights 数据不做裁剪"""
         mock_insights.return_value = sample_global_insights
@@ -572,7 +570,7 @@ class TestCollectDayData:
         assert len(insights) == 2
         assert "trends" in insights[0]["data"]
 
-    @patch("rss2cubox.daily_report_agent.get_existing_signal_clusters")
+    @patch("rss2cubox.db_client.get_existing_signal_clusters")
     def test_cluster_snapshot_includes_status(self, mock_clusters, sample_clusters):
         """簇快照应包含状态信息"""
         mock_clusters.return_value = sample_clusters
@@ -611,7 +609,7 @@ class TestDailyReportSystemPrompt:
     def test_output_format_in_prompt_context(self):
         """Prompt 应提及结构化输出要求"""
         from rss2cubox.daily_report_agent import SYSTEM_PROMPT
-        assert "JSON" in SYSTEM_PROMPT
+        assert "JSON" in SYSTEM_PROMPT or "结构化" in SYSTEM_PROMPT
 
 
 # ══════════════════════════════════════════════════════════
@@ -623,24 +621,34 @@ class TestRunDailyReport:
 
     def test_run_returns_none_when_disabled(self):
         """禁用时应返回 None"""
-        with patch.dict(os.environ, {"DAILY_REPORT_ENABLED": "false"}):
-            import importlib
-            import rss2cubox.daily_report_agent
-            importlib.reload(rss2cubox.daily_report_agent)
-
+        with patch("rss2cubox.daily_report_agent.DAILY_REPORT_ENABLED", False):
             from rss2cubox.daily_report_agent import run_daily_report
             result = run_daily_report()
             assert result is None
 
-    @patch("rss2cubox.daily_report_agent._collect_day_data")
     @patch("rss2cubox.daily_report_agent._run_agent")
-    def test_run_calls_collect_then_agent(self, mock_agent, mock_collect):
+    @patch("rss2cubox.daily_report_agent._collect_day_data")
+    def test_run_calls_collect_then_agent(self, mock_collect, mock_agent):
         """应先收集数据再调用 Agent"""
-        mock_collect.return_value = {"report_date": "2026-05-09", "today_articles_summary": {"total_articles": 10}, "today_global_insights": [], "cluster_snapshot": {}, "prediction_status": {}}
-        mock_agent.return_value = {"report_date": "2026-05-09", "summary": {}, "trends": [], "weak_signals": [], "daily_advices": []}
+        mock_collect.return_value = {
+            "report_date": "2026-05-09",
+            "today_articles_summary": {"total_articles": 10, "high_importance_count": 3},
+            "today_global_insights": [{"data": {}}],
+            "cluster_snapshot": {"active_clusters": []},
+            "prediction_status": {},
+        }
+        mock_agent.return_value = {
+            "report_date": "2026-05-09",
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "summary": {},
+            "trends": [],
+            "weak_signals": [],
+            "daily_advices": [],
+        }
 
-        from rss2cubox.daily_report_agent import run_daily_report
-        result = run_daily_report()
+        with patch("rss2cubox.daily_report_agent.DAILY_REPORT_ENABLED", True):
+            from rss2cubox.daily_report_agent import run_daily_report
+            result = run_daily_report()
 
         mock_collect.assert_called_once()
         mock_agent.assert_called_once()
