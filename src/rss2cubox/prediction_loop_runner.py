@@ -17,10 +17,12 @@ from rss2cubox.db_client import (
     get_recent_enriched_articles,
     get_recent_prediction_reviews,
     get_signal_clusters_for_prediction,
+    save_daily_report,
     save_prediction_review,
     save_signal_clusters,
     save_trend_predictions,
 )
+from rss2cubox.daily_report_agent import run_daily_report
 from rss2cubox.prediction_agent import run_trend_prediction_agent
 from rss2cubox.prediction_review_agent import run_prediction_review_agent
 from rss2cubox.signal_cluster_agent import run_signal_cluster_agent
@@ -40,6 +42,7 @@ PREDICTION_LOOP_REVIEW_HISTORY_LIMIT = max(1, int(os.getenv("PREDICTION_LOOP_REV
 PREDICTION_CLUSTER_INTERVAL_HOURS = max(1, int(os.getenv("PREDICTION_CLUSTER_INTERVAL_HOURS", "24")))
 PREDICTION_GENERATE_INTERVAL_HOURS = max(1, int(os.getenv("PREDICTION_GENERATE_INTERVAL_HOURS", "72")))
 PREDICTION_REVIEW_INTERVAL_HOURS = max(1, int(os.getenv("PREDICTION_REVIEW_INTERVAL_HOURS", "24")))
+DAILY_REPORT_INTERVAL_HOURS = max(1, int(os.getenv("DAILY_REPORT_INTERVAL_HOURS", "24")))
 PREDICTION_LOOP_STATE_DIR = Path(os.getenv("PREDICTION_LOOP_STATE_DIR", ".rss2cubox-prediction-loop"))
 FORCE_PREDICTION_LOOP = os.getenv("RSS2CUBOX_FORCE_PREDICTION_LOOP", "false").lower() in ("1", "true", "yes")
 
@@ -160,6 +163,19 @@ def main() -> None:
             log_event("WARN", "trend_prediction_failed", error=str(e))
     else:
         log_event("INFO", "prediction_stage_skipped", stage="generate", interval_hours=PREDICTION_GENERATE_INTERVAL_HOURS)
+
+    if _stage_due("daily_report", DAILY_REPORT_INTERVAL_HOURS):
+        try:
+            report = run_daily_report(log_event=log_event)
+            if report and save_daily_report(report):
+                log_event("INFO", "daily_report_saved", report_date=report.get("report_date"))
+            elif report:
+                log_event("WARN", "daily_report_save_failed")
+            _mark_stage_done("daily_report")
+        except Exception as e:
+            log_event("WARN", "daily_report_failed", error=str(e))
+    else:
+        log_event("INFO", "prediction_stage_skipped", stage="daily_report", interval_hours=DAILY_REPORT_INTERVAL_HOURS)
 
     log_event("INFO", "prediction_loop_complete", **stats)
 

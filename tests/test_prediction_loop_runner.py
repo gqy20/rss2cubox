@@ -52,4 +52,4 @@ def test_prediction_loop_runner_skips_stages_that_are_not_due(monkeypatch):
 
     assert called == {"cluster": False, "prediction": False, "review": False}
     skipped = [item for item in events if item[1] == "prediction_stage_skipped"]
-    assert {item[2]["stage"] for item in skipped} == {"cluster", "review", "generate"}
+    assert {item[2]["stage"] for item in skipped} == {"cluster", "review", "generate", "daily_report"}
