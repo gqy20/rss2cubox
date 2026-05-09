@@ -10,7 +10,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent, run_with_fallback
 
 
 SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
@@ -122,31 +122,23 @@ def run_signal_cluster_agent(
                                 article_count=len(articles),
                                 existing_cluster_count=len(existing_clusters or []))
 
-    try:
-        payload = anyio.run(partial(
-            run_json_agent,
-            prompt=prompt,
-            system_prompt=SYSTEM_PROMPT,
-            schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
-            max_turns=200,
-            max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
-            sdk_log=sdk_logger,
-        ))
-    except _StructuredOutputError as e:
-        # Schema 验证失败，尝试从原始文本中 fallback 提取 JSON
-        if log_event:
-            log_event("WARN", "signal_cluster_fallback_start", stage="agent_sdk", agent="signal_cluster")
-        fallback = extract_json_from_text(e.raw_text)
-        if isinstance(fallback, dict) and isinstance(fallback.get("clusters"), list):
-            payload = fallback
-            if log_event:
-                log_event("INFO", "signal_cluster_fallback_ok", stage="agent_sdk", agent="signal_cluster",
-                          cluster_count=len(payload.get("clusters", [])))
-        else:
-            if log_event:
-                log_event("WARN", "signal_cluster_fallback_failed", stage="agent_sdk", agent="signal_cluster",
-                          raw_preview=e.raw_text[:300])
-            raise
+    payload = anyio.run(
+        partial(
+            run_with_fallback,
+            partial(
+                run_json_agent,
+                prompt=prompt,
+                system_prompt=SYSTEM_PROMPT,
+                schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
+                max_turns=200,
+                max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
+                sdk_log=sdk_logger,
+            ),
+            agent_name="signal_cluster",
+            validate=lambda d: isinstance(d.get("clusters"), list),
+            sdk_log=log_event,
+        )
+    )
 
     return _validate_payload(payload, {str(article["id"]) for article in articles if article.get("id")})
 

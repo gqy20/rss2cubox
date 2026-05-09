@@ -140,39 +140,7 @@ SYSTEM_PROMPT = (
 )
 
 
-def _normalize_signal_item(item: Any) -> dict[str, Any] | None:
-    """归一化单条信号项。"""
-    if isinstance(item, str):
-        text = item.strip()
-        return {"text": text, "source_urls": [], "source_titles": [], "comment": ""} if text else None
-
-    if not isinstance(item, dict):
-        return None
-
-    text = str(item.get("text", "")).strip()
-    if not text:
-        return None
-
-    urls = item.get("source_urls", [])
-    titles = item.get("source_titles", [])
-
-    if isinstance(urls, list):
-        urls = [str(u).strip() for u in urls if isinstance(u, str) and u.strip()]
-    else:
-        urls = []
-
-    if isinstance(titles, list):
-        titles = [str(t).strip() for t in titles if isinstance(t, str) and t.strip()]
-    else:
-        titles = []
-
-    max_len = min(len(urls), len(titles), 10)
-    return {
-        "text": text[:300],
-        "source_urls": urls[:max_len],
-        "source_titles": titles[:max_len],
-        "comment": str(item.get("comment", ""))[:200] if item.get("comment") else "",
-    }
+# _normalize_signal_item 已迁移到 agent_sdk_runner.normalize_signal_item（enable_comment=True, max_text_length=300）
 
 
 def _collect_day_data(report_date: str) -> dict[str, Any]:
@@ -343,46 +311,24 @@ async def _run_agent(
         print("[daily_report] claude-agent-sdk 未安装，跳过日报生成", flush=True)
         return None
 
-    from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, make_sdk_logger, make_stderr_logger, run_json_agent
-    from rss2cubox.webpage_reader import read_webpage_text
-
-    JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
-    JINA_MAX_CHARS = 30000
-    WECHAT_FETCH_TIMEOUT_SECONDS = max(10, int(os.getenv("WECHAT_FETCH_TIMEOUT_SECONDS", "30")))
+    from rss2cubox.agent_sdk_runner import (
+        _StructuredOutputError,
+        extract_json_from_text,
+        create_read_webpage_mcp,
+        get_jina_config,
+        make_sdk_logger,
+        make_stderr_logger,
+        normalize_signal_item,
+        run_json_agent,
+    )
 
     temp_files = _prepare_temp_files(day_data)
     file_paths_to_cleanup = list(temp_files.values())
 
-    @tool(
-        "read_webpage",
-        "读取指定 URL 的正文（优先 Jina Reader 返回 Markdown；Jina 被拦截时自动降级到 Playwright 浏览器渲染）",
-        {"url": str},
-    )
-    async def read_webpage(args: dict) -> dict:
-        url = args["url"]
-
-        def _fetch() -> tuple[bool, str]:
-            ok, content, _source = read_webpage_text(
-                url,
-                jina_reader_base=JINA_READER_BASE,
-                jina_max_chars=JINA_MAX_CHARS,
-                wechat_timeout_seconds=WECHAT_FETCH_TIMEOUT_SECONDS,
-            )
-            return ok, content
-
-        ok, content = await anyio.to_thread.run_sync(_fetch)
-        if not ok:
-            content = f"[网页读取失败] {content}"
-        return {"content": [{"type": "text", "text": content}]}
-
-    server = create_sdk_mcp_server(
-        name="daily-report-tools",
-        version="1.0.0",
-        tools=[read_webpage],
-    )
+    server, read_webpage_tool_name = create_read_webpage_mcp("daily-report-tools")
 
     allowed_tools = [
-        "mcp__daily-report-tools__read_webpage",
+        read_webpage_tool_name,
         "Read",
         "Grep",
         "Glob",

@@ -39,17 +39,14 @@ class TestGlobalAgentTools:
 
     def test_tools_configured(self) -> None:
         """Verify required tools are configured."""
-        from rss2cubox.global_agent import (
-            JINA_READER_BASE,
-            JINA_MAX_CHARS,
-            GLOBAL_AGENT_ENABLE_SKILLS,
-            WECHAT_FETCH_TIMEOUT_SECONDS,
-        )
+        from rss2cubox.agent_sdk_runner import get_jina_config
+        from rss2cubox.global_agent import GLOBAL_AGENT_ENABLE_SKILLS
 
-        assert JINA_READER_BASE == "https://r.jina.ai/"
-        assert JINA_MAX_CHARS >= 1000
+        cfg = get_jina_config()
+        assert cfg["base_url"] == "https://r.jina.ai/"
+        assert cfg["max_chars"] >= 1000
         assert isinstance(GLOBAL_AGENT_ENABLE_SKILLS, bool)
-        assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10
+        assert cfg["wechat_timeout"] >= 10
 
     def test_tools_in_run_agent(self) -> None:
         """Verify tools are defined in _run_agent."""
@@ -58,9 +55,9 @@ class TestGlobalAgentTools:
 
         source = inspect.getsource(global_agent._run_agent)
         assert "read_webpage" in source
-        assert "read_webpage_text" in source
-        # 使用内置 Read 工具，不再需要 read_signals_file MCP 工具
-        assert "mcp__insights-tools__read_webpage" in source
+        assert "create_read_webpage_mcp" in source
+        # 使用 create_read_webpage_mcp("insights-tools") 动态生成工具名
+        assert '"insights-tools"' in source
 
 
 class TestGlobalAgentPrompt:
@@ -95,27 +92,24 @@ class TestGlobalAgentConfig:
 
     def test_config_defaults(self) -> None:
         """Verify default configuration values."""
-        from rss2cubox.global_agent import (
-            GLOBAL_AGENT_ENABLE_SKILLS,
-            JINA_READER_BASE,
-            JINA_MAX_CHARS,
-            WECHAT_FETCH_TIMEOUT_SECONDS,
-        )
+        from rss2cubox.agent_sdk_runner import get_jina_config
+        from rss2cubox.global_agent import GLOBAL_AGENT_ENABLE_SKILLS
 
         assert isinstance(GLOBAL_AGENT_ENABLE_SKILLS, bool)
-        assert JINA_READER_BASE == "https://r.jina.ai/"
-        assert JINA_MAX_CHARS >= 1000
-        assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10
+        cfg = get_jina_config()
+        assert cfg["base_url"] == "https://r.jina.ai/"
+        assert cfg["max_chars"] >= 1000
+        assert cfg["wechat_timeout"] >= 10
 
 
 class TestNormalizeSignalItem:
-    """Tests for _normalize_signal_item — 单条信号归一化（含溯源格式）。"""
+    """Tests for normalize_signal_item (shared utility in agent_sdk_runner)。"""
 
     def test_new_format_full(self) -> None:
         """新格式完整输入：text + source_urls + source_titles"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
-        result = _normalize_signal_item({
+        result = normalize_signal_item({
             "text": "多模态推理成为新战场",
             "source_urls": ["https://example.com/a", "https://example.com/b"],
             "source_titles": ["文章A标题", "文章B标题"],
@@ -128,9 +122,9 @@ class TestNormalizeSignalItem:
 
     def test_new_format_text_only(self) -> None:
         """新格式只有 text，urls/titles 为空"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
-        result = _normalize_signal_item({"text": "纯文本结论"})
+        result = normalize_signal_item({"text": "纯文本结论"})
 
         assert result is not None
         assert result["text"] == "纯文本结论"
@@ -139,9 +133,9 @@ class TestNormalizeSignalItem:
 
     def test_legacy_string_format(self) -> None:
         """旧格式：纯字符串自动包装为新结构"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
-        result = _normalize_signal_item("旧格式的纯文本趋势")
+        result = normalize_signal_item("旧格式的纯文本趋势")
 
         assert result is not None
         assert result["text"] == "旧格式的纯文本趋势"
@@ -150,48 +144,54 @@ class TestNormalizeSignalItem:
 
     def test_empty_string_returns_none(self) -> None:
         """空字符串返回 None"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
-        assert _normalize_signal_item("") is None
-        assert _normalize_signal_item("   ") is None
+        assert normalize_signal_item("") is None
+        assert normalize_signal_item("   ") is None
 
     def test_none_input_returns_none(self) -> None:
-        """None / 非法类型返回 None"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        """None 返回 None；标量类型转为字符串"""
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
-        assert _normalize_signal_item(None) is None
-        assert _normalize_signal_item(123) is None
-        assert _normalize_signal_item([]) is None
+        assert normalize_signal_item(None) is None
+        # 标量转为字符串（行为变更：不再返回 None）
+        r_int = normalize_signal_item(123)
+        assert r_int is not None
+        assert r_int["text"] == "123"
+        r_list = normalize_signal_item([])
+        assert r_list is not None
+        assert r_list["text"] == "[]"
 
     def test_dict_without_text_returns_none(self) -> None:
         """dict 缺少 text 字段返回 None"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
-        assert _normalize_signal_item({"source_urls": ["https://x.com"]}) is None
+        assert normalize_signal_item({"source_urls": ["https://x.com"]}) is None
 
-    def test_urls_titles_truncated_to_equal_length(self) -> None:
-        """urls 和 titles 数量不一致时截断为等长"""
-        from rss2cubox.global_agent import _normalize_signal_item
+    def test_urls_titles_independent_truncation(self) -> None:
+        """urls 和 titles 独立截断（不再强制等长）"""
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
-        result = _normalize_signal_item({
+        result = normalize_signal_item({
             "text": "test",
             "source_urls": ["https://a.com", "https://b.com", "https://c.com"],
             "source_titles": ["标题A"],  # 只有 1 个 title
         })
 
         assert result is not None
-        assert len(result["source_urls"]) == 1
+        # 独立截断：urls 保留全部 3 条，titles 保留 1 条
+        assert len(result["source_urls"]) == 3
         assert len(result["source_titles"]) == 1
         assert result["source_urls"][0] == "https://a.com"
 
     def test_urls_titles_max_10_items(self) -> None:
         """超过 10 条时截断"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
         urls = [f"https://example.com/{i}" for i in range(15)]
         titles = [f"标题{i}" for i in range(15)]
 
-        result = _normalize_signal_item({
+        result = normalize_signal_item({
             "text": "test",
             "source_urls": urls,
             "source_titles": titles,
@@ -203,9 +203,9 @@ class TestNormalizeSignalItem:
 
     def test_non_string_urls_filtered_out(self) -> None:
         """非字符串 URL 被过滤"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
-        result = _normalize_signal_item({
+        result = normalize_signal_item({
             "text": "test",
             "source_urls": ["https://valid.com", 123, None, "", "  "],
             "source_titles": ["有效标题", "也该被过滤"],
@@ -213,15 +213,16 @@ class TestNormalizeSignalItem:
 
         assert result is not None
         assert result["source_urls"] == ["https://valid.com"]
-        # titles 也截断到与 urls 等长
-        assert len(result["source_titles"]) == 1
+        # titles 独立截断，保留全部有效标题（不过滤到与 urls 等长）
+        assert len(result["source_titles"]) == 2
+        assert result["source_titles"][0] == "有效标题"
 
     def test_text_truncated_to_200_chars(self) -> None:
         """text 超过 200 字符时截断"""
-        from rss2cubox.global_agent import _normalize_signal_item
+        from rss2cubox.agent_sdk_runner import normalize_signal_item
 
         long_text = "好" * 300
-        result = _normalize_signal_item({"text": long_text})
+        result = normalize_signal_item({"text": long_text})
 
         assert result is not None
         assert len(result["text"]) == 200
@@ -300,7 +301,7 @@ class TestNormalizeGlobalPayload:
         assert result["trends"][1]["source_urls"] == []
 
     def test_empty_and_invalid_items_filtered(self) -> None:
-        """空值和非法条目被过滤掉"""
+        """空值被过滤；标量类型转为字符串保留"""
         from rss2cubox.global_agent import _normalize_global_payload
 
         payload = {
@@ -311,8 +312,10 @@ class TestNormalizeGlobalPayload:
 
         result = _normalize_global_payload(payload)
 
-        assert len(result["trends"]) == 1
+        # "有效趋势" + "42"（标量转字符串），其余被过滤
+        assert len(result["trends"]) == 2
         assert result["trends"][0]["text"] == "有效趋势"
+        assert result["trends"][1]["text"] == "42"
 
     def test_default_confidence_level(self) -> None:
         """confidence_level 缺失或非法时默认 medium"""

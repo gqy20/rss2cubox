@@ -7,7 +7,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent, run_with_fallback
 
 
 PREDICTION_REVIEW_OUTPUT_SCHEMA = {
@@ -62,29 +62,23 @@ def run_prediction_review_agent(
                                 prediction_id=prediction.get("id"),
                                 article_count=len(articles))
 
-    try:
-        payload = anyio.run(partial(
-            run_json_agent,
-            prompt=prompt,
-            system_prompt=SYSTEM_PROMPT,
-            schema=PREDICTION_REVIEW_OUTPUT_SCHEMA,
-            max_turns=20,
-            max_budget_usd=_budget("PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD", 10.0),
-            sdk_log=sdk_logger,
-        ))
-    except _StructuredOutputError as e:
-        if log_event:
-            log_event("WARN", "prediction_review_fallback_start", stage="agent_sdk", agent="prediction_review")
-        fallback = extract_json_from_text(e.raw_text)
-        if isinstance(fallback, dict) and "score" in fallback:
-            payload = fallback
-            if log_event:
-                log_event("INFO", "prediction_review_fallback_ok", stage="agent_sdk", agent="prediction_review")
-        else:
-            if log_event:
-                log_event("WARN", "prediction_review_fallback_failed", stage="agent_sdk", agent="prediction_review",
-                          raw_preview=e.raw_text[:300])
-            raise
+    payload = anyio.run(
+        partial(
+            run_with_fallback,
+            partial(
+                run_json_agent,
+                prompt=prompt,
+                system_prompt=SYSTEM_PROMPT,
+                schema=PREDICTION_REVIEW_OUTPUT_SCHEMA,
+                max_turns=20,
+                max_budget_usd=_budget("PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD", 10.0),
+                sdk_log=sdk_logger,
+            ),
+            agent_name="prediction_review",
+            validate=lambda d: "score" in d,
+            sdk_log=log_event,
+        )
+    )
 
     return _validate_payload(payload, prediction, {str(article["id"]) for article in articles if article.get("id")})
 

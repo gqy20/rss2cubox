@@ -18,8 +18,16 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, make_sdk_logger, make_stderr_logger, run_json_agent
-from rss2cubox.webpage_reader import read_webpage_text
+from rss2cubox.agent_sdk_runner import (
+    _StructuredOutputError,
+    extract_json_from_text,
+    create_read_webpage_mcp,
+    get_jina_config,
+    make_sdk_logger,
+    make_stderr_logger,
+    normalize_signal_item,
+    run_json_agent,
+)
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
@@ -31,6 +39,7 @@ try:
     GLOBAL_AGENT_MAX_BUDGET_USD = float(_global_agent_max_budget_raw) if _global_agent_max_budget_raw else None
 except ValueError:
     GLOBAL_AGENT_MAX_BUDGET_USD = None
+# JINA 常量已迁移到 get_jina_config()
 
 _SIGNAL_ITEM_SCHEMA = {
     "type": "object",
@@ -99,9 +108,7 @@ SYSTEM_PROMPT = (
     "所有输出文字必须使用简体中文，语言专业、精炼，不要废话。"
 )
 
-JINA_READER_BASE = "https://r.jina.ai/"
-JINA_MAX_CHARS = 30000
-WECHAT_FETCH_TIMEOUT_SECONDS = max(10, int(os.getenv("WECHAT_FETCH_TIMEOUT_SECONDS", "30")))
+# JINA 常量已迁移到 get_jina_config()
 
 
 def _build_user_prompt(signals_file: str, history_file: str, total: int) -> str:
@@ -151,46 +158,16 @@ def _normalize_text_list(value: Any, key_hint: str) -> list[str]:
     return out
 
 
-def _normalize_signal_item(item: Any) -> dict[str, Any] | None:
-    """归一化单条信号：兼容 string（旧格式）和 dict（新格式带溯源）。"""
-    if isinstance(item, str):
-        text = item.strip()
-        return {"text": text, "source_urls": [], "source_titles": []} if text else None
-
-    if not isinstance(item, dict):
-        return None
-
-    text = str(item.get("text", "")).strip()
-    if not text:
-        return None
-
-    urls = item.get("source_urls", [])
-    titles = item.get("source_titles", [])
-
-    if isinstance(urls, list):
-        urls = [str(u).strip() for u in urls if isinstance(u, str) and u.strip()]
-    else:
-        urls = []
-
-    if isinstance(titles, list):
-        titles = [str(t).strip() for t in titles if isinstance(t, str) and t.strip()]
-    else:
-        titles = []
-
-    max_len = min(len(urls), len(titles), 10)
-    return {
-        "text": text[:200],
-        "source_urls": urls[:max_len],
-        "source_titles": titles[:max_len],
-    }
+# _normalize_signal_item 已迁移到 agent_sdk_runner.normalize_signal_item
 
 
 
 def _normalize_global_payload(payload: dict[str, Any]) -> dict[str, Any]:
+    _item = lambda x: normalize_signal_item(x)
     return {
-        "trends": [_normalize_signal_item(x) for x in payload.get("trends", []) if _normalize_signal_item(x)],
-        "weak_signals": [_normalize_signal_item(x) for x in payload.get("weak_signals", []) if _normalize_signal_item(x)],
-        "daily_advices": [_normalize_signal_item(x) for x in payload.get("daily_advices", []) if _normalize_signal_item(x)],
+        "trends": [_item(x) for x in payload.get("trends", []) if _item(x)],
+        "weak_signals": [_item(x) for x in payload.get("weak_signals", []) if _item(x)],
+        "daily_advices": [_item(x) for x in payload.get("daily_advices", []) if _item(x)],
         "key_topics": _normalize_text_list(payload.get("key_topics", []), "topic"),
         "confidence_level": payload.get("confidence_level", "medium")
         if payload.get("confidence_level") in ("high", "medium", "low")
@@ -259,36 +236,10 @@ async def _run_agent(
     finally:
         history_tmp_file.close()
 
-    @tool(
-        "read_webpage",
-        "读取指定 URL 的正文（优先 Jina Reader 返回 Markdown；Jina 被拦截时自动降级到 Playwright 浏览器渲染）",
-        {"url": str},
-    )
-    async def read_webpage(args: dict) -> dict:
-        url = args["url"]
-
-        def _fetch() -> tuple[bool, str]:
-            ok, content, _source = read_webpage_text(
-                url,
-                jina_reader_base=JINA_READER_BASE,
-                jina_max_chars=JINA_MAX_CHARS,
-                wechat_timeout_seconds=WECHAT_FETCH_TIMEOUT_SECONDS,
-            )
-            return ok, content
-
-        ok, content = await anyio.to_thread.run_sync(_fetch)
-        if not ok:
-            content = f"[网页读取失败] {content}"
-        return {"content": [{"type": "text", "text": content}]}
-
-    server = create_sdk_mcp_server(
-        name="insights-tools",
-        version="1.0.0",
-        tools=[read_webpage],
-    )
+    server, read_webpage_tool_name = create_read_webpage_mcp("insights-tools")
 
     allowed_tools = [
-        "mcp__insights-tools__read_webpage",
+        read_webpage_tool_name,
         "Read",
         "Grep",
         "Glob",

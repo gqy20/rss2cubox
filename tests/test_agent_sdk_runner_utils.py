@@ -27,7 +27,7 @@ class TestMakeSdkLogger:
         args = log.call_args[0]  # positional args tuple
         kwargs = log.call_args[1]  # keyword args dict
         assert args[0] == "INFO"
-        assert kwargs["event"] == "some_event"
+        assert args[1] == "some_event"
         assert kwargs["stage"] == "agent_sdk"
         assert kwargs["agent"] == "my_agent"
         assert kwargs["foo"] == "bar"
@@ -171,10 +171,11 @@ class TestIntegrationSdkLoggerWithAgents:
 
         logger("test_event", **extra_fields)
         log.assert_called_once()
+        args = log.call_args[0]
         kwargs = log.call_args[1]
+        assert args[1] == "test_event"
         assert kwargs["agent"] == agent_name
         assert kwargs["stage"] == "agent_sdk"
-        assert kwargs["event"] == "test_event"
         for k, v in extra_fields.items():
             assert kwargs[k] == v, f"字段 {k} 值不匹配"
 

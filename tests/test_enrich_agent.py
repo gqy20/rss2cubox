@@ -52,11 +52,12 @@ class TestEnrichAgentTools:
 
     def test_read_webpage_tool_config_exists(self) -> None:
         """Verify webpage reading config is configured."""
-        from rss2cubox.enrich_agent import JINA_READER_BASE, JINA_MAX_CHARS, WECHAT_FETCH_TIMEOUT_SECONDS
+        from rss2cubox.agent_sdk_runner import get_jina_config
 
-        assert JINA_READER_BASE == "https://r.jina.ai/"
-        assert JINA_MAX_CHARS >= 1000
-        assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10
+        cfg = get_jina_config()
+        assert cfg["base_url"] == "https://r.jina.ai/"
+        assert cfg["max_chars"] >= 1000
+        assert cfg["wechat_timeout"] >= 10
 
     def test_tools_defined(self) -> None:
         """Verify tools are defined in source."""
@@ -101,17 +102,16 @@ class TestEnrichAgentErrorHandling:
             ENRICH_MAX_WORKERS,
             ENRICH_ITEM_TIMEOUT_SECONDS,
             ENRICH_MAX_BUDGET_USD,
-            JINA_READER_BASE,
-            JINA_MAX_CHARS,
-            WECHAT_FETCH_TIMEOUT_SECONDS,
         )
+        from rss2cubox.agent_sdk_runner import get_jina_config
 
         assert isinstance(ENRICH_AGENT_ENABLED, bool)
         assert isinstance(ENRICH_MAX_WORKERS, int)
         assert isinstance(ENRICH_ITEM_TIMEOUT_SECONDS, int)
-        assert JINA_READER_BASE == "https://r.jina.ai/"
-        assert JINA_MAX_CHARS >= 1000
-        assert WECHAT_FETCH_TIMEOUT_SECONDS >= 10
+        cfg = get_jina_config()
+        assert cfg["base_url"] == "https://r.jina.ai/"
+        assert cfg["max_chars"] >= 1000
+        assert cfg["wechat_timeout"] >= 10
 
 
 class TestEnrichAgentPrompt:

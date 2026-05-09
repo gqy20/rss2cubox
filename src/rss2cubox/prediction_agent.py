@@ -8,7 +8,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent, run_with_fallback
 
 
 TREND_PREDICTION_OUTPUT_SCHEMA = {
@@ -106,30 +106,23 @@ def run_trend_prediction_agent(
                                 historical_review_count=len(historical_reviews or []),
                                 max_predictions=max_predictions)
 
-    try:
-        payload = anyio.run(partial(
-            run_json_agent,
-            prompt=prompt,
-            system_prompt=SYSTEM_PROMPT,
-            schema=TREND_PREDICTION_OUTPUT_SCHEMA,
-            max_turns=20,
-            max_budget_usd=_budget("TREND_PREDICTION_AGENT_MAX_BUDGET_USD", 10.0),
-            sdk_log=sdk_logger,
-        ))
-    except _StructuredOutputError as e:
-        if log_event:
-            log_event("WARN", "trend_prediction_fallback_start", stage="agent_sdk", agent="trend_prediction")
-        fallback = extract_json_from_text(e.raw_text)
-        if isinstance(fallback, dict) and isinstance(fallback.get("predictions"), list):
-            payload = fallback
-            if log_event:
-                log_event("INFO", "trend_prediction_fallback_ok", stage="agent_sdk", agent="trend_prediction",
-                          prediction_count=len(payload.get("predictions", [])))
-        else:
-            if log_event:
-                log_event("WARN", "trend_prediction_fallback_failed", stage="agent_sdk", agent="trend_prediction",
-                          raw_preview=e.raw_text[:300])
-            raise
+    payload = anyio.run(
+        partial(
+            run_with_fallback,
+            partial(
+                run_json_agent,
+                prompt=prompt,
+                system_prompt=SYSTEM_PROMPT,
+                schema=TREND_PREDICTION_OUTPUT_SCHEMA,
+                max_turns=20,
+                max_budget_usd=_budget("TREND_PREDICTION_AGENT_MAX_BUDGET_USD", 10.0),
+                sdk_log=sdk_logger,
+            ),
+            agent_name="trend_prediction",
+            validate=lambda d: isinstance(d.get("predictions"), list),
+            sdk_log=log_event,
+        )
+    )
 
     predictions = payload.get("predictions")
     if not isinstance(predictions, list):

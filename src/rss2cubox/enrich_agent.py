@@ -22,7 +22,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from rss2cubox.agent_sdk_runner import make_sdk_logger, make_stderr_logger, run_json_agent
+from rss2cubox.agent_sdk_runner import get_jina_config, make_sdk_logger, make_stderr_logger, run_json_agent
 from rss2cubox.webpage_reader import read_webpage_text
 
 # 加载 .env 文件（本地开发时 .env 优先级最高，覆盖系统环境变量）
@@ -32,9 +32,7 @@ ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in 
 ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
 ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "90")))
 ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
-JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
-JINA_MAX_CHARS = max(1000, int(os.getenv("JINA_MAX_CHARS", "30000")))
-WECHAT_FETCH_TIMEOUT_SECONDS = max(10, int(os.getenv("WECHAT_FETCH_TIMEOUT_SECONDS", "30")))
+# JINA 常量已迁移到 get_jina_config()，在 _enrich_one 中按需调用
 _enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "15.0").strip()
 try:
     ENRICH_MAX_BUDGET_USD = float(_enrich_max_budget_raw) if _enrich_max_budget_raw else None
@@ -178,12 +176,14 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) 
         {"url": str},
     )
     async def read_webpage(args: dict) -> dict:
+        _jina = get_jina_config()
+
         def _fetch() -> tuple[bool, str]:
             return read_webpage_text(
                 expected_url,
-                jina_reader_base=JINA_READER_BASE,
-                jina_max_chars=JINA_MAX_CHARS,
-                wechat_timeout_seconds=WECHAT_FETCH_TIMEOUT_SECONDS,
+                jina_reader_base=_jina["base_url"],
+                jina_max_chars=_jina["max_chars"],
+                wechat_timeout_seconds=_jina["wechat_timeout"],
             )[:2]
 
         ok, payload = await anyio.to_thread.run_sync(_fetch)

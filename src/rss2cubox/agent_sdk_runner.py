@@ -243,7 +243,7 @@ def make_sdk_logger(agent_name: str, log_event: Any | None, **extra_fields: Any)
     def _logger(event: str, **fields: Any) -> None:
         level = "WARN" if event.endswith(("_error", "_failed")) or event == "agent_sdk_no_result" else "INFO"
         try:
-            log_event(level, event=event, stage="agent_sdk", agent=agent_name, **extra_fields, **fields)
+            log_event(level, event, stage="agent_sdk", agent=agent_name, **extra_fields, **fields)
         except TypeError:
             log_event(level, event)
 
@@ -281,3 +281,162 @@ def _budget(name: str, default: float) -> float | None:
         return float(raw.strip())
     except (ValueError, TypeError):
         return None
+
+
+# ── Phase-2 shared utilities (TDD Green phase) ────────────────────────────
+
+
+def get_jina_config() -> dict[str, Any]:
+    """返回统一的 Jina Reader 配置字典。
+
+    优先从环境变量读取，使用安全的默认值和下限。
+    """
+    import os as _os
+
+    return {
+        "base_url": _os.getenv("JINA_READER_BASE", "https://r.jina.ai/").strip(),
+        "max_chars": max(1000, int(_os.getenv("JINA_MAX_CHARS", "30000"))),
+        "wechat_timeout": max(10, int(_os.getenv("WECHAT_FETCH_TIMEOUT_SECONDS", "30"))),
+    }
+
+
+def create_read_webpage_mcp(
+    server_name: str,
+    *,
+    jina_config: dict[str, Any] | None = None,
+) -> tuple[Any, str]:
+    """创建带 read_webpage 工具的 MCP server，返回 (server, tool_prefix)。
+
+    server_name: 用于生成 MCP server name 和工具名前缀（如 "enrich-tools" → "mcp__enrich-tools__read_webpage"）。
+    jina_config: 可选自定义 Jina 配置，默认调用 get_jina_config()。
+    """
+    cfg = jina_config or get_jina_config()
+
+    try:
+        from claude_agent_sdk import create_sdk_mcp_server, tool  # type: ignore
+    except ImportError:
+        raise RuntimeError("claude_agent_sdk_import_error")
+
+    from rss2cubox.webpage_reader import read_webpage_text
+
+    @tool(
+        "read_webpage",
+        "读取指定 URL 的正文（优先 Jina Reader 返回 Markdown；Jina 被拦截时自动降级到 Playwright 浏览器渲染）",
+        {"url": str},
+    )
+    async def read_webpage(args: dict) -> dict:
+        url = args["url"]
+
+        def _fetch() -> tuple[bool, str]:
+            ok, content, _source = read_webpage_text(
+                url,
+                jina_reader_base=cfg["base_url"],
+                jina_max_chars=cfg["max_chars"],
+                wechat_timeout_seconds=cfg["wechat_timeout"],
+            )
+            return ok, content
+
+        import anyio as _anyio2
+        ok, content = await _anyio2.to_thread.run_sync(_fetch)
+        if not ok:
+            content = f"[网页读取失败] {content}"
+        return {"content": [{"type": "text", "text": content}]}
+
+    server = create_sdk_mcp_server(
+        name=server_name,
+        version="1.0.0",
+        tools=[read_webpage],
+    )
+    return server, f"mcp__{server_name}__read_webpage"
+
+
+def normalize_signal_item(item: Any, *, enable_comment: bool = False, max_text_length: int = 200) -> dict[str, Any] | None:
+    """归一化单条信号项，兼容 string 和 dict 格式。
+
+    string 输入 → {text, source_urls:[], source_titles:[]}
+    dict 输入 → 解析 text/source_urls/source_titles，可选保留 comment 字段。
+    """
+    if isinstance(item, str):
+        text = item.strip()
+        if not text:
+            return None
+        result: dict[str, Any] = {
+            "text": text[:max_text_length],
+            "source_urls": [],
+            "source_titles": [],
+        }
+        if enable_comment:
+            result["comment"] = ""
+        return result
+
+    if item is None:
+        return None
+
+    if not isinstance(item, dict):
+        text = str(item).strip()
+        if not text:
+            return None
+        result: dict[str, Any] = {
+            "text": text[:max_text_length],
+            "source_urls": [],
+            "source_titles": [],
+        }
+        if enable_comment:
+            result["comment"] = ""
+        return result
+
+    text = str(item.get("text", "")).strip()
+    if not text:
+        return None
+
+    urls = item.get("source_urls", [])
+    titles = item.get("source_titles", [])
+
+    if isinstance(urls, list):
+        urls = [str(u).strip() for u in urls if isinstance(u, str) and u.strip()]
+    else:
+        urls = []
+
+    if isinstance(titles, list):
+        titles = [str(t).strip() for t in titles if isinstance(t, str) and t.strip()]
+    else:
+        titles = []
+
+    max_urls = min(len(urls), 10)
+    max_titles = min(len(titles), 10)
+    result = {
+        "text": text[:max_text_length],
+        "source_urls": urls[:max_urls],
+        "source_titles": titles[:max_titles],
+    }
+    if enable_comment:
+        comment = str(item.get("comment", "")).strip()
+        result["comment"] = comment[:200] if comment else ""
+    return result
+
+
+async def run_with_fallback(
+    coro: Any,
+    *,
+    agent_name: str,
+    validate: Callable[[dict[str, Any]], bool],
+    sdk_log: Callable[..., None] | None = None,
+) -> dict[str, Any]:
+    """执行 Agent 并自动处理 StructuredOutputError fallback 解析。
+
+    正常结果直接返回；Schema 验证失败时尝试 extract_json_from_text 提取 JSON，
+    通过 validate 回调校验提取结果是否可用。
+    """
+    logger = make_sdk_logger(agent_name, log_event=sdk_log)
+    try:
+        _actual = coro() if callable(coro) else coro
+        result = await _actual
+        return result
+    except _StructuredOutputError as e:
+        logger(f"{agent_name}_fallback_start")
+        fallback = extract_json_from_text(e.raw_text)
+        if isinstance(fallback, dict) and validate(fallback):
+            logger(f"{agent_name}_fallback_ok")
+            return fallback
+        logger(f"{agent_name}_fallback_failed", raw_preview=e.raw_text[:300])
+        raise
