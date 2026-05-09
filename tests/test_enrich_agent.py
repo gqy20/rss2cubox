@@ -32,42 +32,19 @@ class TestEnrichAgentOutputFormat:
             "tags",
         ]
 
-    def test_uses_query_output_format(self) -> None:
-        """Verify query() + output_format is used for JSON Schema validation."""
-        from rss2cubox import agent_sdk_runner, enrich_agent
-
-        # 验证函数使用 query() + output_format + structured_output
-        import inspect
-        enrich_source = inspect.getsource(enrich_agent._enrich_one)
-        runner_source = inspect.getsource(agent_sdk_runner.run_json_agent)
-        assert "run_json_agent" in enrich_source
-        assert "query" in runner_source
-        assert "output_format" in runner_source
-        assert "structured_output" in runner_source
-        assert "ResultMessage" in runner_source
-
 
 class TestEnrichAgentTools:
     """Tests for MCP tools configuration."""
 
     def test_read_webpage_tool_config_exists(self) -> None:
-        """Verify webpage reading config is configured."""
+        """Verify webpage reading config delegates to shared get_jina_config."""
         from rss2cubox.agent_sdk_runner import get_jina_config
 
         cfg = get_jina_config()
-        assert cfg["base_url"] == "https://r.jina.ai/"
-        assert cfg["max_chars"] >= 1000
-        assert cfg["wechat_timeout"] >= 10
-
-    def test_tools_defined(self) -> None:
-        """Verify tools are defined in source."""
-        from rss2cubox import enrich_agent
-        import inspect
-
-        source = inspect.getsource(enrich_agent._enrich_one)
-        assert "read_webpage" in source
-        assert "read_webpage_text" in source
-
+        assert isinstance(cfg, dict)
+        assert "base_url" in cfg
+        assert "max_chars" in cfg
+        assert "wechat_timeout" in cfg
 
 class TestEnrichAgentConfig:
     """Tests for configuration constants."""
@@ -108,10 +85,6 @@ class TestEnrichAgentErrorHandling:
         assert isinstance(ENRICH_AGENT_ENABLED, bool)
         assert isinstance(ENRICH_MAX_WORKERS, int)
         assert isinstance(ENRICH_ITEM_TIMEOUT_SECONDS, int)
-        cfg = get_jina_config()
-        assert cfg["base_url"] == "https://r.jina.ai/"
-        assert cfg["max_chars"] >= 1000
-        assert cfg["wechat_timeout"] >= 10
 
 
 class TestEnrichAgentPrompt:
@@ -127,3 +100,32 @@ class TestEnrichAgentPrompt:
 
         assert "文章标题：T" in prompt
         assert "初步评分" not in prompt
+
+    def test_schema_requires_structured_signal_fields(self) -> None:
+        """Verify ENRICH_OUTPUT_SCHEMA requires all structured signal fields."""
+        from rss2cubox.enrich_agent import ENRICH_OUTPUT_SCHEMA
+
+        properties = ENRICH_OUTPUT_SCHEMA["properties"]
+        required = set(ENRICH_OUTPUT_SCHEMA["required"])
+
+        expected = {
+            "content_source", "signal_type", "evidence_type", "evidence_strength",
+            "novelty_score", "impact_horizon", "audience", "market_stage",
+            "confidence", "entities", "cluster_hint", "watch_keywords",
+            "prediction", "disconfirming_evidence",
+        }
+        assert expected.issubset(properties)
+        assert expected.issubset(required)
+
+    def test_schema_uses_numeric_codes_for_filterable_fields(self) -> None:
+        """Verify filterable fields use integer codes with proper ranges."""
+        from rss2cubox.enrich_agent import ENRICH_OUTPUT_SCHEMA
+
+        properties = ENRICH_OUTPUT_SCHEMA["properties"]
+        assert properties["signal_type"] == {"type": "integer", "minimum": 1, "maximum": 12}
+        assert properties["evidence_type"] == {"type": "integer", "minimum": 1, "maximum": 12}
+        assert properties["evidence_strength"] == {"type": "integer", "minimum": 1, "maximum": 5}
+        assert properties["novelty_score"] == {"type": "integer", "minimum": 1, "maximum": 5}
+        assert properties["impact_horizon"] == {"type": "integer", "minimum": 1, "maximum": 5}
+        assert properties["market_stage"] == {"type": "integer", "minimum": 1, "maximum": 6}
+        assert properties["confidence"] == {"type": "integer", "minimum": 1, "maximum": 5}

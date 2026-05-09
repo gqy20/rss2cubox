@@ -309,3 +309,91 @@ class TestRunWithFallback:
             assert False, "应该因验证失败而抛出"
         except Exception:
             pass
+
+
+class TestExtractJsonFromText:
+    """extract_json_from_text 应从各种文本格式中正确提取 JSON。"""
+
+    def test_pure_json(self) -> None:
+        """纯 JSON 字符串直接解析。"""
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
+
+        text = '{"trends": [{"text": "test"}], "weak_signals": [], "daily_advices": []}'
+        result = extract_json_from_text(text)
+        assert result is not None
+        assert result["trends"][0]["text"] == "test"
+
+    def test_markdown_code_block(self) -> None:
+        """```json ... ``` 代码块中的 JSON。"""
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
+
+        text = '分析结果如下：\n\n```json\n{"trends": [{"text": "hello"}]}\n```\n\n以上是结论。'
+        result = extract_json_from_text(text)
+        assert result is not None
+        assert result["trends"][0]["text"] == "hello"
+
+    def test_code_block_without_json_label(self) -> None:
+        """无 json 标签的代码块也能识别。"""
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
+
+        text = '```\n{"key": "value"}\n```'
+        result = extract_json_from_text(text)
+        assert result is not None
+        assert result["key"] == "value"
+
+    def test_prefixed_text_with_brace_extraction(self) -> None:
+        """前缀文字后的 JSON 对象能被提取。"""
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
+
+        text = '这是分析报告：\n{"trends": [{"text": "趋势1"}], "weak_signals": []}\n结束。'
+        result = extract_json_from_text(text)
+        assert result is not None
+        assert len(result["trends"]) == 1
+
+    def test_empty_input(self) -> None:
+        """空值、空白、无 JSON 的输入返回 None。"""
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
+
+        assert extract_json_from_text("") is None
+        assert extract_json_from_text(None) is None  # type: ignore[arg-type]
+        assert extract_json_from_text("   ") is None
+        assert extract_json_from_text("no json here") is None
+
+    def test_nested_objects_preserved(self) -> None:
+        """嵌套对象结构完整保留。"""
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
+
+        text = '{"trends": [{"text": "t", "source_urls": ["https://a.com"], "source_titles": ["A"]}]}'
+        result = extract_json_from_text(text)
+        assert result is not None
+        assert result["trends"][0]["source_urls"] == ["https://a.com"]
+        assert result["trends"][0]["source_titles"] == ["A"]
+
+    def test_realistic_model_output_format(self) -> None:
+        """模拟 glm-5v-turbo 实际输出：前缀 + json 代码块。"""
+        from rss2cubox.agent_sdk_runner import extract_json_from_text
+
+        text = """基于已读取的情报，输出分析报告：
+
+```json
+{
+  "trends": [
+    {
+      "text": "中端模型能力跃升",
+      "source_urls": ["https://example.com/1"],
+      "source_titles": ["文章标题"]
+    }
+  ],
+  "weak_signals": [],
+  "daily_advices": [],
+  "key_topics": ["AI"],
+  "confidence_level": "high"
+}
+```
+
+以上为本次分析结果。"""
+        result = extract_json_from_text(text)
+        assert result is not None
+        assert result["trends"][0]["text"] == "中端模型能力跃升"
+        assert result["confidence_level"] == "high"
+        assert len(result["key_topics"]) == 1
