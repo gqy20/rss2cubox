@@ -79,6 +79,12 @@ async def run_json_agent(
         except TypeError:
             sdk_log(event)  # type: ignore[misc]
 
+    _resolved_env = dict(env) if env else {}
+    if "CLAUDE_CONFIG_DIR" not in _resolved_env:
+        _enrich_session_dir = (cwd or Path.cwd()).parent / "logs" / "enrich-sessions"
+        _enrich_session_dir.mkdir(parents=True, exist_ok=True)
+        _resolved_env["CLAUDE_CONFIG_DIR"] = str(_enrich_session_dir)
+
     options = ClaudeAgentOptions(
         system_prompt=system_prompt,
         allowed_tools=allowed_tools or [],
@@ -90,7 +96,7 @@ async def run_json_agent(
         setting_sources=setting_sources,
         stderr=stderr,
         output_format={"type": "json_schema", "schema": schema},
-        env=env or {},
+        env=_resolved_env,
     )
 
     transport = None
