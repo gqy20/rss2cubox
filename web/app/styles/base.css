@@ -1,4 +1,5 @@
 :root {
+  /* === 基础表面 === */
   --bg: #07090d;
   --bg-soft: #0d1118;
   --panel: rgba(18, 24, 32, 0.82);
@@ -14,6 +15,65 @@
   --glass-border-hover: rgba(229, 236, 247, 0.24);
   --glass-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
   --glass-shadow-hover: 0 18px 46px rgba(0, 0, 0, 0.34);
+
+  /* === 排版阶梯（Major Third 1.25）=== */
+  --fs-display: 28px;
+  --fs-heading: 20px;
+  --fs-title:   16px;
+  --fs-body:    14px;
+  --fs-caption: 12px;
+  --fs-micro:   11px;
+
+  --fw-display: 800;
+  --fw-heading: 700;
+  --fw-title:   600;
+  --fw-body:    400;
+
+  --lh-tight:   1.15;
+  --lh-snug:    1.25;
+  --lh-normal:  1.4;
+  --lh-relaxed: 1.55;
+
+  /* === 间距（8px 网格）=== */
+  --space-xs:  4px;
+  --space-sm:  8px;
+  --space-md:  12px;
+  --space-lg:  16px;
+  --space-xl:  24px;
+  --space-2xl: 32px;
+
+  /* === 圆角阶梯 === */
+  --radius-sm:  6px;
+  --radius-md:  10px;
+  --radius-lg:  12px;
+  --radius-full: 9999px;
+
+  /* === 文字层级色 === */
+  --text-primary:   #e2e8f0;
+  --text-secondary: #94a3b8;
+  --text-muted:     #5a6a7e;
+
+  /* === 边框层级 === */
+  --border-subtle:  rgba(148, 163, 184, 0.08);
+  --border-default: rgba(148, 163, 184, 0.12);
+  --border-hover:   rgba(148, 163, 184, 0.20);
+
+  /* === AI 内容语义色 === */
+  --ai-core:       #34d399;
+  --ai-actionable: #facc15;
+  --ai-reason:     #60a5fa;
+  --ai-prediction: #a78bfa;
+
+  /* === 重要性等级色 === */
+  --score-1-2: #9ca8ba;
+  --score-3:   #9be8df;
+  --score-4:   #f8d48a;
+  --score-5:   #fecaca;
+
+  /* === 动画 === */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 200ms;
 }
 
 * {

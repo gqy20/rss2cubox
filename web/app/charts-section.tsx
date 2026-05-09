@@ -18,6 +18,7 @@ import {
 import { Radar, Zap } from 'lucide-react'
 import { PIE_COLORS } from './utils'
 import { MenuPanel, PopoverMenu, SegmentedControl } from './ui'
+import type { InsightHistoryItem } from '../lib/signalStore'
 
 type TrendPoint = { name: string; dayKey?: string; total: number; analyzed: number }
 type SourcePoint = { name: string; value: number }
@@ -33,15 +34,6 @@ type Props = {
   insightHistory?: InsightHistoryItem[]
   selectedInsightIdx: number
   onSelectInsight: (idx: number) => void
-}
-
-type InsightHistoryItem = {
-  generated_at: string
-  data: {
-    trends?: string[]
-    weak_signals?: string[]
-    daily_advices?: string[]
-  }
 }
 
 export default function ChartsSection({ trendData, sourceData, selectedSource, onSelectSource, onDateClick, timeRange, onTimeRangeChange, insightHistory, selectedInsightIdx, onSelectInsight }: Props) {

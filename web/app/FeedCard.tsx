@@ -3,19 +3,13 @@
 import React from 'react'
 import { ExternalLink } from 'lucide-react'
 import MarkdownRenderer from './MarkdownRenderer'
-import { SourceLogo, formatRelativeTime, formatShortTime, hasAiSummary } from './utils'
+import { SourceLogo, formatRelativeTime, hasAiSummary } from './utils'
 import type { Row } from './types'
 
-function getImportanceScore(value: unknown): number | null {
+function clampScore(value: unknown, min = 1, max = 5): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   const score = Math.round(value)
-  return score >= 1 && score <= 5 ? score : null
-}
-
-function boundedScore(value: unknown): number | null {
-  if (typeof value !== 'number' || !Number.isFinite(value)) return null
-  const score = Math.round(value)
-  return score >= 1 && score <= 5 ? score : null
+  return score >= min && score <= max ? score : null
 }
 
 const SIGNAL_TYPE_LABELS: Record<number, string> = {
@@ -51,8 +45,6 @@ function getImpactHorizonLabel(value: unknown): string {
 
 type FeedCardProps = {
   row: Row
-  idx: number
-  groupId: string
   now: Date | null
   hoveredRowKey: string | null
   selectedTag: string | null
@@ -64,8 +56,6 @@ type FeedCardProps = {
 
 const FeedCard = React.memo(function FeedCard({
   row,
-  idx,
-  groupId,
   now,
   hoveredRowKey,
   selectedTag,
@@ -77,11 +67,11 @@ const FeedCard = React.memo(function FeedCard({
   const hasSummary = hasAiSummary(row)
   const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
   const isHovered = hoveredRowKey === rowKey
-  const importanceScore = getImportanceScore(row.importance_score)
+  const importanceScore = clampScore(row.importance_score)
   const signalTypeLabel = getSignalTypeLabel(row.signal_type)
-  const evidenceStrength = boundedScore(row.evidence_strength)
-  const noveltyScore = boundedScore(row.novelty_score)
-  const confidence = boundedScore(row.confidence)
+  const evidenceStrength = clampScore(row.evidence_strength)
+  const noveltyScore = clampScore(row.novelty_score)
+  const confidence = clampScore(row.confidence)
   const impactHorizonLabel = getImpactHorizonLabel(row.impact_horizon)
   const entities = Array.isArray(row.entities) ? row.entities.filter(Boolean).slice(0, 3) : []
   const watchKeywords = Array.isArray(row.watch_keywords) ? row.watch_keywords.filter(Boolean).slice(0, 3) : []
@@ -96,9 +86,6 @@ const FeedCard = React.memo(function FeedCard({
     row.prediction,
   )
   const hasExpandableContent = hasPrimaryAiContent || hasSignalMetadata
-
-  void groupId
-  void idx
 
   return (
     <div className="timeline-item">
@@ -124,9 +111,7 @@ const FeedCard = React.memo(function FeedCard({
         <div className="t-header" style={{ marginBottom: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
             <SourceLogo row={row} />
-            <span style={{ fontSize: 11, color: '#8aa3be', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {row.source}
-            </span>
+            <span className="t-source-name">{row.source}</span>
             {row.enriched && (
               <span className="enriched-badge">ENR</span>
             )}
@@ -136,9 +121,7 @@ const FeedCard = React.memo(function FeedCard({
               </span>
             )}
             {signalTypeLabel && (
-              <span style={{ fontSize: 10, color: '#6b7e94', whiteSpace: 'nowrap' }}>
-                {signalTypeLabel}
-              </span>
+              <span className="t-signal-type">{signalTypeLabel}</span>
             )}
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -146,25 +129,24 @@ const FeedCard = React.memo(function FeedCard({
             <span suppressHydrationWarning className="node-time">
               {formatRelativeTime(row.time, now)}
             </span>
-            <a href={row.url} target="_blank" rel="noreferrer" aria-label="打开原文" style={{ display: 'inline-flex', alignItems: 'center' }} onClick={(e) => e.stopPropagation()}>
+            <a href={row.url} target="_blank" rel="noreferrer" aria-label="打开原文" className="t-external-link" onClick={(e) => e.stopPropagation()}>
               <ExternalLink size={12} color="#6b7e94" />
             </a>
           </div>
         </div>
 
         {/* Row 2: title */}
-        <a href={row.url} target="_blank" rel="noreferrer" style={{ textDecoration: 'none' }} onClick={(e) => e.stopPropagation()}>
+        <a href={row.url} target="_blank" rel="noreferrer" className="t-title-link" onClick={(e) => e.stopPropagation()}>
           <h3 className="t-title">{row.title || row.hidden_signal || '未命名信号'}</h3>
         </a>
 
         {/* Tags row (compact) */}
         {row.tags && row.tags.length > 0 && (
-          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 3 }}>
+          <div className="t-tags-row">
             {row.tags.slice(0, 2).map((tag, i) => (
               <span
                 key={i}
-                className={`hashtag${selectedTag === tag ? ' hashtag-active' : ''}`}
-                style={{ fontSize: 10, padding: '1px 5px' }}
+                className={`hashtag t-meta-tag${selectedTag === tag ? ' hashtag-active' : ''}`}
                 onClick={(e) => {
                   e.preventDefault()
                   e.stopPropagation()
@@ -175,7 +157,7 @@ const FeedCard = React.memo(function FeedCard({
               </span>
             ))}
             {hasExpandableContent && (
-              <span style={{ fontSize: 10, color: '#4b5e73', marginLeft: 2 }}>
+              <span className="t-expand-hint-text">
                 {isHovered ? '收起' : '···'}
               </span>
             )}
@@ -185,37 +167,37 @@ const FeedCard = React.memo(function FeedCard({
         {/* Expanded AI content */}
         <div className={`t-ai-content${isHovered ? ' expanded' : ''}`}>
           {(evidenceStrength || noveltyScore || confidence || impactHorizonLabel) && (
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 6, marginTop: 6 }}>
-              {evidenceStrength && <span className="hashtag" style={{ fontSize: 10 }}>证据 {evidenceStrength}</span>}
-              {noveltyScore && <span className="hashtag" style={{ fontSize: 10 }}>新颖 {noveltyScore}</span>}
-              {confidence && confidence >= 2 && <span className="hashtag" style={{ fontSize: 10 }}>置信 {confidence}</span>}
-              {impactHorizonLabel && <span className="hashtag" style={{ fontSize: 10 }}>{impactHorizonLabel}</span>}
+            <div className="t-meta-tags">
+              {evidenceStrength && <span className="hashtag t-meta-tag">证据 {evidenceStrength}</span>}
+              {noveltyScore && <span className="hashtag t-meta-tag">新颖 {noveltyScore}</span>}
+              {confidence && confidence >= 2 && <span className="hashtag t-meta-tag">置信 {confidence}</span>}
+              {impactHorizonLabel && <span className="hashtag t-meta-tag">{impactHorizonLabel}</span>}
             </div>
           )}
           {row.core_event && (
-            <div className="t-ai-box" style={{ padding: 8, marginBottom: 6, background: 'rgba(52, 211, 153, 0.04)', borderLeft: '2px solid #34d399', borderRadius: '0 4px 4px 0' }}>
-              <span style={{ fontSize: 12, color: '#34d399', fontWeight: 700, marginRight: 4 }}>核心</span>
+            <div className="t-ai-core">
+              <span className="t-ai-label t-ai-label-core">核心</span>
               <MarkdownRenderer inline>{row.core_event}</MarkdownRenderer>
             </div>
           )}
           {row.actionable && (
-            <div className="t-ai-box" style={{ padding: 8, background: 'rgba(250, 204, 21, 0.04)', borderLeft: '2px solid #facc15', borderRadius: '0 4px 4px 0', marginBottom: row.reason ? 6 : 0 }}>
-              <span style={{ fontSize: 12, color: '#facc15', fontWeight: 700, marginRight: 4 }}>建议</span>
+            <div className={`t-ai-action${row.reason ? '' : ' t-ai-box-last'}`}>
+              <span className="t-ai-label t-ai-label-action">建议</span>
               <MarkdownRenderer inline>{row.actionable}</MarkdownRenderer>
             </div>
           )}
           {row.reason && (
-            <div className="t-ai-box" style={{ padding: 8, background: 'rgba(96, 165, 250, 0.04)', borderLeft: '2px solid #60a5fa', borderRadius: '0 4px 4px 0' }}>
-              <span style={{ fontSize: 12, color: '#60a5fa', fontWeight: 700, marginRight: 4 }}>分析</span>
+            <div className="t-ai-reason">
+              <span className="t-ai-label t-ai-label-reason">分析</span>
               <MarkdownRenderer inline>{row.reason}</MarkdownRenderer>
             </div>
           )}
           {entities.length > 0 && (
-            <div className="signal-meta-group" style={{ marginTop: 4 }}>
+            <div className="signal-meta-group">
               <strong className="signal-meta-label">实体</strong>
               <div className="signal-meta-list">
                 {entities.map((entity) => (
-                  <span key={entity} className="hashtag" style={{ fontSize: 10 }}>
+                  <span key={entity} className="hashtag t-meta-tag">
                     {String(entity).trim()}
                   </span>
                 ))}
@@ -223,11 +205,11 @@ const FeedCard = React.memo(function FeedCard({
             </div>
           )}
           {watchKeywords.length > 0 && (
-            <div className="signal-meta-group" style={{ marginTop: 4 }}>
+            <div className="signal-meta-group">
               <strong className="signal-meta-label">追踪</strong>
               <div className="signal-meta-list">
                 {watchKeywords.map((kw) => (
-                  <span key={kw} className="hashtag" style={{ fontSize: 10 }}>
+                  <span key={kw} className="hashtag t-meta-tag">
                     {String(kw).trim()}
                   </span>
                 ))}
@@ -235,8 +217,8 @@ const FeedCard = React.memo(function FeedCard({
             </div>
           )}
           {row.prediction && (
-            <div className="t-ai-box" style={{ padding: 8, marginTop: 6, background: 'rgba(167, 139, 250, 0.04)', borderLeft: '2px solid #a78bfa', borderRadius: '0 4px 4px 0' }}>
-              <span style={{ fontSize: 12, color: '#a78bfa', fontWeight: 700, marginRight: 4 }}>观察</span>
+            <div className="t-ai-predict">
+              <span className="t-ai-label t-ai-label-predict">观察</span>
               <MarkdownRenderer inline>{row.prediction}</MarkdownRenderer>
             </div>
           )}

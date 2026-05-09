@@ -69,7 +69,7 @@ type MenuPanelProps = {
 }
 
 export function MenuPanel({ children, className }: MenuPanelProps) {
-  return <div className={cx('menu-panel', className)}>{children}</div>
+  return <div className={cx('menu-panel custom-scrollbar', className)}>{children}</div>
 }
 
 type PopoverMenuProps = {

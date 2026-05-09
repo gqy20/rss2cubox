@@ -1,51 +1,28 @@
 /* ═══════════════════════════════════════════
-   Predictions page — design system (Phase 1)
-   Scale: Major Third 1.25 | Base: 14px | Grid: 8px
+   Predictions page — design system
+   全局 Token 继承自 base.css :root，此处仅定义页面特有变量
    ═══════════════════════════════════════════ */
 
-/* ── Design Tokens ── */
+/* ── 页面特有 Design Tokens（不与全局重复）── */
 .predictions-page {
-  /* Typography — Major Third scale (ratio 1.25) */
-  --fs-display: 28px;    /* L0: page title */
-  --fs-heading: 20px;    /* L1: section title */
-  --fs-title:   16px;    /* L2: card title / KPI value */
-  --fs-body:    14px;    /* L3: body text */
-  --fs-caption: 12px;    /* L4: badge, meta */
-  --fs-micro:   11px;    /* L5: legend, timestamp */
-
-  --fw-display: 800;
-  --fw-heading: 700;
-  --fw-title:   600;
-  --fw-body:    400;
-
-  --lh-tight:   1.15;
-  --lh-snug:    1.25;
-  --lh-normal:  1.4;
-  --lh-relaxed: 1.55;
-
-  /* Color — Surface */
+  /* Color — Surface（预测页独有深色层级） */
   --surface-deep:    #080b10;
   --surface-base:    #0f1319;
   --surface-elevated:#161c26;
   --surface-glass:   rgba(22, 29, 40, 0.65);
 
-  /* Color — Text (3-tier brightness) */
-  --text-primary:   #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted:     #5a6a7e;
-
-  /* Color — Accent (single primary) */
+  /* Color — Accent（预测页使用蓝色调） */
   --accent:         #38bdf8;
   --accent-soft:    rgba(56, 189, 248, 0.12);
   --accent-glow:    rgba(56, 189, 248, 0.25);
 
-  /* Color — Semantic (data status only) */
+  /* Color — Semantic（数据状态） */
   --semantic-success: #34d399;
   --semantic-warning: #fbbf24;
   --semantic-danger:  #f87171;
   --semantic-info:    #60a5fa;
 
-  /* Color — Signal status (saturation ladder on accent-blue base) */
+  /* Color — Signal status */
   --status-bursting: #f87171;
   --status-warming:  #fbbf24;
   --status-new:      #38bdf8;
@@ -57,31 +34,8 @@
   --card-secondary: rgba(16, 22, 30, 0.72);
   --card-tertiary:  rgba(12, 17, 24, 0.56);
 
-  /* Border */
-  --border-subtle:  rgba(148, 163, 184, 0.08);
-  --border-default: rgba(148, 163, 184, 0.12);
-  --border-hover:   rgba(148, 163, 184, 0.20);
-
-  /* Spacing (8px grid) */
-  --space-xs:  4px;
-  --space-sm:  8px;
-  --space-md:  12px;
-  --space-lg:  16px;
-  --space-xl:  24px;
-  --space-2xl: 32px;
+  /* 额外间距（页面特有） */
   --space-3xl: 48px;
-
-  /* Radius */
-  --radius-sm:  6px;
-  --radius-md:  10px;
-  --radius-lg:  12px;
-  --radius-full: 9999px;
-
-  /* Transition */
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --duration-fast: 150ms;
-  --duration-normal: 200ms;
-  --duration-slow: 300ms;
 
   /* Layout */
   width: 100%;
@@ -94,49 +48,10 @@
 }
 
 /* Override .main for this page — allow scrolling */
-.predictions-scrollable {
-  height: 100vh !important;
-  overflow-y: auto !important;
-  overflow-x: hidden;
-}
-
-/* ── Layout: two-column (sidebar left) ── */
-.predictions-layout {
-  display: flex;
-  gap: var(--space-xl);
-  margin-top: var(--space-lg);
-}
-
-.predictions-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xl);
-}
-
-.predictions-sidebar {
-  width: 260px;
-  flex-shrink: 0;
-  position: sticky;
-  top: 0;
-  height: fit-content;
-  max-height: calc(100vh - var(--space-2xl));
+.main.predictions-scrollable {
+  height: 100vh;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-md);
-  padding-right: var(--space-xl);
-  border-right: 1px solid var(--border-default);
-}
-
-.predictions-sidebar::-webkit-scrollbar {
-  width: 4px;
-}
-
-.predictions-sidebar::-webkit-scrollbar-thumb {
-  background: rgba(138, 163, 190, 0.2);
-  border-radius: 4px;
+  overflow-x: hidden;
 }
 
 /* ── Header ── */
@@ -475,7 +390,7 @@
 /* ── Metric bars in cluster cards ── */
 .pred-cluster-metrics {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   margin-top: var(--space-sm);
 }
 
@@ -559,7 +474,7 @@
 
 .pred-scores {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   font-size: var(--fs-caption);
   color: var(--text-secondary);
 }
@@ -691,7 +606,7 @@
 .pred-prediction-footer {
   display: flex;
   justify-content: space-between;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   flex-wrap: wrap;
 }
 
@@ -766,7 +681,7 @@
 
 .pred-review-footer {
   display: flex;
-  gap: var(--space-md);
+  gap: var(--space-lg);
   margin-top: var(--space-md);
   flex-wrap: wrap;
 }
@@ -781,6 +696,7 @@
     opacity: 0;
     transform: translateY(12px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -911,7 +827,6 @@
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: thin;
-    /* Hide scrollbar but keep functionality */
     -ms-overflow-style: none;
     scrollbar-width: none;
   }

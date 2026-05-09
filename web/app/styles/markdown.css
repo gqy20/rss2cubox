@@ -1,0 +1,93 @@
+/* ═══════════════════════════════════════════
+   MarkdownRenderer 共享样式
+   替代组件内联 style props
+   ═══════════════════════════════════════════ */
+
+.md-strong { font-weight: 700; }
+.md-em { font-style: italic; }
+
+/* 行内代码 */
+.md-code {
+  background: rgba(99, 110, 123, 0.22);
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.88em;
+  color: #c9d1d9;
+}
+
+/* 块级代码 */
+.md-code-block {
+  display: block;
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+/* 列表 */
+.md-ul { padding-left: 18px; margin: 4px 0; }
+.md-ol { padding-left: 18px; margin: 4px 0; }
+.md-li { margin-bottom: 2px; line-height: 1.5; }
+
+/* 链接 */
+.md-a {
+  color: #2dd4bf;
+  text-decoration: underline;
+  text-decoration-color: rgba(45, 212, 191, 0.35);
+}
+
+/* 引用块 */
+.md-blockquote {
+  border-left: 3px solid rgba(79, 209, 197, 0.4);
+  padding: 4px 10px;
+  margin: 6px 0;
+  background: rgba(17, 23, 32, 0.5);
+  border-radius: 0 4px 4px 0;
+  color: #a2aec0;
+}
+
+/* 分隔线 */
+.md-hr {
+  border: none;
+  border-top: 1px solid rgba(178, 190, 205, 0.12);
+  margin: 8px 0;
+}
+
+/* 表格 */
+.md-table-wrap { overflow-x: auto; margin: 6px 0; }
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.md-th {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(178, 190, 205, 0.2);
+  text-align: left;
+  color: #aeb9c8;
+  font-weight: 600;
+}
+.md-td {
+  padding: 4px 8px;
+  border-bottom: 1px solid rgba(178, 190, 205, 0.08);
+  color: #e2e8f0;
+}
+
+/* 删除线 */
+.md-del { color: #8aa3be; }
+
+/* 标题（块级模式） */
+.md-h1 { font-size: 16px; font-weight: 700; margin: 8px 0 4px; color: #eef3fa; }
+.md-h2 { font-size: 15px; font-weight: 700; margin: 6px 0 3px; color: #eef3fa; }
+.md-h3 { font-size: 14px; font-weight: 600; margin: 4px 0 2px; color: #e2e8f0; }
+
+/* 段落 */
+.md-p { margin: 3px 0; line-height: 1.55; }
+
+/* 内联标题/段落降级为 span */
+.md-inline-h1 { font-size: 16px; font-weight: 700; color: #eef3fa; }
+.md-inline-h2 { font-size: 15px; font-weight: 700; color: #eef3fa; }
+.md-inline-h3 { font-size: 14px; font-weight: 600; color: #e2e8f0; }
+.md-inline-p { display: inline-block; line-height: 1.55; margin-bottom: 4px; }

@@ -75,8 +75,9 @@
     font-size: 24px;
   }
 
-  .muted {
-    margin-left: 0 !important;
+  .dashboard-updated .muted,
+  .predictions-header .muted {
+    margin-left: 0;
   }
 
   .timeline-content {

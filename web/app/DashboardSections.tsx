@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from 'react'
-import { AlertCircle, Brain, CalendarDays, Check, Copy, Download, Search } from 'lucide-react'
+import { memo } from 'react'
+import { AlertCircle, Brain, CalendarDays, Check, Copy, Download, Search, ChevronRight, ChevronDown, X, Inbox } from 'lucide-react'
 import MarkdownRenderer from './MarkdownRenderer'
 import FeedCard from './FeedCard'
 import type { Metrics, Row, InsightKey } from './types'
@@ -126,7 +127,7 @@ function DashboardHeader({ generatedAt, onExport }: DashboardHeaderProps) {
   )
 }
 
-function KpiGrid({ items }: { items: readonly KpiItem[] }) {
+const KpiGrid = memo(function KpiGrid({ items }: { items: readonly KpiItem[] }) {
   return (
     <section className="kpi">
       {items.map((item) => (
@@ -140,7 +141,7 @@ function KpiGrid({ items }: { items: readonly KpiItem[] }) {
       ))}
     </section>
   )
-}
+})
 
 type InsightBriefingProps = {
   activePanel: InsightPanel
@@ -149,7 +150,7 @@ type InsightBriefingProps = {
   onCopy: (title: string, items: ParsedInsightItem[]) => void
 }
 
-function InsightBriefing({ activePanel, visiblePanels, onSelectInsightKey, onCopy }: InsightBriefingProps) {
+const InsightBriefing = memo(function InsightBriefing({ activePanel, visiblePanels, onSelectInsightKey, onCopy }: InsightBriefingProps) {
   return (
     <section className="glass briefing-panel">
       <div className="briefing-head">
@@ -176,7 +177,7 @@ function InsightBriefing({ activePanel, visiblePanels, onSelectInsightKey, onCop
           <Copy size={14} />
         </Button>
       </div>
-      <ol className="briefing-list">
+      <ol className="briefing-list custom-scrollbar">
         {activePanel.items.slice(0, 5).map((item, i) => (
           <li key={`${activePanel.key}-${i}-${item.title}`}>
             <span className="briefing-index">{String(i + 1).padStart(2, '0')}</span>
@@ -205,33 +206,35 @@ function InsightBriefing({ activePanel, visiblePanels, onSelectInsightKey, onCop
       </ol>
     </section>
   )
-}
+})
 
-function DeferredCharts({ onLoad }: { onLoad: () => void }) {
+const DeferredCharts = memo(function DeferredCharts({ onLoad }: { onLoad: () => void }) {
   return (
     <section className="charts-grid charts-section-spaced">
       <div className="glass chart-card chart-deferred-card">
-        <div className="chart-deferred-title">查看趋势</div>
-        <p className="chart-deferred-copy">展开最近信号的总量变化与已分析占比。</p>
-        <Button onClick={onLoad}>立即加载图表</Button>
+        <div className="skeleton skeleton-title" />
+        <div className="skeleton skeleton-text skeleton-text-short" />
+        <div className="skeleton skeleton-chart" />
+        <Button onClick={onLoad} style={{ marginTop: 12 }}>加载图表</Button>
       </div>
       <div className="glass chart-card chart-deferred-card">
-        <div className="chart-deferred-title">查看来源分布</div>
-        <p className="chart-deferred-copy">按来源筛选情报流，快速聚焦高频信号源。</p>
-        <Button onClick={onLoad}>立即加载图表</Button>
+        <div className="skeleton skeleton-title" />
+        <div className="skeleton skeleton-text skeleton-text-short" />
+        <div className="skeleton skeleton-chart" />
+        <Button onClick={onLoad} style={{ marginTop: 12 }}>加载图表</Button>
       </div>
     </section>
   )
-}
+})
 
-function ActionMessage({ message }: { message: { type: 'success' | 'error'; text: string } }) {
+const ActionMessage = memo(function ActionMessage({ message }: { message: { type: 'success' | 'error'; text: string } }) {
   return (
-    <div className={`action-message ${message.type === 'success' ? 'success' : 'error'}`}>
+    <div className={`action-message ${message.type === 'success' ? 'success' : 'error'}`} role="status">
       {message.type === 'success' ? <Check size={14} /> : <AlertCircle size={14} />}
       <span>{message.text}</span>
     </div>
   )
-}
+})
 
 type DashboardRightProps = {
   search: string
@@ -416,7 +419,7 @@ type SignalToolbarProps = Pick<
   resultCount: number
 }
 
-function SignalToolbar({
+const SignalToolbar = memo(function SignalToolbar({
   search,
   searchRef,
   onSearchChange,
@@ -463,7 +466,7 @@ function SignalToolbar({
         <input ref={searchRef} className="search-input search-input-primary" placeholder="搜索标题、来源、标签…（/ 或 Cmd/Ctrl+K）" value={search} onChange={(e) => onSearchChange(e.target.value)} />
         {search && (
           <button className="signal-search-clear" onClick={() => onSearchChange('')} aria-label="清除搜索">
-            ×
+            <X size={14} />
           </button>
         )}
       </div>
@@ -484,15 +487,15 @@ function SignalToolbar({
         <div style={{ flex: 1 }} />
         {hasActiveFilter && (
           <>
-            {selectedSource && <Button tone="purple" onClick={onClearSource}>{selectedSource === '__others__' ? '其他来源' : selectedSource} ×</Button>}
-            {selectedTag && <Button tone="purple" onClick={onClearTag}>#{selectedTag} ×</Button>}
+            {selectedSource && <Button tone="purple" onClick={onClearSource}>{selectedSource === '__others__' ? '其他来源' : selectedSource} <X size={12} /></Button>}
+            {selectedTag && <Button tone="purple" onClick={onClearTag}>#{selectedTag} <X size={12} /></Button>}
             {(search || selectedSource || selectedTag) && <Button onClick={onClearAll}>清除</Button>}
           </>
         )}
       </div>
     </div>
   )
-}
+})
 
 type DateJumpMenuProps = {
   open: boolean
@@ -579,7 +582,7 @@ type SignalStreamProps = Pick<
   | 'loadingMore'
 >
 
-function SignalStream({
+const SignalStream = memo(function SignalStream({
   search,
   selectedSource,
   selectedTag,
@@ -605,8 +608,8 @@ function SignalStream({
   loadingMore,
 }: SignalStreamProps) {
   return (
-    <div className="timeline-container" ref={timelineRef}>
-      <section className="timeline">
+    <div className="timeline-container custom-scrollbar" ref={timelineRef}>
+      <section className="timeline" role="log" aria-live="polite" aria-label="信号列表">
         {displayedRows.length === 0 && !hasLoadingGroup && (
           <EmptyState search={search} selectedSource={selectedSource} selectedTag={selectedTag} onClearAll={onClearAll} />
         )}
@@ -647,7 +650,7 @@ function SignalStream({
       </section>
     </div>
   )
-}
+})
 
 type SignalGroupProps = {
   group: FeedGroupView
@@ -666,12 +669,12 @@ type SignalGroupProps = {
   onTagClick: (tag: string) => void
 }
 
-function SignalGroup({ group, isLoading, collapsed, onToggle, refCallback, now, hoveredRowKey, selectedTag, onHoverEnter, onHoverLeave, onToggleOpen, onTagClick }: SignalGroupProps) {
+const SignalGroup = memo(function SignalGroup({ group, isLoading, collapsed, onToggle, refCallback, now, hoveredRowKey, selectedTag, onHoverEnter, onHoverLeave, onToggleOpen, onTagClick }: SignalGroupProps) {
   return (
     <div className="feed-group" ref={refCallback}>
       <button className="feed-group-head" onClick={onToggle}>
         <span className="feed-group-title">{group.title}</span>
-        <span className="feed-group-meta">{group.total} 条 {collapsed ? '▶' : '▼'}</span>
+        <span className="feed-group-meta">{group.total} 条 {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}</span>
       </button>
       {!collapsed && (
         <div className="feed-group-body">
@@ -682,10 +685,8 @@ function SignalGroup({ group, isLoading, collapsed, onToggle, refCallback, now, 
             const rowKey = row.id || `${row.url}|${row.time}|${row.title || 'untitled'}`
             return (
               <FeedCard
-                key={`${group.id}-${rowKey}-${idx}`}
+                key={`${group.id}-${rowKey}`}
                 row={row}
-                idx={idx}
-                groupId={group.id}
                 now={now}
                 hoveredRowKey={hoveredRowKey}
                 selectedTag={selectedTag}
@@ -700,7 +701,7 @@ function SignalGroup({ group, isLoading, collapsed, onToggle, refCallback, now, 
       )}
     </div>
   )
-}
+})
 
 type EmptyStateProps = {
   search: string
@@ -709,7 +710,7 @@ type EmptyStateProps = {
   onClearAll: () => void
 }
 
-function EmptyState({ search, selectedSource, selectedTag, onClearAll }: EmptyStateProps) {
+const EmptyState = memo(function EmptyState({ search, selectedSource, selectedTag, onClearAll }: EmptyStateProps) {
   const reason = search.trim()
     ? `「${search.trim()}」`
     : selectedTag
@@ -720,7 +721,7 @@ function EmptyState({ search, selectedSource, selectedTag, onClearAll }: EmptySt
 
   return (
     <div className="empty-state">
-      <div className="empty-state-icon">◎</div>
+      <div className="empty-state-icon"><Inbox size={40} /></div>
       <div className="empty-state-text">{reason ? `${reason} 暂无匹配信号` : '暂无信号数据'}</div>
       {reason && (
         <button className="empty-state-clear" onClick={onClearAll}>
@@ -729,12 +730,15 @@ function EmptyState({ search, selectedSource, selectedTag, onClearAll }: EmptySt
       )}
     </div>
   )
-}
+})
 
-function StreamStatus({ children }: { children: ReactNode }) {
+const StreamStatus = memo(function StreamStatus({ children }: { children: ReactNode }) {
   return (
     <div className="stream-status">
+      <span className="pulse-indicator">
+        <span className="dot" /><span className="dot" /><span className="dot" />
+      </span>
       {children}
     </div>
   )
-}
+})

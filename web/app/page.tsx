@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 
 import { loadGlobalInsights, loadArticles, loadLocalStats, type LocalStats } from '../lib/signalStore'
 import { getBusinessDayKey } from '../lib/time'
+import { hasAiSummary } from './utils'
 import type { GlobalInsights, Row } from './types'
 
 export const dynamic = 'force-dynamic'
@@ -60,10 +61,6 @@ function normalizeInsightField(raw: unknown): Array<{ text: string; source_urls?
 
 function getDayKey(value: Date | string): string {
   return getBusinessDayKey(value)
-}
-
-function hasAiSummary(row: Pick<Row, 'core_event' | 'hidden_signal' | 'actionable' | 'reason'>): boolean {
-  return Boolean(row.core_event || row.hidden_signal || row.actionable || row.reason)
 }
 
 function formatAxisDay(value: Date): string {

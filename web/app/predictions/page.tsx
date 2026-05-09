@@ -233,7 +233,7 @@ export default function PredictionsPage() {
 
         <div className="predictions-layout">
           {/* ── Left sidebar ── */}
-          <aside className="predictions-sidebar">
+          <aside className="predictions-sidebar custom-scrollbar">
             {/* KPI: Clusters */}
             <div className="pred-kpi-card pred-kpi-card-blue">
               <Sparkles size={14} className="pred-kpi-icon" />
