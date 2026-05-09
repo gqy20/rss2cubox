@@ -2,14 +2,13 @@
 from __future__ import annotations
 
 import json
-import os
 from functools import partial
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent
 
 
 TREND_PREDICTION_OUTPUT_SCHEMA = {
@@ -102,20 +101,10 @@ def run_trend_prediction_agent(
         ensure_ascii=False,
     )
 
-    def sdk_logger(event: str, **fields: Any) -> None:
-        if log_event is None:
-            return
-        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
-        log_event(
-            level,
-            event,
-            stage="agent_sdk",
-            agent="trend_prediction",
-            cluster_count=len(clusters),
-            historical_review_count=len(historical_reviews or []),
-            max_predictions=max_predictions,
-            **fields,
-        )
+    sdk_logger = make_sdk_logger("trend_prediction", log_event=log_event,
+                                cluster_count=len(clusters),
+                                historical_review_count=len(historical_reviews or []),
+                                max_predictions=max_predictions)
 
     try:
         payload = anyio.run(partial(
@@ -150,12 +139,4 @@ def run_trend_prediction_agent(
     valid = [p for p in predictions if str(p.get("signal_cluster_key")) in valid_keys]
     return valid[:max_predictions]
 
-
-def _budget(name: str, default: float) -> float | None:
-    raw = os.getenv(name, str(default)).strip()
-    if not raw:
-        return None
-    try:
-        return float(raw)
-    except ValueError:
-        return default
+# _budget 已抽取到 agent_sdk_runner._budget

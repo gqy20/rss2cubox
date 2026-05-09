@@ -343,7 +343,7 @@ async def _run_agent(
         print("[daily_report] claude-agent-sdk 未安装，跳过日报生成", flush=True)
         return None
 
-    from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
+    from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, make_sdk_logger, make_stderr_logger, run_json_agent
     from rss2cubox.webpage_reader import read_webpage_text
 
     JINA_READER_BASE = os.getenv("JINA_READER_BASE", "https://r.jina.ai/")
@@ -412,27 +412,9 @@ async def _run_agent(
         f"请先 Read 数据文件了解全貌，再选择性 read_webpage 深入核实，最后输出结构化 JSON。"
     )
 
-    def _make_stderr_logger(prefix: str, limit: int = 80) -> tuple[list[str], Any]:
-        lines: list[str] = []
+    stderr_lines, stderr_logger = make_stderr_logger("daily_report", limit=80)
 
-        def _log(line: str) -> None:
-            text = str(line).strip()
-            if not text:
-                return
-            lines.append(text)
-            if len(lines) > limit:
-                del lines[: len(lines) - limit]
-            print(f"[{prefix}] cli_stderr: {text}", flush=True)
-
-        return lines, _log
-
-    stderr_lines, stderr_logger = _make_stderr_logger("daily_report")
-
-    def sdk_logger(event: str, **fields: Any) -> None:
-        if log_event is None:
-            return
-        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
-        log_event(level, event, stage="agent_sdk", agent="daily_report", **fields)
+    sdk_logger = make_sdk_logger("daily_report", log_event=log_event)
 
     try:
         structured_output = await run_json_agent(

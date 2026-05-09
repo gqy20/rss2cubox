@@ -10,7 +10,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent
 
 
 SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
@@ -118,19 +118,9 @@ def run_signal_cluster_agent(
         ensure_ascii=False,
     )
 
-    def sdk_logger(event: str, **fields: Any) -> None:
-        if log_event is None:
-            return
-        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
-        log_event(
-            level,
-            event,
-            stage="agent_sdk",
-            agent="signal_cluster",
-            article_count=len(articles),
-            existing_cluster_count=len(existing_clusters or []),
-            **fields,
-        )
+    sdk_logger = make_sdk_logger("signal_cluster", log_event=log_event,
+                                article_count=len(articles),
+                                existing_cluster_count=len(existing_clusters or []))
 
     try:
         payload = anyio.run(partial(
@@ -177,12 +167,4 @@ def _validate_payload(payload: dict[str, Any], article_ids: set[str]) -> dict[st
             valid_links.append(link)
     return {"clusters": clusters, "links": valid_links}
 
-
-def _budget(name: str, default: float) -> float | None:
-    raw = os.getenv(name, str(default)).strip()
-    if not raw:
-        return None
-    try:
-        return float(raw)
-    except ValueError:
-        return default
+# _budget 已抽取到 agent_sdk_runner._budget

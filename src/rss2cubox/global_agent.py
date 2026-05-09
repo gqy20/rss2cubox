@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, make_sdk_logger, make_stderr_logger, run_json_agent
 from rss2cubox.webpage_reader import read_webpage_text
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
@@ -124,19 +124,7 @@ def _build_user_prompt(signals_file: str, history_file: str, total: int) -> str:
 所有内容必须使用简体中文。"""
 
 
-def _make_stderr_logger(prefix: str, limit: int = 80) -> tuple[list[str], Any]:
-    lines: list[str] = []
-
-    def _log(line: str) -> None:
-        text = str(line).strip()
-        if not text:
-            return
-        lines.append(text)
-        if len(lines) > limit:
-            del lines[: len(lines) - limit]
-        print(f"[{prefix}] cli_stderr: {text}", flush=True)
-
-    return lines, _log
+# _make_stderr_logger 已抽取到 agent_sdk_runner.make_stderr_logger
 
 
 def _normalize_text_list(value: Any, key_hint: str) -> list[str]:
@@ -308,20 +296,9 @@ async def _run_agent(
     if GLOBAL_AGENT_ENABLE_SKILLS:
         allowed_tools.append("Skill")
 
-    stderr_lines, stderr_logger = _make_stderr_logger("global_agent")
+    stderr_lines, stderr_logger = make_stderr_logger("global_agent", limit=80)
 
-    def sdk_logger(event: str, **fields: Any) -> None:
-        if log_event is None:
-            return
-        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
-        log_event(
-            level,
-            event,
-            stage="agent_sdk",
-            agent="global",
-            source_count=len(high_value_items),
-            **fields,
-        )
+    sdk_logger = make_sdk_logger("global", log_event=log_event, source_count=len(high_value_items))
 
     try:
         structured_output = await run_json_agent(

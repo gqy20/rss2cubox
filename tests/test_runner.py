@@ -767,8 +767,9 @@ def test_run_json_agent_env_none_does_not_crash(monkeypatch: pytest.MonkeyPatch)
     import inspect
 
     source = inspect.getsource(run_json_agent)
-    # 防御性检查：env= 传入 ClaudeAgentOptions 时必须用 or {} 保护
-    assert "env=env or {}" in source, "env 参数应使用 `env or {}` 防止 None 崩溃"
+    # 防御性检查：env= 传入 ClaudeAgentOptions 时必须用 None 安全模式
+    assert ("env=env or {}" in source or "dict(env) if env else" in source), \
+        "env 参数应使用 None 安全模式防止崩溃"
 
 
 def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

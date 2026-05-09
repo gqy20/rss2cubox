@@ -22,7 +22,7 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from rss2cubox.agent_sdk_runner import run_json_agent
+from rss2cubox.agent_sdk_runner import make_sdk_logger, make_stderr_logger, run_json_agent
 from rss2cubox.webpage_reader import read_webpage_text
 
 # 加载 .env 文件（本地开发时 .env 优先级最高，覆盖系统环境变量）
@@ -149,19 +149,7 @@ def _build_user_prompt(item: dict, original: dict) -> str:
     )
 
 
-def _make_stderr_logger(prefix: str, limit: int = 40) -> tuple[list[str], Any]:
-    lines: list[str] = []
-
-    def _log(line: str) -> None:
-        text = str(line).strip()
-        if not text:
-            return
-        lines.append(text)
-        if len(lines) > limit:
-            del lines[: len(lines) - limit]
-        print(f"[{prefix}] cli_stderr: {text}", flush=True)
-
-    return lines, _log
+# _make_stderr_logger 已抽取到 agent_sdk_runner.make_stderr_logger
 
 
 def _has_enrich_content(payload: dict[str, Any] | None) -> bool:
@@ -212,21 +200,9 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) 
         allowed_tools.append("Skill")
 
     eid_short = item.get("eid", "")[:8]
-    stderr_lines, stderr_logger = _make_stderr_logger(f"enrich_agent:{eid_short}")
+    stderr_lines, stderr_logger = make_stderr_logger(f"enrich_agent:{eid_short}", limit=40)
 
-    def sdk_logger(event: str, **fields: Any) -> None:
-        if log_event is None:
-            return
-        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
-        log_event(
-            level,
-            event,
-            stage="agent_sdk",
-            agent="enrich",
-            eid=item.get("eid", ""),
-            url=expected_url,
-            **fields,
-        )
+    sdk_logger = make_sdk_logger("enrich", log_event=log_event, eid=item.get("eid", ""), url=expected_url)
 
     try:
         structured_output = await run_json_agent(

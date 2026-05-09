@@ -2,13 +2,12 @@
 from __future__ import annotations
 
 import json
-import os
 from functools import partial
 from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, extract_json_from_text, run_json_agent
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent
 
 
 PREDICTION_REVIEW_OUTPUT_SCHEMA = {
@@ -59,19 +58,9 @@ def run_prediction_review_agent(
         ensure_ascii=False,
     )
 
-    def sdk_logger(event: str, **fields: Any) -> None:
-        if log_event is None:
-            return
-        level = "WARN" if event.endswith("_error") or event == "agent_sdk_no_result" else "INFO"
-        log_event(
-            level,
-            event,
-            stage="agent_sdk",
-            agent="prediction_review",
-            prediction_id=prediction.get("id"),
-            article_count=len(articles),
-            **fields,
-        )
+    sdk_logger = make_sdk_logger("prediction_review", log_event=log_event,
+                                prediction_id=prediction.get("id"),
+                                article_count=len(articles))
 
     try:
         payload = anyio.run(partial(
@@ -110,12 +99,4 @@ def _validate_payload(payload: dict[str, Any], prediction: dict[str, Any], artic
             payload[key] = [v for v in values if str(v) in article_ids]
     return payload
 
-
-def _budget(name: str, default: float) -> float | None:
-    raw = os.getenv(name, str(default)).strip()
-    if not raw:
-        return None
-    try:
-        return float(raw)
-    except ValueError:
-        return default
+# _budget 已抽取到 agent_sdk_runner._budget
