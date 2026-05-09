@@ -198,11 +198,10 @@ async def run_json_agent(
                 raise _StructuredOutputError(raw_result, message.subtype or "no_structured_output")
 
     try:
-        import anyio as _anyio
+        import asyncio as _asyncio
 
         if timeout_seconds and timeout_seconds > 0:
-            with _anyio.fail_after(timeout_seconds):
-                result = await _consume_query()
+            result = await _asyncio.wait_for(_consume_query(), timeout=timeout_seconds)
         else:
             result = await _consume_query()
         return result

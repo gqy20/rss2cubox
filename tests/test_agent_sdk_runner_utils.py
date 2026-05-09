@@ -1,4 +1,5 @@
 """Tests for shared agent utility functions in agent_sdk_runner (TDD: Red phase)."""
+from typing import Any, Callable
 import pytest
 from unittest.mock import MagicMock
 
@@ -191,3 +192,183 @@ class TestIntegrationSdkLoggerWithAgents:
             log.reset_mock()
             logger(ev)
             assert log.call_args[0][0] == "WARN"
+
+
+class TestRunJsonAgentTimeout:
+    """run_json_agent 超时机制测试（TDD: Red→Green phase）。
+
+    验证超时包装层的行为正确性：
+    - 正常完成时返回 structured_output
+    - 超时时抛出 TimeoutError 并 emit agent_sdk_error 事件
+    - 无超时参数时不施加时间限制
+    - 使用 asyncio.wait_for 而非 anyio.fail_after（避免 cancel scope 冲突）
+    """
+
+    @pytest.fixture()
+    def _patch_sdk_imports(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Mock claude_agent_sdk 导入，避免真实 SDK 依赖。"""
+        import types
+
+        sdk_mock = types.ModuleType("claude_agent_sdk")
+        sdk_mock.ClaudeAgentOptions = type("ClaudeAgentOptions", (), {"__init__": lambda self, **kw: None})
+        sdk_mock.ResultMessage = type("ResultMessage", (), {
+            "__init__": lambda self, **kw: None,
+            "is_error": False,
+            "subtype": "",
+            "structured_output": None,
+        })
+        sdk_mock.query = MagicMock()
+        sdk_mock.create_sdk_mcp_server = MagicMock()
+
+        monkeypatch.setitem(sys.modules, "claude_agent_sdk", sdk_mock)
+
+    @pytest.fixture()
+    def _make_result_msg(self) -> Callable:
+        """创建 ResultMessage mock 的工厂函数。"""
+        from claude_agent_sdk import ResultMessage  # noqa: F811
+
+        def _make(data: dict | None = None) -> Any:
+            msg = ResultMessage()
+            msg.structured_output = data
+            msg.is_error = False
+            msg.subtype = ""
+            return msg
+
+        return _make
+
+    @pytest.fixture()
+    def _async_gen_query(self) -> Callable:
+        """创建返回 async generator 的 query mock 工厂。
+
+        claude_agent_sdk.query() 是 async generator（用于 async for），
+        不能用普通 async function mock。
+        """
+        def _maker(messages: list, *, delay: float = 0.0) -> Callable:
+            async def _gen(**kw):
+                if delay > 0:
+                    import asyncio as _a
+                    await _a.sleep(delay)
+                for m in messages:
+                    yield m
+            return _gen
+        return _maker
+
+    @pytest.mark.asyncio
+    async def test_returns_result_within_timeout(
+        self, _patch_sdk_imports, _make_result_msg, _async_gen_query
+    ) -> None:
+        """query 在超时时间内正常返回 structured_output 时，应直接返回结果。"""
+        from claude_agent_sdk import query  # noqa: F811
+
+        msg = _make_result_msg({"trends": [{"text": "test"}]})
+        query.side_effect = _async_gen_query([msg], delay=0.01)
+
+        from rss2cubox.agent_sdk_runner import run_json_agent
+
+        result = await run_json_agent(
+            prompt="test",
+            system_prompt="you are helpful",
+            schema={"type": "object", "properties": {}},
+            timeout_seconds=5.0,
+        )
+        assert result == {"trends": [{"text": "test"}]}
+
+    @pytest.mark.asyncio
+    async def test_raises_timeout_error_when_exceeded(
+        self, _patch_sdk_imports, _async_gen_query
+    ) -> None:
+        """query 执行时间超过 timeout_seconds 时应抛出 TimeoutError。"""
+        from claude_agent_sdk import query  # noqa: F811
+
+        query.side_effect = _async_gen_query([], delay=10)
+
+        from rss2cubox.agent_sdk_runner import run_json_agent
+
+        with pytest.raises(TimeoutError):
+            await run_json_agent(
+                prompt="test",
+                system_prompt="you are helpful",
+                schema={"type": "object", "properties": {}},
+                timeout_seconds=0.05,
+            )
+
+    @pytest.mark.asyncio
+    async def test_emits_error_event_on_timeout(
+        self, _patch_sdk_imports, _async_gen_query
+    ) -> None:
+        """超时时应 emit agent_sdk_error 事件。"""
+        from claude_agent_sdk import query  # noqa: F811
+
+        query.side_effect = _async_gen_query([], delay=10)
+
+        events: list[dict] = []
+
+        def _capture(event: str, **fields) -> None:
+            events.append({"event": event, **fields})
+
+        from rss2cubox.agent_sdk_runner import run_json_agent
+
+        with pytest.raises(TimeoutError):
+            await run_json_agent(
+                prompt="test",
+                system_prompt="you are helpful",
+                schema={"type": "object", "properties": {}},
+                timeout_seconds=0.05,
+                sdk_log=_capture,
+            )
+
+        error_events = [e for e in events if e["event"] == "agent_sdk_error"]
+        assert len(error_events) >= 1
+        assert "error" in error_events[0]
+
+    @pytest.mark.asyncio
+    async def test_no_timeout_when_zero_or_none(
+        self, _patch_sdk_imports, _make_result_msg, _async_gen_query
+    ) -> None:
+        """timeout_seconds 为 None 或 0 时不应施加超时限制。"""
+        from claude_agent_sdk import query  # noqa: F811
+
+        msg = _make_result_msg({"ok": True})
+
+        from rss2cubox.agent_sdk_runner import run_json_agent
+
+        # None
+        query.side_effect = _async_gen_query([msg], delay=0.01)
+        r1 = await run_json_agent(
+            prompt="test",
+            system_prompt="help",
+            schema={"type": "object", "properties": {}},
+            timeout_seconds=None,
+        )
+        assert r1 == {"ok": True}
+
+        # 0
+        query.side_effect = _async_gen_query([msg], delay=0.01)
+        r2 = await run_json_agent(
+            prompt="test",
+            system_prompt="help",
+            schema={"type": "object", "properties": {}},
+            timeout_seconds=0,
+        )
+        assert r2 == {"ok": True}
+
+    def test_does_not_use_anyio_fail_after(self) -> None:
+        """实现不应依赖 anyio.fail_after（避免与 SDK cancel scope 冲突）。"""
+        import inspect
+        from rss2cubox.agent_sdk_runner import run_json_agent
+
+        source = inspect.getsource(run_json_agent)
+        assert "fail_after" not in source, \
+            "run_json_agent 不应使用 anyio.fail_after，应改用 asyncio.wait_for 避免 cancel scope 冲突"
+
+    def test_uses_asyncio_wait_for(self) -> None:
+        """实现应使用 asyncio.wait_for 进行超时控制。"""
+        import inspect
+        from rss2cubox.agent_sdk_runner import run_json_agent
+
+        source = inspect.getsource(run_json_agent)
+        assert "wait_for" in source, \
+            "run_json_agent 应使用 asyncio.wait_for 替代 anyio.fail_after"
+
+
+import sys  # noqa: E402
