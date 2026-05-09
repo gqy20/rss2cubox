@@ -142,12 +142,31 @@ def normalize_feed_kind(kind: str, raw: str) -> str:
     return "direct" if raw.startswith(("http://", "https://")) else "rsshub"
 
 
-def split_feed_value_and_label(raw: str) -> tuple[str, str]:
+def split_feed_line(raw: str) -> tuple[int, str, str]:
+    """Parse a feed line into (priority, value, label).
+
+    Supported formats:
+        5	/feed/path # Label     → (5, "/feed/path", "Label")
+        3	/feed/path              → (3, "/feed/path", "")
+        /feed/path # Label         → (0, "/feed/path", "Label")
+        /feed/path                 → (0, "/feed/path", "")
+    """
     text = raw.strip()
-    if " # " not in text:
-        return text, ""
-    value, label = text.split(" # ", 1)
-    return value.strip(), label.strip()
+    parts = text.split("\t", 1)
+    priority = 0
+    rest = text
+    if len(parts) == 2 and parts[0].strip().lstrip("-").isdigit():
+        priority = int(parts[0].strip())
+        rest = parts[1].strip()
+    if " # " not in rest:
+        return priority, rest, ""
+    value, label = rest.split(" # ", 1)
+    return priority, value.strip(), label.strip()
+
+
+def split_feed_value_and_label(raw: str) -> tuple[str, str]:
+    _, value, label = split_feed_line(raw)
+    return value, label
 
 
 def load_feed_specs(path: Path) -> list[dict[str, str]]:
@@ -168,7 +187,7 @@ def load_feed_specs(path: Path) -> list[dict[str, str]]:
             if lowered in {"[werss]", "werss:"}:
                 section = "werss"
                 continue
-            value, label = split_feed_value_and_label(raw)
+            priority, value, label = split_feed_line(raw)
             if not value:
                 continue
             specs.append(
@@ -176,6 +195,7 @@ def load_feed_specs(path: Path) -> list[dict[str, str]]:
                     "kind": normalize_feed_kind(section, value),
                     "value": value,
                     "label": label,
+                    "priority": priority,
                 }
             )
     return specs
@@ -892,5 +912,9 @@ def collect_candidates_from_feeds(
         current_lbd = result.get("last_build_date")
         if current_lbd:
             last_build_cache[feed_url] = current_lbd
+
+    # Sort candidates by feed priority (descending) so high-value feeds are processed first
+    _feed_priority: dict[str, int] = {spec["value"]: spec.get("priority", 0) for spec in feed_specs}
+    candidates.sort(key=lambda c: _feed_priority.get(c.get("source_feed_id", ""), 0), reverse=True)
 
     return candidates, last_build_cache
