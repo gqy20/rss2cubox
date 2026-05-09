@@ -19,14 +19,13 @@ from pathlib import Path
 from typing import Any
 
 from rss2cubox.agent_sdk_runner import (
-    _StructuredOutputError,
-    extract_json_from_text,
     create_read_webpage_mcp,
     get_jina_config,
     make_sdk_logger,
     make_stderr_logger,
     normalize_signal_item,
     run_json_agent,
+    run_with_fallback,
 )
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
@@ -34,6 +33,7 @@ GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").low
 GLOBAL_AGENT_MIN_CANDIDATES = max(1, int(os.getenv("GLOBAL_AGENT_MIN_CANDIDATES", "3")))
 GLOBAL_AGENT_BATCH_SIZE = max(1, int(os.getenv("GLOBAL_AGENT_BATCH_SIZE", "200")))
 GLOBAL_AGENT_MAX_CONCURRENT = max(1, int(os.getenv("GLOBAL_AGENT_MAX_CONCURRENT", "10")))
+GLOBAL_AGENT_TIMEOUT_SECONDS = max(60, int(os.getenv("GLOBAL_AGENT_TIMEOUT_SECONDS", "300")))
 _global_agent_max_budget_raw = os.getenv("GLOBAL_AGENT_MAX_BUDGET_USD", "50.0").strip()
 try:
     GLOBAL_AGENT_MAX_BUDGET_USD = float(_global_agent_max_budget_raw) if _global_agent_max_budget_raw else None
@@ -47,7 +47,7 @@ _SIGNAL_ITEM_SCHEMA = {
         "text": {"type": "string", "maxLength": 1000},
         "source_urls": {
             "type": "array",
-            "items": {"type": "string", "format": "uri"},
+            "items": {"type": "string"},
             "maxItems": 10,
         },
         "source_titles": {
@@ -105,6 +105,7 @@ SYSTEM_PROMPT = (
     "- 如果某条结论是综合推断、无法归因到具体文章，source_urls 可为空数组 []\n"
     "- 绝对不要编造 URL，只使用输入数据中已存在的 url 字段\n"
     "完成所有分析后，直接输出结构化 JSON 格式的报告。"
+    "【JSON 输出强制要求】你的回答必须且只能是合法的 JSON 对象，以 { 开始，以 } 结束。不要输出任何解释性文字、前言、Markdown 标记或代码块标记（```json 或 ```）。trends/weak_signals/daily_advices 数组中的 source_urls 字段填入原始 URL 字符串即可。"
     "所有输出文字必须使用简体中文，语言专业、精炼，不要废话。"
 )
 
@@ -252,32 +253,29 @@ async def _run_agent(
     sdk_logger = make_sdk_logger("global", log_event=log_event, source_count=len(high_value_items))
 
     try:
-        structured_output = await run_json_agent(
-            prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)),
-            system_prompt=SYSTEM_PROMPT,
-            schema=GLOBAL_OUTPUT_SCHEMA,
-            allowed_tools=allowed_tools,
-            mcp_servers={"insights-tools": server},
-            max_turns=100,
-            max_budget_usd=GLOBAL_AGENT_MAX_BUDGET_USD,
-            cwd=Path.cwd(),
-            setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
-            stderr=stderr_logger,
+        structured_output = await run_with_fallback(
+            lambda: run_json_agent(
+                prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)),
+                system_prompt=SYSTEM_PROMPT,
+                schema=GLOBAL_OUTPUT_SCHEMA,
+                allowed_tools=allowed_tools,
+                mcp_servers={"insights-tools": server},
+                max_turns=100,
+                max_budget_usd=GLOBAL_AGENT_MAX_BUDGET_USD,
+                timeout_seconds=GLOBAL_AGENT_TIMEOUT_SECONDS,
+                cwd=Path.cwd(),
+                setting_sources=["project"] if GLOBAL_AGENT_ENABLE_SKILLS else None,
+                stderr=stderr_logger,
+                sdk_log=sdk_logger,
+            ),
+            agent_name="global",
+            validate=lambda d: isinstance(d, dict) and "trends" in d,
             sdk_log=sdk_logger,
         )
         result = _normalize_global_payload(structured_output)
-        print("[global_agent] structured_output: ok", flush=True)
+        total = sum(len(result.get(k, [])) for k in ("trends", "weak_signals", "daily_advices"))
+        print(f"[global_agent] 分析完成，共 {total} 条信号", flush=True)
         return result
-    except _StructuredOutputError as e:
-        # Schema 验证失败，尝试从原始文本中 fallback 提取 JSON
-        print("[global_agent] structured_output 为空，尝试 fallback 解析...", flush=True)
-        fallback = extract_json_from_text(e.raw_text)
-        if fallback and isinstance(fallback, dict):
-            result = _normalize_global_payload(fallback)
-            total = sum(len(result.get(k, [])) for k in ("trends", "weak_signals", "daily_advices"))
-            print(f"[global_agent] fallback 解析成功，共 {total} 条信号", flush=True)
-            return result
-        print(f"[global_agent] fallback 解析也失败，原始文本前 500 字符: {e.raw_text[:500]}", flush=True)
     except Exception as e:
         if stderr_lines:
             print(f"[global_agent] error: {' | '.join(stderr_lines[-8:])}", flush=True)
