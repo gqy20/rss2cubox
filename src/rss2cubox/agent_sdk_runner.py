@@ -57,6 +57,7 @@ async def run_json_agent(
     permission_mode: str = "acceptEdits",
     max_turns: int = 20,
     max_budget_usd: float | None = None,
+    timeout_seconds: float | None = None,
     cwd: Path | None = None,
     setting_sources: list[str] | None = ["project"],
     stderr: Callable[[str], None] | None = None,
@@ -162,7 +163,9 @@ async def run_json_agent(
     query_started_at = time.perf_counter()
     emit("agent_sdk_query_start")
     saw_message = False
-    try:
+
+    async def _consume_query():
+        nonlocal saw_message
         async for message in query(prompt=prompt, options=options, transport=transport):
             if not saw_message:
                 saw_message = True
@@ -183,12 +186,21 @@ async def run_json_agent(
                 )
                 if message.structured_output is not None:
                     return message.structured_output
-                # 保留原始文本供 fallback 解析使用
                 raw_result = getattr(message, "result", None) or ""
                 if message.is_error:
                     raise RuntimeError(message.subtype or "agent_error")
                 raise _StructuredOutputError(raw_result, message.subtype or "no_structured_output")
-    except Exception as exc:
+
+    try:
+        import anyio as _anyio
+
+        if timeout_seconds and timeout_seconds > 0:
+            with _anyio.fail_after(timeout_seconds):
+                result = await _consume_query()
+        else:
+            result = await _consume_query()
+        return result
+    except TimeoutError as exc:
         emit(
             "agent_sdk_error",
             duration_ms=int((time.perf_counter() - query_started_at) * 1000),

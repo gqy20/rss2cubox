@@ -237,10 +237,10 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) 
             mcp_servers={"enrich-tools": server},
             max_turns=10,
             max_budget_usd=ENRICH_MAX_BUDGET_USD,
+            timeout_seconds=ENRICH_ITEM_TIMEOUT_SECONDS,
             cwd=Path.cwd(),
             setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
             stderr=stderr_logger,
-            # 显式传递 ANTHROPIC_API_KEY 使 .env 拥有最高优先级
             env={k: v for k, v in os.environ.items() if k == "ANTHROPIC_API_KEY"},
             sdk_log=sdk_logger,
         )
