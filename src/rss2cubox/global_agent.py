@@ -44,7 +44,7 @@ except ValueError:
 _SIGNAL_ITEM_SCHEMA = {
     "type": "object",
     "properties": {
-        "text": {"type": "string", "maxLength": 200},
+        "text": {"type": "string", "maxLength": 1000},
         "source_urls": {
             "type": "array",
             "items": {"type": "string", "format": "uri"},

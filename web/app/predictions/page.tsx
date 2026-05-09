@@ -16,8 +16,6 @@ import {
   AlertTriangle,
   BarChart3,
   Tag,
-  FileText,
-  Layers,
 } from 'lucide-react'
 import { Logo } from '../utils'
 
@@ -234,8 +232,11 @@ export default function PredictionsPage() {
         <div className="predictions-layout">
           {/* ── Left sidebar ── */}
           <aside className="predictions-sidebar custom-scrollbar">
-            {/* KPI: Clusters */}
-            <div className="pred-kpi-card pred-kpi-card-blue">
+            {/* KPI: Clusters — 点击跳转 */}
+            <button
+              className={`pred-kpi-card pred-kpi-card-blue${activeSection === 'clusters' ? ' active' : ''}`}
+              onClick={() => { setActiveSection('clusters'); document.getElementById('section-clusters')?.scrollIntoView({ behavior: 'smooth' }) }}
+            >
               <Sparkles size={14} className="pred-kpi-icon" />
               <div className="pred-kpi-value">{clusters.length}</div>
               <div className="pred-kpi-label">信号聚类</div>
@@ -271,10 +272,13 @@ export default function PredictionsPage() {
                   </div>
                 </>
               )}
-            </div>
+            </button>
 
-            {/* KPI: Predictions */}
-            <div className="pred-kpi-card pred-kpi-card-teal">
+            {/* KPI: Predictions — 点击跳转 */}
+            <button
+              className={`pred-kpi-card pred-kpi-card-teal${activeSection === 'predictions' ? ' active' : ''}`}
+              onClick={() => { setActiveSection('predictions'); document.getElementById('section-predictions')?.scrollIntoView({ behavior: 'smooth' }) }}
+            >
               <Target size={14} className="pred-kpi-icon" />
               <div className="pred-kpi-value">{predictions.length}</div>
               <div className="pred-kpi-label">趋势预测</div>
@@ -283,54 +287,20 @@ export default function PredictionsPage() {
                   ? `${pendingCount} 待验证 / ${completedCount} 已完成`
                   : '暂无数据'}
               </div>
-            </div>
+            </button>
 
-            {/* KPI: Reviews */}
-            <div className="pred-kpi-card pred-kpi-card-purple">
+            {/* KPI: Reviews — 点击跳转 */}
+            <button
+              className={`pred-kpi-card pred-kpi-card-purple${activeSection === 'reviews' ? ' active' : ''}`}
+              onClick={() => { setActiveSection('reviews'); document.getElementById('section-reviews')?.scrollIntoView({ behavior: 'smooth' }) }}
+            >
               <BarChart3 size={14} className="pred-kpi-icon" />
               <div className="pred-kpi-value">{reviews.length}</div>
               <div className="pred-kpi-label">预测复盘</div>
               <div className="pred-kpi-detail">
                 {reviews.length > 0 ? `平均分 ${avgScore}` : '暂无数据'}
               </div>
-            </div>
-
-            {/* Nav links */}
-            <div className="pred-nav-links">
-              <button
-                className={`pred-nav-link${activeSection === 'clusters' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSection('clusters')
-                  document.getElementById('section-clusters')?.scrollIntoView({ behavior: 'smooth' })
-                }}
-              >
-                <Layers size={14} />
-                信号聚类
-                <span className="pred-nav-link-count">{clusters.length}</span>
-              </button>
-              <button
-                className={`pred-nav-link${activeSection === 'predictions' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSection('predictions')
-                  document.getElementById('section-predictions')?.scrollIntoView({ behavior: 'smooth' })
-                }}
-              >
-                <TrendingUp size={14} />
-                趋势预测
-                <span className="pred-nav-link-count">{predictions.length}</span>
-              </button>
-              <button
-                className={`pred-nav-link${activeSection === 'reviews' ? ' active' : ''}`}
-                onClick={() => {
-                  setActiveSection('reviews')
-                  document.getElementById('section-reviews')?.scrollIntoView({ behavior: 'smooth' })
-                }}
-              >
-                <FileText size={14} />
-                预测复盘
-                <span className="pred-nav-link-count">{reviews.length}</span>
-              </button>
-            </div>
+            </button>
           </aside>
 
           {/* ── Right main content ── */}

@@ -181,25 +181,37 @@ const InsightBriefing = memo(function InsightBriefing({ activePanel, visiblePane
         {activePanel.items.slice(0, 5).map((item, i) => (
           <li key={`${activePanel.key}-${i}-${item.title}`}>
             <span className="briefing-index">{String(i + 1).padStart(2, '0')}</span>
-            <div>
-              <div className="briefing-item-title"><MarkdownRenderer inline>{item.title}</MarkdownRenderer></div>
+            <div className="briefing-item-body">
+              <div className="briefing-item-title">
+                <MarkdownRenderer inline>{item.title}</MarkdownRenderer>
+                {item.sourceUrls && item.sourceUrls.length > 0 && (
+                  <>
+                    {' '}
+                    {item.sourceUrls.map((url, j) => {
+                      let host = ''
+                      try { host = new URL(url).hostname.replace('www.', '') } catch { /* ignore */ }
+                      return (
+                        <a
+                          key={j}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="briefing-source-link"
+                          title={item.sourceTitles?.[j] || host}
+                        >
+                          <img
+                            src={`https://duckduckgo.com/ip3/${host}.ico`}
+                            alt=""
+                            width={18}
+                            height={18}
+                          />
+                        </a>
+                      )
+                    })}
+                  </>
+                )}
+              </div>
               {item.content && <div className="briefing-item-content"><MarkdownRenderer inline>{item.content}</MarkdownRenderer></div>}
-              {item.sourceUrls && item.sourceUrls.length > 0 && (
-                <div className="briefing-sources">
-                  {item.sourceUrls.map((url, j) => (
-                    <a
-                      key={j}
-                      href={url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="briefing-source-link"
-                      title={item.sourceTitles?.[j] || url}
-                    >
-                      {item.sourceTitles?.[j] || new URL(url).hostname.replace('www.', '')}
-                    </a>
-                  ))}
-                </div>
-              )}
             </div>
           </li>
         ))}

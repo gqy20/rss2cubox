@@ -39,8 +39,6 @@
 
   /* Layout */
   width: 100%;
-  max-width: 1400px;
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -110,6 +108,39 @@
 }
 
 /* ═══════════════════════════════════════════
+   Layout: 左右分栏
+   ═══════════════════════════════════════════ */
+
+.predictions-layout {
+  display: flex;
+  gap: var(--space-xl);
+  margin-top: var(--space-lg);
+}
+
+.predictions-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xl);
+}
+
+.predictions-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: fit-content;
+  max-height: calc(100vh - var(--space-2xl));
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding-right: var(--space-xl);
+  border-right: 1px solid var(--border-default);
+}
+
+/* ═══════════════════════════════════════════
    Sidebar KPI cards
    ═══════════════════════════════════════════ */
 
@@ -122,7 +153,23 @@
   background: var(--card-secondary);
   border: 1px solid var(--border-default);
   border-left: 3px solid var(--accent);
-  transition: border-color var(--duration-fast) ease;
+  cursor: pointer;
+  transition: border-color var(--duration-fast) ease, background var(--duration-fast) ease, transform var(--duration-fast) ease;
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.pred-kpi-card:hover {
+  background: var(--card-primary);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+}
+
+.pred-kpi-card.active {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.15);
 }
 
 .pred-kpi-card-blue {
@@ -205,66 +252,6 @@
 /* ═══════════════════════════════════════════
    Sidebar nav links
    ═══════════════════════════════════════════ */
-
-.pred-nav-links {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-xs);
-}
-
-.pred-nav-link {
-  display: flex;
-  align-items: center;
-  gap: var(--space-sm);
-  padding: var(--space-sm) var(--space-md);
-  border-radius: var(--radius-sm);
-  color: var(--text-secondary);
-  font-size: var(--fs-caption);
-  font-weight: 500;
-  cursor: pointer;
-  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
-  border: none;
-  background: none;
-  text-align: left;
-  width: 100%;
-  position: relative;
-}
-
-.pred-nav-link::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%) scaleY(0);
-  width: 3px;
-  height: 16px;
-  border-radius: 2px;
-  background: var(--accent);
-  transition: transform var(--duration-normal) var(--ease-out);
-}
-
-.pred-nav-link:hover {
-  background: var(--border-default);
-  color: var(--text-primary);
-}
-
-.pred-nav-link.active {
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.pred-nav-link.active::after {
-  transform: translateY(-50%) scaleY(1);
-}
-
-.pred-nav-link-count {
-  margin-left: auto;
-  font-size: var(--fs-micro);
-  color: var(--text-muted);
-  background: var(--border-hover);
-  padding: 1px 6px;
-  border-radius: var(--radius-full);
-}
 
 /* ═══════════════════════════════════════════
    Sections (left main)
@@ -839,10 +826,6 @@
     flex: 0 0 auto;
     min-width: 180px;
     scroll-snap-align: start;
-  }
-
-  .pred-nav-links {
-    display: none;
   }
 
   .pred-section-head h2 {

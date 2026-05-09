@@ -5,7 +5,8 @@
   padding: 28px 32px;
   display: flex;
   gap: 28px;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .header-container {

@@ -109,7 +109,7 @@ export default function ChartsSection({ trendData, sourceData, selectedSource, o
           <ResponsiveContainer width="100%" height={250} minWidth={0} minHeight={250}>
             <AreaChart
               data={trendData}
-              margin={{ top: 10, right: 8, left: -12, bottom: 20 }}
+              margin={{ top: 10, right: 8, left: 0, bottom: 20 }}
               onClick={(payload: Record<string, unknown>) => {
                 if (!onDateClick) return
                 const activePayload = payload?.activePayload as Array<{ payload?: TrendPoint }> | undefined

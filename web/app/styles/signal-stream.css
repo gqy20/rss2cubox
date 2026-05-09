@@ -617,8 +617,8 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-  overflow: hidden;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .dashboard-right {

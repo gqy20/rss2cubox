@@ -73,11 +73,8 @@
 .briefing-panel {
   margin: 0 0 14px;
   padding: 18px;
-  height: clamp(264px, 36vh, 360px);
-  flex: 0 0 clamp(264px, 36vh, 360px);
-  overflow: hidden;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
   background:
     linear-gradient(135deg, rgba(79, 209, 197, 0.08), transparent 34%),
     rgba(17, 23, 32, 0.88);
@@ -138,79 +135,85 @@
 .briefing-list {
   list-style: none;
   margin: 0;
-  padding: 0 8px 0 0;
+  padding: 0 4px 0 0;
   display: grid;
   grid-auto-rows: auto;
-  gap: 6px;
+  gap: 2px;
   min-height: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow-y: visible;
 }
 
 .briefing-list li {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
   gap: 10px;
-  min-height: 32px;
-  padding: 2px 0;
-  overflow: hidden;
+  padding: 8px 4px;
+  align-items: start;
+  border-bottom: 1px solid rgba(178, 190, 205, 0.06);
+  transition: background 0.15s ease;
+}
+
+.briefing-list li:last-child {
+  border-bottom: none;
+}
+
+.briefing-list li:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .briefing-index {
-  color: #657181;
+  color: #55627a;
   font-size: 12px;
   font-weight: 760;
-  line-height: 1.65;
+  line-height: 1.9;
 }
 
 .briefing-item-title {
   color: #eef3fa;
-  font-size: 15px;
-  line-height: 1.35;
-  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.5;
+  font-weight: 600;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
+/* ReactMarkdown 会自动用 <p> 包裹内容，强制降级为内联让 favicon 紧跟文字 */
+.briefing-item-title > :is(p, div, span) {
+  display: inline;
+}
+
 .briefing-item-content {
-  margin: 2px 0 0;
-  color: #a2aec0;
-  font-size: 13px;
-  line-height: 1.55;
-  max-width: 82ch;
+  margin: 3px 0 0;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.5;
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
 
 .briefing-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  vertical-align: middle;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
 }
 
 .briefing-source-link {
   display: inline-flex;
   align-items: center;
-  padding: 2px 8px;
-  border-radius: 4px;
-  background: rgba(45, 212, 191, 0.08);
-  color: #2dd4bf;
-  font-size: 11px;
-  line-height: 1.4;
+  justify-content: center;
+  line-height: 1;
   text-decoration: none;
-  transition: background 0.15s, color 0.15s;
-  max-width: 180px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .briefing-source-link:hover {
-  background: rgba(45, 212, 191, 0.18);
-  color: #5eead4;
+  opacity: 0.8;
+  transform: scale(1.15);
 }
 
 .action-message {
