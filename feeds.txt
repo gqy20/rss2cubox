@@ -1,409 +1,408 @@
 # Feed definitions
 # Use [rsshub] for RSSHub routes and [direct] for full feed URLs.
 # 可选行内别名：在 feed 后追加 ` # 别名`，前端会优先显示别名。
+# 优先级格式：priority\tvalue # label（数字越大越优先，默认 0）
 
 [rsshub]
-/infoq/recommend # InfoQ 推荐
-/juejin/trending/ai/weekly # 掘金 AI 周榜
-/juejin/posts/2444938365386621 # 程序员鱼皮
-/juejin/posts/3782764966460398 # Moment
-/juejin/posts/2858385963484488 # 量子位
-/juejin/posts/4212984287073895 # 孟健AI编程
-/juejin/posts/2250051536050763 # 阿星AI工作室
-/juejin/posts/712139266070296 # 王若风
-/juejin/posts/3713472747818076 # 大模型开发
-/sspai/index # 少数派首页
-/anthropic/news # Anthropic News
-/anthropic/engineering # Anthropic Engineering
-/anthropic/research # Anthropic Research
-/anthropic/red # Anthropic RED
-/qbitai/category/ebandeng # 量子位 E 半导体
-/qbitai/category/auto # 量子位 Auto
-/qbitai/category/zhiku # 量子位 智库
-/qbitai/category/huodong # 量子位 活动
-/cursor/changelog # Cursor Changelog
-/cursor/blog # Cursor Blog
-/cursor/blog/news # Cursor Blog News
-/cursor/blog/research # Cursor Blog Research
-/modelscope/models # ModelScope 新模型
-/huggingface/blog # Hugging Face Blog（RSSHub）
-/hackernews # Hacker News
-/hackernews/show # Hacker News Show HN
-/zhihu/hot # 知乎热榜
-/solidot # Solidot 科技新闻
-/reddit/r/MachineLearning # Reddit r/MachineLearning
-/producthunt/today # Product Hunt 今日
-/github/trending/daily/python # GitHub Trending Python（日）
-/github/topics/llm # GitHub Topic LLM
-/github/topics/agent # GitHub Topic Agent
-/github/topics/autonomous-agent # GitHub Topic Autonomous-Agent
-/github/topics/ai-agent # GitHub Topic AI-Agent
-/github/topics/agents # GitHub Topic Agents
-/github/topics/machine-learning # GitHub Topic Machine Learning
-/github/topics/deep-learning # GitHub Topic Deep Learning
-/github/trending/daily/typescript # GitHub Trending TypeScript（日）
-/hellogithub/volume # HelloGitHub 月刊
-/hellogithub/home/featured # HelloGitHub 精选
-/juejin/aicoding # 掘金 AI Coding
-/twitter/user/karpathy # X @karpathy
-/twitter/user/fchollet # X @fchollet
-/twitter/user/soumithchintala # X @soumithchintala
-/twitter/user/rasbt # X @rasbt
-/twitter/user/ylecun # X @ylecun
-/twitter/user/demishassabis # X @demishassabis
-/twitter/user/Yoshua_Bengio # X @Yoshua_Bengio
-/twitter/user/sama # X @sama
-/twitter/user/AndrewYNg # X @AndrewYNg
-/twitter/user/JeremyHoward # X @JeremyHoward
-/twitter/user/swyx # X @swyx
-/twitter/user/simonw # X @simonw
+5	/infoq/recommend # InfoQ 推荐
+3	/juejin/trending/ai/weekly # 掘金 AI 周榜
+3	/juejin/posts/2444938365386621 # 程序员鱼皮
+3	/juejin/posts/3782764966460398 # Moment
+3	/juejin/posts/2858385963484488 # 量子位
+2	/juejin/posts/4212984287073895 # 孟健AI编程
+2	/juejin/posts/2250051536050763 # 阿星AI工作室
+2	/juejin/posts/712139266070296 # 王若风
+2	/juejin/posts/3713472747818076 # 大模型开发
+2	/sspai/index # 少数派首页
+5	/anthropic/news # Anthropic News
+5	/anthropic/engineering # Anthropic Engineering
+5	/anthropic/research # Anthropic Research
+5	/anthropic/red # Anthropic RED
+2	/qbitai/category/ebandeng # 量子位 E 半导体
+2	/qbitai/category/auto # 量子位 Auto
+2	/qbitai/category/zhiku # 量子位 智库
+2	/qbitai/category/huodong # 量子位 活动
+3	/cursor/changelog # Cursor Changelog
+3	/cursor/blog # Cursor Blog
+2	/cursor/blog/news # Cursor Blog News
+2	/cursor/blog/research # Cursor Blog Research
+2	/modelscope/models # ModelScope 新模型
+2	/huggingface/blog # Hugging Face Blog（RSSHub）
+4	/hackernews # Hacker News
+2	/hackernews/show # Hacker News Show HN
+2	/zhihu/hot # 知乎热榜
+2	/solidot # Solidot 科技新闻
+2	/reddit/r/MachineLearning # Reddit r/MachineLearning
+4	/producthunt/today # Product Hunt 今日
+2	/github/trending/daily/python # GitHub Trending Python（日）
+3	/github/topics/llm # GitHub Topic LLM
+3	/github/topics/agent # GitHub Topic Agent
+2	/github/topics/autonomous-agent # GitHub Topic Autonomous-Agent
+2	/github/topics/ai-agent # GitHub Topic AI-Agent
+2	/github/topics/agents # GitHub Topic Agents
+2	/github/topics/machine-learning # GitHub Topic Machine Learning
+2	/github/topics/deep-learning # GitHub Topic Deep Learning
+2	/github/trending/daily/typescript # GitHub Trending TypeScript（日）
+2	/hellogithub/volume # HelloGitHub 月刊
+2	/hellogithub/home/featured # HelloGitHub 精选
+2	/juejin/aicoding # 掘金 AI Coding
+3	/twitter/user/karpathy # X @karpathy
+2	/twitter/user/fchollet # X @fchollet
+2	/twitter/user/soumithchintala # X @soumithchintala
+2	/twitter/user/rasbt # X @rasbt
+2	/twitter/user/ylecun # X @ylecun
+2	/twitter/user/demishassabis # X @demishassabis
+3	/twitter/user/Yoshua_Bengio # X @Yoshua_Bengio
+3	/twitter/user/sama # X @sama
+2	/twitter/user/AndrewYNg # X @AndrewYNg
+2	/twitter/user/JeremyHoward # X @JeremyHoward
+2	/twitter/user/swyx # X @swyx
+2	/twitter/user/simonw # X @simonw
 # 核心 AI 研究者
-/twitter/user/drfeifei # X @drfeifei
-/twitter/user/percyliang # X @percyliang
-/twitter/user/lilianweng # X @lilianweng
-/twitter/user/chrmanning # X @chrmanning
-/twitter/user/DrJimFan # X @DrJimFan
-/twitter/user/ShunyuYao12 # X @ShunyuYao12
+2	/twitter/user/drfeifei # X @drfeifei
+2	/twitter/user/percyliang # X @percyliang
+2	/twitter/user/lilianweng # X @lilianweng
+2	/twitter/user/chrmanning # X @chrmanning
+2	/twitter/user/DrJimFan # X @DrJimFan
+2	/twitter/user/ShunyuYao12 # X @ShunyuYao12
 # Agent / LLM 工程圈
-/twitter/user/jerryjliu0 # X @jerryjliu0
-/twitter/user/hwchase17 # X @hwchase17
-/twitter/user/yoheinakajima # X @yoheinakajima
-/twitter/user/hamzafarrukh # X @hamzafarrukh
-/twitter/user/amasad # X @amasad
-/twitter/user/tobi # X @tobi
-/twitter/user/chipro # X @chipro
-/twitter/user/eugeneyan # X @eugeneyan
-/twitter/user/JayAlammar # X @JayAlammar
-/twitter/user/nir_diamant # X @nir_diamant
+2	/twitter/user/jerryjliu0 # X @jerryjliu0
+2	/twitter/user/hwchase17 # X @hwchase17
+2	/twitter/user/yoheinakajima # X @yoheinakajima
+2	/twitter/user/hamzafarrukh # X @hamzafarrukh
+2	/twitter/user/amasad # X @amasad
+2	/twitter/user/tobi # X @tobi
+2	/twitter/user/chipro # X @chipro
+2	/twitter/user/eugeneyan # X @eugeneyan
+2	/twitter/user/JayAlammar # X @JayAlammar
+2	/twitter/user/nir_diamant # X @nir_diamant
 # AI 创始人 / 公司人物
-/twitter/user/gdb # X @gdb
-/twitter/user/DarioAmodei # X @DarioAmodei
-/twitter/user/EMostaque # X @EMostaque
-/twitter/user/AravSrinivas # X @AravSrinivas
-/twitter/user/polynoamial # X @polynoamial
-/twitter/user/ilyasut # X @ilyasut
+2	/twitter/user/gdb # X @gdb
+2	/twitter/user/DarioAmodei # X @DarioAmodei
+2	/twitter/user/EMostaque # X @EMostaque
+2	/twitter/user/AravSrinivas # X @AravSrinivas
+2	/twitter/user/polynoamial # X @polynoamial
+2	/twitter/user/ilyasut # X @ilyasut
 # AI Builder / Hacker
-/twitter/user/danshipper # X @danshipper
-/twitter/user/btibor91 # X @btibor91
-/twitter/user/petergyang # X @petergyang
-/twitter/user/thesephist # X @thesephist
-/twitter/user/natfriedman # X @natfriedman
-/twitter/user/OfficialLoganK # X @OfficialLoganK
-/twitter/user/paulg # X @paulg
-/twitter/user/svpino # X @svpino
-/twitter/user/aakashg0 # X @aakashg0
-/twitter/user/emollick # X @emollick
+2	/twitter/user/danshipper # X @danshipper
+2	/twitter/user/btibor91 # X @btibor91
+2	/twitter/user/petergyang # X @petergyang
+2	/twitter/user/thesephist # X @thesephist
+2	/twitter/user/natfriedman # X @natfriedman
+2	/twitter/user/OfficialLoganK # X @OfficialLoganK
+2	/twitter/user/paulg # X @paulg
+2	/twitter/user/svpino # X @svpino
+2	/twitter/user/aakashg0 # X @aakashg0
+2	/twitter/user/emollick # X @emollick
 # 中文 AI Twitter
-/twitter/user/op7418 # X @op7418（归藏）
-/twitter/user/dotey # X @dotey（宝玉）
-/twitter/user/baoyu_io # X @baoyu_io（宝玉xp）
-/twitter/user/wangdengke # X @wangdengke（王登科）
-/twitter/user/vikingmute # X @vikingmute（viking）
-/twitter/user/waimaox # X @waimaox（歪脑）
-/twitter/user/zhwangart # X @zhwangart（王喆）
-/twitter/user/leiphys # X @leiphys（雷涛）
-/twitter/user/imian # X @imian（陈冕）
-/twitter/user/trq212 # X @trq212
+3	/twitter/user/op7418 # X @op7418（归藏）
+3	/twitter/user/dotey # X @dotey（宝玉）
+1	/twitter/user/baoyu_io # X @baoyu_io（宝玉xp）
+1	/twitter/user/wangdengke # X @wangdengke（王登科）
+1	/twitter/user/vikingmute # X @vikingmute（viking）
+1	/twitter/user/waimaox # X @waimaox（歪脑）
+1	/twitter/user/zhwangart # X @zhwangart（王喆）
+1	/twitter/user/leiphys # X @leiphys（雷涛）
+1	/twitter/user/imian # X @imian（陈冕）
+1	/twitter/user/trq212 # X @trq212
 # AI 公司官方账号
-/twitter/user/OpenAI # X @OpenAI
-/twitter/user/GoogleDeepMind # X @GoogleDeepMind
-/twitter/user/AnthropicAI # X @AnthropicAI
-/twitter/user/MetaAI # X @MetaAI
-/twitter/user/huggingface # X @huggingface
-/twitter/user/StabilityAI # X @StabilityAI
-/bilibili/user/video-browser/3546566589679687 # 废才俱乐部Club
-/bilibili/user/video-browser/3546572358945017 # 是花子呀_
-/bilibili/user/video-browser/14848367 # Xuan_酱
-/bilibili/user/video-browser/302188068 # 小白debug
-/bilibili/user/video-browser/26798384 # 柴知道
-/bilibili/user/video-browser/316183842 # 技术爬爬虾
-/bilibili/user/video-browser/14739873 # 檀东东Tango
-/bilibili/user/video-browser/3493277319825652 # AI超元域
-/bilibili/user/video-browser/4848323 # 数字游牧人
-/bilibili/user/video-browser/346575605 # kate人不错
-/bilibili/user/video-browser/1316597695 # AI学长小林
-/bilibili/user/video-browser/3546830396721763 # 第四种黑猩猩CHIMP
-/bilibili/user/video-browser/28357052 # 沧海九粟
-/bilibili/user/video-browser/3493082576193678 # infinite灵感港
-/bilibili/user/video-browser/73414544 # 机器之心官方
-/bilibili/user/video-browser/3546791320488658 # 千问大模型
-/bilibili/user/video-browser/3546585589877706 # 通义实验室
-/bilibili/user/video-browser/314076440 # 鱼C-小甲鱼
-/bilibili/user/video-browser/242124650 # KrillinAI小林
-/bilibili/user/video-browser/615957867 # 五里墩茶社
-/bilibili/user/video-browser/4401694 # 林亦LYi
-/bilibili/user/video-browser/380747130 # 赋范课堂
-/bilibili/user/video-browser/3546970691995922 # 道可云科技
-/bilibili/user/video-browser/65564239 # IT咖啡馆
-/bilibili/user/video-browser/46377861 # 神烦老狗
-/bilibili/user/video-browser/491787323 # 叫我小苏就好啊
-/bilibili/user/video-browser/3546884870244925 # 杰森的效率工坊
-/bilibili/user/video-browser/193580090 # 御风大世界
-/bilibili/user/video-browser/602010761 # JeffSu杰夫
-/bilibili/user/video-browser/627947058 # 红衣大叔周鸿祎
-/bilibili/user/video-browser/3546607314274766 # Kimi智能助手
-/bilibili/user/video-browser/3546878859807653 # MiniMax_稀宇极智
-/bilibili/user/video-browser/3546645734099512 # 智谱AI
-/bilibili/user/video-browser/319759808 # 神秘的鱼仔
-/bilibili/user/video-browser/52807953 # 创哥的AI实验室
-/bilibili/user/video-browser/280780745 # 张小珺商业访谈录
-/bilibili/user/video-browser/325864133 # 飞天闪客
+2	/twitter/user/OpenAI # X @OpenAI
+2	/twitter/user/GoogleDeepMind # X @GoogleDeepMind
+2	/twitter/user/AnthropicAI # X @AnthropicAI
+2	/twitter/user/MetaAI # X @MetaAI
+2	/twitter/user/huggingface # X @huggingface
+2	/twitter/user/StabilityAI # X @StabilityAI
+1	/bilibili/user/video-browser/3546566589679687 # 废才俱乐部Club
+1	/bilibili/user/video-browser/3546572358945017 # 是花子呀_
+1	/bilibili/user/video-browser/14848367 # Xuan_酱
+1	/bilibili/user/video-browser/302188068 # 小白debug
+1	/bilibili/user/video-browser/26798384 # 柴知道
+1	/bilibili/user/video-browser/316183842 # 技术爬爬虾
+1	/bilibili/user/video-browser/14739873 # 檀东东Tango
+1	/bilibili/user/video-browser/3493277319825652 # AI超元域
+1	/bilibili/user/video-browser/4848323 # 数字游牧人
+1	/bilibili/user/video-browser/1316597695 # AI学长小林
+1	/bilibili/user/video-browser/3546830396721763 # 第四种黑猩猩CHIMP
+1	/bilibili/user/video-browser/28357052 # 沧海九粟
+1	/bilibili/user/video-browser/3493082576193678 # infinite灵感港
+1	/bilibili/user/video-browser/73414544 # 机器之心官方
+1	/bilibili/user/video-browser/3546791320488658 # 千问大模型
+1	/bilibili/user/video-browser/3546585589877706 # 通义实验室
+1	/bilibili/user/video-browser/314076440 # 鱼C-小甲鱼
+1	/bilibili/user/video-browser/242124650 # KrillinAI小林
+1	/bilibili/user/video-browser/615957867 # 五里墩茶社
+1	/bilibili/user/video-browser/4401694 # 林亦LYi
+1	/bilibili/user/video-browser/380747130 # 赋范课堂
+1	/bilibili/user/video-browser/3546970691995922 # 道可云科技
+1	/bilibili/user/video-browser/65564239 # IT咖啡馆
+1	/bilibili/user/video-browser/46377861 # 神烦老狗
+1	/bilibili/user/video-browser/491787323 # 叫我小苏就好啊
+1	/bilibili/user/video-browser/3546884870244925 # 杰森的效率工坊
+1	/bilibili/user/video-browser/193580090 # 御风大世界
+1	/bilibili/user/video-browser/602010761 # JeffSu杰夫
+1	/bilibili/user/video-browser/627947058 # 红衣大叔周鸿祎
+1	/bilibili/user/video-browser/3546607314274766 # Kimi智能助手
+1	/bilibili/user/video-browser/3546878859807653 # MiniMax_稀宇极智
+1	/bilibili/user/video-browser/3546645734099512 # 智谱AI
+1	/bilibili/user/video-browser/319759808 # 神秘的鱼仔
+1	/bilibili/user/video-browser/52807953 # 创哥的AI实验室
+1	/bilibili/user/video-browser/280780745 # 张小珺商业访谈录
+1	/bilibili/user/video-browser/325864133 # 飞天闪客
 # 小红书（RSSHub）
 # 路由：/xiaohongshu/user/:user_id/notes
 # 说明：:user_id 为 24 位，需从小红书用户主页 URL 中提取
-/xiaohongshu/user/68502b1a000000001b01a7ba/notes # AgentOPC（小红书）
-/xiaohongshu/user/5d7ece920000000001018707/notes # SinKry 的 Ai 方舟（小红书）
-/xiaohongshu/user/6467b1210000000010027a51/notes # AI 拯救打工人（大厂爆料版）（小红书）
-/xiaohongshu/user/5ec66abd0000000001006a8a/notes # AI 异类弗兰克（小红书）
-/xiaohongshu/user/6314a2cc0000000012003173/notes # Aaron-OpenOnion（小红书）
+1	/xiaohongshu/user/68502b1a000000001b01a7ba/notes # AgentOPC（小红书）
+1	/xiaohongshu/user/5d7ece920000000001018707/notes # SinKry 的 Ai 方舟（小红书）
+1	/xiaohongshu/user/6467b1210000000010027a51/notes # AI 拯救打工人（大厂爆料版）（小红书）
+1	/xiaohongshu/user/5ec66abd0000000001006a8a/notes # AI 异类弗兰克（小红书）
+1	/xiaohongshu/user/6314a2cc0000000012003173/notes # Aaron-OpenOnion（小红书）
 
 [werss]
-/feed/MP_WXS_3903186594.rss # 袋鼠帝AI客栈
-/feed/MP_WXS_3903631794.rss # AI信息Gap
-/feed/MP_WXS_2398296760.rss # 51CTO技术栈
-/feed/MP_WXS_3271041950.rss # 新智元
-/feed/MP_WXS_3934419561.rss # 赛博禅心
-/feed/MP_WXS_3233423537.rss # 字节笔记本
-/feed/MP_WXS_3231445360.rss # AI变革指南
-/feed/MP_WXS_3223096120.rss # 数字生命卡兹克
-/feed/MP_WXS_3905207779.rss # 火山引擎Agent社区
-/feed/MP_WXS_3540975510.rss # 歸藏的AI工具箱
-/feed/MP_WXS_2398114060.rss # 智猩猩AI
-/feed/MP_WXS_3089095027.rss # 源见卓识
-/feed/MP_WXS_3871912638.rss # AI寒武纪
-/feed/MP_WXS_3943641304.rss # 扣子Coze
-/feed/MP_WXS_3274664830.rss # 悠哉AGI
-/feed/MP_WXS_3091215681.rss # AI工程化
-/feed/MP_WXS_3198754609.rss # Alex AI自动化
-/feed/MP_WXS_3867641939.rss # 数字开物
-/feed/MP_WXS_3908759862.rss # ShowHN Today
-/feed/MP_WXS_3873892677.rss # AIGC开放社区
-/feed/MP_WXS_3554086560.rss # AI前线
-/feed/MP_WXS_3884405249.rss # AI科技大本营
-/feed/MP_WXS_3098132220.rss # AI科技评论
-/feed/MP_WXS_2392024520.rss # APPSO
-/feed/MP_WXS_3075228534.rss # DeepTech深科技
-/feed/MP_WXS_3941633310.rss # PaperAgent
-/feed/MP_WXS_3082518302.rss # 光子星球
-/feed/MP_WXS_3900464567.rss # 智能涌现
-/feed/MP_WXS_1304308441.rss # 极客公园
-/feed/MP_WXS_3214834875.rss # 深度学习与NLP
-/feed/MP_WXS_3599245772.rss # 甲子光年
-/feed/MP_WXS_3876614989.rss # 超有 AI
-/feed/MP_WXS_3236757533.rss # 量子位
-/feed/MP_WXS_3201788143.rss # PaperWeekly
-/feed/MP_WXS_3073282833.rss # 机器之心
-
-https://duanyytop.github.io/agents-radar/feed.xml # agents-radar AI CLI/Agents 生态日报
-https://chrbailey.github.io/deeptrend/feed.xml # deeptrend AI 趋势情报
+2	/feed/MP_WXS_3903186594.rss # 袋鼠帝AI客栈
+2	/feed/MP_WXS_3903631794.rss # AI信息Gap
+2	/feed/MP_WXS_2398296760.rss # 51CTO技术栈
+2	/feed/MP_WXS_3271041950.rss # 新智元
+2	/feed/MP_WXS_3934419561.rss # 赛博禅心
+2	/feed/MP_WXS_3233423537.rss # 字节笔记本
+2	/feed/MP_WXS_3231445360.rss # AI变革指南
+2	/feed/MP_WXS_3223096120.rss # 数字生命卡兹克
+2	/feed/MP_WXS_3905207779.rss # 火山引擎Agent社区
+2	/feed/MP_WXS_3540975510.rss # 歸藏的AI工具箱
+2	/feed/MP_WXS_2398114060.rss # 智猩猩AI
+2	/feed/MP_WXS_3089095027.rss # 源见卓识
+2	/feed/MP_WXS_3871912638.rss # AI寒武纪
+2	/feed/MP_WXS_3943641304.rss # 扣子Coze
+2	/feed/MP_WXS_3274664830.rss # 悠哉AGI
+2	/feed/MP_WXS_3091215681.rss # AI工程化
+2	/feed/MP_WXS_3198754609.rss # Alex AI自动化
+2	/feed/MP_WXS_3867641939.rss # 数字开物
+2	/feed/MP_WXS_3908759862.rss # ShowHN Today
+2	/feed/MP_WXS_3873892677.rss # AIGC开放社区
+2	/feed/MP_WXS_3554086560.rss # AI前线
+2	/feed/MP_WXS_3884405249.rss # AI科技大本营
+2	/feed/MP_WXS_3098132220.rss # AI科技评论
+2	/feed/MP_WXS_2392024520.rss # APPSO
+2	/feed/MP_WXS_3075228534.rss # DeepTech深科技
+2	/feed/MP_WXS_3941633310.rss # PaperAgent
+2	/feed/MP_WXS_3082518302.rss # 光子星球
+2	/feed/MP_WXS_3900464567.rss # 智能涌现
+2	/feed/MP_WXS_1304308441.rss # 极客公园
+2	/feed/MP_WXS_3214834875.rss # 深度学习与NLP
+2	/feed/MP_WXS_3599245772.rss # 甲子光年
+2	/feed/MP_WXS_3876614989.rss # 超有 AI
+2	/feed/MP_WXS_3236757533.rss # 量子位
+2	/feed/MP_WXS_3201788143.rss # PaperWeekly
+2	/feed/MP_WXS_3073282833.rss # 机器之心
 
 [direct]
-https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
-https://feeds.arstechnica.com/arstechnica/index # Ars Technica
-https://www.wired.com/feed/rss # WIRED
-https://feeds.feedblitz.com/marginalrevolution # Marginal Revolution
-/youtube/channel/UCLXo7UDZvByw2ixzpQCufnA # YouTube Vox
-https://openai.com/news/rss.xml # OpenAI News
-https://deepmind.google/blog/rss.xml # Google DeepMind News
-https://blog.google/technology/ai/rss/ # Google AI Blog
-https://community.openai.com/c/announcements.rss # OpenAI 开发者公告
-https://huggingface.co/blog/feed.xml # Hugging Face Blog（官方）
-https://github.com/anthropics/claude-code/releases.atom # Claude Code Releases
-https://status.anthropic.com/history.rss # Claude Status 历史事件
-https://rss.arxiv.org/rss/cs.AI # arXiv cs.AI
-https://rss.arxiv.org/rss/cs.LG # arXiv cs.LG
-https://rss.arxiv.org/rss/cs.CL # arXiv cs.CL
-https://rss.arxiv.org/rss/cs.CV # arXiv cs.CV
+5	https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
+1	https://feeds.arstechnica.com/arstechnica/index # Ars Technica
+1	https://www.wired.com/feed/rss # WIRED
+1	https://feeds.feedblitz.com/marginalrevolution # Marginal Revolution
+1	/youtube/channel/UCLXo7UDZvByw2ixzpQCufnA # YouTube Vox
+5	https://openai.com/news/rss.xml # OpenAI News
+5	https://deepmind.google/blog/rss.xml # Google DeepMind News
+2	https://blog.google/technology/ai/rss/ # Google AI Blog
+2	https://community.openai.com/c/announcements.rss # OpenAI 开发者公告
+2	https://huggingface.co/blog/feed.xml # Hugging Face Blog（官方）
+2	https://github.com/anthropics/claude-code/releases.atom # Claude Code Releases
+1	https://status.anthropic.com/history.rss # Claude Status 历史事件
+0	https://rss.arxiv.org/rss/cs.AI # arXiv cs.AI
+0	https://rss.arxiv.org/rss/cs.LG # arXiv cs.LG
+0	https://rss.arxiv.org/rss/cs.CL # arXiv cs.CL
+0	https://rss.arxiv.org/rss/cs.CV # arXiv cs.CV
 # AI / LLM / Agent 研究博客
-https://lilianweng.github.io/index.xml # Lilian Weng Blog
-https://simonwillison.net/atom/everything/ # Simon Willison Blog
-https://huyenchip.com/feed.xml # Chip Huyen Blog
-https://sebastianraschka.com/rss.xml # Sebastian Raschka Blog
-https://jalammar.github.io/feed.xml # Jay Alammar Blog
+5	/lilianweng.github.io/index.xml # Lilian Weng Blog
+5	/simonwillison.net/atom/everything/ # Simon Willison Blog
+2	https://huyenchip.com/feed.xml # Chip Huyen Blog
+2	https://sebastianraschka.com/rss.xml # Sebastian Raschka Blog
+2	https://jalammar.github.io/feed.xml # Jay Alammar Blog
 # AI Engineering / LLM 系统博客
-https://eugeneyan.com/rss/ # Eugene Yan Blog
-https://swyx.io/rss.xml # Swyx Blog
-https://til.simonwillison.net/feed.xml # Simon Willison TIL
-https://www.latent.space/feed # Latent Space
+2	https://eugeneyan.com/rss/ # Eugene Yan Blog
+2	https://swyx.io/rss.xml # Swyx Blog
+2	https://til.simonwillison.net/feed.xml # Simon Willison TIL
+2	https://www.latent.space/feed # Latent Space
 # AI 研究 / 深度技术博客
-https://gwern.net/rss.xml # Gwern Blog
-https://distill.pub/rss.xml # Distill
-https://bair.berkeley.edu/blog/feed.xml # BAIR Blog
-https://www.inference.vc/rss.xml # Inference Blog
+2	https://gwern.net/rss.xml # Gwern Blog
+2	https://distill.pub/rss.xml # Distill
+2	https://bair.berkeley.edu/blog/feed.xml # BAIR Blog
+2	https://www.inference.vc/rss.xml # Inference Blog
 # AI 新闻 / 技术媒体
-https://developer.nvidia.com/blog/feed # NVIDIA Developer Blog
-https://www.marktechpost.com/feed/ # MarkTechPost
-https://gradientflow.substack.com/feed # Gradient Flow
+2	https://developer.nvidia.com/blog/feed # NVIDIA Developer Blog
+2	https://www.marktechpost.com/feed/ # MarkTechPost
+2	https://gradientflow.substack.com/feed # Gradient Flow
 # 工程 / 基础设施 / 开发工具博客
-https://vercel.com/atom # Vercel Blog
-https://blog.replit.com/feed.xml # Replit Blog
-https://databricks.com/feed # Databricks Blog
-https://blog.cloudflare.com/rss/ # Cloudflare Blog
-https://githubengineering.com/atom.xml # GitHub Engineering
-https://www.hashicorp.com/blog/feed.xml # HashiCorp Blog
-https://blog.docker.com/feed/ # Docker Blog
-https://clickhouse.com/rss.xml # ClickHouse Blog
-https://www.tinybird.co/blog/rss.xml # Tinybird Blog
-https://httptoolkit.tech/rss.xml # HTTP Toolkit Blog
-https://learnk8s.io/rss.xml # Learnk8s Blog
-https://evilmartians.com/chronicles.atom # Evil Martians Chronicles
-https://dropbox.tech/feed # Dropbox Tech
-https://benchling.engineering/feed # Benchling Engineering
-https://blog.acolyer.org/feed/ # Adrian Colyer Blog
-https://hacks.mozilla.org/feed/ # Mozilla Hacks
-https://tech.instacart.com/feed # Instacart Tech
-https://overreacted.io/rss.xml # Dan Abramov Blog
-https://www.morling.dev/blog/index.xml # Gunnar Morling Blog
-https://daniel.haxx.se/blog/feed/ # Daniel Stenberg Blog
-https://www.pulumi.com/blog/rss.xml # Pulumi Blog
-https://devblogs.microsoft.com/typescript/feed # Microsoft TypeScript Blog
-http://feeds.feedburner.com/blogspot/gJZg # Google Research Blog
-https://nodejs.org/en/feed/blog.xml # Node.js Blog
-https://v8.dev/blog.atom # V8 Blog
-https://engineering.hashnode.com/rss.xml # Hashnode Engineering
-https://blog.digitalocean.com/rss/ # DigitalOcean Blog
-https://www.elastic.co/blog/feed # Elastic Blog
+2	https://vercel.com/atom # Vercel Blog
+2	https://blog.replit.com/feed.xml # Replit Blog
+2	https://databricks.com/feed # Databricks Blog
+2	https://blog.cloudflare.com/rss/ # Cloudflare Blog
+2	https://githubengineering.com/atom.xml # GitHub Engineering
+1	https://www.hashicorp.com/blog/feed.xml # HashiCorp Blog
+1	https://blog.docker.com/feed/ # Docker Blog
+1	https://clickhouse.com/rss.xml # ClickHouse Blog
+1	https://www.tinybird.co/blog/rss.xml # Tinybird Blog
+1	https://httptoolkit.tech/rss.xml # HTTP Toolkit Blog
+1	https://learnk8s.io/rss.xml # Learnk8s Blog
+1	https://evilmartians.com/chronicles.atom # Evil Martians Chronicles
+1	https://dropbox.tech/feed # Dropbox Tech
+1	https://benchling.engineering/feed # Benchling Engineering
+2	https://blog.acolyer.org/feed/ # Adrian Colyer Blog
+1	https://hacks.mozilla.org/feed/ # Mozilla Hacks
+1	https://tech.instacart.com/feed # Instacart Tech
+1	https://overreacted.io/rss.xml # Dan Abramov Blog
+1	https://www.morling.dev/blog/index.xml # Gunnar Morling Blog
+1	https://daniel.haxx.se/blog/feed/ # Daniel Stenberg Blog
+1	https://www.pulumi.com/blog/rss.xml # Pulumi Blog
+1	https://devblogs.microsoft.com/typescript/feed # Microsoft TypeScript Blog
+1	http://feeds.feedburner.com/blogspot/gJZg # Google Research Blog
+1	https://nodejs.org/en/feed/blog.xml # Node.js Blog
+1	https://v8.dev/blog.atom # V8 Blog
+1	https://engineering.hashnode.com/rss.xml # Hashnode Engineering
+1	https://blog.digitalocean.com/rss/ # DigitalOcean Blog
+1	https://www.elastic.co/blog/feed # Elastic Blog
 # AI Builder / Hacker 博客
-https://tinyprojects.dev/feed.xml # Tiny Projects
-https://thesephist.com/rss.xml # thesephist Blog
-https://nat.org/blog/rss.xml # Nat Friedman Blog
-https://www.artificialintelligencemadesimple.com/feed # Artificial Intelligence Made Simple
+2	https://tinyprojects.dev/feed.xml # Tiny Projects
+2	https://thesephist.com/rss.xml # thesephist Blog
+2	https://nat.org/blog/rss.xml # Nat Friedman Blog
+1	https://www.artificialintelligencemadesimple.com/feed # Artificial Intelligence Made Simple
 # AI 论文与研究综述博客
-https://danieltakeshi.github.io/feed.xml # Seita's Place
-https://www.johndcook.com/blog/feed # John Cook Blog
-https://www.getrevue.co/profile/seungjaeryanlee?format=rss # RL Weekly
-https://danieltakeshi.github.io/feed.xml # Seita's Place
-https://vitalab.github.io/rss.xml # VITALab
-https://mlinproduction.com/feed # ML in Production
-https://machinelearningmastery.com/feed # Machine Learning Mastery
-/youtube/channel/UCLKPca3kwwd-B59HNr-_lvA # YouTube AI Engineer
-/youtube/channel/UCC-lyoTfSrcJzA1ab3APAgw # YouTube LangChain
-/youtube/channel/UCeRjipR4_SsCddq9VZ2AeKg # YouTube LlamaIndex
-/youtube/channel/UCrDwWp7EBBv4NwvScIpBDOA # YouTube Anthropic
-/youtube/channel/UCXZCJLdBC09xxGZ6gcdrc6A # YouTube OpenAI
-/youtube/channel/UCP7jMXSY2xbc3KCAE0MHQ-A # YouTube Google DeepMind
-/youtube/channel/UCHlNU7kIZhRgSbhHvFoy72w # YouTube HuggingFace
-/youtube/channel/UCBp3w4DCEC64FZr4k9ROxig # YouTube Weights & Biases
-/youtube/channel/UCGovZyy8OfFPNlNV0i1fI1g # YouTube Temporal
-/youtube/channel/UCn8ujwUInbJkBhffxqAPBVQ # YouTube Dave Ebbelaar
-/youtube/channel/UCFqXmQ56-Gp1rIKa-GoAJvQ # YouTube @DrAndyStapleton
-/youtube/channel/UC7c3Kb6jYCRj4JOHHZTxKsQ # YouTube @GitHub
-/youtube/channel/UCV03SRZXJEz-hchIAogeJOg # YouTube @claude
-/youtube/channel/UCsQoiOrh7jzKmE8NBofhTnQ # YouTube @VarunMayya
-/youtube/channel/UCPjNBjflYl0-HQtUvOx0Ibw # YouTube @GregIsenberg
-/youtube/channel/UCawZsQWqfGSbCI5yjkdVkTA # YouTube @matthew_berman
-/youtube/channel/UC2UXDak6o7rBm23k3Vv5dww # YouTube @TinaHuang1
-/youtube/channel/UCOuGATIAbd2DvzJmUgXn2IQ # YouTube @NetworkChuck
-/youtube/channel/UC2ojq-nuP8ceeHqiroeKhBA # YouTube @nateherk
-/youtube/channel/UCNJ1Ymd5yFuUPtn21xtRbbw # YouTube @aiexplained-official
-/youtube/channel/UChpleBmo18P08aKCIgti38g # YouTube @mreflow（Matt Wolfe）
+1	https://danieltakeshi.github.io/feed.xml # Seita's Place
+1	https://www.johndcook.com/blog/feed # John Cook Blog
+1	https://www.getrevue.co/profile/seungjaeryanlee?format=rss # RL Weekly
+1	https://danieltakeshi.github.io/feed.xml # Seita's Place
+1	https://vitalab.github.io/rss.xml # VITALab
+1	https://mlinproduction.com/feed # ML in Production
+1	https://machinelearningmastery.com/feed # Machine Learning Mastery
+2	/youtube/channel/UCLKPca3kwwd-B59HNr-_lvA # YouTube AI Engineer
+2	/youtube/channel/UCC-lyoTfSrcJzA1ab3APAgw # YouTube LangChain
+2	/youtube/channel/UCeRjipR4_SsCddq9VZ2AeKg # YouTube LlamaIndex
+2	/youtube/channel/UCrDwWp7EBBv4NwvScIpBDOA # YouTube Anthropic
+2	/youtube/channel/UCXZCJLdBC09xxGZ6gcdrc6A # YouTube OpenAI
+2	/youtube/channel/UCP7jMXSY2xbc3KCAE0MHQ-A # YouTube Google DeepMind
+2	/youtube/channel/UCHlNU7kIZhRgSbhHvFoy72w # YouTube HuggingFace
+2	/youtube/channel/UCBp3w4DCEC64FZr4k9ROxig # YouTube Weights & Biases
+2	/youtube/channel/UCGovZyy8OfFPNlNV0i1fI1g # YouTube Temporal
+2	/youtube/channel/UCn8ujwUInbJkBhffxqAPBVQ # YouTube Dave Ebbelaar
+2	/youtube/channel/UCFqXmQ56-Gp1rIKa-GoAJvQ # YouTube @DrAndyStapleton
+2	/youtube/channel/UC7c3Kb6jYCRj4JOHHZTxKsQ # YouTube @GitHub
+2	/youtube/channel/UCV03SRZXJEz-hchIAogeJOg # YouTube @claude
+2	/youtube/channel/UCsQoiOrh7jzKmE8NBofhTnQ # YouTube @VarunMayya
+2	/youtube/channel/UCPjNBjflYl0-HQtUvOx0Ibw # YouTube @GregIsenberg
+2	/youtube/channel/UCawZsQWfSBv4NwvScIpBDOA # YouTube @matthew_berman
+2	/youtube/channel/UC2UXDak6o7rBm23k3Vv5dww # YouTube @TinaHuang1
+2	/youtube/channel/UCOuGATIAbd2DvzJzJmUgXn2IQ # YouTube @NetworkChuck
+2	/youtube/channel/UC2ojq-nuP8ceeHqiroeKhBA # YouTube @nateherk
+2	/youtube/channel/UCNJ1Ymd5yFuUPtn21xtRbbw # YouTube @aiexplained-official
+2	/youtube/channel/UCChpleBmo18P08aKCIgti38g # YouTube @mreflow（Matt Wolfe）
 # 新增：论文解读 / 前沿研究
-/youtube/channel/UCZHmQk67mSJgfCCTn7xBfew # Yannic Kilcher（论文深度解读）
-/youtube/channel/UCbfYPyITQ-7l4upoX8nvctg # Two Minute Papers（AI 研究速览）
-/youtube/channel/UCHhYXsLBEVVnbvsq57n1MTQ # AI Advantage（论文+实战）
+2	/youtube/channel/UCZHmQk67mSJgfCCTn7xBfew # Yannic Kilcher（论文深度解读）
+2	/youtube/channel/UCbfYPyITQ-7l4upoX8nvctg # Two Minute Papers（AI 研究速览）
+2	/youtube/channel/UCHhYXsLBEVVnbvsq57n1MTQ # AI Advantage（论文+实战）
 # 新增：大模型原理 / 从零实现
-/youtube/channel/UCXUPKJO5MZQN11PqgIvyuvQ # Andrej Karpathy（卡帕西）
-/youtube/channel/UCYO_jab_esuFRV4b17AJtAw # 3Blue1Brown（可视化数学）
-/youtube/channel/UCtYLUTtgS3k1Fg4y5tAhLbw # StatQuest with Josh Starmer
+3	/youtube/channel/UCXUPKJO5MZQN11PqgIvyuvQ # Andrej Karpathy（卡帕西）
+2	/youtube/channel/UCYO_jab_esuFRV4b17AJtAw # 3Blue1Brown（可视化数学）
+2	/youtube/channel/UCtYLUTtgS3k1Fg4y5tAhLbw # StatQuest with Josh Starmer
 # 新增：工程实战 / LLM 应用开发
-/youtube/channel/UCNU_lfiiWBdtULKOw6X0Dig # Krish Naik（GenAI 全栈教程）
-/youtube/channel/UCfzlCWGWYyIQ0aLC5w48gBQ # Sentdex（Python + ML 实战）
-/youtube/channel/UCtatfZMf-8EkIwASXM4ts0A # AssemblyAI（LLM 工程实践）
+2	/youtube/channel/UCNU_lfiiWBdtULKOw6X0Dig # Krish Naik（GenAI 全栈教程）
+2	/youtube/channel/UCfzlCWGWYyIQ0aLC5w48gBQ # Sentdex（Python + ML 实战）
+2	/youtube/channel/UCtatfZMf-8EkIwASXM4ts0A # AssemblyAI（LLM 工程实践）
 # 新增：行业深度对话 / 播客
-/youtube/channel/UCSHZKyawb77ixDdsGog4iWA # Lex Fridman Podcast
-/youtube/channel/UCXl4i9dYBrFOabk0xGmbkRA # Dwarkesh Patel Podcast
-/youtube/channel/UCSI7h9hydQ40K5MJHnCrQvw # No Priors（Elad Gil & Sarah Guo）
+2	/youtube/channel/UCSHZKyawb77ixDdsGog4iWA # Lex Fridman Podcast
+2	/youtube/channel/UCXl4i9dYBrFOabk0xGmbkRA # Dwarkesh Patel Podcast
+2	/youtube/channel/UCSI7h9hydQ40K5MJHnCrQvw # No Priors（Elad Gil & Sarah Guo）
 # 新增：中文 AI 频道
-/youtube/channel/UCBFkCZVCfwi4YL21zCcnjxQ # 跟李沐学AI（Deep Learning 101）
-/youtube/channel/UCIDll3SRcbHwwcXbrwvBZNw # 橘鸦Juya（AI早报视频版）
+3	/youtube/channel/UCBFkCZVCfwi4YL21zCcnjxQ # 跟李沐学AI（Deep Learning 101）
+2	/youtube/channel/UCIDll3SRcbHwwcXbrwvBZNw # 橘鸦Juya（AI早报视频版）
 # 新增：从橘鸦早报提取的信源
-https://openclaw.ai/rss.xml # OpenClaw Blog（AI Agent）
-https://zed.dev/blog.rss # Zed Editor Blog
-https://techcrunch.com/feed/ # TechCrunch
-https://research.ibm.com/rss # IBM Research
-https://qwenlm.github.io/blog/index.xml # Qwen Blog（通义千问）
-https://github.com/NousResearch/hermes-agent/releases.atom # Hermes Agent Releases（Nous Research）
+2	https://openclaw.ai/rss.xml # OpenClaw Blog（AI Agent）
+2	https://zed.dev/blog.rss # Zed Editor Blog
+1	https://techcrunch.com/feed/ # TechCrunch
+2	https://research.ibm.com/rss # IBM Research
+2	https://qwenlm.github.io/blog/index.xml # Qwen Blog（通义千问）
+2	https://github.com/NousResearch/hermes-agent/releases.atom # Hermes Agent Releases（Nous Research）
 # 新增：从橘鸦早报 issue 66-73 提取的信源
-https://blogs.microsoft.com/rss # Microsoft Blog
-https://github.blog/feed # GitHub Blog（产品&新闻）
-https://about.fb.com/feed # Meta Blog
-https://blog.comfy.org/feed # ComfyUI Blog（Substack）
-https://developers.googleblog.com/feed # Google Developer Blog
-https://github.com/open-webui/open-webui/releases.atom # Open WebUI Releases
+1	https://blogs.microsoft.com/rss # Microsoft Blog
+2	https://github.blog/feed # GitHub Blog（产品&新闻）
+1	https://about.fb.com/feed # Meta Blog
+1	https://blog.comfy.org/feed # ComfyUI Blog（Substack）
+1	https://developers.googleblog.com/feed # Google Developer Blog
+2	https://github.com/open-webui/open-webui/releases.atom # Open WebUI Releases
 # 新增：从橘鸦早报 issue 62-65 提取的信源
-https://github.com/browser-use/browser-use/releases.atom # browser-use（AI 浏览器自动化）
-https://github.com/CherryHQ/cherry-studio/releases.atom # Cherry Studio（AI 客户端）
-https://blogs.opera.com/news/feed # Opera Blog
-https://www.businessinsider.com/rss # Business Insider
+2	https://github.com/browser-use/browser-use/releases.atom # browser-use（AI 浏览器自动化）
+2	https://github.com/CherryHQ/cherry-studio/releases.atom # Cherry Studio（AI 客户端）
+1	https://blogs.opera.com/news/feed # Opera Blog
+1	https://www.businessinsider.com/rss # Business Insider
 # 新增：类似橘鸦的 AI 聚合信源
-https://www.bensbites.com/feed # Ben's Bites（AI 创业 & 工具，Substack）
+4	https://www.bensbites.com/feed # Ben's Bites（AI 创业 & 工具，Substack）
 # 新增：从已有聚合源反向挖掘的源头
 # — 从 agents-radar 提取的 AI CLI/Agent 工具 GitHub Releases
-https://github.com/openai/codex/releases.atom # OpenAI Codex（AI 编程 Agent）
-https://github.com/google-gemini/gemini-cli/releases.atom # Gemini CLI（Google AI CLI）
-https://github.com/github/copilot-cli/releases.atom # GitHub Copilot CLI
-https://github.com/MoonshotAI/kimi-cli/releases.atom # Kimi CLI（月之暗面）
-https://github.com/anomalyco/opencode/releases.atom # OpenCode（开源 AI IDE）
-https://github.com/exa-labs/exa-js/releases.atom # Exa JS（AI 搜索 API）
+2	https://github.com/openai/codex/releases.atom # OpenAI Codex（AI 编程 Agent）
+2	https://github.com/google-gemini/gemini-cli/releases.atom # Gemini CLI（Google AI CLI）
+2	https://github.com/github/copilot-cli/releases.atom # GitHub Copilot CLI
+2	https://github.com/MoonshotAI/kimi-cli/releases.atom # Kimi CLI（月之暗面）
+2	https://github.com/anomalyco/opencode/releases.atom # OpenCode（开源 AI IDE）
+2	https://github.com/exa-labs/exa-js/releases.atom # Exa JS（AI 搜索 API）
 # — 从 Ben's Bites 引用链提取的博客
-https://blog.usv.com/feed # USV Blog（Union Square Ventures，AI/科技投资洞察）
-https://www.aboutamazon.com/news/rss # Amazon News（AWS AI、芯片、零售动态）
+2	https://blog.usv.com/feed # USV Blog（Union Square Ventures，AI/科技投资洞察）
+1	https://www.aboutamazon.com/news/rss # Amazon News（AWS AI、芯片、零售动态）
 # 新增：调研发现的 AI 聚合信源
-https://the-decoder.com/feed/ # The Decoder（AI 新闻，德/英双语，活跃 2026）
-https://www.artificialintelligence-news.com/feed/ # AI News - TechForge（企业 AI 聚焦）
-https://aiweekly.co/feed # AI Weekly（AI 周报，44K+ 订阅者）
+4	https://the-decoder.com/feed/ # The Decoder（AI 新闻，德/英双语，活跃 2026）
+1	https://www.artificialintelligence-news.com/feed/ # AI News - TechForge（企业 AI 聚焦）
+4	https://aiweekly.co/feed # AI Weekly（AI 周报，44K+ 订阅者）
 # 新增：从 3 个新聚合源反向挖掘的源头
 # — 从 AI Weekly 引用链提取
-https://sherwood.news/rss.xml # Sherwood News（科技/市场/加密新闻，Robinhood 旗下）
+2	https://sherwood.news/rss.xml # Sherwood News（科技/市场/加密新闻，Robinhood 旗下）
 # — 从 The Decoder & AI Weekly 共同引用
-https://huggingface.co/blog/feed.xml # Hugging Face Blog（AI/ML 研究与产品更新）
+2	https://huggingface.co/blog/feed.xml # Hugging Face Blog（AI/ML 研究与产品更新）
 # ======== 全渠道信源发现：OPML 挖矿 + 公司博客矩阵 + 学术/播客/VC/政策 ========
 # — AI 公司官方博客（新发现）
-https://openai.com/blog/rss.xml # OpenAI Blog（产品+研究，与 /news/rss 互补）
-https://www.together.ai/blog/rss.xml # Together AI Blog（开源模型生态）
-https://www.microsoft.com/en-us/research/feed/ # Microsoft Research（前沿研究）
-https://blogs.nvidia.com/feed/ # NVIDIA Blog（GPU/芯片/AI 硬件，与企业开发者博客互补）
-https://blog.langchain.dev/rss/ # LangChain Blog（LLM 应用开发框架）
-https://mistral.ai/news/index.xml # Mistral AI News（欧洲开源模型先锋）
-https://stability.ai/blog?format=rss # Stability AI Blog（生成式 AI / 图像/视频）
-https://txt.cohere.com/rss/ # Cohere Blog（企业 LLM / RAG / Embeddings）
-https://blog.llamaindex.ai/feed # LlamaIndex Blog（数据框架 / RAG 工具链）
-https://machinelearning.apple.com/rss.xml # Apple Machine Learning Research
-https://aws.amazon.com/blogs/machine-learning/feed/ # AWS Machine Learning Blog
-https://www.amazon.science/index.rss # Amazon Science（跨学科研究，与 Amazon News 互补）
+2	https://openai.com/blog/rss.xml # OpenAI Blog（产品+研究，与 /news/rss 互补）
+2	https://www.together.ai/blog/rss.xml # Together AI Blog（开源模型生态）
+2	https://www.microsoft.com/en-us/research/feed/ # Microsoft Research（前沿研究）
+2	https://blogs.nvidia.com/feed/ # NVIDIA Blog（GPU/芯片/AI 硬件，与企业开发者博客互补）
+2	https://blog.langchain.dev/rss/ # LangChain Blog（LLM 应用开发框架）
+2	https://mistral.ai/news/index.xml # Mistral AI News（欧洲开源模型先锋）
+2	https://stability.ai/blog?format=rss # Stability AI Blog（生成式 AI / 图像/视频）
+2	https://txt.cohere.com/rss/ # Cohere Blog（企业 LLM / RAG / Embeddings）
+2	https://blog.llamaindex.ai/feed # LlamaIndex Blog（数据框架 / RAG 工具链）
+2	https://machinelearning.apple.com/rss.xml # Apple Machine Learning Research
+2	https://aws.amazon.com/blogs/machine-learning/feed/ # AWS Machine Learning Blog
+2	https://www.amazon.science/index.rss # Amazon Science（跨学科研究，与 Amazon News 互补）
 # — 学术机构与研究实验室
-https://ai.stanford.edu/blog/feed.xml # Stanford AI Lab Blog（SAIL）
-https://news.mit.edu/rss/topic/artificial-intelligence2 # MIT News — AI 专题
-https://allenai.org/blog/feed # AI2 Blog（Allen Institute for AI，研究驱动）
-https://blog.eleuther.ai/index.xml # Eleuther AI Blog（开源 AI 研究）
+2	https://ai.stanford.edu/blog/feed.xml # Stanford AI Lab Blog（SAIL）
+2	https://news.mit.edu/rss/topic/artificial-intelligence2 # MIT News — AI 专题
+2	https://allenai.org/blog/feed # AI2 Blog（Allen Institute for AI，研究驱动）
+2	https://blog.eleuther.ai/index.xml # Eleuther AI Blog（开源 AI 研究）
 # — AI 媒体与社区（高价值聚合/分析）
-https://venturebeat.com/category/ai/feed/ # VentureBeat — AI 分类
-https://thegradient.pub/rss/ # The Gradient（AI 学术深度文章）
-https://feed.infoq.com/ai-ml-data-eng/ # InfoQ — AI/ML/Data Engineering
-https://www.semianalysis.com/feed/ # SemiAnalysis（AI 芯片/半导体行业深度分析）
-https://lastweekin.ai/feed # Last Week in AI（AI 周报摘要）
-https://importai.substack.com/feed # Import AI（Jack Clark，AI 行业内部视角）
-https://www.interconnects.ai/feed # Interconnects（Nathan Lambert，AI 开源生态分析）
-https://www.404media.co/rss/ # 404 Media（AI 科技快讯，独立媒体）
+2	https://venturebeat.com/category/ai/feed/ # VentureBeat — AI 分类
+2	https://thegradient.pub/rss/ # The Gradient（AI 学术深度文章）
+2	https://feed.infoq.com/ai-ml-data-eng/ # InfoQ — AI/ML/Data Engineering
+2	https://www.semianalysis.com/feed/ # SemiAnalysis（AI 芯片/半导体行业深度分析）
+4	https://lastweekin.ai/feed # Last Week in AI（AI 周报摘要）
+4	https://importai.substack.com/feed # Import AI（Jack Clark，AI 行业内部视角）
+4	https://www.interconnects.ai/feed # Interconnects（Nathan Lambert，AI 开源生态分析）
+2	https://www.404media.co/rss/ # 404 Media（AI 科技快讯，独立媒体）
 # — AI 播客
-https://changelog.com/practicalai/feed # Practical AI Podcast（Changelog，ML/DL/NLP 全领域）
-https://twimlai.com/feed # TWIML AI Podcast（Sam Charrington，765+ 期产业+学术）
+2	https://changelog.com/practicalai/feed # Practical AI Podcast（Changelog，ML/DL/NLP 全领域）
+2	https://twimlai.com/feed # TWIML AI Podcast（Sam Charrington，765+ 期产业+学术）
 # — VC / 投资人博客
-https://greylock.com/blog/feed/ # Greylock Partners Blog（企业级 AI 投资）
-https://review.firstround.com/feed/ # First Round Review（创业洞察 + 技术深度）
+2	https://greylock.com/blog/feed/ # Greylock Partners Blog（企业级 AI 投资）
+2	https://review.firstround.com/feed/ # First Round Review（创业洞察 + 技术深度）
 # — 政策 / 监管 / 权威科技媒体
-https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss # IEEE Spectrum — AI 专题
-https://www.technologyreview.com/feed # MIT Technology Review（权威科技深度报道）
-https://www.nist.gov/news-events/news/rss.xml # NIST News（含 AI 标准/安全/评估政策）
+1	https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss # IEEE Spectrum — AI 专题
+1	https://www.technologyreview.com/feed # MIT Technology Review（权威科技深度报道）
+1	https://www.nist.gov/news-events/news/rss.xml # NIST News（含 AI 标准/安全/评估政策）
 # — 论文（社区维护）
-https://papers.takara.ai/api/feed # Hugging Face Daily Papers（社区维护，每日论文更新）
+0	https://papers.takara.ai/api/feed # Hugging Face Daily Papers（社区维护，每日论文更新）
 # — 高价值个人博客（AI 商业/教育/实践）
-https://www.oneusefulthing.org/feed # One Useful Thing（Ethan Mollick，沃顿教授 AI 商业实验）
-https://scottaaronson.blog/?feed=rss2 # Shtetl-Optimized（Scott Aaronson，量子计算/AI 理论）
-https://blog.bytebytego.com/feed # ByteByteGo（系统设计 + AI 架构，图文并茂）
-https://www.fast.ai/index.xml # Fast.AI（Jeremy Howard，实用深度学习教程）
+2	https://www.oneusefulthing.org/feed # One Useful Thing（Ethan Mollick，沃顿教授 AI 商业实验）
+1	https://scottaaronson.blog/?feed=rss2 # Shtetl-Optimized（Scott Aaronson，量子计算/AI 理论）
+2	https://blog.bytebytego.com/feed # ByteByteGo（系统设计 + AI 架构，图文并茂）
+2	https://www.fast.ai/index.xml # Fast.AI（Jeremy Howard，实用深度学习教程）
 # — 综合科技媒体（补充覆盖面）
-https://www.theverge.com/rss/full.xml # The Verge（消费科技 + AI）
-https://futurism.com/feed # Futurism（未来科技 + AI 聚焦）
-https://api.quantamagazine.org/feed/ # Quanta Magazine（数学/CS/理论科学，纯数学驱动的 AI 洞察）
-https://www.lesswrong.com/feed.xml?view=curated-rss # LessWrong（理性社区，AI 对齐/安全讨论）
+1	https://www.theverge.com/rss/full.xml # The Verge（消费科技 + AI）
+1	https://futurism.com/feed # Futurism（未来科技 + AI 聚焦）
+1	https://api.quantamagazine.org/feed/ # Quanta Magazine（数学/CS/理论科学，纯数学驱动的 AI 洞察）
+1	https://www.lesswrong.com/feed.xml?view=curated-rss # LessWrong（理性社区，AI 对齐/安全讨论）
+4	https://duanyytop.github.io/agents-radar/feed.xml # agents-radar AI CLI/Agents 生态日报
+4	https://chrbailey.github.io/deeptrend/feed.xml # deeptrend AI 趋势情报
