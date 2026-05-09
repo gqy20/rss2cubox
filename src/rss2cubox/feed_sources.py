@@ -915,6 +915,6 @@ def collect_candidates_from_feeds(
 
     # Sort candidates by feed priority (descending) so high-value feeds are processed first
     _feed_priority: dict[str, int] = {spec["value"]: spec.get("priority", 0) for spec in feed_specs}
-    candidates.sort(key=lambda c: _feed_priority.get(c.get("source_feed_id", ""), 0), reverse=True)
+    candidates.sort(key=lambda c: _feed_priority.get(c.get("source_feed", ""), 0), reverse=True)
 
     return candidates, last_build_cache
