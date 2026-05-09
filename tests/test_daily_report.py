@@ -1,5 +1,6 @@
 """Tests for daily_report_agent module (TDD Red Phase)."""
 import json
+import os
 from datetime import datetime, timezone
 from unittest.mock import MagicMock, patch
 
@@ -217,17 +218,6 @@ def sample_reviews():
     ]
 
 
-# ── Helper ────────────────────────────────────────────────
-
-def make_mock_conn():
-    """Create mock DB connection for 'with' statement."""
-    cur = MagicMock()
-    conn = MagicMock()
-    conn.cursor.return_value = cur
-    conn.__enter__.return_value = conn
-    return conn, cur
-
-
 # ══════════════════════════════════════════════════════════
 # 测试组 1: db_client - daily_reports 表 DDL 和 CRUD
 # ══════════════════════════════════════════════════════════
@@ -263,9 +253,9 @@ class TestDailyReportsSchema:
 class TestSaveDailyReport:
     """Test save_daily_report function."""
 
-    def test_save_creates_table_first(self):
+    def test_save_creates_table_first(self, mock_db_conn):
         """保存前应先执行 DDL 建表"""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         payload = {
             "report_date": "2026-05-09",
             "generated_at": datetime(2026, 5, 9, 23, 59, tzinfo=timezone.utc).isoformat(),
@@ -283,9 +273,9 @@ class TestSaveDailyReport:
             ddl_calls = [s for s in sql_calls if "daily_reports" in s.lower()]
             assert len(ddl_calls) > 0, "应先执行 DDL"
 
-    def test_save_inserts_payload(self):
+    def test_save_inserts_payload(self, mock_db_conn):
         """应 INSERT 报告数据"""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         payload = {
             "report_date": "2026-05-09",
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -304,9 +294,9 @@ class TestSaveDailyReport:
             insert_calls = [c[0][0] for c in cur.execute.call_args_list if "INSERT" in c[0][0].upper()]
             assert len(insert_calls) > 0
 
-    def test_save_commits_transaction(self):
+    def test_save_commits_transaction(self, mock_db_conn):
         """写入后应 commit"""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         payload = {"report_date": "2026-05-09", "generated_at": datetime.now(timezone.utc).isoformat(), "summary": {}, "trends": [], "weak_signals": [], "daily_advices": []}
 
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
@@ -323,9 +313,9 @@ class TestSaveDailyReport:
         result = save_daily_report({"report_date": "2026-05-09"}, db_url="")
         assert result is False
 
-    def test_save_handles_json_serialization(self):
+    def test_save_handles_json_serialization(self, mock_db_conn):
         """payload 应被 JSON 序列化后写入"""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         payload = {
             "report_date": "2026-05-09",
             "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -350,9 +340,9 @@ class TestSaveDailyReport:
 class TestGetDailyReport:
     """Test get_daily_report function."""
 
-    def test_get_by_date_queries_correctly(self):
+    def test_get_by_date_queries_correctly(self, mock_db_conn):
         """应按 report_date 查询单条"""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         # get_daily_report 只 SELECT data 列
         mock_row = (json.dumps({"report_date": "2026-05-09"}),)
         cur.fetchone.return_value = mock_row
@@ -364,9 +354,9 @@ class TestGetDailyReport:
             assert result is not None
             assert result["report_date"] == "2026-05-09"
 
-    def test_get_returns_none_when_not_found(self):
+    def test_get_returns_none_when_not_found(self, mock_db_conn):
         """无数据时返回 None"""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         cur.fetchone.return_value = None
 
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
@@ -378,9 +368,9 @@ class TestGetDailyReport:
 class TestGetRecentReports:
     """Test get_recent_reports function."""
 
-    def test_get_recent_orders_by_date_desc(self):
+    def test_get_recent_orders_by_date_desc(self, mock_db_conn):
         """应按日期倒序排列"""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         cur.fetchall.return_value = []
 
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
@@ -390,9 +380,9 @@ class TestGetRecentReports:
             select_call = [c for c in cur.execute.call_args_list if "SELECT" in c[0][0].upper()][0]
             assert "DESC" in select_call[0][0].upper()
 
-    def test_get_recent_respects_limit(self):
+    def test_get_recent_respects_limit(self, mock_db_conn):
         """应使用 LIMIT 参数"""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         cur.fetchall.return_value = []
 
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
@@ -653,7 +643,3 @@ class TestRunDailyReport:
         mock_collect.assert_called_once()
         mock_agent.assert_called_once()
         assert result is not None
-
-
-# 需要在模块顶部导入 os（用于测试环境变量）
-import os

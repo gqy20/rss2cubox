@@ -24,21 +24,12 @@ def sample_insights_payload():
     }
 
 
-def make_mock_conn():
-    """Create a properly configured mock connection for use with 'with' statement."""
-    cur = MagicMock()
-    conn = MagicMock()
-    conn.cursor.return_value = cur
-    conn.__enter__.return_value = conn
-    return conn, cur
-
-
 class TestSaveGlobalInsights:
     """Test saving global_insights to local PostgreSQL."""
 
-    def test_save_global_insights_creates_table_if_not_exists(self, sample_insights_payload):
+    def test_save_global_insights_creates_table_if_not_exists(self, sample_insights_payload, mock_db_conn):
         """Should create global_insights table if it doesn't exist."""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_global_insights
 
@@ -49,9 +40,9 @@ class TestSaveGlobalInsights:
             create_calls = [s for s in sql_calls if "CREATE TABLE" in s.upper()]
             assert len(create_calls) > 0, f"No CREATE TABLE call found. Calls: {sql_calls}"
 
-    def test_save_global_insights_inserts_record(self, sample_insights_payload):
+    def test_save_global_insights_inserts_record(self, sample_insights_payload, mock_db_conn):
         """Should insert global_insights record."""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_global_insights
 
@@ -62,9 +53,9 @@ class TestSaveGlobalInsights:
             insert_calls = [s for s in sql_calls if s.strip().upper().startswith("INSERT")]
             assert len(insert_calls) > 0, f"No INSERT call found. Calls: {sql_calls}"
 
-    def test_save_global_insights_commits(self, sample_insights_payload):
+    def test_save_global_insights_commits(self, sample_insights_payload, mock_db_conn):
         """Should commit transaction after insert."""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_global_insights
 
@@ -72,9 +63,9 @@ class TestSaveGlobalInsights:
 
             conn.commit.assert_called_once()
 
-    def test_save_global_insights_handles_missing_fields(self):
+    def test_save_global_insights_handles_missing_fields(self, mock_db_conn):
         """Should handle payload with missing fields gracefully."""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_global_insights
 
@@ -95,9 +86,9 @@ class TestSaveGlobalInsights:
 class TestGetGlobalInsights:
     """Test retrieving global_insights from local PostgreSQL."""
 
-    def test_get_latest_global_insights_returns_single_record(self):
+    def test_get_latest_global_insights_returns_single_record(self, mock_db_conn):
         """Should return the latest global_insights record."""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         # SELECT returns (generated_at, data) - 2 columns
         cur.fetchone.return_value = (
             datetime(2026, 4, 28, 8, 32, 47),
@@ -112,9 +103,9 @@ class TestGetGlobalInsights:
             assert result["source_count"] == 491
             assert "trends" in result
 
-    def test_get_latest_global_insights_returns_none_when_empty(self):
+    def test_get_latest_global_insights_returns_none_when_empty(self, mock_db_conn):
         """Should return None when no records exist."""
-        conn, cur = make_mock_conn()
+        conn, cur = mock_db_conn
         cur.fetchone.return_value = None
         with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_latest_global_insights

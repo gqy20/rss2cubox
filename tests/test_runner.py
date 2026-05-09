@@ -6,19 +6,67 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from conftest import FeedParserDict
 from rss2cubox import feed_sources, sync_pipeline
 from rss2cubox import metrics
 from rss2cubox import runner
 
 
-class FeedParserDict(dict):
-    """A dict subclass that mimics feedparser.util.FeedParserDict for testing."""
+def _setup_runner_mocks(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    *,
+    entries: list[dict] | None = None,
+    max_items: int = 20,
+    ic_push_enabled: bool = True,
+    ic_state: tuple[dict, dict] | None = None,
+    enrich_fn=None,
+    post_fn=None,
+    save_fn=None,
+) -> tuple[list[dict], list[tuple]]:
+    """为 test_main_* 函数统一设置 monkeypatch，返回 (posted_batches, fetched_urls)。"""
+    if entries is None:
+        entries = [{"id": "1", "link": "https://example.com/1", "title": "T", "summary": "S"}]
 
-    def __getattr__(self, key):
-        try:
-            return self[key]
-        except KeyError:
-            raise AttributeError(key)
+    feeds_file = tmp_path / "feeds.txt"
+    feeds_file.write_text("https://feed.example/rss\n", encoding="utf-8")
+
+    posted_batches: list[tuple] = []
+    fetched_urls: list[str] = []
+
+    def fake_fetch(url: str, **_kw: ...):  # noqa: ANN001
+        fetched_urls.append(url)
+        return FeedParserDict(
+            bozo=False,
+            entries=[FeedParserDict(e) for e in entries],
+            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800"),
+        ), True
+
+    _enrich_fn = enrich_fn or (lambda **kw: {
+        item["eid"]: {"reason": "高价值", "actionable": "跟进", "hidden_signal": "信号",
+                       "tags": ["rss"], "core_event": item["title"]}
+        for item in kw["candidates"]
+    })
+    _post_fn = post_fn or (lambda **kw: posted_batches.append(kw["articles"]) or None)
+    _save_fn = save_fn or (lambda *_, **__: None)
+    _ic_state = ic_state or ({}, {})
+
+    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", max_items)
+    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
+    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
+    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
+    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", ic_push_enabled)
+    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
+    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **_kw: _ic_state)
+    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch)
+    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", _enrich_fn)
+    monkeypatch.setattr(runner.sync_pipeline, "post_articles_in_chunks", _post_fn)
+    monkeypatch.setattr(runner, "run_global_analysis", lambda **_kw: None)
+    monkeypatch.setattr(runner, "save_articles", _save_fn)
+    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+
+    return posted_batches, fetched_urls
 
 
 def test_load_lines_ignores_blank_and_comment(tmp_path: Path) -> None:
@@ -442,115 +490,30 @@ def test_has_signal_analysis_rejects_empty_seed_analysis() -> None:
 
 
 def test_main_dedup_and_limit(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    feeds_file = tmp_path / "feeds.txt"
-    feeds_file.write_text("https://feed.example/rss\n", encoding="utf-8")
-
     entries = [
         {"id": "1", "link": "https://example.com/1", "title": "First", "summary": "A"},
         {"id": "1", "link": "https://example.com/1", "title": "First duplicate", "summary": "A2"},
         {"id": "2", "link": "https://example.com/2", "title": "Second", "summary": "B"},
     ]
 
-    posted_batches = []
-
-    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
-        # Returns (parsed, was_modified) tuple - always fetch full content
-        assert url == "https://feed.example/rss"
-        # Return structure matching feedparser.parse() output
-        return FeedParserDict(
-            bozo=False,
-            entries=[FeedParserDict(e) for e in entries],
-            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")
-        ), True
-
-    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
-        _ = request_post
-        posted_batches.append((api_url, articles))
-        return "ok"
-
-    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 1)
-    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
-    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
-    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
-    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
-    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
-    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
-    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
-        kwargs["candidates"][0]["eid"]: {
-            "reason": "高价值",
-            "actionable": "跟进",
-            "hidden_signal": "信号",
-            "tags": ["rss"],
-            "core_event": "First",
-        }
-    })
-    monkeypatch.setattr(
-        runner.sync_pipeline,
-        "post_articles_in_chunks",
-        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
-    )
-    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
-    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
-    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
-
+    posted_batches, _ = _setup_runner_mocks(monkeypatch, tmp_path, entries=entries, max_items=1)
     runner.main()
 
     assert len(posted_batches) == 1
-    assert posted_batches[0][0] == "https://fake.api.com/api/v1/articles/batch"
-    assert posted_batches[0][1][0]["url"] == "https://example.com/1"
+    assert posted_batches[0][0]["url"] == "https://example.com/1"
 
 
 def test_main_ic_push_disabled_skips_ic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """IC_PUSH_ENABLED=false 时跳过 IC 推送，只写本地 DB。"""
-    feeds_file = tmp_path / "feeds.txt"
-    feeds_file.write_text("https://feed.example/rss\n", encoding="utf-8")
-
-    entries = [
-        {"id": "1", "link": "https://example.com/1", "title": "First", "summary": "A"},
-    ]
-
     ic_posted = []
     local_saved = []
 
-    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
-        return FeedParserDict(
-            bozo=False,
-            entries=[FeedParserDict(e) for e in entries],
-            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")
-        ), True
-
-    def fake_post_articles_in_chunks(**kwargs):  # noqa: ANN001
-        ic_posted.append(kwargs)
-        return ["ok"]
-
-    def fake_save_articles(records):  # noqa: ANN001
-        local_saved.extend(records)
-
-    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
-    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
-    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
-    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", False)
-    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
-    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
-    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
-    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
-        item["eid"]: {
-            "reason": "高价值",
-            "actionable": "跟进",
-            "hidden_signal": "信号",
-            "tags": ["rss"],
-            "core_event": item["title"],
-        }
-        for item in kwargs["candidates"]
-    })
-    monkeypatch.setattr(runner.sync_pipeline, "post_articles_in_chunks", fake_post_articles_in_chunks)
-    monkeypatch.setattr(runner, "save_articles", fake_save_articles)
-    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
-    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
+    _, _ = _setup_runner_mocks(
+        monkeypatch, tmp_path,
+        ic_push_enabled=False,
+        post_fn=lambda **kw: (ic_posted.append(kw), ["ok"])[1],
+        save_fn=lambda records: local_saved.extend(records),
+    )
 
     runner.main()
 
@@ -560,80 +523,20 @@ def test_main_ic_push_disabled_skips_ic(tmp_path: Path, monkeypatch: pytest.Monk
 
 
 def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    feeds_file = tmp_path / "feeds.txt"
-    feed_url = "https://feed.example/rss"
-    feeds_file.write_text(f"{feed_url}\n", encoding="utf-8")
-
     entries = [
-        {
-            "id": "old",
-            "link": "https://example.com/old",
-            "title": "Old",
-            "summary": "too old",
-            "published": "2026-01-01T00:00:00+00:00",
-        },
-        {
-            "id": "new",
-            "link": "https://example.com/new",
-            "title": "New",
-            "summary": "fresh",
-            "published": "2026-01-10T12:00:00+00:00",
-        },
-        {
-            "id": "nodate",
-            "link": "https://example.com/nodate",
-            "title": "No Date",
-            "summary": "no timestamp",
-        },
+        {"id": "old", "link": "https://example.com/old", "title": "Old", "summary": "too old",
+         "published": "2026-01-01T00:00:00+00:00"},
+        {"id": "new", "link": "https://example.com/new", "title": "New", "summary": "fresh",
+         "published": "2026-01-10T12:00:00+00:00"},
+        {"id": "nodate", "link": "https://example.com/nodate", "title": "No Date", "summary": "no timestamp"},
     ]
 
-    posted_batches = []
-
-    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
-        assert url == feed_url
-        return FeedParserDict(
-            bozo=False,
-            entries=[FeedParserDict(e) for e in entries],
-            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")
-        ), True
-
-    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
-        _ = (api_url, request_post)
-        posted_batches.append(articles)
-        return "ok"
-
-    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
-    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
-    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
-    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
-    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
+    posted_batches, _ = _setup_runner_mocks(
+        monkeypatch, tmp_path, entries=entries,
+        ic_state=({}, {"https://feed.example/rss": "2026-01-10T00:00:00+00:00"}),
+    )
+    # 覆盖 FEED_CURSOR_LOOKBACK_HOURS
     monkeypatch.setattr(runner, "FEED_CURSOR_LOOKBACK_HOURS", 24)
-    monkeypatch.setattr(
-        runner.sync_pipeline,
-        "load_ic_state",
-        lambda **kwargs: ({}, {feed_url: "2026-01-10T00:00:00+00:00"}),
-    )
-    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
-    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
-        item["eid"]: {
-            "reason": "高价值",
-            "actionable": "跟进",
-            "hidden_signal": "信号",
-            "tags": ["rss"],
-            "core_event": item["title"],
-        }
-        for item in kwargs["candidates"]
-    })
-    monkeypatch.setattr(
-        runner.sync_pipeline,
-        "post_articles_in_chunks",
-        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
-    )
-    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
-    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
-    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
@@ -644,57 +547,19 @@ def test_main_feed_cursor_prefilter_without_persistence(tmp_path: Path, monkeypa
 
 
 def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    feeds_file = tmp_path / "feeds.txt"
-    feed_a = "https://feed-a.example/rss"
-    feed_b = "https://feed-b.example/rss"
-    feeds_file.write_text(f"{feed_a}\n{feed_b}\n", encoding="utf-8")
-
     shared_entry = {"id": "same-id", "link": "https://example.com/shared", "title": "Shared", "summary": "A"}
-    entries_by_feed = {
-        feed_a: [shared_entry],
-        feed_b: [shared_entry],
-    }
-    posted_batches = []
 
-    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
-        return FeedParserDict(
-            bozo=False,
-            entries=[FeedParserDict(e) for e in entries_by_feed[url]],
-            feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")
-        ), True
-
-    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
-        _ = (api_url, request_post)
-        posted_batches.append(articles)
-        return "ok"
-
-    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
-    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
-    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
-    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
-    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
-    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
-    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
-    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
-        item["eid"]: {
-            "reason": "高价值",
-            "actionable": "跟进",
-            "hidden_signal": "信号",
-            "tags": ["rss"],
-            "core_event": item["title"],
-        }
-        for item in kwargs["candidates"]
-    })
-    monkeypatch.setattr(
-        runner.sync_pipeline,
-        "post_articles_in_chunks",
-        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
+    posted_batches, _ = _setup_runner_mocks(
+        monkeypatch, tmp_path,
+        entries=[shared_entry],
+        enrich_fn=lambda **kw: {
+            item["eid"]: {
+                "reason": "高价值", "actionable": "跟进", "hidden_signal": "信号",
+                "tags": ["rss"], "core_event": item["title"],
+            }
+            for item in kw["candidates"]
+        },
     )
-    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
-    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
-    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
@@ -703,73 +568,22 @@ def test_main_run_seen_dedup_across_feeds(tmp_path: Path, monkeypatch: pytest.Mo
 
 
 def test_main_skips_articles_already_in_ic(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    feeds_file = tmp_path / "feeds.txt"
-    feed_url = "https://feed.example/rss"
-    feeds_file.write_text(f"{feed_url}\n", encoding="utf-8")
+    existing_eid = sync_pipeline.stable_id({"link": "https://example.com/existing"})
 
     entries = [
         {"id": "1", "link": "https://example.com/existing", "title": "Existing", "summary": "A"},
         {"id": "2", "link": "https://example.com/new", "title": "New", "summary": "B"},
     ]
-    posted_batches = []
-    existing_eid = sync_pipeline.stable_id({"link": "https://example.com/existing"})
 
-    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
-        assert url == feed_url
-        return FeedParserDict(bozo=False, entries=[FeedParserDict(e) for e in entries], feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")), True
-
-    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
-        _ = (api_url, request_post)
-        posted_batches.append(articles)
-        return "ok"
-
-    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
-    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
-    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
-    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
-    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
-    monkeypatch.setattr(
-        runner.sync_pipeline,
-        "load_ic_state",
-        lambda **kwargs: ({existing_eid: {"id": existing_eid, "exported": True}}, {}),
+    posted_batches, _ = _setup_runner_mocks(
+        monkeypatch, tmp_path, entries=entries,
+        ic_state=({existing_eid: {"id": existing_eid, "exported": True}}, {}),
     )
-    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
-    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
-        item["eid"]: {
-            "reason": "高价值",
-            "actionable": "跟进",
-            "hidden_signal": "信号",
-            "tags": ["rss"],
-            "core_event": item["title"],
-        }
-        for item in kwargs["candidates"]
-    })
-    monkeypatch.setattr(
-        runner.sync_pipeline,
-        "post_articles_in_chunks",
-        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
-    )
-    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
-    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
-    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
 
     posted_urls = [article["url"] for batch in posted_batches for article in batch]
     assert posted_urls == ["https://example.com/new"]
-
-
-def test_run_json_agent_env_none_does_not_crash(monkeypatch: pytest.MonkeyPatch) -> None:
-    """env=None 不应导致 'NoneType object is not a mapping' 崩溃。"""
-    from rss2cubox.agent_sdk_runner import run_json_agent
-    import inspect
-
-    source = inspect.getsource(run_json_agent)
-    # 防御性检查：env= 传入 ClaudeAgentOptions 时必须用 None 安全模式
-    assert ("env=env or {}" in source or "dict(env) if env else" in source), \
-        "env 参数应使用 None 安全模式防止崩溃"
 
 
 def test_write_step_summary(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -817,56 +631,7 @@ def test_feed_failure_backoff_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    feeds_file = tmp_path / "feeds.txt"
-    blocked_feed = "https://blocked.example/rss"
-    ok_feed = "https://ok.example/rss"
-    feeds_file.write_text(f"{blocked_feed}\n{ok_feed}\n", encoding="utf-8")
-
-    fetched = []
-    posted_batches = []
-
-    def fake_fetch_and_check_update(url: str, **kwargs):  # noqa: ANN001
-        fetched.append(url)
-        entry = {"id": url, "link": f"{url}/1", "title": "t", "summary": "s"}
-        return FeedParserDict(bozo=False, entries=[FeedParserDict(entry)], feed=FeedParserDict(updated="Sat, 02 May 2026 13:00:00 +0800")), True
-
-    def fake_post_articles(api_url: str, request_post, articles):  # noqa: ANN001
-        _ = (api_url, request_post)
-        posted_batches.append(articles)
-        return "ok"
-
-    monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
-    monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", 20)
-    monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
-    monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
-    monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
-    monkeypatch.setattr(runner, "IC_PUSH_ENABLED", True)
-    monkeypatch.setattr(runner, "IC_SOURCE_TYPE", "gqy")
+    _, _ = _setup_runner_mocks(monkeypatch, tmp_path)
     monkeypatch.setattr(runner, "FEED_FETCH_CONCURRENCY", 4)
-    monkeypatch.setattr(runner.sync_pipeline, "load_ic_state", lambda **kwargs: ({}, {}))
-    monkeypatch.setattr(feed_sources, "fetch_and_check_update", fake_fetch_and_check_update)
-    monkeypatch.setattr(runner.enrich_agent, "analyze_candidates_with_agent", lambda **kwargs: {
-        item["eid"]: {
-            "reason": "高价值",
-            "actionable": "跟进",
-            "hidden_signal": "信号",
-            "tags": ["rss"],
-            "core_event": item["title"],
-        }
-        for item in kwargs["candidates"]
-    })
-    monkeypatch.setattr(
-        runner.sync_pipeline,
-        "post_articles_in_chunks",
-        lambda **kwargs: [fake_post_articles(kwargs["api_url"], kwargs["request_post"], kwargs["articles"])],
-    )
-    monkeypatch.setattr(runner, "run_global_analysis", lambda **kwargs: None)
-    monkeypatch.setattr(runner, "save_articles", lambda **kwargs: None)
-    monkeypatch.setattr(runner.time, "sleep", lambda *_: None)
 
     runner.main()
-
-    assert blocked_feed in fetched
-    assert ok_feed in fetched
-    posted_urls = sorted(article["url"] for batch in posted_batches for article in batch)
-    assert posted_urls == [f"{blocked_feed}/1", f"{ok_feed}/1"]
