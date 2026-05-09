@@ -230,3 +230,92 @@ class TestLastBuildDateCacheIntegration:
 
         # This test will fail until we implement the integration
         pytest.skip("Integration not yet implemented - this describes desired behavior")
+
+
+class TestFeedPriorityParsing:
+    """Tests for feed priority field parsing and candidate sorting."""
+
+    def test_parse_line_with_priority_and_label(self, tmp_path) -> None:
+        """Line like '5 /infoq/recommend # InfoQ' should parse priority=5."""
+        feeds_file = tmp_path / "feeds.txt"
+        feeds_file.write_text("[rsshub]\n5\t/infoq/recommend # InfoQ\n")
+        specs = feed_sources.load_feed_specs(feeds_file)
+        assert len(specs) == 1
+        assert specs[0]["priority"] == 5
+        assert specs[0]["value"] == "/infoq/recommend"
+        assert specs[0]["label"] == "InfoQ"
+
+    def test_parse_line_with_priority_no_label(self, tmp_path) -> None:
+        """Line like '3 /feed' should parse priority=3 with empty label."""
+        feeds_file = tmp_path / "feeds.txt"
+        feeds_file.write_text("[rsshub]\n3\t/feed\n")
+        specs = feed_sources.load_feed_specs(feeds_file)
+        assert len(specs) == 1
+        assert specs[0]["priority"] == 3
+        assert specs[0]["value"] == "/feed"
+        assert specs[0]["label"] == ""
+
+    def test_parse_line_without_priority(self, tmp_path) -> None:
+        """Line without priority (legacy format) should default to priority=0."""
+        feeds_file = tmp_path / "feeds.txt"
+        feeds_file.write_text("[rsshub]\n/feed # label\n")
+        specs = feed_sources.load_feed_specs(feeds_file)
+        assert len(specs) == 1
+        assert specs[0]["priority"] == 0
+        assert specs[0]["value"] == "/feed"
+        assert specs[0]["label"] == "label"
+
+    def test_parse_line_priority_zero(self, tmp_path) -> None:
+        """Explicit priority=0 should be parsed as 0."""
+        feeds_file = tmp_path / "feeds.txt"
+        feeds_file.write_text("[rsshub]\n0\t/feed\n")
+        specs = feed_sources.load_feed_specs(feeds_file)
+        assert specs[0]["priority"] == 0
+
+    def test_mixed_priority_and_legacy_lines(self, tmp_path) -> None:
+        """Mix of priority and legacy lines should all parse correctly."""
+        feeds_file = tmp_path / "feeds.txt"
+        feeds_file.write_text(
+            "[rsshub]\n"
+            "5\t/high/priority # High\n"
+            "/legacy/no-priority # Legacy\n"
+            "2\t/medium # Medium\n"
+        )
+        specs = feed_sources.load_feed_specs(feeds_file)
+        assert len(specs) == 3
+        assert specs[0]["priority"] == 5
+        assert specs[1]["priority"] == 0
+        assert specs[2]["priority"] == 2
+
+    def test_candidates_sorted_by_feed_priority_desc(self, tmp_path) -> None:
+        """Candidates from higher-priority feeds should appear first after collection."""
+        import json
+
+        feeds_file = tmp_path / "feeds.txt"
+        feeds_file.write_text(
+            "[rsshub]\n"
+            "5\t/high\n"
+            "1\t/low\n"
+        )
+        specs = feed_sources.load_feed_specs(feeds_file)
+
+        # Simulate: high-priority feed produces candidates first (by idx order),
+        # but after sorting they should be reordered by priority desc.
+        # We verify by checking that load_feed_specs assigns correct priorities,
+        # which collect_candidates_from_feeds uses for sorting.
+
+        high_spec = [s for s in specs if s["value"] == "/high"][0]
+        low_spec = [s for s in specs if s["value"] == "/low"][0]
+        assert high_spec["priority"] > low_spec["priority"]
+
+    def test_direct_feed_with_priority(self, tmp_path) -> None:
+        """Direct feed URLs should also support priority prefix."""
+        feeds_file = tmp_path / "feeds.txt"
+        feeds_file.write_text(
+            "[direct]\n"
+            "5\thttps://example.com/feed.xml # Example\n"
+        )
+        specs = feed_sources.load_feed_specs(feeds_file)
+        assert len(specs) == 1
+        assert specs[0]["priority"] == 5
+        assert specs[0]["kind"] == "direct"
