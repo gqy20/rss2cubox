@@ -43,6 +43,9 @@ CREATE TABLE IF NOT EXISTS articles (
     prediction          TEXT,
     disconfirming_evidence TEXT,
     enrich_meta         JSONB DEFAULT '{}',
+    full_text           TEXT,
+    full_text_source     TEXT,
+    full_text_fetched_at TIMESTAMPTZ,
     created_at          TIMESTAMPTZ DEFAULT NOW(),
     updated_at          TIMESTAMPTZ DEFAULT NOW()
 );
@@ -62,7 +65,10 @@ ALTER TABLE articles
     ADD COLUMN IF NOT EXISTS watch_keywords JSONB DEFAULT '[]',
     ADD COLUMN IF NOT EXISTS prediction TEXT,
     ADD COLUMN IF NOT EXISTS disconfirming_evidence TEXT,
-    ADD COLUMN IF NOT EXISTS enrich_meta JSONB DEFAULT '{}';
+    ADD COLUMN IF NOT EXISTS enrich_meta JSONB DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS full_text TEXT,
+    ADD COLUMN IF NOT EXISTS full_text_source TEXT,
+    ADD COLUMN IF NOT EXISTS full_text_fetched_at TIMESTAMPTZ;
 
 -- Optimized index for cursor-based pagination (covering index)
 CREATE INDEX IF NOT EXISTS idx_articles_pub_time_cover ON articles(publish_time DESC);
@@ -79,6 +85,7 @@ CREATE INDEX IF NOT EXISTS idx_articles_novelty_score ON articles(novelty_score)
 CREATE INDEX IF NOT EXISTS idx_articles_cluster_hint ON articles(cluster_hint);
 CREATE INDEX IF NOT EXISTS idx_articles_entities ON articles USING GIN (entities);
 CREATE INDEX IF NOT EXISTS idx_articles_watch_keywords ON articles USING GIN (watch_keywords);
+CREATE INDEX IF NOT EXISTS idx_articles_full_text_source ON articles(full_text_source);
 """
 
 
@@ -127,6 +134,7 @@ def save_articles(
                         novelty_score, impact_horizon, audience, market_stage, confidence,
                         entities, cluster_hint, watch_keywords, prediction, disconfirming_evidence,
                         enrich_meta,
+                        full_text, full_text_source, full_text_fetched_at,
                         created_at, updated_at
                     ) VALUES (
                         %(id)s, %(source_type)s, %(source_feed_id)s, %(source_feed_name)s,
@@ -136,6 +144,7 @@ def save_articles(
                         %(novelty_score)s, %(impact_horizon)s, %(audience)s, %(market_stage)s, %(confidence)s,
                         %(entities)s, %(cluster_hint)s, %(watch_keywords)s, %(prediction)s, %(disconfirming_evidence)s,
                         %(enrich_meta)s,
+                        %(full_text)s, %(full_text_source)s, %(full_text_fetched_at)s,
                         NOW(), NOW()
                     )
                     ON CONFLICT (id) DO UPDATE SET
@@ -163,6 +172,9 @@ def save_articles(
                         prediction = EXCLUDED.prediction,
                         disconfirming_evidence = EXCLUDED.disconfirming_evidence,
                         enrich_meta = EXCLUDED.enrich_meta,
+                        full_text = COALESCE(EXCLUDED.full_text, articles.full_text),
+                        full_text_source = COALESCE(EXCLUDED.full_text_source, articles.full_text_source),
+                        full_text_fetched_at = COALESCE(EXCLUDED.full_text_fetched_at, articles.full_text_fetched_at),
                         updated_at = NOW()
                     """,
                     {
@@ -196,6 +208,9 @@ def save_articles(
                         "prediction": _optional_text(article.get("prediction")),
                         "disconfirming_evidence": _optional_text(article.get("disconfirming_evidence")),
                         "enrich_meta": json.dumps(article.get("enrich_meta") if isinstance(article.get("enrich_meta"), dict) else {}, ensure_ascii=False),
+                        "full_text": _optional_text(article.get("full_text")),
+                        "full_text_source": _optional_text(article.get("full_text_source")),
+                        "full_text_fetched_at": article.get("full_text_fetched_at"),
                     },
                 )
 
@@ -204,6 +219,103 @@ def save_articles(
     except Exception as e:
         logging.warning(f"Failed to save articles to local DB: {e}")
         return 0
+
+
+def save_fulltext(
+    db_url: str | None = None,
+    *,
+    eid: str,
+    full_text: str,
+    source: str,
+) -> bool:
+    """单条更新文章全文（幂等：重复写入不报错）。"""
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    if not db_url or not eid or not full_text:
+        return False
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(ARTICLES_SCHEMA)
+            cur.execute(
+                """
+                UPDATE articles SET
+                    full_text = %s,
+                    full_text_source = %s,
+                    full_text_fetched_at = NOW(),
+                    updated_at = NOW()
+                WHERE id = %s
+                """,
+                (full_text, source, eid),
+            )
+            conn.commit()
+            return True
+    except Exception as e:
+        logging.warning(f"Failed to save fulltext for {eid}: {e}")
+        return False
+
+
+def save_fulltext_batch(
+    results: dict[str, Any],
+    db_url: str | None = None,
+) -> int:
+    """批量更新全文（results 为 dict[eid, FetchResult]）。"""
+    if not results:
+        return 0
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    if not db_url:
+        return 0
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(ARTICLES_SCHEMA)
+            updated = 0
+            for eid, result in results.items():
+                text = getattr(result, "text", None) or ""
+                source = getattr(result, "source", "") or ""
+                if text and eid:
+                    cur.execute(
+                        """
+                        UPDATE articles SET
+                            full_text = %s,
+                            full_text_source = %s,
+                            full_text_fetched_at = NOW(),
+                            updated_at = NOW()
+                        WHERE id = %s
+                        """,
+                        (text, source, eid),
+                    )
+                    updated += 1
+            conn.commit()
+            return updated
+    except Exception as e:
+        logging.warning(f"Failed to save fulltext batch: {e}")
+        return 0
+
+
+def get_fulltexts_by_eids(
+    eids: list[str],
+    db_url: str | None = None,
+) -> dict[str, str]:
+    """按 eid 列表批量读取已存全文。返回 {eid: full_text}，无全文的 eid 不在结果中。"""
+    if not eids:
+        return {}
+    if db_url is None:
+        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    if not db_url:
+        return {}
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(
+                "SELECT id, full_text FROM articles WHERE id = ANY(%s) AND full_text IS NOT NULL AND full_text != ''",
+                (eids,),
+            )
+            return {str(row[0]): str(row[1]) for row in cur.fetchall()}
+    except Exception as e:
+        logging.warning(f"Failed to get fulltexts by eids: {e}")
+        return {}
 
 
 def get_articles(

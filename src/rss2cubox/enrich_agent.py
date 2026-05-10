@@ -136,13 +136,27 @@ SYSTEM_PROMPT = (
 )
 
 
-def _build_user_prompt(item: dict, original: dict) -> str:
-    return (
+def _build_user_prompt(item: dict, original: dict, *, pre_fetched_text: str | None = None) -> str:
+    base = (
         f"文章标题：{item.get('title', '')}\n"
         f"原文链接：{item.get('url', '')}\n"
         f"初步摘要：{item.get('description', '')[:500]}\n"
         f"初步核心事件：{original.get('core_event', '')}\n\n"
-        "步骤：\n"
+    )
+    if pre_fetched_text:
+        truncated = pre_fetched_text[:15000]
+        return (
+            base
+            + "【已预抓取全文】以下为已获取的原文完整内容，请直接基于此进行分析，无需再调用任何工具：\n\n"
+            + f"{truncated}\n\n"
+            "步骤：\n"
+            "1. 直接阅读上方提供的全文内容。\n"
+            "2. 输出 JSON 格式的分析结果。\n"
+            "3. content_source 填「full_text」。"
+        )
+    return (
+        base
+        + "步骤：\n"
         "1. 首先调用 read_webpage 工具读取原文全文（传入上方原文链接）。\n"
         "2. 仔细阅读完整内容后，再输出 JSON 格式的分析结果。\n"
         "3. content_source 字段必须如实填写：使用了全文填「full_text」，仅摘要则填「summary_only」。\n"
@@ -157,10 +171,14 @@ def _has_enrich_content(payload: dict[str, Any] | None) -> bool:
     return bool(payload and (payload.get("core_event") or payload.get("hidden_signal") or payload.get("reason")))
 
 
-async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) -> tuple[dict | None, str]:
+async def _enrich_one(item: dict, original: dict, log_event: Any | None = None, *, pre_fetched_text: str | None = None) -> tuple[dict | None, str]:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
     TimeoutError 时按配置进行退避重试；其他异常直接返回。
+
+    Args:
+        pre_fetched_text: 已预抓取的全文内容。提供时 MCP tool 直接返回该文本（零网络开销）；
+                          未提供时 fallback 到 Jina Reader / Playwright。
     """
     import asyncio
     import anyio
@@ -174,12 +192,16 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) 
     if not expected_url:
         return None, "missing_url"
 
+    _cached_text = pre_fetched_text  # capture for closure
+
     @tool(
         "read_webpage",
         "读取文章原文完整内容（优先 Jina Reader；Jina 被拦截时自动降级到 Playwright 浏览器渲染）",
         {"url": str},
     )
     async def read_webpage(args: dict) -> dict:
+        if _cached_text:
+            return {"content": [{"type": "text", "text": _cached_text}]}
         _jina = get_jina_config()
 
         def _fetch() -> tuple[bool, str]:
@@ -216,7 +238,7 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) 
         timeout = max(30, int(base_timeout * (0.6 ** attempt)))
         try:
             structured_output = await run_json_agent(
-                prompt=_build_user_prompt(item, original),
+                prompt=_build_user_prompt(item, original, pre_fetched_text=pre_fetched_text),
                 system_prompt=SYSTEM_PROMPT,
                 schema=ENRICH_OUTPUT_SCHEMA,
                 allowed_tools=allowed_tools,
@@ -265,6 +287,8 @@ async def _enrich_all(
     items_to_enrich: list[tuple[dict, dict]],
     analyses: dict[str, dict],
     log_event: Any,
+    *,
+    pre_fetched_texts: dict[str, str] | None = None,
 ) -> dict[str, int]:
     import anyio
 
@@ -284,7 +308,10 @@ async def _enrich_all(
                 url=str(item.get("url", "")).strip(),
             )
             try:
-                enriched, reason = await _enrich_one(item, original, log_event)
+                enriched, reason = await _enrich_one(
+                    item, original, log_event,
+                    pre_fetched_text=(pre_fetched_texts or {}).get(eid),
+                )
                 duration_ms = int((time.perf_counter() - started_at) * 1000)
                 if enriched:
                     is_retry_ok = reason.startswith("timeout_after")
@@ -370,6 +397,7 @@ def analyze_candidates_with_agent(
     *,
     candidates: list[dict],
     log_event: Any,
+    pre_fetched_texts: dict[str, str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     analyses: dict[str, dict[str, Any]] = {}
     if not candidates:
@@ -401,7 +429,7 @@ def analyze_candidates_with_agent(
 
     try:
         import anyio
-        enrich_stats = anyio.run(_enrich_all, _enrich_candidates, analyses, log_event)
+        enrich_stats = anyio.run(_enrich_all, _enrich_candidates, analyses, log_event, pre_fetched_texts=pre_fetched_texts)
         log_event(
             "INFO",
             "enrich_complete",

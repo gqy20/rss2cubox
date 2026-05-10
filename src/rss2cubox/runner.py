@@ -27,7 +27,8 @@ import requests
 
 from rss2cubox import feed_sources, sync_pipeline
 from rss2cubox import enrich_agent
-from rss2cubox.db_client import save_articles
+from rss2cubox import fulltext_fetcher
+from rss2cubox.db_client import save_articles, save_fulltext_batch
 from rss2cubox.db import record_feed_stat
 from rss2cubox.global_agent import run_global_analysis
 from rss2cubox.feed_sources import RSSHubInstancePool
@@ -223,9 +224,35 @@ def main() -> None:
             total=len(candidates),
         )
 
+    # ── 全文抓取入库（enrich 之前，全文已持久化） ──
+    ft_results: dict[str, Any] = {}
+    if fulltext_fetcher.FULLTEXT_ENABLED and _db_url:
+        log_event("INFO", "fulltext_start", stage="fulltext", count=len(candidates_for_run))
+        ft_start = time.perf_counter()
+        ft_results = fulltext_fetcher.fetch_fulltext_batch(
+            candidates_for_run,
+            max_workers=fulltext_fetcher.FULLTEXT_MAX_WORKERS,
+            log_event=log_event,
+        )
+        ft_elapsed = time.perf_counter() - ft_start
+        if ft_results:
+            saved = save_fulltext_batch(ft_results, db_url=_db_url)
+            log_event(
+                "INFO",
+                "fulltext_saved",
+                stage="fulltext",
+                fetched=len(ft_results),
+                saved=saved,
+                duration_ms=int(ft_elapsed * 1000),
+            )
+        else:
+            log_event("WARN", "fulltext_no_results", stage="fulltext")
+
+    _pre_ft = {eid: r.text for eid, r in ft_results.items() if r.text} if ft_results else {}
     analyses = enrich_agent.analyze_candidates_with_agent(
         candidates=candidates_for_run,
         log_event=log_event,
+        pre_fetched_texts=_pre_ft if _pre_ft else None,
     )
     stats["ai_analyzed"] = len(candidates_for_run)
     ai_enabled = stats["ai_enabled"]
