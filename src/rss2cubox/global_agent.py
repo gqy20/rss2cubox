@@ -112,15 +112,19 @@ SYSTEM_PROMPT = (
 # JINA 常量已迁移到 get_jina_config()
 
 
-def _build_user_prompt(signals_file: str, history_file: str, total: int) -> str:
+def _build_user_prompt(signals_file: str, history_file: str, total: int, *, has_fulltext: bool = False) -> str:
     deep_read_target = min(max(total, 1), 8)
+    fulltext_hint = (
+        "\n注意：信号文件中每条情报已附带「full_text」预抓取全文字段，可直接阅读使用。"
+        "如某条缺少全文或需要更新内容，可调用 read_webpage 工具重新获取。\n"
+    ) if has_fulltext else ""
     return f"""今日候选情报共 {total} 条，已保存到文件：{signals_file}
 所有历史 signals 已保存到文件：{history_file}
-
+{fulltext_hint}
 请完成以下任务：
 1. 首先使用 Read 工具读取今日候选情报 {signals_file}
 2. 再使用 Read 工具读取历史 signals {history_file}
-3. 从中挑选最值得深挖的 {deep_read_target} 条左右条目，使用 read_webpage 工具阅读原文完整内容。
+3. 从中挑选最值得深挖的 {deep_read_target} 条左右条目{"，直接阅读文件中附带的全文内容" if has_fulltext else "，使用 read_webpage 工具阅读原文完整内容"}。
 4. 综合所有信息后，直接输出结构化 JSON 格式的报告：
    - trends: 宏观技术/行业趋势归纳，3-5 条，每条为 {{text, source_urls, source_titles}} 对象
    - weak_signals: 潜藏的弱信号或暗流，2-4 条，每条为 {{text, source_urls, source_titles}} 对象
@@ -180,6 +184,8 @@ async def _run_agent(
     high_value_items: list[dict],
     history_signals: dict[str, list[str]],
     log_event: Any | None = None,
+    *,
+    pre_fetched_texts: dict[str, str] | None = None,
 ) -> dict[str, Any] | None:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
@@ -194,6 +200,7 @@ async def _run_agent(
         return None
 
     # 将今日信号数据写入临时文件
+    _ft_lookup = pre_fetched_texts or {}
     signals_data = [
         {
             "url": r["url"],
@@ -211,6 +218,7 @@ async def _run_agent(
             "cluster_hint": r.get("cluster_hint", ""),
             "actionable": r.get("actionable", ""),
             "market_stage": r.get("market_stage"),
+            "full_text": _ft_lookup.get(r.get("_eid", "")) or "",
         }
         for r in high_value_items
     ]
@@ -255,7 +263,7 @@ async def _run_agent(
     try:
         structured_output = await run_with_fallback(
             lambda: run_json_agent(
-                prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items)),
+                prompt=_build_user_prompt(signals_file_path, history_file_path, len(high_value_items), has_fulltext=bool(_ft_lookup)),
                 system_prompt=SYSTEM_PROMPT,
                 schema=GLOBAL_OUTPUT_SCHEMA,
                 allowed_tools=allowed_tools,
@@ -301,6 +309,8 @@ def run_global_analysis(
     analyses: dict[str, dict],
     candidates: list[dict],
     log_event: Any | None = None,
+    *,
+    pre_fetched_texts: dict[str, str] | None = None,
 ) -> None:
     """
     从本次 pipeline 的分析结果中筛出可用于全局分析的条目，
@@ -323,6 +333,7 @@ def run_global_analysis(
         if not (hidden_signal or core_event or reason):
             continue
         high_value.append({
+            "_eid": eid,
             "url": c.get("url", ""),
             "title": c.get("title", ""),
             "hidden_signal": hidden_signal,
@@ -376,7 +387,7 @@ def run_global_analysis(
 
     async def _run_batch(batch_idx: int, batch_items: list[dict]) -> dict[str, Any] | None:
         """执行单批分析并写入 DB。"""
-        batch_result = await _run_agent(batch_items, history_signals, log_event)
+        batch_result = await _run_agent(batch_items, history_signals, log_event, pre_fetched_texts=pre_fetched_texts)
         if not batch_result:
             print(f"[global_agent] 批次 {batch_idx + 1}/{total_batches} Agent 未返回有效报告", flush=True)
             return None

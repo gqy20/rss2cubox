@@ -573,6 +573,41 @@ class TestCollectDayData:
         assert clusters[0]["status"] == "bursting"
         assert clusters[1]["status"] == "warming"
 
+    @patch("rss2cubox.db_client.get_fulltexts_by_eids")
+    @patch("rss2cubox.db_client.get_articles_by_date")
+    def test_top_articles_includes_fulltext(self, mock_articles, mock_ft, sample_today_articles):
+        """top_articles 应包含 full_text 字段（从 DB 批量获取）"""
+        mock_articles.return_value = sample_today_articles
+        mock_ft.return_value = {"art_001": "这是 Claude 4.7 的完整正文内容...", "art_002": ""}
+
+        from rss2cubox.daily_report_agent import _collect_day_data
+        result = _collect_day_data("2026-05-09")
+
+        top = result["today_articles_summary"]["top_articles"]
+        assert len(top) >= 2
+        # art_001 有全文
+        art_001 = next((a for a in top if a["title"] == "Claude 4.7 发布：最强推理模型"), None)
+        assert art_001 is not None
+        assert art_001["full_text"] == "这是 Claude 4.7 的完整正文内容..."
+        # art_002 无全文（DB 中没有）
+        art_002 = next((a for a in top if a["title"] == "Agent 运行时框架对比评测"), None)
+        assert art_002 is not None
+        assert art_002["full_text"] == ""
+
+    @patch("rss2cubox.db_client.get_fulltexts_by_eids")
+    @patch("rss2cubox.db_client.get_articles_by_date")
+    def test_top_articles_empty_when_no_fulltexts(self, mock_articles, mock_ft, sample_today_articles):
+        """无全文数据时 full_text 为空字符串"""
+        mock_articles.return_value = sample_today_articles
+        mock_ft.return_value = {}
+
+        from rss2cubox.daily_report_agent import _collect_day_data
+        result = _collect_day_data("2026-05-09")
+
+        top = result["today_articles_summary"]["top_articles"]
+        for a in top:
+            assert a.get("full_text") == ""
+
 
 # ══════════════════════════════════════════════════════════
 # 测试组 4: System Prompt 验证

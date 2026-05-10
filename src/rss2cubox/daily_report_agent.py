@@ -160,6 +160,7 @@ def _collect_day_data(report_date: str) -> dict[str, Any]:
         get_existing_signal_clusters,
         get_due_trend_predictions,
         get_recent_prediction_reviews,
+        get_fulltexts_by_eids,
     )
 
     # 解析日期范围
@@ -185,14 +186,21 @@ def _collect_day_data(report_date: str) -> dict[str, Any]:
 
     high_importance = [a for a in all_articles if isinstance(a.get("importance_score"), int) and a["importance_score"] >= 4]
     sorted_by_importance = sorted(all_articles, key=lambda a: a.get("importance_score", 0), reverse=True)
+    top_15 = sorted_by_importance[:15]
+
+    # 批量获取预抓取全文
+    _article_ids = [a.get("id", "") for a in top_15 if a.get("id")]
+    _ft_map = get_fulltexts_by_eids(_article_ids) if _article_ids else {}
+
     top_articles = []
-    for a in sorted_by_importance[:15]:
+    for a in top_15:
         top_articles.append({
             "title": a.get("title", ""),
             "url": a.get("url", ""),
             "source_feed_name": a.get("source_feed_name", ""),
             "importance_score": a.get("importance_score", 3),
             "hidden_signal": a.get("hidden_signal", ""),
+            "full_text": _ft_map.get(a.get("id", ""), "") or "",
         })
 
     # feed 来源分布
@@ -356,6 +364,7 @@ async def _run_agent(
         f"- 近期命中评审：{sum(1 for r in pred_status.get('recent_reviews', []) if r.get('hit_level') == 'hit')}个\n\n"
 
         f"请先 Read 数据文件了解全貌，再选择性 read_webpage 深入核实，最后输出结构化 JSON。"
+        f"\n注意：高重要性文章数据中已附带「full_text」预抓取全文字段，可直接使用；如需更新内容可调用 read_webpage。"
     )
 
     stderr_lines, stderr_logger = make_stderr_logger("daily_report", limit=80)

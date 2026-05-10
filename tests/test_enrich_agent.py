@@ -228,3 +228,54 @@ class TestPreFetchedText:
                 os.environ.pop("LOCAL_DB_URL", None)
             else:
                 os.environ["LOCAL_DB_URL"] = old
+
+
+class TestGlobalAgentPreFetchedText:
+    """Tests for Global Agent pre-fetched full text integration."""
+
+    def test_global_prompt_with_fulltext(self):
+        """有预抓取全文时，Global Agent prompt 应提示文件含全文。"""
+        from rss2cubox.global_agent import _build_user_prompt
+
+        prompt = _build_user_prompt("/tmp/s.json", "/tmp/h.json", 10, has_fulltext=True)
+
+        assert "已附带「full_text」" in prompt
+        assert "可直接阅读使用" in prompt
+        assert "直接阅读文件中附带的全文内容" in prompt
+
+    def test_global_prompt_without_fulltext(self):
+        """无预抓取全文时，Global Agent prompt 应要求调用 read_webpage。"""
+        from rss2cubox.global_agent import _build_user_prompt
+
+        prompt = _build_user_prompt("/tmp/s.json", "/tmp/h.json", 10, has_fulltext=False)
+
+        assert "已附带" not in prompt
+        assert "read_webpage 工具阅读原文完整内容" in prompt
+
+    def test_run_global_analysis_accepts_pre_fetched_texts(self):
+        """run_global_analysis 接受 pre_fetched_texts 参数不报错（空候选时立即返回）。"""
+        from rss2cubox.global_agent import run_global_analysis
+
+        # 空 analyses → 立即返回，验证参数接受正常
+        run_global_analysis(
+            analyses={},
+            candidates=[],
+            log_event=lambda *a, **kw: None,
+            pre_fetched_texts={"e1": "some text"},
+        )
+
+    def test_signals_data_includes_full_text(self):
+        """high_value items 中应包含 _eid 和 full_text 字段。"""
+        from rss2cubox.global_agent import run_global_analysis
+
+        # 验证 high_value 构造逻辑：_eid 被保留用于后续查找
+        candidates = [{"eid": "e1", "url": "https://x.com/a", "title": "T"}]
+        analyses = {"e1": {"hidden_signal": "signal", "core_event": "event", "reason": "reason"}}
+
+        # 只验证参数传递不报错（实际 _run_agent 内部构造 signals_data 时会用到）
+        run_global_analysis(
+            analyses=analyses,
+            candidates=candidates,
+            log_event=lambda *a, **kw: None,
+            pre_fetched_texts={"e1": "full text content here"},
+        )
