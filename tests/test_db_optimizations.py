@@ -51,7 +51,7 @@ class TestCursorPagination:
         # Simulate cursor pagination query
         cursor_time = "2026-04-28T10:00:00"
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_articles_cursor
 
             cur.fetchall.return_value = []
@@ -74,7 +74,7 @@ class TestCursorPagination:
         ]
         cur.fetchall.return_value = articles[:10]  # Return 10 items
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_articles_cursor
 
             result = get_articles_cursor(cursor=cursor_time, limit=50, db_url="postgresql://localhost/test")
@@ -91,7 +91,7 @@ class TestOptimizedIndex:
         """Query should be able to use covering index for date range queries."""
         conn, cur = mock_conn
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_articles_by_date
 
             cur.fetchall.return_value = []
@@ -109,7 +109,7 @@ class TestOptimizedIndex:
         """Pagination should use keyset (cursor) not OFFSET for efficiency."""
         conn, cur = mock_conn
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_articles_cursor
 
             cur.fetchall.return_value = []
@@ -129,7 +129,7 @@ class TestConnectionPooling:
         # For unit tests, we verify the connection string is properly read
         from rss2cubox.db_client import get_articles
 
-        with patch("rss2cubox.db_client.psycopg.connect") as mock_connect:
+        with patch("rss2cubox.db_client.articles.psycopg.connect") as mock_connect:
             conn = MagicMock()
             cur = MagicMock()
             conn.cursor.return_value = cur

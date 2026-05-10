@@ -207,7 +207,7 @@ class TestGlobalAgentIntegration:
 
         captured = {"items": None}
 
-        async def fake_run(high_value_items, history_signals, log_event=None):  # noqa: ANN001
+        async def fake_run(high_value_items, history_signals, log_event=None, *, pre_fetched_texts=None):  # noqa: ANN001
             captured["items"] = high_value_items
             return {"trends": [], "weak_signals": [], "daily_advices": [], "key_topics": [], "confidence_level": "medium"}
 

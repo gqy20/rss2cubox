@@ -82,7 +82,7 @@ class TestSaveArticles:
     def test_save_articles_creates_table_if_not_exists(self, sample_articles):
         """Should create articles table if it doesn't exist."""
         conn, cur = make_mock_conn()
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_articles
             save_articles(sample_articles, db_url="postgresql://localhost/test")
 
@@ -94,7 +94,7 @@ class TestSaveArticles:
     def test_save_articles_inserts_all_records(self, sample_articles):
         """Should insert all article records."""
         conn, cur = make_mock_conn()
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_articles
             save_articles(sample_articles, db_url="postgresql://localhost/test")
 
@@ -106,7 +106,7 @@ class TestSaveArticles:
     def test_save_articles_commits_transaction(self, sample_articles):
         """Should commit after inserting."""
         conn, cur = make_mock_conn()
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_articles
             save_articles(sample_articles, db_url="postgresql://localhost/test")
 
@@ -115,7 +115,7 @@ class TestSaveArticles:
     def test_save_articles_handles_empty_list(self):
         """Should not execute any INSERT for empty list."""
         conn, cur = make_mock_conn()
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_articles
             result = save_articles([], db_url="postgresql://localhost/test")
 
@@ -127,7 +127,7 @@ class TestSaveArticles:
     def test_save_articles_uses_upsert(self, sample_articles):
         """Should use ON CONFLICT to handle duplicates."""
         conn, cur = make_mock_conn()
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_articles
             save_articles(sample_articles, db_url="postgresql://localhost/test")
 
@@ -143,7 +143,7 @@ class TestGetArticles:
         """Should query with limit and offset parameters."""
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_articles
             get_articles(limit=10, offset=5, db_url="postgresql://localhost/test")
 
@@ -194,7 +194,7 @@ class TestGetArticles:
                 datetime(2026, 4, 28, 14, 0, 0),
             )
         ]
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_articles
             result = get_articles(limit=10, db_url="postgresql://localhost/test")
 
@@ -214,7 +214,7 @@ class TestGetArticlesByDate:
         """Should query articles within date range."""
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_articles_by_date
             get_articles_by_date(
                 start_date="2026-04-28",
@@ -290,7 +290,7 @@ class TestSchema:
     def test_save_articles_writes_signal_extension_fields(self, sample_articles):
         """Should persist local-only enrich extension fields."""
         conn, cur = make_mock_conn()
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_articles
 
             save_articles(sample_articles[:1], db_url="postgresql://localhost/test")
@@ -344,7 +344,7 @@ class TestGetAllArticleIds:
         """Should return a set of article IDs."""
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = [("eid_1",), ("eid_2",), ("eid_3",)]
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_all_article_ids
             result = get_all_article_ids(db_url="postgresql://localhost/test")
 
@@ -358,7 +358,7 @@ class TestGetAllArticleIds:
         """Should query id column with proper filtering."""
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_all_article_ids
             get_all_article_ids(db_url="postgresql://localhost/test")
 
@@ -372,7 +372,7 @@ class TestGetAllArticleIds:
 
     def test_get_all_article_ids_returns_empty_set_on_error(self):
         """Should return empty set when database query fails."""
-        with patch("rss2cubox.db_client.psycopg.connect", side_effect=Exception("Connection failed")):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", side_effect=Exception("Connection failed")):
             from rss2cubox.db_client import get_all_article_ids
             result = get_all_article_ids(db_url="postgresql://localhost/test")
 
@@ -397,7 +397,7 @@ class TestGetFeedCursors:
             ("https://rss.arxiv.org/rss/cs.LG", datetime(2026, 4, 28, 12, 0, 0)),
             ("https://rsshub.app/sspai/index", datetime(2026, 4, 27, 10, 30, 0)),
         ]
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_feed_cursors
             result = get_feed_cursors(db_url="postgresql://localhost/test")
 
@@ -410,7 +410,7 @@ class TestGetFeedCursors:
         """Should use GROUP BY source_feed_id with MAX(publish_time)."""
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_feed_cursors
             get_feed_cursors(db_url="postgresql://localhost/test")
 
@@ -423,7 +423,7 @@ class TestGetFeedCursors:
 
     def test_get_feed_cursors_returns_empty_dict_on_error(self):
         """Should return empty dict when database query fails."""
-        with patch("rss2cubox.db_client.psycopg.connect", side_effect=Exception("Connection failed")):
+        with patch("rss2cubox.db_client.articles.psycopg.connect", side_effect=Exception("Connection failed")):
             from rss2cubox.db_client import get_feed_cursors
             result = get_feed_cursors(db_url="postgresql://localhost/test")
 
@@ -444,7 +444,7 @@ class TestPredictionLoopPersistence:
     def test_save_signal_clusters_upserts_clusters_and_links_articles(self):
         conn, cur = make_mock_conn()
         cur.fetchone.return_value = (42,)
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.predictions.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_signal_clusters
 
             result = save_signal_clusters(
@@ -475,7 +475,7 @@ class TestPredictionLoopPersistence:
 
     def test_save_trend_predictions_inserts_rows(self):
         conn, cur = make_mock_conn()
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.predictions.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_trend_predictions
 
             result = save_trend_predictions(
@@ -503,7 +503,7 @@ class TestPredictionLoopPersistence:
 
     def test_save_prediction_review_inserts_row(self):
         conn, cur = make_mock_conn()
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.predictions.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_prediction_review
 
             assert save_prediction_review(
@@ -524,7 +524,7 @@ class TestPredictionLoopPersistence:
     def test_get_signal_clusters_for_prediction_excludes_pending_predictions(self):
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.predictions.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_signal_clusters_for_prediction
 
             result = get_signal_clusters_for_prediction(db_url="postgresql://localhost/test")
@@ -538,7 +538,7 @@ class TestPredictionLoopPersistence:
     def test_get_existing_signal_clusters_loads_history_for_clustering(self):
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.predictions.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_existing_signal_clusters
 
             result = get_existing_signal_clusters(db_url="postgresql://localhost/test")
@@ -551,7 +551,7 @@ class TestPredictionLoopPersistence:
     def test_get_due_trend_predictions_selects_pending_expired_rows(self):
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.predictions.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_due_trend_predictions
 
             result = get_due_trend_predictions(db_url="postgresql://localhost/test")
@@ -565,7 +565,7 @@ class TestPredictionLoopPersistence:
     def test_get_recent_prediction_reviews_loads_feedback_for_next_predictions(self):
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.predictions.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_recent_prediction_reviews
 
             result = get_recent_prediction_reviews(db_url="postgresql://localhost/test")
@@ -578,7 +578,7 @@ class TestPredictionLoopPersistence:
     def test_get_prediction_window_articles_expands_with_watch_keywords(self):
         conn, cur = make_mock_conn()
         cur.fetchall.return_value = []
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.predictions.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_prediction_window_articles
 
             result = get_prediction_window_articles(

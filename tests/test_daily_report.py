@@ -265,7 +265,7 @@ class TestSaveDailyReport:
             "daily_advices": [],
         }
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.reports.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_daily_report
             save_daily_report(payload, db_url="postgresql://localhost/test")
 
@@ -285,7 +285,7 @@ class TestSaveDailyReport:
             "daily_advices": [],
         }
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.reports.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_daily_report
             result = save_daily_report(payload, db_url="postgresql://localhost/test")
 
@@ -299,7 +299,7 @@ class TestSaveDailyReport:
         conn, cur = mock_db_conn
         payload = {"report_date": "2026-05-09", "generated_at": datetime.now(timezone.utc).isoformat(), "summary": {}, "trends": [], "weak_signals": [], "daily_advices": []}
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.reports.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_daily_report
             save_daily_report(payload, db_url="postgresql://localhost/test")
             conn.commit.assert_called_once()
@@ -325,7 +325,7 @@ class TestSaveDailyReport:
             "daily_advices": [],
         }
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.reports.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_daily_report
             save_daily_report(payload, db_url="postgresql://localhost/test")
 
@@ -347,7 +347,7 @@ class TestGetDailyReport:
         mock_row = (json.dumps({"report_date": "2026-05-09"}),)
         cur.fetchone.return_value = mock_row
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.reports.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_daily_report
             result = get_daily_report("2026-05-09", db_url="postgresql://localhost/test")
 
@@ -359,7 +359,7 @@ class TestGetDailyReport:
         conn, cur = mock_db_conn
         cur.fetchone.return_value = None
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.reports.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_daily_report
             result = get_daily_report("2099-01-01", db_url="postgresql://localhost/test")
             assert result is None
@@ -373,7 +373,7 @@ class TestGetRecentReports:
         conn, cur = mock_db_conn
         cur.fetchall.return_value = []
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.reports.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_recent_reports
             get_recent_reports(limit=10, db_url="postgresql://localhost/test")
 
@@ -385,7 +385,7 @@ class TestGetRecentReports:
         conn, cur = mock_db_conn
         cur.fetchall.return_value = []
 
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.reports.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_recent_reports
             get_recent_reports(limit=5, db_url="postgresql://localhost/test")
 

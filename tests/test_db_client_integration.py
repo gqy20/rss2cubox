@@ -140,7 +140,7 @@ class TestDbClientEnvVar:
         env = {"LOCAL_DB_URL": "postgresql://testuser:testpass@localhost:5432/testdb"}
 
         with patch.dict("os.environ", env, clear=False):
-            with patch("rss2cubox.db_client.psycopg.connect") as mock_connect:
+            with patch("rss2cubox.db_client.articles.psycopg.connect") as mock_connect:
                 from rss2cubox.db_client import save_articles
 
                 # Should not raise ValueError about missing LOCAL_DB_URL

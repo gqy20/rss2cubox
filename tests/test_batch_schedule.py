@@ -158,7 +158,7 @@ def test_global_analysis_splits_into_batches_of_200(monkeypatch: pytest.MonkeyPa
 
     batch_calls: list[list[dict]] = []
 
-    async def fake_run(high_value_items, history_signals, log_event=None):  # noqa: ANN001
+    async def fake_run(high_value_items, history_signals, log_event=None, *, pre_fetched_texts=None):  # noqa: ANN001
         batch_calls.append(high_value_items)
         return {
             "trends": [{"text": f"趋势-{len(high_value_items)}"}],
@@ -213,7 +213,7 @@ def test_global_analysis_single_batch_under_limit(monkeypatch: pytest.MonkeyPatc
 
     batch_calls: list[list[dict]] = []
 
-    async def fake_run(high_value_items, history_signals, log_event=None):  # noqa: ANN001
+    async def fake_run(high_value_items, history_signals, log_event=None, *, pre_fetched_texts=None):  # noqa: ANN001
         batch_calls.append(high_value_items)
         return {"trends": [], "weak_signals": [], "daily_advices": [], "key_topics": [], "confidence_level": "low"}
 
@@ -245,7 +245,7 @@ def test_global_analysis_batches_run_concurrently(monkeypatch: pytest.MonkeyPatc
 
     timestamps: list[tuple[int, float, float]] = []  # (batch_index, start_time, end_time)
 
-    async def fake_slow_run(high_value_items, history_signals, log_event=None):  # noqa: ANN001
+    async def fake_slow_run(high_value_items, history_signals, log_event=None, *, pre_fetched_texts=None):  # noqa: ANN001
         idx = len(timestamps)
         start = time_mod.time()
         timestamps.append((idx, start, 0))

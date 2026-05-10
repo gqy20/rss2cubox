@@ -30,7 +30,7 @@ class TestSaveGlobalInsights:
     def test_save_global_insights_creates_table_if_not_exists(self, sample_insights_payload, mock_db_conn):
         """Should create global_insights table if it doesn't exist."""
         conn, cur = mock_db_conn
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.insights.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_global_insights
 
             save_global_insights(sample_insights_payload, db_url="postgresql://localhost/test")
@@ -43,7 +43,7 @@ class TestSaveGlobalInsights:
     def test_save_global_insights_inserts_record(self, sample_insights_payload, mock_db_conn):
         """Should insert global_insights record."""
         conn, cur = mock_db_conn
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.insights.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_global_insights
 
             save_global_insights(sample_insights_payload, db_url="postgresql://localhost/test")
@@ -56,7 +56,7 @@ class TestSaveGlobalInsights:
     def test_save_global_insights_commits(self, sample_insights_payload, mock_db_conn):
         """Should commit transaction after insert."""
         conn, cur = mock_db_conn
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.insights.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_global_insights
 
             save_global_insights(sample_insights_payload, db_url="postgresql://localhost/test")
@@ -66,7 +66,7 @@ class TestSaveGlobalInsights:
     def test_save_global_insights_handles_missing_fields(self, mock_db_conn):
         """Should handle payload with missing fields gracefully."""
         conn, cur = mock_db_conn
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.insights.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import save_global_insights
 
             # Payload with only required field
@@ -94,7 +94,7 @@ class TestGetGlobalInsights:
             datetime(2026, 4, 28, 8, 32, 47),
             '{"generated_at": "2026-04-28T08:32:47+00:00", "source_count": 491, "trends": ["trend1"]}',
         )
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.insights.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_latest_global_insights
 
             result = get_latest_global_insights(db_url="postgresql://localhost/test")
@@ -107,7 +107,7 @@ class TestGetGlobalInsights:
         """Should return None when no records exist."""
         conn, cur = mock_db_conn
         cur.fetchone.return_value = None
-        with patch("rss2cubox.db_client.psycopg.connect", return_value=conn):
+        with patch("rss2cubox.db_client.insights.psycopg.connect", return_value=conn):
             from rss2cubox.db_client import get_latest_global_insights
 
             result = get_latest_global_insights(db_url="postgresql://localhost/test")
