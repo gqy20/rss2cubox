@@ -255,7 +255,6 @@ def fetch_fulltext_batch(
     workers = max_workers or FULLTEXT_MAX_WORKERS
     results: dict[str, FetchResult] = {}
     stats = {"total": len(items), "l1": 0, "l2": 0, "l3": 0, "failed": 0}
-    semaphore = [_Semaphore(workers) for _ in [None]]
 
     def _run_one(item: dict[str, Any]) -> None:
         eid = str(item.get("eid", "")).strip()
@@ -316,23 +315,3 @@ def fetch_fulltext_batch(
         )
 
     return results
-
-
-class _Semaphore:
-    """轻量信号量（无需 anyio，兼容同步上下文）。"""
-
-    def __init__(self, count: int):
-        self._count = count
-        self._lock = __import__("threading").Lock()
-
-    def __enter__(self):
-        self._lock.acquire()
-        while self._count <= 0:
-            self._lock.release()
-            self._lock.acquire()
-        self._count -= 1
-        return self
-
-    def __exit__(self, *_a):
-        self._count += 1
-        self._lock.release()
