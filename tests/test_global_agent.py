@@ -186,24 +186,33 @@ class TestNormalizeGlobalPayload:
 class TestGlobalAgentIntegration:
     """Integration tests for global_agent."""
 
-    def test_empty_candidates_skips_analysis(self) -> None:
+    def _mock_db_calls(self, monkeypatch):
+        """Mock 所有 DB 读写，避免真实连接。"""
+        from rss2cubox import db_client
+
+        monkeypatch.setattr(
+            db_client, "get_all_global_insights",
+            lambda limit=1000: [{"trends": [], "weak_signals": [], "daily_advices": []}],
+        )
+        monkeypatch.setattr(db_client, "save_global_insights", lambda payload: True)
+
+    def test_empty_candidates_skips_analysis(self, monkeypatch) -> None:
         """Test that empty candidates skips analysis."""
         from rss2cubox import global_agent
 
-        # 空的 candidates 应该跳过分析
-        analyses = {}
-        candidates = []
+        self._mock_db_calls(monkeypatch)
 
         result = global_agent.run_global_analysis(
-            analyses=analyses, candidates=candidates
+            analyses={}, candidates=[]
         )
 
         assert result is None
 
-    def test_non_empty_analyses_are_forwarded_to_global_agent(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_non_empty_analyses_are_forwarded_to_global_agent(self, monkeypatch) -> None:
         from rss2cubox import global_agent
 
         monkeypatch.setattr(global_agent, "GLOBAL_AGENT_ENABLED", True)
+        self._mock_db_calls(monkeypatch)
 
         captured = {"items": None}
 

@@ -349,6 +349,25 @@ def create_read_webpage_mcp(
     return server, f"mcp__{server_name}__read_webpage"
 
 
+def write_temp_json(data: Any, *, suffix: str = ".json") -> str:
+    """将数据写入临时 JSON 文件，返回文件路径（调用方负责清理）。"""
+    import tempfile
+
+    f = tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False, encoding="utf-8")
+    json.dump(data, f, ensure_ascii=False, indent=2)
+    f.close()
+    return f.name
+
+
+def cleanup_temp_files(*paths: str) -> None:
+    """安全删除临时文件，忽略不存在或权限错误。"""
+    for p in paths:
+        try:
+            Path(p).unlink(missing_ok=True)
+        except Exception:
+            pass
+
+
 def normalize_signal_item(item: Any, *, enable_comment: bool = False, max_text_length: int = 200) -> dict[str, Any] | None:
     """归一化单条信号项，兼容 string 和 dict 格式。
 

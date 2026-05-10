@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Any
@@ -277,33 +276,14 @@ def _collect_day_data(report_date: str) -> dict[str, Any]:
 
 def _prepare_temp_files(day_data: dict[str, Any]) -> dict[str, str]:
     """将完整数据写入临时文件，返回 {name: path} 映射。"""
-    files: dict[str, str] = {}
+    from rss2cubox.agent_sdk_runner import write_temp_json
 
-    # 文件1: 全部文章
-    f1 = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
-    json.dump(day_data.get("today_articles_summary", {}).get("top_articles", []), f1, ensure_ascii=False, indent=2)
-    f1.close()
-    files["articles"] = f1.name
-
-    # 文件2: 全部 insights 原始数据
-    f2 = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
-    json.dump(day_data.get("today_global_insights", []), f2, ensure_ascii=False, indent=2)
-    f2.close()
-    files["insights"] = f2.name
-
-    # 文件3: 全部 clusters
-    f3 = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
-    json.dump(day_data.get("cluster_snapshot", {}).get("active_clusters", []), f3, ensure_ascii=False, indent=2)
-    f3.close()
-    files["clusters"] = f3.name
-
-    # 文件4: 预测状态
-    f4 = tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8")
-    json.dump(day_data.get("prediction_status", {}), f4, ensure_ascii=False, indent=2)
-    f4.close()
-    files["predictions"] = f4.name
-
-    return files
+    return {
+        "articles": write_temp_json(day_data.get("today_articles_summary", {}).get("top_articles", [])),
+        "insights": write_temp_json(day_data.get("today_global_insights", [])),
+        "clusters": write_temp_json(day_data.get("cluster_snapshot", {}).get("active_clusters", [])),
+        "predictions": write_temp_json(day_data.get("prediction_status", {})),
+    }
 
 
 async def _run_agent(
@@ -321,6 +301,7 @@ async def _run_agent(
 
     from rss2cubox.agent_sdk_runner import (
         _StructuredOutputError,
+        cleanup_temp_files,
         extract_json_from_text,
         create_read_webpage_mcp,
         get_jina_config,
@@ -407,11 +388,7 @@ async def _run_agent(
     except Exception as e:
         print(f"[daily_report] error: {e}", flush=True)
     finally:
-        for fp in file_paths_to_cleanup:
-            try:
-                Path(fp).unlink(missing_ok=True)
-            except Exception:
-                pass
+        cleanup_temp_files(*file_paths_to_cleanup)
 
     return None
 

@@ -13,12 +13,12 @@ from __future__ import annotations
 
 import json
 import os
-import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
 from rss2cubox.agent_sdk_runner import (
+    cleanup_temp_files,
     create_read_webpage_mcp,
     get_jina_config,
     make_sdk_logger,
@@ -26,6 +26,7 @@ from rss2cubox.agent_sdk_runner import (
     normalize_signal_item,
     run_json_agent,
     run_with_fallback,
+    write_temp_json,
 )
 
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
@@ -222,28 +223,8 @@ async def _run_agent(
         }
         for r in high_value_items
     ]
-    signals_tmp_file = tempfile.NamedTemporaryFile(
-        mode="w", suffix=".json", delete=False, encoding="utf-8"
-    )
-    signals_file_path: str | None = None
-    try:
-        json.dump(signals_data, signals_tmp_file, ensure_ascii=False, indent=2)
-        signals_tmp_file.flush()
-        signals_file_path = signals_tmp_file.name
-    finally:
-        signals_tmp_file.close()
-
-    # 将历史 signals 写入临时文件
-    history_tmp_file = tempfile.NamedTemporaryFile(
-        mode="w", suffix=".json", delete=False, encoding="utf-8"
-    )
-    history_file_path: str | None = None
-    try:
-        json.dump(history_signals, history_tmp_file, ensure_ascii=False, indent=2)
-        history_tmp_file.flush()
-        history_file_path = history_tmp_file.name
-    finally:
-        history_tmp_file.close()
+    signals_file_path = write_temp_json(signals_data)
+    history_file_path = write_temp_json(history_signals)
 
     server, read_webpage_tool_name = create_read_webpage_mcp("insights-tools")
 
@@ -290,17 +271,7 @@ async def _run_agent(
         else:
             print(f"[global_agent] error: {e}", flush=True)
     finally:
-        # 清理临时文件
-        if signals_file_path:
-            try:
-                Path(signals_file_path).unlink(missing_ok=True)
-            except Exception:
-                pass
-        if history_file_path:
-            try:
-                Path(history_file_path).unlink(missing_ok=True)
-            except Exception:
-                pass
+        cleanup_temp_files(signals_file_path, history_file_path)
 
     return None
 

@@ -38,6 +38,7 @@ where = ["src"]
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
+    "pytest-xdist>=3.8.0",
 ]
 
 [tool.pytest.ini_options]
