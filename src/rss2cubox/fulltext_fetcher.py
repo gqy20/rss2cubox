@@ -8,7 +8,7 @@ L3: Playwright 微信专用（mp.weixin.qq.com，~9-10s）
 from __future__ import annotations
 
 import os
-import re
+import threading
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable
@@ -28,15 +28,42 @@ FULLTEXT_ENABLED = os.getenv("FULLTEXT_ENABLED", "true").lower() not in ("false"
 FULLTEXT_MAX_WORKERS = max(1, int(os.getenv("FULLTEXT_MAX_WORKERS", "10")))
 FULLTEXT_ITEM_TIMEOUT_S = max(5, int(os.getenv("FULLTEXT_ITEM_TIMEOUT_S", "30")))
 
+# 每级内部超时分配（总和不超过 FULLTEXT_ITEM_TIMEOUT_S）
+_L1_TIMEOUT_S = min(10, FULLTEXT_ITEM_TIMEOUT_S // 3)       # trafilatura 上限 ~10s
+_L2_TIMEOUT_S = min(20, FULLTEXT_ITEM_TIMEOUT_S // 2)      # Playwright 上限 ~20s
+_L3_TIMEOUT_S = min(15, FULLTEXT_ITEM_TIMEOUT_S // 2)      # 微信上限 ~15s
+
 # Playwright 浏览器超时（单次页面加载）
-_PLAYWRIGHT_NAVIGATION_TIMEOUT_S = max(15, int(os.getenv("PLAYWRIGHT_NAVIGATION_TIMEOUT_S", "25")))
+_PLAYWRIGHT_NAVIGATION_TIMEOUT_S = max(8, min(20, int(os.getenv("PLAYWRIGHT_NAVIGATION_TIMEOUT_S", "15"))))
 # 渲染后额外等待 JS 的时间
-_RENDER_EXTRA_WAIT_S = max(2, int(os.getenv("RENDER_EXTRA_WAIT_S", "4")))
+_RENDER_EXTRA_WAIT_S = max(1, min(3, int(os.getenv("RENDER_EXTRA_WAIT_S", "2"))))
 
 
 def _is_wechat_url(url: str) -> bool:
     host = (url or "").strip().split("/")[2] if "//" in url else ""
     return "mp.weixin.qq.com" in host or "weixin.qq.com" in host
+
+
+def _fetch_with_timeout(fetch_fn: Callable, url: str, timeout_s: float) -> FetchResult | None:
+    """在子线程中执行 fetch_fn(url)，超过 timeout_s 秒返回 None（不阻塞调用线程）。"""
+    result_container: list[FetchResult | None] = [None]
+    exception_holder: list[BaseException | None] = [None]
+
+    def _worker() -> None:
+        try:
+            result_container[0] = fetch_fn(url)
+        except BaseException as exc:
+            exception_holder[0] = exc
+
+    t = threading.Thread(target=_worker, daemon=True)
+    t.start()
+    t.join(timeout=timeout_s)
+
+    if t.is_alive():
+        return None  # 超时，子线程会被 GC 回收（daemon=True）
+    if exception_holder[0] is not None:
+        return None
+    return result_container[0]
 
 
 # ── Level 1: trafilatura 直连 ────────────────────────────
@@ -82,12 +109,11 @@ def _fetch_l2_playwright(url: str) -> FetchResult | None:
                 )
                 page = ctx.new_page()
                 resp = page.goto(url, wait_until="domcontentloaded", timeout=_PLAYWRIGHT_NAVIGATION_TIMEOUT_S * 1000)
-                if resp and resp.status >= 400:
-                    return None
+                # 不再因 4xx/5xx 直接放弃——部分站点返回非标准状态码但正文可用
 
-                # 等待 JS 渲染完成
+                # 等待 JS 渲染完成（缩短超时）
                 try:
-                    page.wait_for_load_state("networkidle", timeout=12_000)
+                    page.wait_for_load_state("networkidle", timeout=6_000)
                 except Exception:
                     pass
                 time.sleep(_RENDER_EXTRA_WAIT_S)
@@ -181,7 +207,7 @@ def _fetch_l3_wechat(url: str) -> FetchResult | None:
 
                 page.route("**/*", block_media)
                 page.goto(url, wait_until="domcontentloaded", timeout=_PLAYWRIGHT_NAVIGATION_TIMEOUT_S * 1000)
-                time.sleep(5)
+                time.sleep(3)  # 微信已屏蔽媒体资源，3s 足够渲染
 
                 has_content = page.evaluate("() => !!document.querySelector('#js_content')")
                 if not has_content:
@@ -215,21 +241,32 @@ def _fetch_l3_wechat(url: str) -> FetchResult | None:
 
 # ── 单条抓取（三级降级入口） ─────────────────────
 def fetch_full_text(url: str) -> FetchResult:
-    """对单个 URL 执行三级降级全文抓取。"""
+    """对单个 URL 执行三级降级全文抓取（每级有独立超时）。"""
     url = (url or "").strip()
     if not url:
         return FetchResult(error="empty_url")
 
-    if _is_wechat_url(url):
-        result = _fetch_l3_wechat(url)
-        return result or FetchResult(error="wechat_failed", level=3)
+    t0 = time.perf_counter()
 
-    for level_fn in (_fetch_l1_trafilatura, _fetch_l2_playwright):
-        result = level_fn(url)
+    if _is_wechat_url(url):
+        result = _fetch_with_timeout(_fetch_l3_wechat, url, _L3_TIMEOUT_S)
+        return result or FetchResult(error="wechat_failed", level=3, elapsed_s=time.perf_counter() - t0)
+
+    # L1: trafilatura（快速，~1-10s）
+    result = _fetch_with_timeout(_fetch_l1_trafilatura, url, _L1_TIMEOUT_S)
+    if result and result.text:
+        result.elapsed_s = time.perf_counter() - t0
+        return result
+
+    # L2: Playwright（较慢，~7-20s）
+    remaining = FULLTEXT_ITEM_TIMEOUT_S - (time.perf_counter() - t0)
+    if remaining > 5:
+        result = _fetch_with_timeout(_fetch_l2_playwright, url, min(remaining - 1, _L2_TIMEOUT_S))
         if result and result.text:
+            result.elapsed_s = time.perf_counter() - t0
             return result
 
-    return FetchResult(error="all_levels_failed")
+    return FetchResult(error="all_levels_failed", elapsed_s=time.perf_counter() - t0)
 
 
 # ── 并发批量抓取 ─────────────────────────────────────
