@@ -1,7 +1,7 @@
 """Tests for shared agent utility functions in agent_sdk_runner (TDD: Red phase)."""
 from typing import Any, Callable
 import pytest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 
 class TestMakeSdkLogger:
@@ -369,6 +369,150 @@ class TestRunJsonAgentTimeout:
         source = inspect.getsource(run_json_agent)
         assert "wait_for" in source, \
             "run_json_agent 应使用 asyncio.wait_for 替代 anyio.fail_after"
+
+
+class TestEnrichRetry:
+    """_enrich_one 超时退避重试机制测试。
+
+    验证：
+    - TimeoutError 触发退避重试，非 TimeoutError 不重试
+    - 重试成功后返回结果
+    - 重试耗尽后返回 None
+    - ENRICH_MAX_RETRIES=0 时无重试
+    """
+
+    @pytest.fixture(autouse=True)
+    def _patch_environ(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """为测试固定环境变量（BACKOFF=0 避免真实等待）。"""
+        monkeypatch.setenv("ENRICH_MAX_RETRIES", "1")
+        monkeypatch.setenv("ENRICH_RETRY_BACKOFF_SECONDS", "0")
+        monkeypatch.setenv("ENRICH_ITEM_TIMEOUT_SECONDS", "5")
+        monkeypatch.setenv("ENRICH_MAX_BUDGET_USD", "")
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+
+    @staticmethod
+    def _sample_item() -> dict:
+        return {
+            "eid": "test-retry-eid-001",
+            "url": "https://example.com/article",
+            "title": "Test Article",
+            "description": "A test article for retry logic",
+        }
+
+    @staticmethod
+    def _sample_original() -> dict:
+        return {"core_event": "", "reason": "", "hidden_signal": "", "actionable": "", "tags": []}
+
+    @staticmethod
+    def _expected_result(core: str = "test") -> dict:
+        return {
+            "core_event": core,
+            "reason": "r",
+            "hidden_signal": "h",
+            "actionable": "a",
+            "tags": [],
+            "importance_score": 3,
+            "content_source": "full_text",
+            "signal_type": 1,
+            "evidence_type": 2,
+            "evidence_strength": 3,
+            "novelty_score": 3,
+            "impact_horizon": 3,
+            "audience": [2],
+            "market_stage": 4,
+            "confidence": 4,
+            "entities": [],
+            "cluster_hint": "",
+            "watch_keywords": [],
+            "prediction": "",
+            "disconfirming_evidence": "",
+        }
+
+    @pytest.mark.asyncio
+    async def test_succeeds_on_first_attempt(self) -> None:
+        """首次调用即成功时，不应触发重试，直接返回结果。"""
+        expected = self._expected_result()
+
+        with patch("rss2cubox.enrich_agent.run_json_agent", return_value=expected) as mock_run:
+            from rss2cubox.enrich_agent import _enrich_one
+
+            result, reason = await _enrich_one(self._sample_item(), self._sample_original())
+            assert result is not None
+            assert result["core_event"] == "test"
+            assert reason == "ok"
+            assert mock_run.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_retry_succeeds_on_second_attempt(self) -> None:
+        """首次超时、重试成功时应返回结果。"""
+        expected = self._expected_result("retry-ok")
+        call_count = 0
+
+        def _side_effect(*a, **kw):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise TimeoutError("simulated timeout")
+            return expected
+
+        with patch("rss2cubox.enrich_agent.run_json_agent", side_effect=_side_effect) as mock_run:
+            from rss2cubox.enrich_agent import _enrich_one
+
+            result, reason = await _enrich_one(self._sample_item(), self._sample_original())
+            assert result is not None
+            assert result["core_event"] == "retry-ok"
+            assert reason == "ok"
+            assert mock_run.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_all_retries_exhausted_returns_none(self) -> None:
+        """所有尝试都超时时返回 None 并携带耗尽信息。"""
+        with patch(
+            "rss2cubox.enrich_agent.run_json_agent",
+            side_effect=TimeoutError("simulated timeout"),
+        ) as mock_run:
+            from rss2cubox.enrich_agent import _enrich_one
+
+            result, reason = await _enrich_one(self._sample_item(), self._sample_original())
+            assert result is None
+            assert "timeout_after" in reason
+            assert "2_attempts" in reason
+            assert mock_run.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_non_timeout_error_no_retry(self) -> None:
+        """非 TimeoutError（如 RuntimeError）不应触发重试。"""
+        with patch(
+            "rss2cubox.enrich_agent.run_json_agent",
+            side_effect=RuntimeError("sdk_connection_failed"),
+        ) as mock_run:
+            from rss2cubox.enrich_agent import _enrich_one
+
+            result, reason = await _enrich_one(self._sample_item(), self._sample_original())
+            assert result is None
+            assert reason == "sdk_connection_failed"
+            assert mock_run.call_count == 1
+
+    @pytest.mark.asyncio
+    async def test_zero_retries_no_retry_on_timeout(
+        self, monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """ENRICH_MAX_RETRIES=0 时超时不重试，直接失败。"""
+        import rss2cubox.enrich_agent
+
+        # 直接 patch 模块级常量（reload 对 os.getenv 重新求值在某些场景不生效）
+        monkeypatch.setattr(rss2cubox.enrich_agent, "ENRICH_MAX_RETRIES", 0)
+
+        with patch(
+            "rss2cubox.enrich_agent.run_json_agent",
+            side_effect=TimeoutError("simulated timeout"),
+        ) as mock_run:
+            from rss2cubox.enrich_agent import _enrich_one
+
+            result, reason = await _enrich_one(self._sample_item(), self._sample_original())
+            assert result is None
+            assert "timeout_after_1_attempts" in reason
+            assert mock_run.call_count == 1
 
 
 import sys  # noqa: E402

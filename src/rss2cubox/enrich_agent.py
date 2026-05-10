@@ -8,7 +8,8 @@
 - 只精读通过粗筛的条目，不处理所有候选，控制时间和成本
 - 有限并发（ENRICH_MAX_WORKERS），默认 10
 - 使用 output_format 让 CLI 自动验证 JSON Schema（内置 5 次重试）
-- 单条失败静默回退到原始粗筛结果
+- TimeoutError 时按配置退避重试（ENRICH_MAX_RETRIES），其他异常不重试
+- 重试用递减超时（首次已接近完成，重试应更快）
 - 可通过 ENRICH_AGENT_ENABLED=false 关闭
 """
 from __future__ import annotations
@@ -32,6 +33,8 @@ ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in 
 ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
 ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "120")))
 ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
+ENRICH_MAX_RETRIES = max(0, int(os.getenv("ENRICH_MAX_RETRIES", "1")))
+ENRICH_RETRY_BACKOFF_SECONDS = max(1, float(os.getenv("ENRICH_RETRY_BACKOFF_SECONDS", "30")))
 # JINA 常量已迁移到 get_jina_config()，在 _enrich_one 中按需调用
 _enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "15.0").strip()
 try:
@@ -157,8 +160,9 @@ def _has_enrich_content(payload: dict[str, Any] | None) -> bool:
 async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) -> tuple[dict | None, str]:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
-    直接信任 structured_output，失败即返回错误。
+    TimeoutError 时按配置进行退避重试；其他异常直接返回。
     """
+    import asyncio
     import anyio
 
     try:
@@ -204,27 +208,55 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None) 
 
     sdk_logger = make_sdk_logger("enrich", log_event=log_event, eid=item.get("eid", ""), url=expected_url)
 
-    try:
-        structured_output = await run_json_agent(
-            prompt=_build_user_prompt(item, original),
-            system_prompt=SYSTEM_PROMPT,
-            schema=ENRICH_OUTPUT_SCHEMA,
-            allowed_tools=allowed_tools,
-            mcp_servers={"enrich-tools": server},
-            max_turns=10,
-            max_budget_usd=ENRICH_MAX_BUDGET_USD,
-            timeout_seconds=ENRICH_ITEM_TIMEOUT_SECONDS,
-            cwd=Path.cwd(),
-            setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
-            stderr=stderr_logger,
-            env={k: v for k, v in os.environ.items() if k == "ANTHROPIC_API_KEY"},
-            sdk_log=sdk_logger,
-        )
-        return structured_output, "ok"
-    except Exception as e:
-        if stderr_lines:
-            print(f"[enrich_agent] eid={eid_short} error: {' | '.join(stderr_lines[-5:])}", flush=True)
-        return None, str(e)
+    max_attempts = 1 + ENRICH_MAX_RETRIES
+    base_timeout = float(ENRICH_ITEM_TIMEOUT_SECONDS)
+
+    for attempt in range(max_attempts):
+        # 重试用递减超时：首次已接近完成，重试应更快
+        timeout = max(30, int(base_timeout * (0.6 ** attempt)))
+        try:
+            structured_output = await run_json_agent(
+                prompt=_build_user_prompt(item, original),
+                system_prompt=SYSTEM_PROMPT,
+                schema=ENRICH_OUTPUT_SCHEMA,
+                allowed_tools=allowed_tools,
+                mcp_servers={"enrich-tools": server},
+                max_turns=10,
+                max_budget_usd=ENRICH_MAX_BUDGET_USD,
+                timeout_seconds=timeout,
+                cwd=Path.cwd(),
+                setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
+                stderr=stderr_logger,
+                env={k: v for k, v in os.environ.items() if k == "ANTHROPIC_API_KEY"},
+                sdk_log=sdk_logger,
+            )
+            if attempt > 0 and log_event:
+                log_event("INFO", "enrich_retry_ok", stage="enrich", eid=item.get("eid", ""), attempt=attempt + 1)
+            return structured_output, "ok"
+        except TimeoutError:
+            if attempt < max_attempts - 1:
+                if log_event:
+                    log_event(
+                        "WARN",
+                        "enrich_retry",
+                        stage="enrich",
+                        eid=item.get("eid", ""),
+                        attempt=attempt + 1,
+                        max_attempts=max_attempts,
+                        wait=ENRICH_RETRY_BACKOFF_SECONDS,
+                        next_timeout=timeout,
+                    )
+                await asyncio.sleep(ENRICH_RETRY_BACKOFF_SECONDS)
+                continue
+            # 所有重试耗尽
+            if stderr_lines:
+                print(f"[enrich_agent] eid={eid_short} error: timeout after {max_attempts} attempts", flush=True)
+            return None, f"timeout_after_{max_attempts}_attempts"
+        except Exception as e:
+            # 非 TimeoutError 不重试
+            if stderr_lines:
+                print(f"[enrich_agent] eid={eid_short} error: {' | '.join(stderr_lines[-5:])}", flush=True)
+            return None, str(e)
 
     return None, "no_result"
 
@@ -237,7 +269,7 @@ async def _enrich_all(
     import anyio
 
     semaphore = anyio.Semaphore(ENRICH_MAX_WORKERS)
-    stats = {"started": 0, "succeeded": 0, "failed": 0, "empty": 0}
+    stats = {"started": 0, "succeeded": 0, "failed": 0, "empty": 0, "retried": 0, "retried_succeeded": 0}
 
     async def run_one(item: dict, original: dict) -> None:
         eid = item["eid"]
@@ -255,6 +287,9 @@ async def _enrich_all(
                 enriched, reason = await _enrich_one(item, original, log_event)
                 duration_ms = int((time.perf_counter() - started_at) * 1000)
                 if enriched:
+                    is_retry_ok = reason.startswith("timeout_after")
+                    if is_retry_ok:
+                        stats["retried_succeeded"] += 1
                     merged = {**original}
                     for key in ("core_event", "reason", "hidden_signal", "actionable"):
                         val = str(enriched.get(key, "")).strip()
@@ -317,6 +352,9 @@ async def _enrich_all(
                         hidden_signal=merged.get("hidden_signal", "")[:40],
                     )
                 else:
+                    is_timeout = "timeout_after" in reason
+                    if is_timeout:
+                        stats["retried"] += 1
                     stats["empty"] += 1
                     log_event("WARN", "enrich_failed", stage="enrich", eid=eid, duration_ms=duration_ms, error=f"no_result:{reason}")
             except Exception as e:
@@ -372,6 +410,8 @@ def analyze_candidates_with_agent(
             failed=enrich_stats.get("failed", 0),
             empty=enrich_stats.get("empty", 0),
             started=enrich_stats.get("started", len(_enrich_candidates)),
+            retried=enrich_stats.get("retried", 0),
+            retried_succeeded=enrich_stats.get("retried_succeeded", 0),
         )
     except Exception as e:
         log_event("WARN", "agent_analysis_error", stage="agent", error=str(e))

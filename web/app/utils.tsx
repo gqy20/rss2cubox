@@ -172,6 +172,4 @@ export function SourceLogo({ row }: { row: Row }) {
   )
 }
 
-export function hasAiSummary(row: Pick<Row, 'core_event' | 'hidden_signal' | 'actionable' | 'reason'>): boolean {
-  return Boolean(row.core_event || row.hidden_signal || row.actionable || row.reason)
-}
+export { hasAiSummary } from './utils-shared'

@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 
 import { loadGlobalInsights, loadArticles, loadLocalStats, type LocalStats } from '../lib/signalStore'
 import { getBusinessDayKey } from '../lib/time'
-import { hasAiSummary } from './utils'
+import { hasAiSummary } from './utils-shared'
 import type { GlobalInsights, Row } from './types'
 
 export const dynamic = 'force-dynamic'
