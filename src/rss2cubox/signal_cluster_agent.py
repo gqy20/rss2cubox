@@ -10,7 +10,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent, run_with_fallback
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, _agent_timeout, _budget, extract_json_from_text, make_sdk_logger, run_json_agent, run_with_fallback
 
 
 SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
@@ -132,6 +132,7 @@ def run_signal_cluster_agent(
                 schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
                 max_turns=200,
                 max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
+                timeout_seconds=_agent_timeout("SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS", default=300, minimum=120),
                 sdk_log=sdk_logger,
             ),
             agent_name="signal_cluster",

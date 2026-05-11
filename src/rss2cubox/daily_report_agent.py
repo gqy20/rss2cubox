@@ -301,6 +301,7 @@ async def _run_agent(
 
     from rss2cubox.agent_sdk_runner import (
         _StructuredOutputError,
+        _agent_timeout,
         cleanup_temp_files,
         extract_json_from_text,
         create_read_webpage_mcp,
@@ -361,6 +362,7 @@ async def _run_agent(
             mcp_servers={"daily-report-tools": server},
             max_turns=80,
             max_budget_usd=DAILY_REPORT_MAX_BUDGET_USD,
+            timeout_seconds=_agent_timeout("DAILY_REPORT_AGENT_TIMEOUT_SECONDS", default=600, minimum=120),
             cwd=Path.cwd(),
             setting_sources=["project"] if DAILY_REPORT_ENABLE_SKILLS else None,
             stderr=stderr_logger,

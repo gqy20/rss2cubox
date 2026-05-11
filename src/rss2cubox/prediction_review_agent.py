@@ -7,7 +7,7 @@ from typing import Any
 
 import anyio
 
-from rss2cubox.agent_sdk_runner import _StructuredOutputError, _budget, extract_json_from_text, make_sdk_logger, run_json_agent, run_with_fallback
+from rss2cubox.agent_sdk_runner import _StructuredOutputError, _agent_timeout, _budget, extract_json_from_text, make_sdk_logger, run_json_agent, run_with_fallback
 
 
 PREDICTION_REVIEW_OUTPUT_SCHEMA = {
@@ -72,6 +72,7 @@ def run_prediction_review_agent(
                 schema=PREDICTION_REVIEW_OUTPUT_SCHEMA,
                 max_turns=20,
                 max_budget_usd=_budget("PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD", 10.0),
+                timeout_seconds=_agent_timeout("PREDICTION_REVIEW_AGENT_TIMEOUT_SECONDS", default=300, minimum=120),
                 sdk_log=sdk_logger,
             ),
             agent_name="prediction_review",

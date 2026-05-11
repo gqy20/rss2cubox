@@ -156,6 +156,8 @@ async def run_json_agent(
                     emit("agent_sdk_close_start")
                     try:
                         await super().close()
+                    except (RuntimeError, Exception):
+                        pass
                     finally:
                         emit(
                             "agent_sdk_close_done",
@@ -280,6 +282,27 @@ def _budget(name: str, default: float) -> float | None:
         return float(raw.strip())
     except (ValueError, TypeError):
         return None
+
+
+def _agent_timeout(env_key: str, *, default: float = 300, minimum: float = 30) -> float | None:
+    """从环境变量解析 agent 超时秒数。
+
+    - 未设置 → 返回 default
+    - 值为 "0" 或负数 → 返回 None（禁用超时）
+    - 值低于 minimum → clamp 到 minimum
+    """
+    import os as _os
+
+    raw = _os.environ.get(env_key, "").strip()
+    if not raw:
+        return default
+    try:
+        val = float(raw)
+        if val <= 0:
+            return None
+        return max(val, minimum)
+    except (ValueError, TypeError):
+        return default
 
 
 # ── Phase-2 shared utilities (TDD Green phase) ────────────────────────────
