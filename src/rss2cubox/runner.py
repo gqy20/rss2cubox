@@ -28,7 +28,7 @@ import requests
 from rss2cubox import feed_sources, sync_pipeline
 from rss2cubox import enrich_agent
 from rss2cubox import fulltext_fetcher
-from rss2cubox.db_client import save_articles, save_fulltext_batch
+from rss2cubox.db_client import save_articles, save_fulltext_batch, get_fulltexts_by_eids
 from rss2cubox.db import record_feed_stat
 from rss2cubox.global_agent import run_global_analysis
 from rss2cubox.feed_sources import RSSHubInstancePool
@@ -224,7 +224,7 @@ def main() -> None:
             total=len(candidates),
         )
 
-    # ── 全文抓取入库（enrich 之前，全文已持久化） ──
+    # ── 全文抓取 ──
     ft_results: dict[str, Any] = {}
     if fulltext_fetcher.FULLTEXT_ENABLED and _db_url:
         log_event("INFO", "fulltext_start", stage="fulltext", count=len(candidates_for_run))
@@ -236,19 +236,64 @@ def main() -> None:
         )
         ft_elapsed = time.perf_counter() - ft_start
         if ft_results:
-            saved = save_fulltext_batch(ft_results, db_url=_db_url)
             log_event(
                 "INFO",
-                "fulltext_saved",
+                "fulltext_fetched",
                 stage="fulltext",
                 fetched=len(ft_results),
-                saved=saved,
                 duration_ms=int(ft_elapsed * 1000),
             )
         else:
             log_event("WARN", "fulltext_no_results", stage="fulltext")
 
     _pre_ft = {eid: r.text for eid, r in ft_results.items() if r.text} if ft_results else {}
+
+    # ── Phase 1: 原始文章+全文入库（不依赖 AI 分析） ──
+    if _db_url and candidates_for_run:
+        _raw_articles = []
+        for item in candidates_for_run:
+            eid = str(item.get("eid", "")).strip()
+            ft = ft_results.get(eid) if ft_results else None
+            _raw_articles.append({
+                "id": eid,
+                "source_type": IC_SOURCE_TYPE,
+                "source_feed_id": str(item.get("source_feed", "")).strip(),
+                "source_feed_name": str(item.get("source_label", "")).strip() or str(item.get("source_feed", "")).strip() or "unknown",
+                "source_article_id": str(item.get("source_article_id", "")).strip() or eid,
+                "title": str(item.get("title", "")).strip(),
+                "url": str(item.get("url", "")).strip(),
+                "pic_url": str(item.get("cover_url", "")).strip(),
+                "description": str(item.get("description", "")).strip(),
+                "publish_time": str(item.get("publish_time", "")).strip(),
+                "tags": [],
+                "full_text": getattr(ft, "text", None) or "" if ft else "",
+                "full_text_source": getattr(ft, "source", "") or "" if ft else "",
+                "full_text_fetched_at": datetime.now(timezone.utc).isoformat() if (ft and getattr(ft, "text", None)) else None,
+            })
+        try:
+            phase1_saved = save_articles(_raw_articles, db_url=_db_url)
+            log_event(
+                "INFO",
+                "phase1_raw_saved",
+                stage="phase1",
+                count=phase1_saved,
+            )
+        except Exception as e:
+            log_event("WARN", "phase1_save_failed", stage="phase1", error=str(e))
+
+    # ── DB fallback: 内存无全文时从数据库恢复 ──
+    if not _pre_ft and _db_url and candidates_for_run:
+        _eids = [str(item.get("eid", "")).strip() for item in candidates_for_run if item.get("eid")]
+        _recovered = get_fulltexts_by_eids(_eids, db_url=_db_url)
+        if _recovered:
+            _pre_ft = _recovered
+            log_event(
+                "INFO",
+                "fulltext_recovered_from_db",
+                stage="fulltext",
+                count=len(_recovered),
+            )
+
     analyses = enrich_agent.analyze_candidates_with_agent(
         candidates=candidates_for_run,
         log_event=log_event,

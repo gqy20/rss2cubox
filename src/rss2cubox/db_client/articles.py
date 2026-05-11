@@ -286,7 +286,7 @@ def save_fulltext_batch(
                         """,
                         (text, source, eid),
                     )
-                    updated += 1
+                    updated += cur.rowcount
             conn.commit()
             return updated
     except Exception as e:

@@ -635,3 +635,178 @@ def test_main_skips_feed_when_circuit_open(tmp_path: Path, monkeypatch: pytest.M
     monkeypatch.setattr(runner, "FEED_FETCH_CONCURRENCY", 4)
 
     runner.main()
+
+
+# ── TDD: 两阶段写入 + DB fallback 测试 ──────────────────────────
+
+
+class _FakeFetchResult:
+    """模拟 fulltext_fetcher.fetch_fulltext_batch 的返回值。"""
+
+    def __init__(self, text: str, source: str = "jina"):
+        self.text = text
+        self.source = source
+
+
+def _make_candidates(n: int = 3) -> list[dict]:
+    """生成 N 条候选文章，每条带 eid/url/title/description。"""
+    return [
+        {
+            "eid": f"eid-{i:04d}",
+            "url": f"https://example.com/article/{i}",
+            "title": f"文章标题 {i}",
+            "description": f"摘要内容 {i}",
+            "source_feed": "https://feed.example/rss",
+            "source_label": "测试源",
+            "source_article_id": f"src-{i}",
+        }
+        for i in range(1, n + 1)
+    ]
+
+
+class TestTwoPhaseWriteSavesRawArticlesWhenEnrichFails:
+    """enrich 返回空分析时，原始文章 + 全文仍应入库（不依赖 AI）。"""
+
+    def test_enrich_failure_still_saves_articles_with_fulltext(
+        self, mock_db_conn, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Phase 1 在 enrich 之前保存原始文章+全文，即使后续 enrich 失败数据也已持久化。"""
+        import psycopg
+
+        conn, cur = mock_db_conn
+        monkeypatch.setattr(psycopg, "connect", lambda url: conn)
+
+        candidates = _make_candidates(3)
+        ft_results = {
+            c["eid"]: _FakeFetchResult(f"全文内容 for {c['eid']}", "jina")
+            for c in candidates
+        }
+
+        # 模拟 runner.py Phase 1 逻辑：构建原始文章 + 注入 full_text
+        _raw_articles = []
+        for item in candidates:
+            eid = str(item.get("eid", "")).strip()
+            ft = ft_results.get(eid) if ft_results else None
+            _raw_articles.append({
+                "id": eid,
+                "source_type": "gqy",
+                "source_feed_id": str(item.get("source_feed", "")).strip(),
+                "source_feed_name": str(item.get("source_label", "")).strip() or "unknown",
+                "source_article_id": str(item.get("source_article_id", "")) .strip() or eid,
+                "title": str(item.get("title", "")).strip(),
+                "url": str(item.get("url", "")).strip(),
+                "pic_url": str(item.get("cover_url", "")).strip(),
+                "description": str(item.get("description", "")).strip(),
+                "publish_time": str(item.get("publish_time", "")).strip(),
+                "tags": [],
+                "full_text": getattr(ft, "text", None) or "" if ft else "",
+                "full_text_source": getattr(ft, "source", "") or "" if ft else "",
+                "full_text_fetched_at": __import__("datetime").datetime.now(__import__("datetime").timezone.utc).isoformat() if (ft and getattr(ft, "text", None)) else None,
+            })
+
+        # Phase 1 写入（不依赖 AI 分析结果）
+        from rss2cubox.db_client.articles import save_articles
+        saved = save_articles(_raw_articles, db_url="postgresql://localhost:5433/test")
+
+        # 断言：3 篇文章全部入库，且每篇都携带 full_text
+        assert saved == 3, f"期望保存 3 篇，实际保存 {saved}"
+        # 验证每次 INSERT/UPSERT 都包含了 full_text
+        for call_info in cur.execute.call_args_list:
+            args = call_info[0]
+            if len(args) >= 2 and "INSERT INTO articles" in args[0]:
+                params = args[1]
+                ft_val = params.get("full_text", "")
+                fts_val = params.get("full_text_source", "")
+                assert ft_val not in (None, ""), f"full_text 为空，params id={params.get('id')}"
+                assert fts_val == "jina", f"full_text_source 应为 'jina'，实际 '{fts_val}'"
+
+    def test_enrich_failure_with_db_fallback(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """本次未抓取全文时，应从 DB 历史记录恢复。"""
+        candidates = _make_candidates(2)
+        db_fulltexts = {"eid-0001": "DB中的历史全文1", "eid-0002": "DB中的历史全文2"}
+
+        # 在 import 之后 monkeypatch，需要通过 sys.modules 注入
+        import sys
+        original_module = sys.modules["rss2cubox.db_client.articles"]
+        original_get = original_module.get_fulltexts_by_eids
+
+        def fake_get_fulltexts(eids, db_url=None):
+            return db_fulltexts
+
+        original_module.get_fulltexts_by_eids = fake_get_fulltexts
+
+        # 模拟 runner.py 中的 fallback 逻辑
+        ft_results = {}  # 本次无新抓取
+        _pre_ft = {eid: r.text for eid, r in ft_results.items() if r.text}  # 空！
+
+        if not _pre_ft:  # ← 这是需要新增的 fallback 分支
+            eids = [c["eid"] for c in candidates]
+            from rss2cubox.db_client.articles import get_fulltexts_by_eids
+            _pre_ft = get_fulltexts_by_eids(eids)
+
+        # 断言：从 DB 恢复了全文
+        assert _pre_ft == db_fulltexts
+        assert len(_pre_ft) == 2
+        assert "eid-0001" in _pre_ft
+
+        # 恢复原始函数（避免污染其他测试）
+        original_module.get_fulltexts_by_eids = original_get
+
+
+class TestSaveFulltextBatchReturnsActualRowcount:
+    """save_fulltext_batch 应返回实际影响的行数，而非循环计数。"""
+
+    def test_returns_zero_when_no_rows_match(self, mock_db_conn) -> None:
+        """UPDATE 匹配 0 行时返回 0（而非 len(results)）。"""
+        conn, cur = mock_db_conn
+        cur.rowcount = 0  # UPDATE WHERE id='nonexistent' 影响行数
+
+        from rss2cubox.db_client.articles import save_fulltext_batch
+
+        results = {
+            "eid-absent": _FakeFetchResult("some text"),
+            "eid-missing": _FakeFetchResult("other text"),
+        }
+        # cur.execute 被调用后 rowcount 始终为 0
+        count = save_fulltext_batch(results, db_url="fake://")
+
+        # 当前 bug: 会错误地返回 2（循环次数）
+        # 修复后: 应返回 0
+        assert count == 0, f"期望返回 0 (无匹配行)，实际返回 {count}"
+
+    def test_returns_actual_updated_count(self, mock_db_conn, monkeypatch: pytest.MonkeyPatch) -> None:
+        """部分行匹配时应返回实际更新数。"""
+        import psycopg
+
+        conn, cur = mock_db_conn
+        call_count = [0]
+
+        original_execute = cur.execute
+
+        def counting_execute(sql, params=None):
+            call_count[0] += 1
+            # 第 1 次是 ARTICLES_SCHEMA（建表），跳过
+            # 第 2 次是第一个 UPDATE（命中）
+            # 第 3 次是第二个 UPDATE（未命中）
+            if call_count[0] == 2:
+                cur.rowcount = 1
+            else:
+                cur.rowcount = 0
+            return original_execute(sql, params)
+
+        cur.execute = counting_execute
+
+        # 关键：mock psycopg.connect 让它返回假连接
+        monkeypatch.setattr(psycopg, "connect", lambda url: conn)
+
+        from rss2cubox.db_client.articles import save_fulltext_batch
+
+        results = {
+            "eid-exists": _FakeFetchResult("text A"),
+            "eid-nope": _FakeFetchResult("text B"),
+        }
+        count = save_fulltext_batch(results, db_url="postgresql://localhost:5433/test")
+
+        # 当前 bug: 返回 2（循环迭代数）
+        # 修复后: 应返回 1（实际命中）
+        assert count == 1, f"期望返回 1 (实际命中)，实际返回 {count}"

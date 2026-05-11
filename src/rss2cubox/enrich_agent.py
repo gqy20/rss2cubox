@@ -429,7 +429,8 @@ def analyze_candidates_with_agent(
 
     try:
         import anyio
-        enrich_stats = anyio.run(_enrich_all, _enrich_candidates, analyses, log_event, pre_fetched_texts=pre_fetched_texts)
+        from functools import partial
+        enrich_stats = anyio.run(partial(_enrich_all, _enrich_candidates, analyses, log_event, pre_fetched_texts=pre_fetched_texts))
         log_event(
             "INFO",
             "enrich_complete",
