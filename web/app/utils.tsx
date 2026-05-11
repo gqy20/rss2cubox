@@ -35,6 +35,11 @@ export const SOURCE_DOMAIN_MAP: Array<[string, string]> = [
   ['deepmind', 'deepmind.google'],
   ['latent space', 'latent.space'],
   ['distill', 'distill.pub'],
+  ['知乎', 'zhihu.com'],
+  ['solidot', 'solidot.org'],
+  ['36氪', '36kr.com'],
+  ['36kr', '36kr.com'],
+  ['v2ex', 'v2ex.com'],
 ]
 
 export function formatRelativeTime(value: string, now: Date | null): string {
@@ -85,37 +90,96 @@ export function formatKpiDelta(current: number, previous: number): { text: strin
   }
 }
 
+const FAVICON_SIZE = 32
+
+function googleFavicon(domain: string): string {
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=${FAVICON_SIZE}`
+}
+
+function extractGithubOrg(feed: string, url: string): string | null {
+  const patterns = [
+    /github\.com\/([^/]+)\//i,
+  ]
+  const targets = [feed, url]
+  for (const target of targets) {
+    for (const pat of patterns) {
+      const m = target.match(pat)
+      if (m && !['releases', 'features', 'discussions', 'tags', 'notifications'].includes(m[1])) {
+        return m[1]
+      }
+    }
+  }
+  return null
+}
+
 export function getFaviconUrl(row: Row): string {
   const feed = row.source_feed || ''
+
+  // bilibili
   if (feed.startsWith('/bilibili/') || /bilibili\.com/i.test(row.url || '')) {
-    return `https://www.google.com/s2/favicons?domain=bilibili.com&sz=16`
+    return googleFavicon('bilibili.com')
   }
-  // 微信/WeRsS 处理
+
+  // 微信/WeRsS
   if (/werss\.gqy25\.top/i.test(feed) || /weixin\.qq\.com/i.test(feed) || /weixin\.qq\.com/i.test(row.url || '')) {
-    return `https://www.google.com/s2/favicons?domain=weixin.qq.com&sz=16`
+    return googleFavicon('weixin.qq.com')
   }
-  // NVIDIA 处理
+
+  // NVIDIA
   if (/nvidia\.com/i.test(feed) || /nvidia\.com/i.test(row.url || '')) {
-    return `https://www.google.com/s2/favicons?domain=nvidia.com&sz=16`
+    return googleFavicon('nvidia.com')
   }
-  // 掘金处理
+
+  // 掘金
   if (feed.startsWith('/juejin/') || /juejin\.cn/i.test(feed) || /juejin\.cn/i.test(row.url || '')) {
-    return `https://www.google.com/s2/favicons?domain=juejin.cn&sz=16`
+    return googleFavicon('juejin.cn')
   }
+
+  // GitHub releases → 组织 avatar（优先 feed URL，回退到 article URL）
+  if (
+    (feed.includes('github.com') && /releases\.atom|releases\/tag/i.test(feed)) ||
+    (/github\.com/i.test(row.url || '') && /releases\/tag/i.test(row.url || ''))
+  ) {
+    const org = extractGithubOrg(feed, row.url || '')
+    if (org) {
+      return `https://github.com/${org}.png?s=${FAVICON_SIZE}`
+    }
+  }
+
+  // HTTP feed URL → 解析 hostname
   if (feed.startsWith('http')) {
     try {
       let host = new URL(feed).hostname
       host = host.replace(/^(rss|feeds?|www)\./i, '')
-      return `https://www.google.com/s2/favicons?domain=${host}&sz=16`
+      // GitHub 非 releases 也尝试提取组织 avatar
+      if (host === 'github.com') {
+        const org = extractGithubOrg(feed, row.url || '')
+        if (org) return `https://github.com/${org}.png?s=${FAVICON_SIZE}`
+      }
+      return googleFavicon(host)
     } catch {}
   }
+
+  // SOURCE_DOMAIN_MAP 模糊匹配
   const label = (row.source_label || row.source || '').toLowerCase()
   for (const [key, domain] of SOURCE_DOMAIN_MAP) {
     if (label.includes(key)) {
-      return `https://www.google.com/s2/favicons?domain=${domain}&sz=16`
+      return googleFavicon(domain)
     }
   }
-  return ''
+
+  // Fallback：从 URL 提取域名
+  const url = row.url || ''
+  if (url && url.startsWith('http')) {
+    try {
+      let host = new URL(url).hostname
+      host = host.replace(/^(rss|feeds?|www)\./i, '')
+      return googleFavicon(host)
+    } catch {}
+  }
+
+  // 最终 fallback：默认 RSS 图标
+  return googleFavicon('example.com')
 }
 
 export function Logo({ size = 36 }: { size?: number }) {

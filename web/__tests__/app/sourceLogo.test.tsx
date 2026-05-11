@@ -157,8 +157,8 @@ describe('SourceLogo component', () => {
     const { container } = render(<SourceLogo row={row} />)
     const img = queryImg(container)
     expect(img).not.toBeNull()
-    expect(img!).toHaveAttribute('width', '16')
-    expect(img!).toHaveAttribute('height', '16')
+    expect(img!).toHaveAttribute('width', '14')
+    expect(img!).toHaveAttribute('height', '14')
   })
 
   it('未知源也渲染图片（fallback）', () => {
