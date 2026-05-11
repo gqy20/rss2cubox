@@ -97,19 +97,20 @@ function googleFavicon(domain: string): string {
 }
 
 function extractGithubOrg(feed: string, url: string): string | null {
-  const patterns = [
-    /github\.com\/([^/]+)\//i,
-  ]
-  const targets = [feed, url]
-  for (const target of targets) {
-    for (const pat of patterns) {
-      const m = target.match(pat)
-      if (m && !['releases', 'features', 'discussions', 'tags', 'notifications'].includes(m[1])) {
-        return m[1]
-      }
-    }
+  const GITHUB_SKIP = new Set(['releases', 'features', 'discussions', 'tags', 'notifications'])
+  for (const target of [feed, url]) {
+    const m = target.match(/github\.com\/([^/]+)\//i)
+    if (m && !GITHUB_SKIP.has(m[1])) return m[1]
   }
   return null
+}
+
+function parseHost(raw: string): string | null {
+  try {
+    return new URL(raw).hostname.replace(/^(rss|feeds?|www)\./i, '')
+  } catch {
+    return null
+  }
 }
 
 export function getFaviconUrl(row: Row): string {
@@ -148,16 +149,12 @@ export function getFaviconUrl(row: Row): string {
 
   // HTTP feed URL → 解析 hostname
   if (feed.startsWith('http')) {
-    try {
-      let host = new URL(feed).hostname
-      host = host.replace(/^(rss|feeds?|www)\./i, '')
-      // GitHub 非 releases 也尝试提取组织 avatar
-      if (host === 'github.com') {
-        const org = extractGithubOrg(feed, row.url || '')
-        if (org) return `https://github.com/${org}.png?s=${FAVICON_SIZE}`
-      }
-      return googleFavicon(host)
-    } catch {}
+    const host = parseHost(feed)
+    if (host === 'github.com') {
+      const org = extractGithubOrg(feed, row.url || '')
+      if (org) return `https://github.com/${org}.png?s=${FAVICON_SIZE}`
+    }
+    if (host) return googleFavicon(host)
   }
 
   // SOURCE_DOMAIN_MAP 模糊匹配
@@ -169,14 +166,8 @@ export function getFaviconUrl(row: Row): string {
   }
 
   // Fallback：从 URL 提取域名
-  const url = row.url || ''
-  if (url && url.startsWith('http')) {
-    try {
-      let host = new URL(url).hostname
-      host = host.replace(/^(rss|feeds?|www)\./i, '')
-      return googleFavicon(host)
-    } catch {}
-  }
+  const urlHost = parseHost(row.url || '')
+  if (urlHost) return googleFavicon(urlHost)
 
   // 最终 fallback：默认 RSS 图标
   return googleFavicon('example.com')
@@ -222,11 +213,9 @@ export function AnimatedNumber({ value }: { value: number }) {
 }
 
 export function SourceLogo({ row }: { row: Row }) {
-  const url = getFaviconUrl(row)
-  if (!url) return null
   return (
     <img
-      src={url}
+      src={getFaviconUrl(row)}
       alt=""
       width={14}
       height={14}
