@@ -25,6 +25,8 @@ export type Row = {
   source_feed?: string
   source_label?: string
   cover_url?: string
+  full_text?: string
+  full_text_source?: string
 }
 
 export type Metrics = {

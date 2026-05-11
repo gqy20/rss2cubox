@@ -76,6 +76,7 @@ export async function GET(request: NextRequest) {
                importance_score, reason, actionable, hidden_signal,
                content_source, signal_type, evidence_strength, novelty_score,
                impact_horizon, confidence, entities, watch_keywords, prediction,
+               full_text, full_text_source,
                to_char(COALESCE(publish_time, created_at), 'YYYY-MM-DD"T"HH24:MI:SS.MS') AS display_time,
                created_at, updated_at
         FROM articles

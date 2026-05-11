@@ -78,5 +78,7 @@ export function formatLocalArticleRow(row: any) {
     cover_url: row.pic_url || '',
     source_feed: row.source_feed_id || '',
     source_label: row.source_feed_name || '',
+    full_text: row.full_text || undefined,
+    full_text_source: row.full_text_source || undefined,
   }
 }

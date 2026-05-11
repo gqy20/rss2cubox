@@ -115,6 +115,9 @@ const FeedCard = React.memo(function FeedCard({
             {row.enriched && (
               <span className="enriched-badge">ENR</span>
             )}
+            {row.full_text && (
+              <span className="ft-badge" title={`全文 · ${row.full_text_source || '未知来源'}`}>FT</span>
+            )}
             {importanceScore && (
               <span className={`importance-badge score-${importanceScore}`}>
                 S{importanceScore}
