@@ -24,7 +24,7 @@ load_dotenv(override=True)
 
 DAILY_REPORT_ENABLED = os.getenv("DAILY_REPORT_ENABLED", "true").lower() not in ("false", "0", "no")
 DAILY_REPORT_INTERVAL_HOURS = max(1, int(os.getenv("DAILY_REPORT_INTERVAL_HOURS", "24")))
-DAILY_REPORT_MAX_BUDGET_USD_raw = os.getenv("DAILY_REPORT_MAX_BUDGET_USD", "0.15").strip()
+DAILY_REPORT_MAX_BUDGET_USD_raw = os.getenv("DAILY_REPORT_MAX_BUDGET_USD", "50").strip()
 try:
     DAILY_REPORT_MAX_BUDGET_USD = float(DAILY_REPORT_MAX_BUDGET_USD_raw) if DAILY_REPORT_MAX_BUDGET_USD_raw else None
 except ValueError:
@@ -360,7 +360,7 @@ async def _run_agent(
             schema=DAILY_REPORT_OUTPUT_SCHEMA,
             allowed_tools=allowed_tools,
             mcp_servers={"daily-report-tools": server},
-            max_turns=80,
+            max_turns=200,
             max_budget_usd=DAILY_REPORT_MAX_BUDGET_USD,
             timeout_seconds=_agent_timeout("DAILY_REPORT_AGENT_TIMEOUT_SECONDS", default=600, minimum=120),
             cwd=Path.cwd(),
