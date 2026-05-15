@@ -290,7 +290,7 @@ async def _run_agent(
     day_data: dict[str, Any],
     log_event: Any | None = None,
 ) -> dict[str, Any] | None:
-    """执行日报 Agent 分析。"""
+    """执行日报 Agent 分析，最多重试 3 次。"""
     import anyio
 
     try:
@@ -314,17 +314,6 @@ async def _run_agent(
 
     temp_files = _prepare_temp_files(day_data)
     file_paths_to_cleanup = list(temp_files.values())
-
-    server, read_webpage_tool_name = create_read_webpage_mcp("daily-report-tools")
-
-    allowed_tools = [
-        read_webpage_tool_name,
-        "Read",
-        "Grep",
-        "Glob",
-    ]
-    if DAILY_REPORT_ENABLE_SKILLS:
-        allowed_tools.append("Skill")
 
     summary = day_data.get("today_articles_summary", {})
     cluster_snap = day_data.get("cluster_snapshot", {})
@@ -353,45 +342,78 @@ async def _run_agent(
 
     sdk_logger = make_sdk_logger("daily_report", log_event=log_event)
 
-    try:
-        structured_output = await run_json_agent(
-            prompt=user_prompt,
-            system_prompt=SYSTEM_PROMPT,
-            schema=DAILY_REPORT_OUTPUT_SCHEMA,
-            allowed_tools=allowed_tools,
-            mcp_servers={"daily-report-tools": server},
-            max_turns=200,
-            max_budget_usd=DAILY_REPORT_MAX_BUDGET_USD,
-            timeout_seconds=_agent_timeout("DAILY_REPORT_AGENT_TIMEOUT_SECONDS", default=600, minimum=120),
-            cwd=Path.cwd(),
-            setting_sources=["project"] if DAILY_REPORT_ENABLE_SKILLS else None,
-            stderr=stderr_logger,
-            sdk_log=sdk_logger,
-        )
-        result = {
-            "report_date": day_data["report_date"],
-            "generated_at": datetime.now(timezone.utc).isoformat(),
-            **structured_output,
-        }
-        print("[daily_report] Agent 完成", flush=True)
-        return result
-    except _StructuredOutputError as e:
-        print("[daily_report] structured_output 为空，尝试 fallback...", flush=True)
-        fallback = extract_json_from_text(e.raw_text)
-        if fallback and isinstance(fallback, dict):
+    max_retries = 3
+    last_error: str | None = None
+
+    for attempt in range(max_retries):
+        # 每次重试需要重新创建 MCP server（run_json_agent 每次创建新 session）
+        server, read_webpage_tool_name = create_read_webpage_mcp("daily-report-tools")
+
+        allowed_tools = [
+            read_webpage_tool_name,
+            "Read",
+            "Grep",
+            "Glob",
+        ]
+        if DAILY_REPORT_ENABLE_SKILLS:
+            allowed_tools.append("Skill")
+
+        if attempt > 0:
+            print(f"[daily_report] 重试第 {attempt}/{max_retries - 1} 次 (上次错误: {last_error})", flush=True)
+            if log_event:
+                log_event("WARN", "daily_report_retry", retry_index=attempt, last_error=last_error or "")
+
+        try:
+            structured_output = await run_json_agent(
+                prompt=user_prompt,
+                system_prompt=SYSTEM_PROMPT,
+                schema=DAILY_REPORT_OUTPUT_SCHEMA,
+                allowed_tools=allowed_tools,
+                mcp_servers={"daily-report-tools": server},
+                max_turns=200,
+                max_budget_usd=DAILY_REPORT_MAX_BUDGET_USD,
+                timeout_seconds=_agent_timeout("DAILY_REPORT_AGENT_TIMEOUT_SECONDS", default=1800, minimum=120),
+                cwd=Path.cwd(),
+                setting_sources=["project"] if DAILY_REPORT_ENABLE_SKILLS else None,
+                stderr=stderr_logger,
+                sdk_log=sdk_logger,
+            )
             result = {
                 "report_date": day_data["report_date"],
                 "generated_at": datetime.now(timezone.utc).isoformat(),
-                **fallback,
+                **structured_output,
             }
-            print("[daily_report] fallback 成功", flush=True)
+            print(f"[daily_report] Agent 完成 (第{attempt + 1}次尝试)", flush=True)
             return result
-        print(f"[daily_report] fallback 也失败: {e.raw_text[:300]}", flush=True)
-    except Exception as e:
-        print(f"[daily_report] error: {e}", flush=True)
-    finally:
-        cleanup_temp_files(*file_paths_to_cleanup)
+        except _StructuredOutputError as e:
+            print(f"[daily_report] structured_output 为空，尝试 fallback... (第{attempt + 1}次)", flush=True)
+            fallback = extract_json_from_text(e.raw_text)
+            if fallback and isinstance(fallback, dict):
+                result = {
+                    "report_date": day_data["report_date"],
+                    "generated_at": datetime.now(timezone.utc).isoformat(),
+                    **fallback,
+                }
+                print(f"[daily_report] fallback 成功 (第{attempt + 1}次)", flush=True)
+                return result
+            last_error = f"structured_output_fallback_failed: {e.raw_text[:200]}"
+            print(f"[daily_report] fallback 也失败: {e.raw_text[:300]}", flush=True)
+        except TimeoutError as exc:
+            last_error = f"TimeoutError after {_agent_timeout('DAILY_REPORT_AGENT_TIMEOUT_SECONDS', default=1800, minimum=120)}s"
+            print(f"[daily_report] 超时 (第{attempt + 1}次): {last_error}", flush=True)
+        except RuntimeError as exc:
+            last_error = str(exc) or type(exc).__name__
+            print(f"[daily_report] 运行时错误 (第{attempt + 1}次): {last_error}", flush=True)
+        except Exception as exc:
+            last_error = str(exc) or type(exc).__name__
+            print(f"[daily_report] 异常 (第{attempt + 1}次): {last_error}", flush=True)
+            # 非预期异常不重试，直接退出
+            break
 
+    print(f"[daily_report] 已耗尽全部 {max_retries} 次尝试，最终错误: {last_error}", flush=True)
+    if log_event:
+        log_event("WARN", "daily_report_all_retries_exhausted", attempts=max_retries, last_error=last_error or "")
+    cleanup_temp_files(*file_paths_to_cleanup)
     return None
 
 

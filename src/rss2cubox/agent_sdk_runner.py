@@ -191,6 +191,11 @@ async def run_json_agent(
                     is_error=message.is_error,
                     subtype=message.subtype,
                     has_structured_output=message.structured_output is not None,
+                    num_turns=getattr(message, "num_turns", None),
+                    total_cost_usd=getattr(message, "total_cost_usd", None),
+                    stop_reason=getattr(message, "stop_reason", None),
+                    session_id=getattr(message, "session_id", None),
+                    errors=getattr(message, "errors", None),
                 )
                 if message.structured_output is not None:
                     return message.structured_output
@@ -212,7 +217,8 @@ async def run_json_agent(
             "agent_sdk_error",
             duration_ms=int((time.perf_counter() - query_started_at) * 1000),
             total_duration_ms=int((time.perf_counter() - started_at) * 1000),
-            error=str(exc),
+            error=f"TimeoutError after {timeout_seconds}s",
+            timeout_seconds=int(timeout_seconds) if timeout_seconds else None,
         )
         raise
 
@@ -220,6 +226,7 @@ async def run_json_agent(
         "agent_sdk_no_result",
         duration_ms=int((time.perf_counter() - query_started_at) * 1000),
         total_duration_ms=int((time.perf_counter() - started_at) * 1000),
+        error="no ResultMessage received from agent",
     )
     raise RuntimeError("no_result")
 
