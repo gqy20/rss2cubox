@@ -235,7 +235,7 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None, 
 
     for attempt in range(max_attempts):
         # 重试用递减超时：首次已接近完成，重试应更快
-        timeout = max(30, int(base_timeout * (0.6 ** attempt)))
+        timeout = max(30, int(base_timeout * (0.8 ** attempt)))
         try:
             structured_output = await run_json_agent(
                 prompt=_build_user_prompt(item, original, pre_fetched_text=pre_fetched_text),
