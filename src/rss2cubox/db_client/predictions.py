@@ -352,26 +352,80 @@ def get_due_trend_predictions(limit: int = 20, db_url: str | None = None) -> lis
         return []
 
 
+def _split_keyword_terms(keywords: list[str], min_word_len: int = 3) -> tuple[list[str], set[str]]:
+    """Build ILIKE term patterns from prediction keywords.
+
+    Returns ``(term_patterns, seen_lower)`` where each pattern is a ``%term%``
+    string ready for SQL parameter binding.  In addition to the original
+    full-keyword patterns we also emit **split-word patterns**: long compound
+    phrases like ``"DRAM price increase 2026"`` are broken into individual
+    tokens (``"DRAM"``, ``"price"``, ``"increase"``) so that short technical
+    terms inside article titles can still produce matches even when the exact
+    phrase never appears.
+    """
+    import re
+
+    term_patterns: list[str] = []
+    seen_lower: set[str] = set()
+
+    for raw in keywords:
+        raw = raw.strip()
+        if not raw:
+            continue
+        lower = raw.lower()
+        if lower in seen_lower:
+            continue
+        seen_lower.add(lower)
+        term_patterns.append(f"%{raw}%")
+
+        # Split long phrases into individual tokens for broader matching.
+        # Skip pure numeric tokens and very short fragments.
+        for token in re.split(r"[^a-zA-Z0-9一-鿿]+", raw):
+            if len(token) < min_word_len or token.isdigit():
+                continue
+            tlower = token.lower()
+            if tlower not in seen_lower:
+                seen_lower.add(tlower)
+                term_patterns.append(f"%{token}%")
+
+    return term_patterns, seen_lower
+
+
 def get_prediction_window_articles(prediction: dict[str, Any], limit: int = 200, db_url: str | None = None) -> list[dict[str, Any]]:
+    """Load candidate articles within a prediction's target time window.
+
+    Matching strategy (any match is sufficient):
+      1. Cluster-linked articles (if ``signal_cluster_id`` is set).
+      2. Full-keyword match against title / description / hidden_signal /
+         reason / cluster_hint.
+      3. **Split-word fallback** — long compound keywords are broken into
+         individual tokens so short technical terms can still match.
+    """
     db_url = _get_db_url(db_url)
-    if not db_url or not prediction.get("signal_cluster_id"):
+    if not db_url:
         return []
 
     try:
         expected = prediction.get("expected_evidence") if isinstance(prediction.get("expected_evidence"), dict) else {}
         keywords = _string_list(prediction.get("watch_keywords"), 20)
         keywords.extend(_string_list(expected.get("required_keywords"), 20))
-        keyword_terms = []
-        seen_terms: set[str] = set()
-        for keyword in keywords:
-            term = keyword.strip()
-            if term and term.lower() not in seen_terms:
-                seen_terms.add(term.lower())
-                keyword_terms.append(f"%{term}%")
 
-        keyword_clause = ""
-        params: list[Any] = [prediction.get("signal_cluster_id")]
+        keyword_terms, _seen = _split_keyword_terms(keywords)
+
+        # Build WHERE conditions
+        where_parts: list[str] = []
+        params: list[Any] = []
+
+        cluster_id = prediction.get("signal_cluster_id")
+        has_cluster = cluster_id is not None
+
+        if has_cluster:
+            # Condition 1: articles linked to this signal cluster
+            params.append(cluster_id)
+            where_parts.append("sca.cluster_id IS NOT NULL")
+
         if keyword_terms:
+            # Condition 2+3: keyword match (full + split-word) across text fields
             checks: list[str] = []
             for term in keyword_terms:
                 checks.append(
@@ -379,7 +433,12 @@ def get_prediction_window_articles(prediction: dict[str, Any], limit: int = 200,
                     "OR a.reason ILIKE %s OR a.cluster_hint ILIKE %s)"
                 )
                 params.extend([term, term, term, term, term])
-            keyword_clause = " OR " + " OR ".join(checks)
+            where_parts.append("(" + " OR ".join(checks) + ")")
+
+        # Must have at least one matching condition
+        if not where_parts:
+            return []
+
         params.extend([
             prediction.get("target_start_at"),
             prediction.get("target_end_at"),
@@ -390,24 +449,33 @@ def get_prediction_window_articles(prediction: dict[str, Any], limit: int = 200,
             cur = conn.cursor()
             cur.execute(ARTICLES_SCHEMA)
             cur.execute(PREDICTION_LOOP_SCHEMA)
-            cur.execute(
-                f"""
+
+            if has_cluster:
+                sql = f"""
                 SELECT {ARTICLE_SELECT_COLUMNS}
                 FROM articles a
                 LEFT JOIN signal_cluster_articles sca
                     ON sca.article_id = a.id
                     AND sca.cluster_id = %s
-                WHERE (
-                    sca.cluster_id IS NOT NULL
-                    {keyword_clause}
-                )
-                  AND a.publish_time >= %s::timestamptz
-                  AND a.publish_time <= %s::timestamptz
-                ORDER BY a.publish_time DESC
+                WHERE ({ " OR ".join(where_parts) })
+                  AND COALESCE(a.publish_time, a.created_at) >= %s::timestamptz
+                  AND COALESCE(a.publish_time, a.created_at) <= %s::timestamptz
+                ORDER BY COALESCE(a.publish_time, a.created_at) DESC
                 LIMIT %s
-                """,
-                params,
-            )
+                """
+            else:
+                # No cluster_id → skip the JOIN entirely, use keyword-only query
+                sql = f"""
+                SELECT {ARTICLE_SELECT_COLUMNS}
+                FROM articles a
+                WHERE ({ " OR ".join(where_parts) })
+                  AND COALESCE(a.publish_time, a.created_at) >= %s::timestamptz
+                  AND COALESCE(a.publish_time, a.created_at) <= %s::timestamptz
+                ORDER BY COALESCE(a.publish_time, a.created_at) DESC
+                LIMIT %s
+                """
+
+            cur.execute(sql, params)
             return [_row_to_article(row) for row in cur.fetchall()]
     except Exception as e:
         logging.warning(f"Failed to load prediction window articles: {e}")

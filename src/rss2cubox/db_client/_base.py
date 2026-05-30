@@ -47,22 +47,44 @@ def _parse_json_value(value: Any, fallback: Any) -> Any:
 
 
 def _parse_publish_time(value: Any) -> datetime | None:
-    """Parse publish_time to timezone-aware UTC datetime."""
+    """Parse publish_time to timezone-aware UTC datetime.
+
+    Supports:
+      - ISO 8601 with microseconds + timezone suffix
+        (e.g. ``2026-05-29T16:36:43.702387+00:00`` — output of parse_entry_timestamp)
+      - ISO 8601 basic forms (``2026-05-29T16:36:43``, ``2026-05-29``)
+      - Space-separated form (``2026-05-29 16:36:43``)
+      - Naive datetime instances (treated as UTC)
+    """
     if value is None:
         return None
     if isinstance(value, datetime):
         if value.tzinfo is None:
             return value.replace(tzinfo=timezone.utc)
-        return value
-    if isinstance(value, str):
-        formats = [
-            "%Y-%m-%d %H:%M:%S",
-            "%Y-%m-%dT%H:%M:%S",
-            "%Y-%m-%d",
-        ]
-        for fmt in formats:
-            try:
-                return datetime.strptime(value, fmt).replace(tzinfo=timezone.utc)
-            except ValueError:
-                continue
+        return value.astimezone(timezone.utc)
+    if not isinstance(value, str):
+        return None
+    text = value.strip()
+    if not text:
+        return None
+
+    # Fast path: datetime.fromisoformat handles full ISO 8601 including
+    # microseconds and timezone suffixes (Python ≥ 3.7, extended in 3.11).
+    try:
+        dt = datetime.fromisoformat(text)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
+        return dt
+    except ValueError:
+        pass
+
+    # Fallback: legacy strptime formats for compatibility with hand-written strings.
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(text, fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            continue
+
     return None
