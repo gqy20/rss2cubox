@@ -132,10 +132,37 @@ SYSTEM_PROMPT = (
     "- 不要对所有文章都读原文，只挑选最有价值的 3-8 条即可\n"
     "- 核实后的结论如果与原始 enrich 分析有出入，以你的判断为准\n"
     "- 所有 trends/weak_signals/daily_advices 必须附带真实 source_urls\n"
-    "- 输出使用简体中文，语言精炼专业，最终输出结构化 JSON 格式\n"
-    "- top_articles 中每条可附带 comment 字段给出你的点评\n"
-    "- cluster_evolution 标注今日值得关注的信号变化\n"
-    "- prediction_status 对即将到期的预测给出关注建议"
+    "- 输出使用简体中文，语言精炼专业\n\n"
+
+    "【JSON 输出格式要求】完成分析后，直接输出结构化 JSON，必须包含以下所有字段：\n\n"
+    "- summary（统计摘要对象）：\n"
+    "  total_articles: 今日文章总数（整数）\n"
+    "  high_importance_count: 高重要性文章数（整数）\n"
+    "  insights_generated_today: 今日生成的全局洞察数（整数）\n"
+    "  active_clusters: 活跃信号簇数（整数）\n"
+    "  pending_predictions: 待验证预测数（整数）\n"
+    "  recent_hit_reviews: 近期命中评审数（整数）\n"
+    "  top_feeds: 主要来源 feed 分布（对象，key 为 feed 名，value 为数量）\n\n"
+    "- trends（趋势数组，3-8 条）：每条为 {text, source_urls, source_titles, comment} 对象\n"
+    "  text: 趋势描述（≤300字），source_urls: 支撑 URL 列表，source_titles: 对应标题列表，comment: 点评（≤200字）\n\n"
+    "- weak_signals（弱信号数组，2-5 条）：每条为 {text, source_urls, source_titles, comment} 对象\n"
+    "  格式同 trends，聚焦潜藏的暗流或早期信号\n\n"
+    "- daily_advices（行动建议数组，2-5 条）：每条为 {text, source_urls, source_titles, comment} 对象\n"
+    "  给工程师/独立开发者的可执行建议\n\n"
+    "- top_articles（重要文章数组，5-10 条）：每条为 {title, url, source_feed_name, importance_score, hidden_signal, comment}\n"
+    "  importance_score 为 1-5 整数，comment 给出你的点评（≤300字）\n\n"
+    "- cluster_evolution（信号簇变化数组）：每条为 {label, status_change, article_count_delta, summary}\n"
+    "  label: 簇标签，status_change: 状态变化描述，summary: 变化小结（≤200字）\n\n"
+    "- prediction_status（预测跟踪数组）：每条为 {prediction_title, due_date, days_left, status, focus_advice}\n"
+    "  status 为 pending/reviewed/hit/miss 之一，focus_advice 给出关注建议（≤200字）\n\n"
+    "- key_topics（核心主题标签数组，3-6 个字符串）：如 \"AI Agent 竞争\"、\"多模态推理\"\n\n"
+    "- confidence_level（整体置信度）：只输出 \"high\" / \"medium\" / \"low\" 三者之一\n\n"
+    "即使某类数据稀少或为空，该字段也必须存在（空数组 [] 或合理默认值），不得省略任何字段。\n"
+    "绝对不要发明 schema 中不存在的字段名。\n\n"
+
+    "【JSON 输出强制要求】你的回答必须且只能是合法的 JSON 对象，以 { 开始，以 } 结束。"
+    "不要输出任何解释性文字、前言、Markdown 标记或代码块标记（```json 或 ```）。"
+    "所有输出文字必须使用简体中文，语言专业精炼。"
 )
 
 
@@ -334,8 +361,21 @@ async def _run_agent(
         f"- 待验证预测：{len(pred_status.get('pending_predictions', []))}个\n"
         f"- 近期命中评审：{sum(1 for r in pred_status.get('recent_reviews', []) if r.get('hit_level') == 'hit')}个\n\n"
 
-        f"请先 Read 数据文件了解全貌，再选择性 read_webpage 深入核实，最后输出结构化 JSON。"
-        f"\n注意：高重要性文章数据中已附带「full_text」预抓取全文字段，可直接使用；如需更新内容可调用 read_webpage。"
+        f"请先 Read 数据文件了解全貌，再选择性 read_webpage 深入核实。\n\n"
+
+        f"【输出要求】完成分析后直接输出结构化 JSON 格式的日报，必须包含以下所有字段：\n"
+        f"- summary: 统计摘要（total_articles, high_importance_count, insights_generated_today, active_clusters, pending_predictions, recent_hit_reviews, top_feeds）\n"
+        f"- trends: 宏观技术/行业趋势归纳，3-8条，每条 {{text, source_urls, source_titles, comment}}\n"
+        f"- weak_signals: 潜藏弱信号或暗流，2-5条\n"
+        f"- daily_advices: 今日行动建议，2-5条\n"
+        f"- top_articles: 重要文章列表，5-10条，每条含 title/url/importance_score/comment\n"
+        f"- cluster_evolution: 值得关注的信号簇变化\n"
+        f"- prediction_status: 即将到期预测的关注建议\n"
+        f"- key_topics: 核心主题标签 3-6 个\n"
+        f"- confidence_level: \"high\" / \"medium\" / \"low\"\n"
+        f"即使某类数据为空，该字段也必须作为空数组 [] 存在，不得省略任何字段。不要发明 schema 中不存在的字段名。\n\n"
+
+        f"注意：高重要性文章数据中已附带「full_text」预抓取全文字段，可直接使用；如需更新内容可调用 read_webpage。"
     )
 
     stderr_lines, stderr_logger = make_stderr_logger("daily_report", limit=80)
@@ -388,7 +428,8 @@ async def _run_agent(
         except _StructuredOutputError as e:
             print(f"[daily_report] structured_output 为空，尝试 fallback... (第{attempt + 1}次)", flush=True)
             fallback = extract_json_from_text(e.raw_text)
-            if fallback and isinstance(fallback, dict):
+            _FALLBACK_REQUIRED = {"trends", "weak_signals", "daily_advices"}
+            if fallback and isinstance(fallback, dict) and _FALLBACK_REQUIRED.issubset(fallback.keys()):
                 result = {
                     "report_date": day_data["report_date"],
                     "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -396,8 +437,12 @@ async def _run_agent(
                 }
                 print(f"[daily_report] fallback 成功 (第{attempt + 1}次)", flush=True)
                 return result
-            last_error = f"structured_output_fallback_failed: {e.raw_text[:200]}"
-            print(f"[daily_report] fallback 也失败: {e.raw_text[:300]}", flush=True)
+            if fallback and isinstance(fallback, dict):
+                missing = _FALLBACK_REQUIRED - set(fallback.keys())
+                print(f"[daily_report] fallback 缺少必需字段 {missing}，继续重试", flush=True)
+            else:
+                print(f"[daily_report] fallback 也失败: {e.raw_text[:300]}", flush=True)
+            last_error = f"structured_output_fallback_failed: missing required fields"
         except TimeoutError as exc:
             last_error = f"TimeoutError after {_agent_timeout('DAILY_REPORT_AGENT_TIMEOUT_SECONDS', default=1800, minimum=120)}s"
             print(f"[daily_report] 超时 (第{attempt + 1}次): {last_error}", flush=True)
