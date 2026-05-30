@@ -1,20 +1,29 @@
 :root {
   /* === 基础表面 === */
   --bg: #07090d;
-  --bg-soft: #0d1118;
-  --panel: rgba(18, 24, 32, 0.82);
-  --panel-soft: rgba(22, 29, 38, 0.66);
-  --panel-border: rgba(178, 190, 205, 0.14);
-  --text: #edf1f7;
-  --muted: #8f9caf;
-  --accent: #4fd1c5;
-  --signal-strong: #5ee0a5;
-  --signal-mid: #7aa7ff;
-  --signal-muted: #8b95a4;
+  --bg-soft: #0c1118;
+  --surface-1: #0d1117;
+  --surface-2: #111821;
+  --surface-3: #17202b;
+  --panel: rgba(17, 24, 33, 0.86);
+  --panel-soft: rgba(17, 24, 33, 0.62);
+  --panel-solid: var(--surface-2);
+  --panel-border: rgba(148, 163, 184, 0.14);
+  --text: #eef3f8;
+  --muted: #a8b3c2;
+  --accent: #39d0c8;
+  --accent-soft: rgba(57, 208, 200, 0.12);
+  --info: #6aa6ff;
+  --success: #56d68a;
+  --warning: #f4c35f;
+  --danger: #ef6b6b;
+  --signal-strong: var(--success);
+  --signal-mid: var(--info);
+  --signal-muted: #7b8796;
   --glass-border: rgba(178, 190, 205, 0.13);
   --glass-border-hover: rgba(229, 236, 247, 0.24);
-  --glass-shadow: 0 16px 42px rgba(0, 0, 0, 0.28);
-  --glass-shadow-hover: 0 18px 46px rgba(0, 0, 0, 0.34);
+  --glass-shadow: 0 10px 28px rgba(0, 0, 0, 0.20);
+  --glass-shadow-hover: 0 12px 30px rgba(0, 0, 0, 0.24);
 
   /* === 排版阶梯（Major Third 1.25）=== */
   --fs-display: 28px;
@@ -49,9 +58,9 @@
   --radius-full: 9999px;
 
   /* === 文字层级色 === */
-  --text-primary:   #e2e8f0;
-  --text-secondary: #94a3b8;
-  --text-muted:     #5a6a7e;
+  --text-primary:   #eef3f8;
+  --text-secondary: #a8b3c2;
+  --text-muted:     #64748b;
 
   /* === 边框层级 === */
   --border-subtle:  rgba(148, 163, 184, 0.08);
@@ -59,16 +68,16 @@
   --border-hover:   rgba(148, 163, 184, 0.20);
 
   /* === AI 内容语义色 === */
-  --ai-core:       #34d399;
-  --ai-actionable: #facc15;
-  --ai-reason:     #60a5fa;
-  --ai-prediction: #a78bfa;
+  --ai-core:       var(--success);
+  --ai-actionable: var(--warning);
+  --ai-reason:     var(--info);
+  --ai-prediction: #9ba7ff;
 
   /* === 重要性等级色 === */
   --score-1-2: #9ca8ba;
   --score-3:   #9be8df;
-  --score-4:   #f8d48a;
-  --score-5:   #fecaca;
+  --score-4:   var(--warning);
+  --score-5:   #ffb4b4;
 
   /* === 动画 === */
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
@@ -84,8 +93,8 @@ body {
   margin: 0;
   font-family: 'SF Pro Display', 'Segoe UI', 'PingFang SC', 'Noto Sans SC', sans-serif;
   background:
-    radial-gradient(circle at 16% -12%, rgba(79, 209, 197, 0.08), transparent 34%),
-    radial-gradient(circle at 92% 4%, rgba(122, 167, 255, 0.07), transparent 30%),
+    radial-gradient(circle at 16% -12%, rgba(79, 209, 197, 0.045), transparent 34%),
+    radial-gradient(circle at 92% 4%, rgba(122, 167, 255, 0.04), transparent 30%),
     linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 72%);
   color: var(--text);
   min-height: 100vh;
@@ -104,5 +113,5 @@ body {
 
 .glass:hover {
   border-color: var(--glass-border-hover);
-  box-shadow: var(--glass-shadow-hover);
+  box-shadow: var(--glass-shadow);
 }

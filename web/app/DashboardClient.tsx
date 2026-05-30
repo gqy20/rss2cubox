@@ -12,6 +12,7 @@ import dynamic from 'next/dynamic'
 import {
   Download,
 } from 'lucide-react'
+import MotionMount from './MotionMount'
 import {
   getDayKey,
   formatGroupTitle,
@@ -95,6 +96,16 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
   const [groupData, setGroupData] = useState<Record<string, { loading: boolean; loaded: boolean; items: Row[]; hasMore: boolean }>>({})
   const [groupPaging, setGroupPaging] = useState<Record<string, { page: number }>>({})
   const allDates = useMemo(() => Object.keys(metrics.daily_totals || {}).sort((a, b) => b.localeCompare(a)), [metrics.daily_totals])
+  const isPriorityStream = !isSearchMode && !selectedDateKey && !selectedSource && !selectedTag && filter === 'all'
+
+  const visibleDateKeys = useMemo(() => {
+    if (selectedDateKey) return [selectedDateKey]
+    if (isPriorityStream) return [todayKey]
+    if (isSearchMode) return allDates
+    const loadedKeys = Object.keys(groupData).filter((dayKey) => groupData[dayKey]?.loaded || groupData[dayKey]?.loading)
+    return Array.from(new Set([...loadedKeys, ...allDates.slice(0, 7)]))
+      .sort((a, b) => b.localeCompare(a))
+  }, [allDates, groupData, isPriorityStream, isSearchMode, selectedDateKey, todayKey])
 
   const { loadGroupData, loadMoreForGroup, nextUnloadedDate } = useGroupData({ groupData, setGroupData, groupPaging, setGroupPaging, allDates })
 
@@ -226,6 +237,18 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
     return result.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
   }, [isSearchMode, searchRows, loadedRows, filter, selectedDateKey, selectedSource, selectedTag])
 
+  const streamRows = useMemo(() => {
+    if (!isPriorityStream) return displayedRows
+    return displayedRows
+      .filter((row) => (
+        (row.importance_score ?? 0) >= 4 ||
+        Boolean(row.actionable) ||
+        Boolean(row.core_event) ||
+        Boolean(row.prediction)
+      ))
+      .slice(0, 8)
+  }, [displayedRows, isPriorityStream])
+
   const topSourceNames = useMemo(() => {
     const sources = metrics.top_source_counts || []
     return sources.slice(0, 5).map((s: { source: string }) => s.source)
@@ -256,7 +279,7 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
 
   const groupedRows = useMemo(() => {
     const dateMap = new Map<string, Row[]>()
-    for (const row of displayedRows) {
+    for (const row of streamRows) {
       const key = getDayKey(row.time)
       if (!dateMap.has(key)) dateMap.set(key, [])
       dateMap.get(key)?.push(row)
@@ -274,16 +297,14 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
         }))
     }
 
-    const visibleDates = selectedDateKey ? [selectedDateKey] : allDates
-
-    return visibleDates.map((dayKey) => ({
+    return visibleDateKeys.map((dayKey) => ({
       id: dayKey,
       title: formatGroupTitle(dayKey, todayKey, yesterdayKey),
       items: dateMap.get(dayKey) || [],
       total: metrics.daily_totals?.[dayKey] || 0,
       loaded: !!dateMap.get(dayKey)?.length,
     }))
-  }, [isSearchMode, allDates, selectedDateKey, displayedRows, todayKey, yesterdayKey, metrics.daily_totals])
+  }, [isSearchMode, visibleDateKeys, streamRows, todayKey, yesterdayKey, metrics.daily_totals])
 
   const filteredDateOptions = useMemo(() => {
     const query = dateQuery.trim().toLowerCase()
@@ -302,9 +323,9 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
   // ── KPI 数据 ──
   const kpis: KpiItem[] = [
     { key: 'all', title: '有效信号', value: metrics.signals_total ?? 0, tone: 'var(--accent)', delta: null, onClick: () => { setFilter('all'); setSelectedDateKey(null) } },
-    { key: 'analyzed', title: '已分析', value: metrics.analyzed_total ?? 0, tone: '#34d399', delta: null, onClick: () => { setFilter('analyzed'); setSelectedDateKey(null) } },
-    { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: '#60a5fa', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setSelectedDateKey(todayKey); setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false })); void loadGroupData(todayKey); timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) } },
-    { key: 'source', title: '活跃情报源', value: metrics.active_sources_total ?? 0, tone: '#a78bfa', delta: null, onClick: () => setSelectedSource(null) },
+    { key: 'analyzed', title: '已分析', value: metrics.analyzed_total ?? 0, tone: 'var(--signal-strong)', delta: null, onClick: () => { setFilter('analyzed'); setSelectedDateKey(null) } },
+    { key: 'today', title: '今日新增', value: metrics.total_today ?? 0, tone: 'var(--signal-mid)', delta: formatKpiDelta(metrics.total_today ?? 0, metrics.total_yesterday ?? 0), onClick: () => { setFilter('all'); setSelectedDateKey(todayKey); setCollapsedGroups((prev) => ({ ...prev, [todayKey]: false })); void loadGroupData(todayKey); timelineRef.current?.scrollTo({ top: 0, behavior: 'smooth' }) } },
+    { key: 'source', title: '活跃情报源', value: metrics.active_sources_total ?? 0, tone: 'var(--ai-prediction)', delta: null, onClick: () => setSelectedSource(null) },
   ]
 
   // ── Handlers ──
@@ -478,6 +499,7 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
 
   return (
     <>
+      <MotionMount scope="dashboard" />
       <DashboardLeft
         generatedAt={formatGeneratedAt(metrics.generated_at)}
         kpis={kpis}
@@ -537,7 +559,8 @@ export default function DashboardClient({ initialRows, metrics: initialMetrics, 
         }}
         onJumpToDate={jumpToDateGroup}
         onExport={() => downloadRowsAsJson(displayedRows.slice(0, 500), '当前筛选')}
-        displayedRows={displayedRows}
+        displayedRows={streamRows}
+        isPriorityStream={isPriorityStream}
         isSearchMode={isSearchMode}
         searchTotal={searchTotal}
         hasLoadingGroup={hasLoadingGroup}

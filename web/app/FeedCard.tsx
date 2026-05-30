@@ -6,6 +6,12 @@ import MarkdownRenderer from './MarkdownRenderer'
 import { SourceLogo, formatRelativeTime, hasAiSummary } from './utils'
 import type { Row } from './types'
 
+function extractBvid(value: string): string {
+  const text = String(value || '')
+  const match = text.match(/BV[A-Za-z0-9]{8,}/i)
+  return match ? match[0] : ''
+}
+
 function clampScore(value: unknown, min = 1, max = 5): number | null {
   if (typeof value !== 'number' || !Number.isFinite(value)) return null
   const score = Math.round(value)
@@ -28,11 +34,11 @@ const SIGNAL_TYPE_LABELS: Record<number, string> = {
 }
 
 const IMPACT_HORIZON_LABELS: Record<number, string> = {
-  1: '天级',
-  2: '周级',
-  3: '月级',
-  4: '季度',
-  5: '年级',
+  1: '天级影响',
+  2: '周级影响',
+  3: '月级影响',
+  4: '季度影响',
+  5: '年级影响',
 }
 
 function getSignalTypeLabel(value: unknown): string {
@@ -43,8 +49,16 @@ function getImpactHorizonLabel(value: unknown): string {
   return typeof value === 'number' ? IMPACT_HORIZON_LABELS[value] || '' : ''
 }
 
+function getContentSourceLabel(value: unknown): string {
+  if (value === 'full_text') return '全文'
+  if (value === 'summary_only') return '摘要'
+  return ''
+}
+
 type FeedCardProps = {
   row: Row
+  idx?: number
+  groupId?: string
   now: Date | null
   hoveredRowKey: string | null
   selectedTag: string | null
@@ -69,6 +83,7 @@ const FeedCard = React.memo(function FeedCard({
   const isHovered = hoveredRowKey === rowKey
   const importanceScore = clampScore(row.importance_score)
   const signalTypeLabel = getSignalTypeLabel(row.signal_type)
+  const contentSourceLabel = getContentSourceLabel(row.content_source)
   const evidenceStrength = clampScore(row.evidence_strength)
   const noveltyScore = clampScore(row.novelty_score)
   const confidence = clampScore(row.confidence)
@@ -86,6 +101,20 @@ const FeedCard = React.memo(function FeedCard({
     row.prediction,
   )
   const hasExpandableContent = hasPrimaryAiContent || hasSignalMetadata
+  const isYoutubeRow = /youtube\.com\/watch|youtu\.be\//i.test(row.url || '')
+  const isBiliRow = /(?:bilibili\.com|b23\.tv)\//i.test(row.url || '')
+  const bvid = extractBvid(row.url || '')
+  const directCoverUrl = String(row.cover_url || '').replace(/^http:\/\//i, 'https://')
+  const proxyCoverUrl = bvid
+    ? `/api/bili-cover?bvid=${encodeURIComponent(bvid)}${directCoverUrl ? `&pic=${encodeURIComponent(directCoverUrl)}` : ''}`
+    : ''
+  const coverUrl = isBiliRow ? (proxyCoverUrl || directCoverUrl) : (directCoverUrl || proxyCoverUrl)
+  const hasCover = Boolean(coverUrl) && (
+    isYoutubeRow || isBiliRow ||
+    /^\/api\/bili-cover\?/i.test(coverUrl) ||
+    /ytimg\.com\//i.test(coverUrl) ||
+    /hdslb\.com\//i.test(coverUrl)
+  )
 
   return (
     <div className="timeline-item">
@@ -108,8 +137,8 @@ const FeedCard = React.memo(function FeedCard({
         aria-expanded={hasExpandableContent ? isHovered : undefined}
       >
         {/* Row 1: source + time + actions */}
-        <div className="t-header" style={{ marginBottom: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+        <div className="t-header">
+          <div className="t-source-row">
             <SourceLogo row={row} />
             <span className="t-source-name">{row.source}</span>
             {row.enriched && (
@@ -117,6 +146,9 @@ const FeedCard = React.memo(function FeedCard({
             )}
             {row.full_text && (
               <span className="ft-badge" title={`全文 · ${row.full_text_source || '未知来源'}`}>FT</span>
+            )}
+            {contentSourceLabel && (
+              <span className="content-source-badge" title="分析来源">{contentSourceLabel}</span>
             )}
             {importanceScore && (
               <span className={`importance-badge score-${importanceScore}`}>
@@ -127,7 +159,7 @@ const FeedCard = React.memo(function FeedCard({
               <span className="t-signal-type">{signalTypeLabel}</span>
             )}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="t-meta-row">
             <div className={`node-dot${hasSummary ? ' glow-green' : ' glow-gray'}`} />
             <span suppressHydrationWarning className="node-time">
               {formatRelativeTime(row.time, now)}
@@ -143,10 +175,34 @@ const FeedCard = React.memo(function FeedCard({
           <h3 className="t-title">{row.title || row.hidden_signal || '未命名信号'}</h3>
         </a>
 
+        {hasCover && (
+          <a href={row.url} target="_blank" rel="noreferrer" className="t-cover-wrap" aria-label="打开原文封面" onClick={(e) => e.stopPropagation()}>
+            <img
+              className="t-cover"
+              src={coverUrl}
+              alt={row.title || '封面图'}
+              loading="lazy"
+              width={480}
+              height={270}
+              referrerPolicy={isBiliRow ? 'no-referrer' : undefined}
+              onError={(e) => {
+                const current = e.currentTarget.getAttribute('src') || ''
+                if (!isBiliRow && proxyCoverUrl && current !== proxyCoverUrl) {
+                  e.currentTarget.setAttribute('src', proxyCoverUrl)
+                  return
+                }
+                if (directCoverUrl && current !== directCoverUrl) {
+                  e.currentTarget.setAttribute('src', directCoverUrl)
+                }
+              }}
+            />
+          </a>
+        )}
+
         {/* Tags row (compact) */}
-        {row.tags && row.tags.length > 0 && (
+        {(row.tags && row.tags.length > 0) || hasExpandableContent ? (
           <div className="t-tags-row">
-            {row.tags.slice(0, 2).map((tag, i) => (
+            {row.tags?.slice(0, 2).map((tag, i) => (
               <span
                 key={i}
                 className={`hashtag t-meta-tag${selectedTag === tag ? ' hashtag-active' : ''}`}
@@ -161,19 +217,19 @@ const FeedCard = React.memo(function FeedCard({
             ))}
             {hasExpandableContent && (
               <span className="t-expand-hint-text">
-                {isHovered ? '收起' : '···'}
+                {isHovered ? '收起详情' : '查看详情'}
               </span>
             )}
           </div>
-        )}
+        ) : null}
 
         {/* Expanded AI content */}
         <div className={`t-ai-content${isHovered ? ' expanded' : ''}`}>
           {(evidenceStrength || noveltyScore || confidence || impactHorizonLabel) && (
             <div className="t-meta-tags">
-              {evidenceStrength && <span className="hashtag t-meta-tag">证据 {evidenceStrength}</span>}
-              {noveltyScore && <span className="hashtag t-meta-tag">新颖 {noveltyScore}</span>}
-              {confidence && confidence >= 2 && <span className="hashtag t-meta-tag">置信 {confidence}</span>}
+              {evidenceStrength && <span className="hashtag t-meta-tag">证据 {evidenceStrength}/5</span>}
+              {noveltyScore && <span className="hashtag t-meta-tag">新颖 {noveltyScore}/5</span>}
+              {confidence && confidence >= 2 && <span className="hashtag t-meta-tag">置信 {confidence}/5</span>}
               {impactHorizonLabel && <span className="hashtag t-meta-tag">{impactHorizonLabel}</span>}
             </div>
           )}

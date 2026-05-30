@@ -18,6 +18,7 @@ import {
   Tag,
 } from 'lucide-react'
 import { Logo } from '../utils'
+import MotionMount from '../MotionMount'
 
 type SignalCluster = {
   id: number
@@ -157,6 +158,10 @@ function isOverdue(targetEndAt: string | null): boolean {
   catch { return false }
 }
 
+function formatA11yName(value: string): string {
+  return value.replace(/["“”]+/g, '').replace(/\s+/g, ' ').trim()
+}
+
 function formatDate(iso: string | null): string {
   if (!iso) return '-'
   try {
@@ -242,6 +247,21 @@ export default function PredictionsPage() {
     {} as Record<string, number>,
   )
 
+  const activePredictions = [...predictions]
+    .sort((a, b) => {
+      const aOverdue = a.status === 'pending' && isOverdue(a.target_end_at)
+      const bOverdue = b.status === 'pending' && isOverdue(b.target_end_at)
+      if (aOverdue !== bOverdue) return aOverdue ? -1 : 1
+      if (a.status === 'pending' && b.status !== 'pending') return -1
+      if (a.status !== 'pending' && b.status === 'pending') return 1
+      return new Date(a.target_end_at || a.created_at).getTime() - new Date(b.target_end_at || b.created_at).getTime()
+    })
+    .slice(0, 8)
+
+  const recentReviews = [...reviews]
+    .sort((a, b) => new Date(b.reviewed_at).getTime() - new Date(a.reviewed_at).getTime())
+    .slice(0, 3)
+
   // Reviews hit_level distribution
   const hitLevelStats = reviews.reduce(
     (acc, r) => { acc[r.hit_level] = (acc[r.hit_level] || 0) + 1; return acc },
@@ -279,271 +299,54 @@ export default function PredictionsPage() {
   return (
     <main className="main predictions-scrollable">
       <div className="predictions-page">
+        <MotionMount scope="predictions" />
         <PredictionsHeader />
 
-        <div className="predictions-layout">
-          {/* ── Left sidebar ── */}
-          <aside className="predictions-sidebar custom-scrollbar">
-            {/* KPI: Clusters — 点击跳转 */}
-            <button
-              className={`pred-kpi-card pred-kpi-card-blue${activeSection === 'clusters' ? ' active' : ''}`}
-              onClick={() => { setActiveSection('clusters'); document.getElementById('section-clusters')?.scrollIntoView({ behavior: 'smooth' }) }}
-            >
-              <Sparkles size={14} className="pred-kpi-icon" />
-              <div className="pred-kpi-value">{clusters.length}</div>
-              <div className="pred-kpi-label">信号聚类</div>
-              {clusters.length > 0 && (
-                <>
-                  <div className="pred-status-bar">
-                    {STATUS_ORDER.map((status) => {
-                      const count = statusStats[status] || 0
-                      if (count === 0) return null
-                      return (
-                        <div
-                          key={status}
-                          className="pred-status-bar-segment"
-                          style={{
-                            width: `${(count / clusters.length) * 100}%`,
-                            background: STATUS_COLORS[status],
-                          }}
-                        />
-                      )
-                    })}
-                  </div>
-                  <div className="pred-status-legend">
-                    {STATUS_ORDER.map((status) => {
-                      const count = statusStats[status] || 0
-                      if (count === 0) return null
-                      return (
-                        <span key={status} className="pred-status-legend-item">
-                          <span className="pred-status-legend-dot" style={{ background: STATUS_COLORS[status] }} />
-                          {STATUS_LABELS[status]} {count}
-                        </span>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </button>
+        <div className="prediction-lab-status">
+          <button onClick={() => document.getElementById('section-clusters')?.scrollIntoView({ behavior: 'smooth' })}>
+            <span>Evidence Pool</span><strong>{clusters.length}</strong>
+          </button>
+          <button onClick={() => document.getElementById('section-predictions')?.scrollIntoView({ behavior: 'smooth' })}>
+            <span>Active Predictions</span><strong>{pendingCount}</strong>
+          </button>
+          <button onClick={() => document.getElementById('section-predictions')?.scrollIntoView({ behavior: 'smooth' })}>
+            <span>Overdue</span><strong>{overdueCount}</strong>
+          </button>
+          <button onClick={() => document.getElementById('section-reviews')?.scrollIntoView({ behavior: 'smooth' })}>
+            <span>Avg Review</span><strong>{avgScore}</strong>
+          </button>
+        </div>
 
-            {/* KPI: Predictions — 点击跳转 */}
-            <button
-              className={`pred-kpi-card pred-kpi-card-teal${activeSection === 'predictions' ? ' active' : ''}`}
-              onClick={() => { setActiveSection('predictions'); document.getElementById('section-predictions')?.scrollIntoView({ behavior: 'smooth' }) }}
-            >
-              <Target size={14} className="pred-kpi-icon" />
-              <div className="pred-kpi-value">{predictions.length}</div>
-              <div className="pred-kpi-label">趋势预测</div>
-              <div className="pred-kpi-detail">
-                {predictions.length > 0
-                  ? `${pendingCount} 待验证${overdueCount > 0 ? `（${overdueCount} 过期）` : ''} / ${completedCount} 已完成`
-                  : '暂无数据'}
-              </div>
-              {predictions.length > 0 && (
-                <>
-                  <div className="pred-status-bar">
-                    {PRED_STATUS_ORDER.map((status) => {
-                      const count = predStatusStats[status] || 0
-                      if (count === 0) return null
-                      return (
-                        <div
-                          key={status}
-                          className="pred-status-bar-segment"
-                          style={{
-                            width: `${(count / predictions.length) * 100}%`,
-                            background: PRED_STATUS_COLORS[status],
-                          }}
-                        />
-                      )
-                    })}
-                  </div>
-                  <div className="pred-status-legend">
-                    {PRED_STATUS_ORDER.map((status) => {
-                      const count = predStatusStats[status] || 0
-                      if (count === 0) return null
-                      return (
-                        <span key={status} className="pred-status-legend-item">
-                          <span className="pred-status-legend-dot" style={{ background: PRED_STATUS_COLORS[status] }} />
-                          {PRED_STATUS_LABELS[status]} {count}
-                        </span>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </button>
-
-            {/* KPI: Reviews — 点击跳转 */}
-            <button
-              className={`pred-kpi-card pred-kpi-card-purple${activeSection === 'reviews' ? ' active' : ''}`}
-              onClick={() => { setActiveSection('reviews'); document.getElementById('section-reviews')?.scrollIntoView({ behavior: 'smooth' }) }}
-            >
-              <BarChart3 size={14} className="pred-kpi-icon" />
-              <div className="pred-kpi-value">{reviews.length}</div>
-              <div className="pred-kpi-label">预测复盘</div>
-              <div className="pred-kpi-detail">
-                {reviews.length > 0 ? `平均分 ${avgScore}` : '暂无数据'}
-              </div>
-              {reviews.length > 0 && (
-                <>
-                  <div className="pred-status-bar">
-                    {HIT_LEVEL_ORDER.map((level) => {
-                      const count = hitLevelStats[level] || 0
-                      if (count === 0) return null
-                      return (
-                        <div
-                          key={level}
-                          className="pred-status-bar-segment"
-                          style={{
-                            width: `${(count / reviews.length) * 100}%`,
-                            background: HIT_LEVEL_COLORS[level],
-                          }}
-                        />
-                      )
-                    })}
-                  </div>
-                  <div className="pred-status-legend">
-                    {HIT_LEVEL_ORDER.map((level) => {
-                      const count = hitLevelStats[level] || 0
-                      if (count === 0) return null
-                      return (
-                        <span key={level} className="pred-status-legend-item">
-                          <span className="pred-status-legend-dot" style={{ background: HIT_LEVEL_COLORS[level] }} />
-                          {HIT_LEVEL_LABELS[level]} {count}
-                        </span>
-                      )
-                    })}
-                  </div>
-                </>
-              )}
-            </button>
-          </aside>
-
-          {/* ── Right main content ── */}
+        <div className="predictions-lab-hero">
           <div className="predictions-main">
-            {/* Clusters */}
-            <section id="section-clusters" className="pred-section">
-              <div className="pred-section-head">
-                <Brain size={18} />
-                <h2>信号聚类</h2>
-                <span className="pred-section-count">{clusters.length}</span>
-              </div>
-              {clusters.length === 0 ? (
-                <div className="pred-empty">暂无信号聚类数据，等待 prediction loop cluster 阶段产出。</div>
-              ) : (
-                <div className="pred-cluster-grid">
-                  {clusters.map((cluster) => (
-                    <div
-                      key={cluster.id}
-                      className={`pred-cluster-card${expandedCluster === cluster.id ? ' expanded' : ''}`}
-                      onClick={() => setExpandedCluster(expandedCluster === cluster.id ? null : cluster.id)}
-                    >
-                      <div className="pred-cluster-head">
-                        <div className="pred-cluster-title-row">
-                          <span
-                            className="pred-cluster-status"
-                            style={{ background: STATUS_COLORS[cluster.status] || '#6b7280' }}
-                          />
-                          <h3>{cluster.label}</h3>
-                        </div>
-                        <div className="pred-cluster-meta">
-                          {cluster.signal_type && (
-                            <span className="pred-badge">{SIGNAL_TYPE_MAP[cluster.signal_type] || `类型${cluster.signal_type}`}</span>
-                          )}
-                          <span className="pred-badge pred-badge-muted">{STATUS_LABELS[cluster.status] || cluster.status}</span>
-                          <span className="pred-badge pred-badge-muted">{cluster.article_count} 篇</span>
-                        </div>
-                      </div>
-                      {cluster.summary && <p className="pred-cluster-summary">{cluster.summary}</p>}
-
-                      {/* Metric bars */}
-                      <div className="pred-cluster-metrics">
-                        {cluster.avg_importance != null && (
-                          <div className="pred-metric">
-                            <span className="pred-metric-label">重要性</span>
-                            <MetricDots value={cluster.avg_importance} />
-                          </div>
-                        )}
-                        {cluster.avg_confidence != null && cluster.avg_confidence > 0 && (
-                          <div className="pred-metric">
-                            <span className="pred-metric-label">置信度</span>
-                            <MetricDots value={cluster.avg_confidence} blue />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="pred-cluster-footer">
-                        {cluster.entities && cluster.entities.length > 0 && (
-                          <div className="pred-tags">
-                            {cluster.entities.slice(0, 3).map((e, i) => (
-                              <span key={i} className="pred-tag pred-tag-entity">{e}</span>
-                            ))}
-                            {cluster.entities.length > 3 && <span className="pred-tag">+{cluster.entities.length - 3}</span>}
-                          </div>
-                        )}
-                        <span className="pred-time-muted">
-                          {formatDate(cluster.updated_at)}
-                        </span>
-                      </div>
-
-                      {expandedCluster === cluster.id && (
-                        <div className={`pred-cluster-expanded${expandedCluster === cluster.id ? ' open' : ''}`}>
-                          {cluster.watch_keywords && cluster.watch_keywords.length > 0 && (
-                            <div className="pred-expanded-row">
-                              <span className="pred-expanded-label">监控关键词</span>
-                              <div className="pred-tags">
-                                {cluster.watch_keywords.map((kw, i) => (
-                                  <span key={i} className="pred-tag pred-tag-keyword">{kw}</span>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                          <div className="pred-expanded-row">
-                            <span className="pred-expanded-label">评分</span>
-                            <div className="pred-scores">
-                              {cluster.source_count > 0 && <span>来源 <strong>{cluster.source_count}</strong></span>}
-                              {cluster.linked_articles && cluster.linked_articles.length > 0 && (
-                                <span>关联 <strong>{cluster.linked_articles.length}</strong> 篇</span>
-                              )}
-                            </div>
-                          </div>
-                          {cluster.first_seen_at && (
-                            <div className="pred-expanded-row">
-                              <span className="pred-expanded-label">时间窗口</span>
-                              <span className="pred-time-muted">
-                                {formatDateShort(cluster.first_seen_at)} ~ {formatDateShort(cluster.last_seen_at)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className="pred-expand-hint">
-                        {expandedCluster === cluster.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </section>
-
             {/* Predictions */}
             <section id="section-predictions" className="pred-section">
               <div className="pred-section-head">
                 <Target size={18} />
-                <h2>趋势预测</h2>
-                <span className="pred-section-count">{predictions.length}</span>
+                <h2>Active Predictions</h2>
+                <span className="pred-section-count">{activePredictions.length}/{predictions.length}</span>
               </div>
-              {predictions.length === 0 ? (
+              {activePredictions.length === 0 ? (
                 <div className="pred-empty">
                   暂无趋势预测。预测基于信号聚类生成，需 prediction loop generate 阶段成功产出。
                 </div>
               ) : (
                 <div className="pred-list">
-                  {predictions.map((pred) => (
+                  {activePredictions.map((pred) => (
                     <div
                       key={pred.id}
                       className={`pred-prediction-card${expandedPrediction === pred.id ? ' expanded' : ''}`}
                       onClick={() => setExpandedPrediction(expandedPrediction === pred.id ? null : pred.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setExpandedPrediction(expandedPrediction === pred.id ? null : pred.id)
+                        }
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      aria-expanded={expandedPrediction === pred.id}
+                      aria-label={`预测：${formatA11yName(pred.prediction_title)}`}
                     >
                       <div className="pred-prediction-head">
                         <div className="pred-prediction-title-row">
@@ -703,7 +506,172 @@ export default function PredictionsPage() {
               )}
             </section>
           </div>
+
+          <aside className="prediction-review-pulse">
+            <div className="pred-section-head">
+              <BarChart3 size={18} />
+              <h2>Review Pulse</h2>
+              <span className="pred-section-count">{reviews.length}</span>
+            </div>
+            <div className="review-pulse-score">
+              <span>平均复盘分</span>
+              <strong>{avgScore}</strong>
+            </div>
+            {reviews.length > 0 && (
+              <>
+                <div className="pred-status-bar">
+                  {HIT_LEVEL_ORDER.map((level) => {
+                    const count = hitLevelStats[level] || 0
+                    if (count === 0) return null
+                    return (
+                      <div
+                        key={level}
+                        className="pred-status-bar-segment"
+                        style={{
+                          width: `${(count / reviews.length) * 100}%`,
+                          background: HIT_LEVEL_COLORS[level],
+                        }}
+                      />
+                    )
+                  })}
+                </div>
+                <div className="pred-status-legend">
+                  {HIT_LEVEL_ORDER.map((level) => {
+                    const count = hitLevelStats[level] || 0
+                    if (count === 0) return null
+                    return (
+                      <span key={level} className="pred-status-legend-item">
+                        <span className="pred-status-legend-dot" style={{ background: HIT_LEVEL_COLORS[level] }} />
+                        {HIT_LEVEL_LABELS[level]} {count}
+                      </span>
+                    )
+                  })}
+                </div>
+              </>
+            )}
+            <div className="review-pulse-list">
+              {recentReviews.map((review) => (
+                <div key={review.id} className="review-pulse-item">
+                  <strong>{review.score}/5</strong>
+                  <span>{review.prediction_title}</span>
+                </div>
+              ))}
+            </div>
+          </aside>
         </div>
+
+        <section id="section-clusters" className="pred-section evidence-pool-section">
+          <div className="pred-section-head">
+            <Brain size={18} />
+            <h2>Evidence Pool</h2>
+            <span className="pred-section-count">{clusters.length}</span>
+          </div>
+          {clusters.length === 0 ? (
+            <div className="pred-empty">暂无信号聚类数据，等待 prediction loop cluster 阶段产出。</div>
+          ) : (
+            <div className="pred-cluster-grid">
+              {clusters.map((cluster) => (
+                <div
+                  key={cluster.id}
+                  className={`pred-cluster-card${expandedCluster === cluster.id ? ' expanded' : ''}`}
+                  onClick={() => setExpandedCluster(expandedCluster === cluster.id ? null : cluster.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault()
+                      setExpandedCluster(expandedCluster === cluster.id ? null : cluster.id)
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={expandedCluster === cluster.id}
+                  aria-label={`证据聚类：${formatA11yName(cluster.label)}`}
+                >
+                  <div className="pred-cluster-head">
+                    <div className="pred-cluster-title-row">
+                      <span
+                        className="pred-cluster-status"
+                        style={{ background: STATUS_COLORS[cluster.status] || '#6b7280' }}
+                      />
+                      <h3>{cluster.label}</h3>
+                    </div>
+                    <div className="pred-cluster-meta">
+                      {cluster.signal_type && (
+                        <span className="pred-badge">{SIGNAL_TYPE_MAP[cluster.signal_type] || `类型${cluster.signal_type}`}</span>
+                      )}
+                      <span className="pred-badge pred-badge-muted">{STATUS_LABELS[cluster.status] || cluster.status}</span>
+                      <span className="pred-badge pred-badge-muted">{cluster.article_count} 篇</span>
+                    </div>
+                  </div>
+                  {cluster.summary && <p className="pred-cluster-summary">{cluster.summary}</p>}
+
+                  <div className="pred-cluster-metrics">
+                    {cluster.avg_importance != null && (
+                      <div className="pred-metric">
+                        <span className="pred-metric-label">重要性</span>
+                        <MetricDots value={cluster.avg_importance} />
+                      </div>
+                    )}
+                    {cluster.avg_confidence != null && cluster.avg_confidence > 0 && (
+                      <div className="pred-metric">
+                        <span className="pred-metric-label">置信度</span>
+                        <MetricDots value={cluster.avg_confidence} blue />
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="pred-cluster-footer">
+                    {cluster.entities && cluster.entities.length > 0 && (
+                      <div className="pred-tags">
+                        {cluster.entities.slice(0, 3).map((e, i) => (
+                          <span key={i} className="pred-tag pred-tag-entity">{e}</span>
+                        ))}
+                        {cluster.entities.length > 3 && <span className="pred-tag">+{cluster.entities.length - 3}</span>}
+                      </div>
+                    )}
+                    <span className="pred-time-muted">
+                      {formatDate(cluster.updated_at)}
+                    </span>
+                  </div>
+
+                  {expandedCluster === cluster.id && (
+                    <div className={`pred-cluster-expanded${expandedCluster === cluster.id ? ' open' : ''}`}>
+                      {cluster.watch_keywords && cluster.watch_keywords.length > 0 && (
+                        <div className="pred-expanded-row">
+                          <span className="pred-expanded-label">监控关键词</span>
+                          <div className="pred-tags">
+                            {cluster.watch_keywords.map((kw, i) => (
+                              <span key={i} className="pred-tag pred-tag-keyword">{kw}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      <div className="pred-expanded-row">
+                        <span className="pred-expanded-label">评分</span>
+                        <div className="pred-scores">
+                          {cluster.source_count > 0 && <span>来源 <strong>{cluster.source_count}</strong></span>}
+                          {cluster.linked_articles && cluster.linked_articles.length > 0 && (
+                            <span>关联 <strong>{cluster.linked_articles.length}</strong> 篇</span>
+                          )}
+                        </div>
+                      </div>
+                      {cluster.first_seen_at && (
+                        <div className="pred-expanded-row">
+                          <span className="pred-expanded-label">时间窗口</span>
+                          <span className="pred-time-muted">
+                            {formatDateShort(cluster.first_seen_at)} ~ {formatDateShort(cluster.last_seen_at)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className="pred-expand-hint">
+                    {expandedCluster === cluster.id ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </div>
     </main>
   )
@@ -718,7 +686,7 @@ function PredictionsHeader() {
             <ArrowLeft size={20} />
           </Link>
           <Logo size={36} />
-          <h1 className="h1">预测循环</h1>
+          <h1 className="h1">Prediction Lab</h1>
         </div>
         <div className="muted dashboard-updated">
           Signal Cluster → Trend Prediction → Prediction Review

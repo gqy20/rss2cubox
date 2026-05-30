@@ -90,7 +90,7 @@ export function DashboardLeft({
           onCopy={onCopyInsight}
         />
       )}
-      <div ref={chartsTriggerRef}>
+      <div ref={chartsTriggerRef} className="analytics-section">
         {shouldLoadCharts ? chartsNode : <DeferredCharts onLoad={onLoadCharts} />}
       </div>
       {actionMessage && <ActionMessage message={actionMessage} />}
@@ -109,7 +109,7 @@ function DashboardHeader({ generatedAt, onExport }: DashboardHeaderProps) {
       <div>
         <div className="dashboard-brand">
           <Logo size={40} />
-          <h1 className="h1">RSS 信号控制台</h1>
+          <h1 className="h1">RSS Signal Briefing</h1>
         </div>
         <div className="muted dashboard-updated">
           <span suppressHydrationWarning>最后更新：{generatedAt}</span>
@@ -129,9 +129,9 @@ function DashboardHeader({ generatedAt, onExport }: DashboardHeaderProps) {
 
 const KpiGrid = memo(function KpiGrid({ items }: { items: readonly KpiItem[] }) {
   return (
-    <section className="kpi">
+    <section className="kpi briefing-status-strip">
       {items.map((item) => (
-        <button key={item.key} className="glass kpi-card" onClick={item.onClick}>
+        <button key={item.key} className="kpi-card" onClick={item.onClick}>
           <div className="kpi-title">{item.title}</div>
           <div className="kpi-value" style={{ color: item.tone }}>
             <AnimatedNumber value={item.value} />
@@ -152,7 +152,7 @@ type InsightBriefingProps = {
 
 const InsightBriefing = memo(function InsightBriefing({ activePanel, visiblePanels, onSelectInsightKey, onCopy }: InsightBriefingProps) {
   return (
-    <section className="glass briefing-panel">
+    <section className="glass briefing-panel briefing-hero-panel">
       <div className="briefing-head">
         <div className="briefing-title-row">
           <h2 className="briefing-title">{activePanel.title}</h2>
@@ -272,6 +272,7 @@ type DashboardRightProps = {
   onJumpToDate: (dayKey: string) => void
   onExport: () => void
   displayedRows: Row[]
+  isPriorityStream: boolean
   isSearchMode: boolean
   searchTotal: number
   hasLoadingGroup: boolean
@@ -317,6 +318,7 @@ export function DashboardRight({
   onJumpToDate,
   onExport,
   displayedRows,
+  isPriorityStream,
   isSearchMode,
   searchTotal,
   hasLoadingGroup,
@@ -370,8 +372,10 @@ export function DashboardRight({
         onExport={onExport}
         resultCount={resultCount}
         displayedRows={displayedRows}
+        isPriorityStream={isPriorityStream}
         isSearchMode={isSearchMode}
         searchTotal={searchTotal}
+        searchLoading={searchLoading}
       />
       <SignalStream
         search={search}
@@ -384,6 +388,7 @@ export function DashboardRight({
         collapsedGroups={collapsedGroups}
         setCollapsedGroups={setCollapsedGroups}
         loadGroupData={loadGroupData}
+        isPriorityStream={isPriorityStream}
         isSearchMode={isSearchMode}
         timelineRef={timelineRef}
         loadMoreRef={loadMoreRef}
@@ -425,8 +430,10 @@ type SignalToolbarProps = Pick<
   | 'onJumpToDate'
   | 'onExport'
   | 'displayedRows'
+  | 'isPriorityStream'
   | 'isSearchMode'
   | 'searchTotal'
+  | 'searchLoading'
 > & {
   resultCount: number
 }
@@ -453,20 +460,26 @@ const SignalToolbar = memo(function SignalToolbar({
   onJumpToDate,
   onExport,
   resultCount,
+  isPriorityStream,
   isSearchMode,
   searchTotal,
+  searchLoading,
 }: SignalToolbarProps) {
   const hasActiveFilter = Boolean(search || selectedSource || selectedTag || selectedDateKey)
+  const resultSummary = isSearchMode
+    ? searchLoading
+      ? '搜索中'
+      : searchTotal === 0
+        ? '无匹配'
+        : `${resultCount} / ${searchTotal} 条`
+    : `${resultCount} 条`
 
   return (
     <div className="controls-bar signal-toolbar">
       <div className="signal-toolbar-head">
-        <h2 className="signal-toolbar-title">实时情报流</h2>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <span className="result-summary" style={{ marginTop: 0, whiteSpace: 'nowrap' }}>
-            <span className="result-count">{resultCount}</span>
-            {isSearchMode && <span> / {searchTotal}</span>} 条
-          </span>
+        <h2 className="signal-toolbar-title">{isPriorityStream ? '优先信号' : '实时情报流'}</h2>
+        <div className="signal-toolbar-count">
+          <span className="result-summary">{resultSummary}</span>
           <button className="toolbar-icon-btn" onClick={onExport} title="导出 JSON">
             <Download size={14} />
           </button>
@@ -496,7 +509,7 @@ const SignalToolbar = memo(function SignalToolbar({
           yesterdayKey={yesterdayKey}
           onJumpToDate={onJumpToDate}
         />
-        <div style={{ flex: 1 }} />
+        <div className="signal-filter-spacer" />
         {hasActiveFilter && (
           <>
             {selectedSource && <Button tone="purple" onClick={onClearSource}>{selectedSource === '__others__' ? '其他来源' : selectedSource} <X size={12} /></Button>}
@@ -572,6 +585,7 @@ type SignalStreamProps = Pick<
   | 'search'
   | 'selectedSource'
   | 'displayedRows'
+  | 'isPriorityStream'
   | 'hasLoadingGroup'
   | 'groupedRows'
   | 'groupData'
@@ -599,6 +613,7 @@ const SignalStream = memo(function SignalStream({
   selectedSource,
   selectedTag,
   displayedRows,
+  isPriorityStream,
   hasLoadingGroup,
   groupedRows,
   groupData,
@@ -619,9 +634,17 @@ const SignalStream = memo(function SignalStream({
   searchLoading,
   loadingMore,
 }: SignalStreamProps) {
+  const hasMoreDates = !isPriorityStream && !isSearchMode && !selectedSource && !selectedTag && groupedRows.length > 0
+
   return (
     <div className="timeline-container custom-scrollbar" ref={timelineRef}>
       <section className="timeline" role="log" aria-live="polite" aria-label="信号列表">
+        {isPriorityStream && displayedRows.length > 0 && (
+          <div className="priority-stream-note">
+            <span>今日高优先级</span>
+            <strong>{displayedRows.length}</strong>
+          </div>
+        )}
         {displayedRows.length === 0 && !hasLoadingGroup && (
           <EmptyState search={search} selectedSource={selectedSource} selectedTag={selectedTag} onClearAll={onClearAll} />
         )}
@@ -659,6 +682,9 @@ const SignalStream = memo(function SignalStream({
         <div ref={loadMoreRef} className="timeline-sentinel" />
         {searchLoading && isSearchMode && <StreamStatus>正在检索全量数据...</StreamStatus>}
         {loadingMore && <StreamStatus>正在加载更多...</StreamStatus>}
+        {!loadingMore && !searchLoading && hasMoreDates && (
+          <StreamStatus>滚动加载更早日期</StreamStatus>
+        )}
       </section>
     </div>
   )
@@ -681,12 +707,15 @@ type SignalGroupProps = {
   onTagClick: (tag: string) => void
 }
 
-const SignalGroup = memo(function SignalGroup({ group, isLoading, collapsed, onToggle, refCallback, now, hoveredRowKey, selectedTag, onHoverEnter, onHoverLeave, onToggleOpen, onTagClick }: SignalGroupProps) {
+const SignalGroup = memo(function SignalGroup({ group, isLoading, isLoaded, collapsed, onToggle, refCallback, now, hoveredRowKey, selectedTag, onHoverEnter, onHoverLeave, onToggleOpen, onTagClick }: SignalGroupProps) {
   return (
     <div className="feed-group" ref={refCallback}>
-      <button className="feed-group-head" onClick={onToggle}>
+      <button className="feed-group-head" onClick={onToggle} aria-expanded={!collapsed}>
         <span className="feed-group-title">{group.title}</span>
-        <span className="feed-group-meta">{group.total} 条 {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}</span>
+        <span className="feed-group-meta">
+          {isLoaded ? `${group.items.length}/${group.total}` : group.total} 条
+          {collapsed ? <ChevronRight size={12} /> : <ChevronDown size={12} />}
+        </span>
       </button>
       {!collapsed && (
         <div className="feed-group-body">
