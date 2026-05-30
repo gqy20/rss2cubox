@@ -23,7 +23,7 @@ export async function GET() {
     try {
       const result = await client.query(`
         SELECT
-          pr.id, pr.reviewed_at, pr.score, pr.hit_level,
+          pr.id, pr.prediction_id, pr.reviewed_at, pr.score, pr.hit_level,
           pr.supporting_articles, pr.contradicting_articles,
           pr.actual_observation, pr.why_score, pr.improvement_advice, pr.review_metrics,
           tp.prediction_title, tp.prediction_body, tp.status AS prediction_status,

@@ -61,6 +61,7 @@ type TrendPrediction = {
 
 type PredictionReview = {
   id: number
+  prediction_id: number
   reviewed_at: string
   score: number
   hit_level: string
@@ -116,7 +117,45 @@ const HIT_LEVEL_COLORS: Record<string, string> = {
   exact: '#22c55e',
 }
 
+const HIT_LEVEL_ORDER = ['exact', 'strong', 'partial', 'weak', 'miss'] as const
+const HIT_LEVEL_LABELS: Record<string, string> = {
+  exact: '精确命中',
+  strong: '强验证',
+  partial: '部分命中',
+  weak: '弱信号',
+  miss: '未命中',
+}
+
+const PRED_STATUS_COLORS: Record<string, string> = {
+  pending: '#fbbf24',
+  reviewed: '#60a5fa',
+  hit: '#34d399',
+  miss: '#ef4444',
+}
+const PRED_STATUS_ORDER = ['pending', 'reviewed', 'hit', 'miss'] as const
+const PRED_STATUS_LABELS: Record<string, string> = {
+  pending: '待验证',
+  reviewed: '已复盘',
+  hit: '命中',
+  miss: '未命中',
+}
+
 const STATUS_ORDER = ['bursting', 'warming', 'new', 'mature', 'declining'] as const
+
+/** Prediction Review 根因修复部署时间（COALESCE + split-keyword 修复） */
+const FIX_DEPLOYED_AT = new Date('2026-05-30T13:26:39+08:00').getTime()
+
+function isLegacyReview(reviewedAt: string | null): boolean {
+  if (!reviewedAt) return true
+  try { return new Date(reviewedAt).getTime() < FIX_DEPLOYED_AT }
+  catch { return true }
+}
+
+function isOverdue(targetEndAt: string | null): boolean {
+  if (!targetEndAt) return false
+  try { return new Date(targetEndAt).getTime() < Date.now() }
+  catch { return false }
+}
 
 function formatDate(iso: string | null): string {
   if (!iso) return '-'
@@ -191,10 +230,23 @@ export default function PredictionsPage() {
   )
 
   const pendingCount = predictions.filter((p) => p.status === 'pending').length
+  const overdueCount = predictions.filter((p) => p.status === 'pending' && isOverdue(p.target_end_at)).length
   const completedCount = predictions.filter((p) => p.status !== 'pending').length
   const avgScore = reviews.length > 0
     ? (reviews.reduce((s, r) => s + r.score, 0) / reviews.length).toFixed(1)
     : '-'
+
+  // Predictions status distribution
+  const predStatusStats = predictions.reduce(
+    (acc, p) => { acc[p.status] = (acc[p.status] || 0) + 1; return acc },
+    {} as Record<string, number>,
+  )
+
+  // Reviews hit_level distribution
+  const hitLevelStats = reviews.reduce(
+    (acc, r) => { acc[r.hit_level] = (acc[r.hit_level] || 0) + 1; return acc },
+    {} as Record<string, number>,
+  )
 
   if (loading) {
     return (
@@ -284,9 +336,41 @@ export default function PredictionsPage() {
               <div className="pred-kpi-label">趋势预测</div>
               <div className="pred-kpi-detail">
                 {predictions.length > 0
-                  ? `${pendingCount} 待验证 / ${completedCount} 已完成`
+                  ? `${pendingCount} 待验证${overdueCount > 0 ? `（${overdueCount} 过期）` : ''} / ${completedCount} 已完成`
                   : '暂无数据'}
               </div>
+              {predictions.length > 0 && (
+                <>
+                  <div className="pred-status-bar">
+                    {PRED_STATUS_ORDER.map((status) => {
+                      const count = predStatusStats[status] || 0
+                      if (count === 0) return null
+                      return (
+                        <div
+                          key={status}
+                          className="pred-status-bar-segment"
+                          style={{
+                            width: `${(count / predictions.length) * 100}%`,
+                            background: PRED_STATUS_COLORS[status],
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                  <div className="pred-status-legend">
+                    {PRED_STATUS_ORDER.map((status) => {
+                      const count = predStatusStats[status] || 0
+                      if (count === 0) return null
+                      return (
+                        <span key={status} className="pred-status-legend-item">
+                          <span className="pred-status-legend-dot" style={{ background: PRED_STATUS_COLORS[status] }} />
+                          {PRED_STATUS_LABELS[status]} {count}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </button>
 
             {/* KPI: Reviews — 点击跳转 */}
@@ -300,6 +384,38 @@ export default function PredictionsPage() {
               <div className="pred-kpi-detail">
                 {reviews.length > 0 ? `平均分 ${avgScore}` : '暂无数据'}
               </div>
+              {reviews.length > 0 && (
+                <>
+                  <div className="pred-status-bar">
+                    {HIT_LEVEL_ORDER.map((level) => {
+                      const count = hitLevelStats[level] || 0
+                      if (count === 0) return null
+                      return (
+                        <div
+                          key={level}
+                          className="pred-status-bar-segment"
+                          style={{
+                            width: `${(count / reviews.length) * 100}%`,
+                            background: HIT_LEVEL_COLORS[level],
+                          }}
+                        />
+                      )
+                    })}
+                  </div>
+                  <div className="pred-status-legend">
+                    {HIT_LEVEL_ORDER.map((level) => {
+                      const count = hitLevelStats[level] || 0
+                      if (count === 0) return null
+                      return (
+                        <span key={level} className="pred-status-legend-item">
+                          <span className="pred-status-legend-dot" style={{ background: HIT_LEVEL_COLORS[level] }} />
+                          {HIT_LEVEL_LABELS[level]} {count}
+                        </span>
+                      )
+                    })}
+                  </div>
+                </>
+              )}
             </button>
           </aside>
 
@@ -348,7 +464,7 @@ export default function PredictionsPage() {
                             <MetricDots value={cluster.avg_importance} />
                           </div>
                         )}
-                        {cluster.avg_confidence != null && cluster.avg_confidence >= 2 && (
+                        {cluster.avg_confidence != null && cluster.avg_confidence > 0 && (
                           <div className="pred-metric">
                             <span className="pred-metric-label">置信度</span>
                             <MetricDots value={cluster.avg_confidence} blue />
@@ -432,7 +548,11 @@ export default function PredictionsPage() {
                       <div className="pred-prediction-head">
                         <div className="pred-prediction-title-row">
                           {pred.status === 'pending' ? (
-                            <Clock size={14} style={{ color: '#fbbf24', flexShrink: 0 }} />
+                            isOverdue(pred.target_end_at) ? (
+                              <AlertTriangle size={14} style={{ color: '#ef4444', flexShrink: 0 }} />
+                            ) : (
+                              <Clock size={14} style={{ color: '#fbbf24', flexShrink: 0 }} />
+                            )
                           ) : pred.status === 'hit' ? (
                             <CheckCircle2 size={14} style={{ color: '#34d399', flexShrink: 0 }} />
                           ) : (
@@ -445,7 +565,12 @@ export default function PredictionsPage() {
                             <span className="pred-badge">{PREDICTION_TYPE_MAP[pred.prediction_type] || `类型${pred.prediction_type}`}</span>
                           )}
                           <span className="pred-badge pred-badge-muted">{pred.status}</span>
-                          {pred.confidence != null && pred.confidence >= 2 && (
+                          {pred.status === 'pending' && isOverdue(pred.target_end_at) && (
+                            <span className="pred-badge" style={{ color: '#ef4444', background: 'rgba(239,68,68,0.1)' }}>
+                              已过期
+                            </span>
+                          )}
+                          {pred.confidence != null && pred.confidence > 0 && (
                             <span className="pred-badge pred-badge-muted">置信度 {pred.confidence}/5</span>
                           )}
                           {pred.cluster_label && (
@@ -507,21 +632,43 @@ export default function PredictionsPage() {
                 <div className="pred-list">
                   {reviews.map((review) => (
                     <div key={review.id} className="pred-review-card">
-                      <div className="pred-review-head">
+                      {/* Left: score column */}
+                      <div className="pred-review-score-col">
                         <div className="pred-review-score" style={{ color: HIT_LEVEL_COLORS[review.hit_level] || '#8aa3be' }}>
                           <strong>{review.score}</strong>/5
                         </div>
-                        <span className="pred-badge" style={{ color: HIT_LEVEL_COLORS[review.hit_level] }}>
+                        <span className="pred-badge" style={{ color: HIT_LEVEL_COLORS[review.hit_level], fontSize: 'var(--fs-micro)', padding: '1px 6px' }}>
                           {review.hit_level}
                         </span>
-                        <span className="pred-badge pred-badge-muted">{review.prediction_status}</span>
+                        {isLegacyReview(review.reviewed_at) && (
+                          <span className="pred-badge pred-badge-muted" style={{ fontSize: '10px', padding: '1px 5px' }} title="此复盘生成于根因修复（COALESCE+关键词拆分）部署之前，候选文章可能为空导致评分偏低">
+                            修复前
+                          </span>
+                        )}
                       </div>
-                      <h3 className="pred-review-title">{review.prediction_title}</h3>
-                      {review.cluster_label && (
-                        <span className="pred-badge pred-badge-accent" style={{ marginBottom: 8 }}>
-                          {review.cluster_label}
-                        </span>
-                      )}
+
+                      {/* Right: content column */}
+                      <div className="pred-review-body">
+                        <div className="pred-review-meta-row">
+                          <span className="pred-badge pred-badge-muted">{review.prediction_status}</span>
+                          {review.cluster_label && (
+                            <span className="pred-badge pred-badge-accent">{review.cluster_label}</span>
+                          )}
+                          <span
+                            className="pred-badge pred-badge-muted"
+                            style={{ cursor: 'pointer' }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const el = document.getElementById(`section-predictions`)
+                              el?.scrollIntoView({ behavior: 'smooth' })
+                              setActiveSection('predictions')
+                            }}
+                            title="点击跳转到对应的趋势预测"
+                          >
+                            预测 #{review.prediction_id}
+                          </span>
+                        </div>
+                        <h3 className="pred-review-title">{review.prediction_title}</h3>
                       {review.actual_observation && (
                         <div className="pred-review-field">
                           <span className="pred-review-label">实际观察</span>
@@ -548,6 +695,7 @@ export default function PredictionsPage() {
                           <span className="pred-time-muted">矛盾 {review.contradicting_articles.length} 篇</span>
                         )}
                         <span className="pred-time-muted">复盘于 {formatDate(review.reviewed_at)}</span>
+                      </div>
                       </div>
                     </div>
                   ))}
