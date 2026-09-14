@@ -16,6 +16,9 @@ logs/
 # web
 web/node_modules/
 web/.next/
+
+# 根目录也可能落下 Next 构建 trace
+.next/
 web/.env*
 !web/.env.example
 
@@ -24,6 +27,8 @@ web/.env*
 !.env.example
 .vercel
 .env*.local
+# 存放网关密钥的本地文件
+.tashan
 
 # playwright
 .playwright-cli/
