@@ -74,9 +74,38 @@ export ENRICH_ITEM_TIMEOUT_SECONDS="90"  # 单条目超时
 export ENRICH_MAX_BUDGET_USD="0.15"     # 单条目最大预算
 ```
 
-根目录 `.env` 会在启动 `rss2cubox` 时自动加载；已存在的系统环境变量优先，不会被 `.env` 覆盖。
+根目录 `.env` 会在启动 `rss2cubox` 时自动加载。
+
+> ⚠️ **`.env` 的优先级高于系统环境变量**，会覆盖你在 shell 里 `export` 的同名变量。
+> `runner.py` 的 `_load_local_env_file()` 是无条件 `os.environ[key] = value`，
+> `enrich_agent.py` / `daily_report_agent.py` / `prediction_loop_runner.py` 则用 `load_dotenv(override=True)`。
+> 所以临时改配置请直接改 `.env`，`export` 不会生效。
 
 ## 4) 运行
+
+### 用 Makefile（推荐）
+
+```bash
+make up       # 一次性准备环境：起 PostgreSQL 容器 + 装依赖 + 建表（幂等）
+make dev      # 一次性启动前后端：DB + 后端跑一次 + 前端 dev server（Ctrl-C 全部退出）
+make run      # 只跑一次后端 pipeline
+make web      # 只起前端 dev server（http://localhost:3424）
+make doctor   # 体检：DB / LLM 网关 / IC / RSS 源连通性
+make help     # 全部命令
+```
+
+本地 PostgreSQL 跑在专用容器 `rss2cubox-pg`（`postgres:17-alpine`，宿主端口 **5434**），
+不与其他项目的数据库实例混用。表结构由 `scripts/init_local_db.py` 幂等创建。
+
+常用覆盖：
+
+```bash
+make dev RUN_ON_DEV=0     # 只起前端，不跑后端
+make run RUN_VIA_SH=1     # 走 run_local_sync.sh（含 flock + 预测闭环）
+make db PG_PORT=5435      # 换宿主端口
+```
+
+### 直接用 uv
 
 ```bash
 uv sync
