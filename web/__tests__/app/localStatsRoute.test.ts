@@ -9,8 +9,9 @@ describe('local stats route time semantics', () => {
       'utf8',
     )
 
-    expect(source).toContain('DATE(COALESCE(publish_time, created_at)) = CURRENT_DATE')
-    expect(source).toContain('WHERE COALESCE(publish_time, created_at) >= (CURRENT_DATE - INTERVAL')
+    expect(source).toContain("COALESCE(publish_time, created_at) AT TIME ZONE 'Asia/Shanghai'")
+    expect(source).toContain('${TZ_CAST}::date = CURRENT_DATE')
+    expect(source).toContain("WHERE COALESCE(publish_time, created_at) >= NOW() - INTERVAL '29 days'")
     expect(source).not.toContain('WHERE DATE(created_at) = CURRENT_DATE')
     expect(source).not.toContain('DATE(created_at) as day')
   })

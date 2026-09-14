@@ -27,12 +27,10 @@
 2	/cursor/blog/news # Cursor Blog News
 2	/cursor/blog/research # Cursor Blog Research
 2	/modelscope/models # ModelScope 新模型
-2	/huggingface/blog # Hugging Face Blog（RSSHub）
 4	/hackernews # Hacker News
 2	/hackernews/show # Hacker News Show HN
 2	/zhihu/hot # 知乎热榜
 2	/solidot # Solidot 科技新闻
-2	/reddit/r/MachineLearning # Reddit r/MachineLearning
 4	/producthunt/today # Product Hunt 今日
 2	/github/trending/daily/python # GitHub Trending Python（日）
 3	/github/topics/llm # GitHub Topic LLM
@@ -46,6 +44,7 @@
 2	/hellogithub/volume # HelloGitHub 月刊
 2	/hellogithub/home/featured # HelloGitHub 精选
 2	/juejin/aicoding # 掘金 AI Coding
+# 注意：X/Twitter 路由依赖认证实例，公共 RSSHub 当前不可用，待迁移方案（暂保留）
 3	/twitter/user/karpathy # X @karpathy
 2	/twitter/user/fchollet # X @fchollet
 2	/twitter/user/soumithchintala # X @soumithchintala
@@ -157,6 +156,9 @@
 1	/xiaohongshu/user/5ec66abd0000000001006a8a/notes # AI 异类弗兰克（小红书）
 1	/xiaohongshu/user/6314a2cc0000000012003173/notes # Aaron-OpenOnion（小红书）
 
+# 新增：中文科技快讯（2026-09 实测公共实例可用）
+2	/36kr/newsflashes # 36氪 快讯
+2	/v2ex/topics/hot # V2EX 热门
 [werss]
 2	/feed/MP_WXS_3903186594.rss # 袋鼠帝AI客栈
 2	/feed/MP_WXS_3903631794.rss # AI信息Gap
@@ -199,7 +201,7 @@
 1	https://feeds.arstechnica.com/arstechnica/index # Ars Technica
 1	https://www.wired.com/feed/rss # WIRED
 1	https://feeds.feedblitz.com/marginalrevolution # Marginal Revolution
-1	/youtube/channel/UCLXo7UDZvByw2ixzpQCufnA # YouTube Vox
+1	https://www.youtube.com/feeds/videos.xml?channel_id=UCLXo7UDZvByw2ixzpQCufnA # YouTube Vox
 5	https://openai.com/news/rss.xml # OpenAI News
 5	https://deepmind.google/blog/rss.xml # Google DeepMind News
 2	https://blog.google/technology/ai/rss/ # Google AI Blog
@@ -212,21 +214,19 @@
 0	https://rss.arxiv.org/rss/cs.CL # arXiv cs.CL
 0	https://rss.arxiv.org/rss/cs.CV # arXiv cs.CV
 # AI / LLM / Agent 研究博客
-5	/lilianweng.github.io/index.xml # Lilian Weng Blog
-5	/simonwillison.net/atom/everything/ # Simon Willison Blog
+5	https://lilianweng.github.io/index.xml # Lilian Weng Blog
+5	https://simonwillison.net/atom/everything/ # Simon Willison Blog
 2	https://huyenchip.com/feed.xml # Chip Huyen Blog
-2	https://sebastianraschka.com/rss.xml # Sebastian Raschka Blog
+2	https://magazine.sebastianraschka.com/feed # Sebastian Raschka Blog
 2	https://jalammar.github.io/feed.xml # Jay Alammar Blog
 # AI Engineering / LLM 系统博客
 2	https://eugeneyan.com/rss/ # Eugene Yan Blog
 2	https://swyx.io/rss.xml # Swyx Blog
-2	https://til.simonwillison.net/feed.xml # Simon Willison TIL
 2	https://www.latent.space/feed # Latent Space
 # AI 研究 / 深度技术博客
-2	https://gwern.net/rss.xml # Gwern Blog
+2	https://gwern.net/feed # Gwern Blog
 2	https://distill.pub/rss.xml # Distill
 2	https://bair.berkeley.edu/blog/feed.xml # BAIR Blog
-2	https://www.inference.vc/rss.xml # Inference Blog
 # AI 新闻 / 技术媒体
 2	https://developer.nvidia.com/blog/feed # NVIDIA Developer Blog
 2	https://www.marktechpost.com/feed/ # MarkTechPost
@@ -255,64 +255,58 @@
 1	https://www.pulumi.com/blog/rss.xml # Pulumi Blog
 1	https://devblogs.microsoft.com/typescript/feed # Microsoft TypeScript Blog
 1	http://feeds.feedburner.com/blogspot/gJZg # Google Research Blog
-1	https://nodejs.org/en/feed/blog.xml # Node.js Blog
 1	https://v8.dev/blog.atom # V8 Blog
-1	https://engineering.hashnode.com/rss.xml # Hashnode Engineering
 1	https://blog.digitalocean.com/rss/ # DigitalOcean Blog
 1	https://www.elastic.co/blog/feed # Elastic Blog
 # AI Builder / Hacker 博客
 2	https://tinyprojects.dev/feed.xml # Tiny Projects
-2	https://thesephist.com/rss.xml # thesephist Blog
-2	https://nat.org/blog/rss.xml # Nat Friedman Blog
 1	https://www.artificialintelligencemadesimple.com/feed # Artificial Intelligence Made Simple
 # AI 论文与研究综述博客
 1	https://danieltakeshi.github.io/feed.xml # Seita's Place
 1	https://www.johndcook.com/blog/feed # John Cook Blog
-1	https://www.getrevue.co/profile/seungjaeryanlee?format=rss # RL Weekly
-1	https://danieltakeshi.github.io/feed.xml # Seita's Place
 1	https://vitalab.github.io/rss.xml # VITALab
 1	https://mlinproduction.com/feed # ML in Production
 1	https://machinelearningmastery.com/feed # Machine Learning Mastery
-2	/youtube/channel/UCLKPca3kwwd-B59HNr-_lvA # YouTube AI Engineer
-2	/youtube/channel/UCC-lyoTfSrcJzA1ab3APAgw # YouTube LangChain
-2	/youtube/channel/UCeRjipR4_SsCddq9VZ2AeKg # YouTube LlamaIndex
-2	/youtube/channel/UCrDwWp7EBBv4NwvScIpBDOA # YouTube Anthropic
-2	/youtube/channel/UCXZCJLdBC09xxGZ6gcdrc6A # YouTube OpenAI
-2	/youtube/channel/UCP7jMXSY2xbc3KCAE0MHQ-A # YouTube Google DeepMind
-2	/youtube/channel/UCHlNU7kIZhRgSbhHvFoy72w # YouTube HuggingFace
-2	/youtube/channel/UCBp3w4DCEC64FZr4k9ROxig # YouTube Weights & Biases
-2	/youtube/channel/UCGovZyy8OfFPNlNV0i1fI1g # YouTube Temporal
-2	/youtube/channel/UCn8ujwUInbJkBhffxqAPBVQ # YouTube Dave Ebbelaar
-2	/youtube/channel/UCFqXmQ56-Gp1rIKa-GoAJvQ # YouTube @DrAndyStapleton
-2	/youtube/channel/UC7c3Kb6jYCRj4JOHHZTxKsQ # YouTube @GitHub
-2	/youtube/channel/UCV03SRZXJEz-hchIAogeJOg # YouTube @claude
-2	/youtube/channel/UCsQoiOrh7jzKmE8NBofhTnQ # YouTube @VarunMayya
-2	/youtube/channel/UCPjNBjflYl0-HQtUvOx0Ibw # YouTube @GregIsenberg
-2	/youtube/channel/UCawZsQWfSBv4NwvScIpBDOA # YouTube @matthew_berman
-2	/youtube/channel/UC2UXDak6o7rBm23k3Vv5dww # YouTube @TinaHuang1
-2	/youtube/channel/UCOuGATIAbd2DvzJzJmUgXn2IQ # YouTube @NetworkChuck
-2	/youtube/channel/UC2ojq-nuP8ceeHqiroeKhBA # YouTube @nateherk
-2	/youtube/channel/UCNJ1Ymd5yFuUPtn21xtRbbw # YouTube @aiexplained-official
-2	/youtube/channel/UCChpleBmo18P08aKCIgti38g # YouTube @mreflow（Matt Wolfe）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCLKPca3kwwd-B59HNr-_lvA # YouTube AI Engineer
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCC-lyoTfSrcJzA1ab3APAgw # YouTube LangChain
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCeRjipR4_SsCddq9VZ2AeKg # YouTube LlamaIndex
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCrDwWp7EBBv4NwvScIpBDOA # YouTube Anthropic
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCXZCJLdBC09xxGZ6gcdrc6A # YouTube OpenAI
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCP7jMXSY2xbc3KCAE0MHQ-A # YouTube Google DeepMind
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCHlNU7kIZhRgSbhHvFoy72w # YouTube HuggingFace
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCBp3w4DCEC64FZr4k9ROxig # YouTube Weights & Biases
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCGovZyy8OfFPNlNV0i1fI1g # YouTube Temporal
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCn8ujwUInbJkBhffxqAPBVQ # YouTube Dave Ebbelaar
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCFqXmQ56-Gp1rIKa-GoAJvQ # YouTube @DrAndyStapleton
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UC7c3Kb6jYCRj4JOHHZTxKsQ # YouTube @GitHub
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCV03SRZXJEz-hchIAogeJOg # YouTube @claude
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCsQoiOrh7jzKmE8NBofhTnQ # YouTube @VarunMayya
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCPjNBjflYl0-HQtUvOx0Ibw # YouTube @GregIsenberg
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCawZsQWfSBv4NwvScIpBDOA # YouTube @matthew_berman
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UC2UXDak6o7rBm23k3Vv5dww # YouTube @TinaHuang1
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCOuGATIAbd2DvzJzJmUgXn2IQ # YouTube @NetworkChuck
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UC2ojq-nuP8ceeHqiroeKhBA # YouTube @nateherk
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCNJ1Ymd5yFuUPtn21xtRbbw # YouTube @aiexplained-official
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCChpleBmo18P08aKCIgti38g # YouTube @mreflow（Matt Wolfe）
 # 新增：论文解读 / 前沿研究
-2	/youtube/channel/UCZHmQk67mSJgfCCTn7xBfew # Yannic Kilcher（论文深度解读）
-2	/youtube/channel/UCbfYPyITQ-7l4upoX8nvctg # Two Minute Papers（AI 研究速览）
-2	/youtube/channel/UCHhYXsLBEVVnbvsq57n1MTQ # AI Advantage（论文+实战）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCZHmQk67mSJgfCCTn7xBfew # Yannic Kilcher（论文深度解读）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCbfYPyITQ-7l4upoX8nvctg # Two Minute Papers（AI 研究速览）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCHhYXsLBEVVnbvsq57n1MTQ # AI Advantage（论文+实战）
 # 新增：大模型原理 / 从零实现
-3	/youtube/channel/UCXUPKJO5MZQN11PqgIvyuvQ # Andrej Karpathy（卡帕西）
-2	/youtube/channel/UCYO_jab_esuFRV4b17AJtAw # 3Blue1Brown（可视化数学）
-2	/youtube/channel/UCtYLUTtgS3k1Fg4y5tAhLbw # StatQuest with Josh Starmer
+3	https://www.youtube.com/feeds/videos.xml?channel_id=UCXUPKJO5MZQN11PqgIvyuvQ # Andrej Karpathy（卡帕西）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCYO_jab_esuFRV4b17AJtAw # 3Blue1Brown（可视化数学）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCtYLUTtgS3k1Fg4y5tAhLbw # StatQuest with Josh Starmer
 # 新增：工程实战 / LLM 应用开发
-2	/youtube/channel/UCNU_lfiiWBdtULKOw6X0Dig # Krish Naik（GenAI 全栈教程）
-2	/youtube/channel/UCfzlCWGWYyIQ0aLC5w48gBQ # Sentdex（Python + ML 实战）
-2	/youtube/channel/UCtatfZMf-8EkIwASXM4ts0A # AssemblyAI（LLM 工程实践）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCNU_lfiiWBdtULKOw6X0Dig # Krish Naik（GenAI 全栈教程）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCfzlCWGWYyIQ0aLC5w48gBQ # Sentdex（Python + ML 实战）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCtatfZMf-8EkIwASXM4ts0A # AssemblyAI（LLM 工程实践）
 # 新增：行业深度对话 / 播客
-2	/youtube/channel/UCSHZKyawb77ixDdsGog4iWA # Lex Fridman Podcast
-2	/youtube/channel/UCXl4i9dYBrFOabk0xGmbkRA # Dwarkesh Patel Podcast
-2	/youtube/channel/UCSI7h9hydQ40K5MJHnCrQvw # No Priors（Elad Gil & Sarah Guo）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCSHZKyawb77ixDdsGog4iWA # Lex Fridman Podcast
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCXl4i9dYBrFOabk0xGmbkRA # Dwarkesh Patel Podcast
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCSI7h9hydQ40K5MJHnCrQvw # No Priors（Elad Gil & Sarah Guo）
 # 新增：中文 AI 频道
-3	/youtube/channel/UCBFkCZVCfwi4YL21zCcnjxQ # 跟李沐学AI（Deep Learning 101）
-2	/youtube/channel/UCIDll3SRcbHwwcXbrwvBZNw # 橘鸦Juya（AI早报视频版）
+3	https://www.youtube.com/feeds/videos.xml?channel_id=UCBFkCZVCfwi4YL21zCcnjxQ # 跟李沐学AI（Deep Learning 101）
+2	https://www.youtube.com/feeds/videos.xml?channel_id=UCIDll3SRcbHwwcXbrwvBZNw # 橘鸦Juya（AI早报视频版）
 # 新增：从橘鸦早报提取的信源
 2	https://openclaw.ai/rss.xml # OpenClaw Blog（AI Agent）
 2	https://zed.dev/blog.rss # Zed Editor Blog
@@ -353,7 +347,6 @@
 # — 从 AI Weekly 引用链提取
 2	https://sherwood.news/rss.xml # Sherwood News（科技/市场/加密新闻，Robinhood 旗下）
 # — 从 The Decoder & AI Weekly 共同引用
-2	https://huggingface.co/blog/feed.xml # Hugging Face Blog（AI/ML 研究与产品更新）
 # ======== 全渠道信源发现：OPML 挖矿 + 公司博客矩阵 + 学术/播客/VC/政策 ========
 # — AI 公司官方博客（新发现）
 2	https://openai.com/blog/rss.xml # OpenAI Blog（产品+研究，与 /news/rss 互补）
@@ -361,9 +354,7 @@
 2	https://www.microsoft.com/en-us/research/feed/ # Microsoft Research（前沿研究）
 2	https://blogs.nvidia.com/feed/ # NVIDIA Blog（GPU/芯片/AI 硬件，与企业开发者博客互补）
 2	https://blog.langchain.dev/rss/ # LangChain Blog（LLM 应用开发框架）
-2	https://mistral.ai/news/index.xml # Mistral AI News（欧洲开源模型先锋）
 2	https://stability.ai/blog?format=rss # Stability AI Blog（生成式 AI / 图像/视频）
-2	https://txt.cohere.com/rss/ # Cohere Blog（企业 LLM / RAG / Embeddings）
 2	https://blog.llamaindex.ai/feed # LlamaIndex Blog（数据框架 / RAG 工具链）
 2	https://machinelearning.apple.com/rss.xml # Apple Machine Learning Research
 2	https://aws.amazon.com/blogs/machine-learning/feed/ # AWS Machine Learning Blog
@@ -371,7 +362,6 @@
 # — 学术机构与研究实验室
 2	https://ai.stanford.edu/blog/feed.xml # Stanford AI Lab Blog（SAIL）
 2	https://news.mit.edu/rss/topic/artificial-intelligence2 # MIT News — AI 专题
-2	https://allenai.org/blog/feed # AI2 Blog（Allen Institute for AI，研究驱动）
 2	https://blog.eleuther.ai/index.xml # Eleuther AI Blog（开源 AI 研究）
 # — AI 媒体与社区（高价值聚合/分析）
 2	https://venturebeat.com/category/ai/feed/ # VentureBeat — AI 分类
@@ -386,8 +376,6 @@
 2	https://changelog.com/practicalai/feed # Practical AI Podcast（Changelog，ML/DL/NLP 全领域）
 2	https://twimlai.com/feed # TWIML AI Podcast（Sam Charrington，765+ 期产业+学术）
 # — VC / 投资人博客
-2	https://greylock.com/blog/feed/ # Greylock Partners Blog（企业级 AI 投资）
-2	https://review.firstround.com/feed/ # First Round Review（创业洞察 + 技术深度）
 # — 政策 / 监管 / 权威科技媒体
 1	https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss # IEEE Spectrum — AI 专题
 1	https://www.technologyreview.com/feed # MIT Technology Review（权威科技深度报道）
@@ -406,3 +394,35 @@
 1	https://www.lesswrong.com/feed.xml?view=curated-rss # LessWrong（理性社区，AI 对齐/安全讨论）
 4	https://duanyytop.github.io/agents-radar/feed.xml # agents-radar AI CLI/Agents 生态日报
 4	https://chrbailey.github.io/deeptrend/feed.xml # deeptrend AI 趋势情报
+# ======== 信源修复与扩充（2026-09 实测验证可用）========
+# — Reddit 官方 RSS 直连（对限流敏感）
+3	https://www.reddit.com/r/LocalLLaMA/.rss # Reddit r/LocalLLaMA
+3	https://www.reddit.com/r/singularity/.rss # Reddit r/singularity
+2	https://www.reddit.com/r/MachineLearning/.rss # Reddit r/MachineLearning
+# — 高价值 AI Newsletter
+5	https://tldr.tech/rss/ai # TLDR AI（日更 AI 日报）
+2	https://www.therundown.ai/feed # The Rundown AI
+2	https://avichawla.substack.com/feed # Brainfood（AI 论文日报）
+2	https://techpress.substack.com/feed # Tech Press（AI 新闻精选）
+2	https://every.to/chain-of-thought/feed # Chain of Thought（every.to）
+2	https://stratechery.com/feed/ # Stratechery（Ben Thompson）
+# — 独立作者 / 对齐研究社区
+4	https://www.dwarkeshpatel.com/feed # Dwarkesh Patel Blog
+2	https://www.dbreunig.com/feed.xml # Drew Breunig Blog
+2	https://www.alignmentforum.org/.rss # Alignment Forum（AI 对齐）
+# — 工程博客补充
+2	https://netflixtechblog.com/feed # Netflix Tech Blog
+2	https://engineering.atspotify.com/feed/ # Spotify Engineering
+2	https://slack.engineering/feed/ # Slack Engineering
+2	https://stripe.com/blog/feed.rss # Stripe Blog
+2	https://engineering.shopify.com/blogs/engineering.atom # Shopify Engineering
+2	https://www.ycombinator.com/blog/feed # Y Combinator Blog
+# — 中文信源直连
+3	https://www.ruanyifeng.com/blog/atom.xml # 阮一峰周刊
+2	https://tech.meituan.com/feed/ # 美团技术团队
+2	https://www.qbitai.com/feed # 量子位官网
+2	https://www.geekpark.net/rss # 极客公园官网
+2	https://www.leiphone.com/feed # 雷峰网
+2	https://www.ifanr.com/feed # 爱范儿
+2	https://www.36kr.com/feed # 36氪官网
+2	https://baoyu.io/feed.xml # 宝玉博客
