@@ -249,7 +249,6 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None, 
                 cwd=Path.cwd(),
                 setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,
                 stderr=stderr_logger,
-                env={k: v for k, v in os.environ.items() if k == "ANTHROPIC_API_KEY"},
                 sdk_log=sdk_logger,
             )
             if attempt > 0 and log_event:

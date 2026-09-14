@@ -40,7 +40,7 @@ def test_enrich_agent() -> bool:
     print_header("enrich_agent 测试")
 
     check_env_vars([
-        "ANTHROPIC_API_KEY",
+        "ANTHROPIC_AUTH_TOKEN",
         "ENRICH_AGENT_ENABLED",
         "ENRICH_MAX_WORKERS",
         "ENRICH_ITEM_TIMEOUT_SECONDS",
@@ -112,7 +112,7 @@ def test_global_agent() -> bool:
     """测试 global_agent"""
     print_header("global_agent 测试")
 
-    check_env_vars(["ANTHROPIC_API_KEY", "GLOBAL_AGENT_ENABLE_SKILLS"])
+    check_env_vars(["ANTHROPIC_AUTH_TOKEN", "GLOBAL_AGENT_ENABLE_SKILLS"])
 
     # 导入模块
     print("\n[IMPORT] 导入模块...")

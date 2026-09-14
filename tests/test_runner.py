@@ -101,8 +101,8 @@ def test_load_feed_specs_supports_sections(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert feed_sources.load_feed_specs(feeds) == [
-        {"kind": "rsshub", "value": "/sspai/index", "label": ""},
-        {"kind": "direct", "value": "https://example.com/feed.xml", "label": ""},
+        {"kind": "rsshub", "value": "/sspai/index", "label": "", "priority": 0},
+        {"kind": "direct", "value": "https://example.com/feed.xml", "label": "", "priority": 0},
     ]
 
 
@@ -113,7 +113,27 @@ def test_load_feed_specs_supports_inline_label(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert feed_sources.load_feed_specs(feeds) == [
-        {"kind": "rsshub", "value": "/bilibili/user/video/123456", "label": "测试UP主"},
+        {"kind": "rsshub", "value": "/bilibili/user/video/123456", "label": "测试UP主", "priority": 0},
+    ]
+
+
+def test_load_feed_specs_parses_tab_priority(tmp_path: Path) -> None:
+    """`<priority>\t<value> # <label>` 形式：优先级用 tab 分隔，缺省为 0。"""
+    feeds = tmp_path / "feeds.txt"
+    feeds.write_text(
+        "[rsshub]\n"
+        "5\t/sspai/index # 少数派\n"
+        "-3\t/anthropic/news\n"
+        "/plain/route\n"
+        "[direct]\n"
+        "7\thttps://example.com/feed.xml\n",
+        encoding="utf-8",
+    )
+    assert feed_sources.load_feed_specs(feeds) == [
+        {"kind": "rsshub", "value": "/sspai/index", "label": "少数派", "priority": 5},
+        {"kind": "rsshub", "value": "/anthropic/news", "label": "", "priority": -3},
+        {"kind": "rsshub", "value": "/plain/route", "label": "", "priority": 0},
+        {"kind": "direct", "value": "https://example.com/feed.xml", "label": "", "priority": 7},
     ]
 
 

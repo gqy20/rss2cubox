@@ -17,6 +17,9 @@ DEFAULT_RSSHUB_INSTANCES = ["https://rsshub.rssforever.com", "https://rsshub.app
 DEFAULT_BILIBILI_SPECIAL_INSTANCES = ["https://rss.spriple.org"]
 DEFAULT_TWITTER_SPECIAL_INSTANCES: list[str] = []
 
+# feeds.txt 解析后的单条订阅源：{"kind": str, "value": str, "label": str, "priority": int}
+FeedSpec = dict[str, Any]
+
 
 def _parse_instance_list(raw: str) -> list[str]:
     out: list[str] = []
@@ -169,8 +172,8 @@ def split_feed_value_and_label(raw: str) -> tuple[str, str]:
     return value, label
 
 
-def load_feed_specs(path: Path) -> list[dict[str, str]]:
-    specs: list[dict[str, str]] = []
+def load_feed_specs(path: Path) -> list[FeedSpec]:
+    specs: list[FeedSpec] = []
     section = "auto"
     with path.open("r", encoding="utf-8") as f:
         for ln in f:
@@ -537,7 +540,7 @@ def parse_feed_with_fallback(
 
 
 def parse_feed_spec(
-    spec: dict[str, str],
+    spec: FeedSpec,
     analyzed: dict[str, Any],
     feed_cursor: dict[str, Any],
     last_build_cache: dict[str, str] | None,
@@ -694,7 +697,7 @@ def parse_feed_spec(
 
 def collect_candidates_from_feeds(
     *,
-    feed_specs: list[dict[str, str]],
+    feed_specs: list[FeedSpec],
     analyzed: dict[str, Any],
     feed_cursor: dict[str, Any],
     last_build_cache: dict[str, str] | None,
@@ -722,8 +725,8 @@ def collect_candidates_from_feeds(
     record_stat: Any = None,
 ) -> tuple[list[dict[str, Any]], dict[str, str]]:
     candidates: list[dict[str, Any]] = []
-    pending_specs: list[tuple[int, dict[str, str]]] = []
-    pending_werss: list[tuple[int, dict[str, str]]] = []
+    pending_specs: list[tuple[int, FeedSpec]] = []
+    pending_werss: list[tuple[int, FeedSpec]] = []
     for idx, spec in enumerate(feed_specs):
         feed_kind = spec["kind"]
         feed_url = spec["value"]
@@ -751,7 +754,7 @@ def collect_candidates_from_feeds(
 
     parse_results: dict[int, dict[str, Any]] = {}
 
-    def submit_tasks(executor: ThreadPoolExecutor, specs: list[tuple[int, dict[str, str]]]) -> dict[Any, int]:
+    def submit_tasks(executor: ThreadPoolExecutor, specs: list[tuple[int, FeedSpec]]) -> dict[Any, int]:
         return {
             executor.submit(
                 parse_feed_spec,
