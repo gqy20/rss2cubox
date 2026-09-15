@@ -1,0 +1,119 @@
+# 政策信源配置
+#
+# 加站点只改这个文件，不用改代码。每个 [[sites]] 是一个适配器。
+# 所有选择器都在 2026-09-15 对真实页面验证过，字段含义见 policy/config.py。
+#
+# tier = "requests"    服务端渲染，requests + CSS 即可（便宜、快、稳）
+# tier = "playwright"  JS 空壳站，必须无头浏览器渲染后再解析
+#
+# ⚠️ 政府网站改版会让选择器静默失效（返回 0 条但不报错）。
+#    policy_source_state.consecutive_empty_runs 会记录连续空跑次数，
+#    `make policy-doctor` 可查出疑似失效的站点。
+
+# ── 国家级 ────────────────────────────────────────────────
+
+[[sites]]
+key           = "tc260_zqyj"
+name          = "全国网安标委(TC260)-征求意见与通知"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.tc260.org.cn/front/bzzqyjList.html"
+item_selector = "ul.inList > li"
+title_attr    = "title"
+date_selector = "span.date"
+note          = "AI 安全国标的一手源；备案实际审查依据。征求意见稿的预测价值高于正式稿。"
+
+# ── 省级 / 直辖市 ─────────────────────────────────────────
+
+[[sites]]
+key           = "beijing_zhengce"
+name          = "北京市-最新政策"
+level         = "province"
+region        = "北京"
+list_url      = "https://www.beijing.gov.cn/zhengce/zhengcefagui/"
+item_selector = "ul.default_news > li"
+title_attr    = "title"
+date_selector = "span"
+max_items     = 300
+note          = "单页 999 条，含市级/区级/经开区管委会文件。href 是 ./YYYYMM/ 相对路径。"
+
+[[sites]]
+key           = "shanghai_gz"
+name          = "上海市-政府规章与部门文件"
+level         = "province"
+region        = "上海"
+list_url      = "https://www.shanghai.gov.cn/nw12344/index.html"
+item_selector = "ul.tadaty-list > li"
+title_attr    = "title"
+note          = "日期在 li 文本里，走正则回退提取。"
+
+[[sites]]
+key           = "zhejiang_zcjd"
+name          = "浙江省-政策解读"
+level         = "province"
+region        = "浙江"
+list_url      = "https://www.zj.gov.cn/col/col1229667607/index.html"
+item_selector = "div.Second_box_item > li"
+title_attr    = "title"
+note          = "用友政务 CMS（/col/colXXX/ 模式），同构站点可复用此选择器。"
+
+[[sites]]
+key           = "gd_qbwj"
+name          = "广东省-全部文件"
+level         = "province"
+region        = "广东"
+list_url      = "https://www.gd.gov.cn/zwgk/wjk/qbwj/"
+item_selector = "div.viewList > ul > li"
+title_selector = "span.name > a"
+url_selector   = "span.name > a"
+note          = "标题在 span.name > a 里，不是 li 直接子元素。"
+
+# ── 市级 ──────────────────────────────────────────────────
+
+[[sites]]
+key           = "suzhou_zcfg"
+name          = "苏州市-政策文件"
+level         = "city"
+region        = "苏州"
+list_url      = "https://www.suzhou.gov.cn/szsrmzf/zfwj/zcfg.shtml"
+item_selector = "ul.infolist > li"
+title_attr    = "title"
+max_items     = 120
+# 该栏目混排了时政要闻，按标题特征排除（无法完全干净，enrich 阶段还会再过一道）
+title_exclude = ["习近平", "李克强", "会晤", "发言人", "新闻发布会", "查看更多"]
+note          = "列表项最多的市级源（41 条/页）。含新闻混排，已加排除词。"
+
+# ── 以下为 JS 空壳站，需 playwright；先禁用，第二批再开 ──────
+
+[[sites]]
+key           = "js_zcjd"
+name          = "江苏省-政策解读"
+level         = "province"
+region        = "江苏"
+list_url      = "https://www.js.gov.cn/col/col84725/index.html"
+item_selector = "div.Second_box_item > li"
+tier          = "playwright"
+enabled       = false
+note          = "requests 只拿到 1KB 空壳，列表由 JS 注入。选择器参照同 CMS 的浙江站，待渲染后验证。"
+
+[[sites]]
+key           = "hangzhou_xxgk"
+name          = "杭州市-政府信息公开"
+level         = "city"
+region        = "杭州"
+list_url      = "http://www.hangzhou.gov.cn/col/col1229008313/index.html"
+item_selector = "div.Second_box_item > li"
+tier          = "playwright"
+enabled       = false
+note          = "30KB 但 0 个列表项，JS 渲染。选择器待验证。"
+
+[[sites]]
+key           = "gd_zcjd"
+name          = "广东省-政策解读"
+level         = "province"
+region        = "广东"
+list_url      = "https://www.gd.gov.cn/zwgk/zcjd/index.html"
+item_selector = "ul > li"
+tier          = "playwright"
+enabled       = false
+note          = "36KB 但列表 JS 渲染。同站的「全部文件」栏目是服务端渲染，已启用（gd_qbwj）。"
