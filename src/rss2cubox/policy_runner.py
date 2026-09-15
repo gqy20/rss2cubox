@@ -35,12 +35,20 @@ _load_env()
 
 from rss2cubox.policy.config import load_sources  # noqa: E402
 from rss2cubox.policy.engine import scrape_all  # noqa: E402
+from rss2cubox.policy.enrich_agent import enrich_policy_documents  # noqa: E402
+from rss2cubox.policy.triage_agent import triage_policy_documents  # noqa: E402
 from rss2cubox.policy.store import (  # noqa: E402
+    count_policy_documents,
+    count_policy_triage,
     ensure_policy_schema,
+    get_documents_for_enrichment,
     get_source_states,
     get_stale_sources,
+    get_untriaged_documents,
     record_source_state,
     save_policy_documents,
+    save_policy_enrichment,
+    save_triage_results,
 )
 
 POLICY_SOURCES_FILE = Path(os.getenv("POLICY_SOURCES_FILE", str(ROOT_DIR / "policy_sources.toml")))
@@ -49,6 +57,30 @@ POLICY_CONNECT_TIMEOUT_SECONDS = float(os.getenv("POLICY_CONNECT_TIMEOUT_SECONDS
 POLICY_READ_TIMEOUT_SECONDS = float(os.getenv("POLICY_READ_TIMEOUT_SECONDS", "20"))
 # 连续空跑达到这个次数就告警（政府站点更新频率低，2 次比较稳妥）
 POLICY_STALE_EMPTY_RUNS = max(1, int(os.getenv("POLICY_STALE_EMPTY_RUNS", "2")))
+POLICY_ENRICH_LIMIT = max(1, int(os.getenv("POLICY_ENRICH_LIMIT", "20")))
+POLICY_TRIAGE_LIMIT = max(1, int(os.getenv("POLICY_TRIAGE_LIMIT", "300")))
+POLICY_ENRICH_MIN_RELEVANCE = min(5, max(1, int(os.getenv("POLICY_ENRICH_MIN_RELEVANCE", "3"))))
+
+
+def _run_triage_stage(
+    *,
+    limit: int,
+    site_key: str | None,
+    level: str | None,
+    stats: dict[str, Any],
+) -> None:
+    """廉价预筛：一次调用批量给标题打分，只让高相关的进入逐篇 deep enrich。"""
+    docs = get_untriaged_documents(limit=limit, site_key=site_key, level=level)
+    if not docs:
+        log_event("INFO", "policy_triage_skipped", stage="policy_triage", reason="nothing_untriaged")
+        stats["triage_input"] = 0
+        return
+
+    outcome = triage_policy_documents(docs, log_event=log_event)
+    saved = save_triage_results(outcome["results"])
+    stats.update({f"triage_{k}": v for k, v in outcome["stats"].items()})
+    stats["triage_saved"] = saved
+
 
 _RUN_ID = os.getenv("RSS2CUBOX_RUN_ID") or f"policy-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
 
@@ -90,6 +122,68 @@ def _print_status() -> int:
     return 0
 
 
+def _run_enrich_stage(
+    *,
+    limit: int,
+    site_key: str | None,
+    level: str | None,
+    fetch_full_text: bool,
+    min_triage_relevance: int | None,
+    stats: dict[str, Any],
+) -> None:
+    """对尚未 enrich 的政策文件做结构化抽取并回写。"""
+    docs = get_documents_for_enrichment(
+        limit=limit,
+        site_key=site_key,
+        level=level,
+        min_triage_relevance=min_triage_relevance,
+    )
+    if not docs:
+        log_event(
+            "INFO",
+            "policy_enrich_skipped",
+            stage="policy_enrich",
+            reason="no_unenriched_documents",
+            min_triage_relevance=min_triage_relevance,
+        )
+        stats["enrich_total"] = 0
+        return
+
+    outcome = enrich_policy_documents(
+        docs,
+        fetch_full_text_enabled=fetch_full_text,
+        log_event=log_event,
+    )
+    full_texts = outcome.get("full_texts", {})
+    saved = 0
+    failures: list[dict[str, str]] = []
+    save_failures: list[str] = []
+    for doc_id, (enriched, reason) in outcome["results"].items():
+        if not enriched:
+            failures.append({"doc_id": doc_id, "reason": reason})
+            continue
+        if save_policy_enrichment(doc_id, enriched, full_text=full_texts.get(doc_id)):
+            saved += 1
+        else:
+            # agent 成功但写库失败 —— 不报出来的话只会表现为两个数字对不上
+            save_failures.append(doc_id)
+            if log_event:
+                log_event("WARN", "policy_enrich_save_failed", stage="policy_enrich", doc_id=doc_id)
+
+    inner = outcome["stats"]
+    stats.update(
+        enrich_total=inner["total"],
+        enrich_succeeded=inner["succeeded"],
+        enrich_failed=inner["failed"],
+        enrich_fulltext=inner["fulltext"],
+        enrich_saved=saved,
+    )
+    if save_failures:
+        stats["enrich_save_failures"] = save_failures
+    if failures:
+        stats["enrich_failures"] = failures[:10]
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="抓取政策信源列表页并入库")
     parser.add_argument("--only", default="", help="只抓这些 key，逗号分隔")
@@ -98,10 +192,72 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--include-disabled", action="store_true", help="包含 enabled=false 的站点")
     parser.add_argument("--dry-run", action="store_true", help="只抓取和解析，不写数据库")
     parser.add_argument("--status", action="store_true", help="只打印信源健康度后退出")
+    parser.add_argument("--enrich", action="store_true", help="抓取后对新增文件做结构化抽取")
+    parser.add_argument("--enrich-only", action="store_true", help="跳过抓取，只补做 enrich（回填空数据用）")
+    parser.add_argument("--enrich-limit", type=int, default=POLICY_ENRICH_LIMIT, help="本次最多 enrich 多少篇")
+    parser.add_argument("--no-fulltext", action="store_true", help="不抓详情页正文，只用标题抽取（便宜但质量低）")
+    parser.add_argument("--triage", action="store_true", help="只跑预筛（标题批量分类），不做 deep enrich")
+    parser.add_argument("--triage-limit", type=int, default=POLICY_TRIAGE_LIMIT, help="本次最多预筛多少篇")
+    parser.add_argument(
+        "--no-triage",
+        action="store_true",
+        help="enrich 前不跑预筛（会对所有未 enrich 文档逐篇调用，贵）",
+    )
+    parser.add_argument(
+        "--enrich-min-relevance",
+        type=int,
+        default=POLICY_ENRICH_MIN_RELEVANCE,
+        help=f"只对预筛 AI 相关度 ≥ 此值的文档做 deep enrich（默认 {POLICY_ENRICH_MIN_RELEVANCE}，1=不设门槛）",
+    )
     args = parser.parse_args(argv)
 
     if args.status:
         return _print_status()
+
+    min_relevance = args.enrich_min_relevance if args.enrich_min_relevance > 1 else None
+
+    if args.enrich_only or args.triage:
+        if not ensure_policy_schema():
+            print("建表失败：检查 LOCAL_DB_URL（make db）", file=sys.stderr)
+            return 1
+        stats: dict[str, Any] = {"sites": 0, "sites_ok": 0, "sites_failed": 0, "items_total": 0}
+        only_keys = {k.strip() for k in args.only.split(",") if k.strip()}
+        single_key = next(iter(only_keys)) if len(only_keys) == 1 else None
+        level_filter = args.level.strip() or None
+        started = datetime.now(timezone.utc)
+
+        if args.triage:
+            _run_triage_stage(limit=args.triage_limit, site_key=single_key, level=level_filter, stats=stats)
+        if args.enrich_only:
+            _run_enrich_stage(
+                limit=args.enrich_limit,
+                site_key=single_key,
+                level=level_filter,
+                fetch_full_text=not args.no_fulltext,
+                min_triage_relevance=min_relevance,
+                stats=stats,
+            )
+
+        stats["duration_s"] = round((datetime.now(timezone.utc) - started).total_seconds(), 1)
+        stats["documents"] = count_policy_documents()
+        stats["triage_distribution"] = count_policy_triage()
+        log_event("INFO", "policy_run_summary", stage="summary", **stats)
+
+        print()
+        if "triage_saved" in stats:
+            print(
+                f"预筛：{stats.get('triage_saved', 0)}/{stats.get('triage_input', 0)} 篇已打分"
+                f"（其中政策文件 {stats.get('triage_policy', 0)} 篇，"
+                f"相关度≥{stats.get('triage_threshold', '?')} 的 {stats.get('triage_relevant', 0)} 篇）"
+            )
+        if "enrich_saved" in stats:
+            print(
+                f"enrich：成功 {stats.get('enrich_saved', 0)}/{stats.get('enrich_total', 0)} 篇"
+                f"（带正文 {stats.get('enrich_fulltext', 0)} 篇）"
+            )
+        print(f"耗时 {stats['duration_s']}s；库内累计 {stats['documents']}")
+        print(f"预筛分布 {stats['triage_distribution']}")
+        return 0
 
     only_keys = {k.strip() for k in args.only.split(",") if k.strip()} or None
     only_levels = {k.strip().lower() for k in args.level.split(",") if k.strip()} or None
@@ -204,6 +360,26 @@ def main(argv: list[str] | None = None) -> int:
             )
             stats["stale_sites"] = [row["site_key"] for row in stale]
 
+        if args.enrich:
+            # enrich 默认先跑预筛：否则停水通知、月票提示会和真正的法规文件
+            # 消耗同等的 deep enrich 预算（实测 ~$0.14/篇）
+            if not args.no_triage:
+                _run_triage_stage(
+                    limit=args.triage_limit,
+                    site_key=None,
+                    level=(args.level.strip() or None),
+                    stats=stats,
+                )
+            _run_enrich_stage(
+                limit=args.enrich_limit,
+                site_key=None,
+                level=(args.level.strip() or None),
+                fetch_full_text=not args.no_fulltext,
+                min_triage_relevance=min_relevance,
+                stats=stats,
+            )
+            stats["documents"] = count_policy_documents()
+
     stats["duration_s"] = round((datetime.now(timezone.utc) - started).total_seconds(), 1)
     log_event("INFO", "policy_run_summary", stage="summary", **stats)
 
@@ -215,6 +391,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     if stats.get("stale_sites"):
         print(f"⚠ 疑似失效站点: {', '.join(stats['stale_sites'])} —— 用 --status 查看详情")
+    if args.enrich and not args.dry_run:
+        print(
+            f"enrich：成功 {stats.get('enrich_saved', 0)}/{stats.get('enrich_total', 0)} 篇"
+            f"（带正文 {stats.get('enrich_fulltext', 0)} 篇）；库内累计 {stats.get('documents')}"
+        )
     if stats["failed_sites"]:
         print("失败站点:")
         for failed in stats["failed_sites"]:

@@ -8,6 +8,7 @@ policy_source_state 是失效监测的核心：爬虫最危险的不是抓不到
 """
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -53,6 +54,26 @@ CREATE INDEX IF NOT EXISTS idx_policy_docs_site ON policy_documents(site_key);
 CREATE INDEX IF NOT EXISTS idx_policy_docs_published ON policy_documents(published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_policy_docs_region ON policy_documents(region);
 CREATE INDEX IF NOT EXISTS idx_policy_docs_enriched ON policy_documents(enriched_at);
+CREATE INDEX IF NOT EXISTS idx_policy_docs_ai_relevance ON policy_documents(ai_relevance DESC);
+
+-- enrich 本体补充字段（沿用项目既有的增量加列模式）
+ALTER TABLE policy_documents
+    ADD COLUMN IF NOT EXISTS issuing_authority VARCHAR(200),
+    ADD COLUMN IF NOT EXISTS document_number   VARCHAR(120),
+    ADD COLUMN IF NOT EXISTS comment_deadline  DATE,
+    ADD COLUMN IF NOT EXISTS key_provisions    JSONB DEFAULT '[]',
+    ADD COLUMN IF NOT EXISTS ai_relevance_reason TEXT,
+    ADD COLUMN IF NOT EXISTS confidence        SMALLINT;
+
+-- 预筛（triage）阶段：用一次 LLM 调用批量给标题打分，只让高相关的进入
+-- 昂贵的逐篇 deep enrich。没有这一层，民生通知（停水/月票/招考）会和白金政策
+-- 文件一起消耗同等 token。
+ALTER TABLE policy_documents
+    ADD COLUMN IF NOT EXISTS triaged_at        TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS triage_relevance  SMALLINT,
+    ADD COLUMN IF NOT EXISTS triage_is_policy  BOOLEAN;
+
+CREATE INDEX IF NOT EXISTS idx_policy_docs_triage ON policy_documents(triage_relevance DESC);
 """
 
 POLICY_SOURCE_STATE_SCHEMA = """
@@ -311,7 +332,9 @@ def get_policy_documents(
         SELECT id, site_key, site_name, level, region, title, url, published_at,
                raw_date, first_seen_at, last_seen_at, seen_count, jurisdiction,
                instrument_type, stage, effective_date, affected_parties,
-               obligation_level, ai_relevance, summary, source_quote, enriched_at
+               obligation_level, ai_relevance, summary, source_quote, enriched_at,
+               issuing_authority, document_number, comment_deadline,
+               key_provisions, ai_relevance_reason, confidence
         FROM policy_documents
         {where}
         ORDER BY COALESCE(published_at, first_seen_at) DESC NULLS LAST, id
@@ -327,3 +350,237 @@ def get_policy_documents(
     except Exception as e:  # noqa: BLE001
         logging.warning(f"Failed to query policy documents: {e}")
         return []
+
+
+# enrich 阶段可写的列。白名单化，避免把 dict 的 key 直接拼进 SQL。
+_ENRICH_COLUMNS: dict[str, str] = {
+    "issuing_authority": "issuing_authority",
+    "jurisdiction": "jurisdiction",
+    "instrument_type": "instrument_type",
+    "stage": "stage",
+    "document_number": "document_number",
+    "effective_date": "effective_date",
+    "comment_deadline": "comment_deadline",
+    "affected_parties": "affected_parties",
+    "obligation_level": "obligation_level",
+    "ai_relevance": "ai_relevance",
+    "ai_relevance_reason": "ai_relevance_reason",
+    "summary": "summary",
+    "key_provisions": "key_provisions",
+    "source_quote": "source_quote",
+    "confidence": "confidence",
+    "enrich_meta": "enrich_meta",
+}
+
+
+def get_documents_for_enrichment(
+    *,
+    limit: int = 50,
+    site_key: str | None = None,
+    level: str | None = None,
+    min_title_length: int = 8,
+    min_triage_relevance: int | None = None,
+    db_url: str | None = None,
+) -> list[dict[str, Any]]:
+    """取尚未 enrich 的政策文件，按发布时间倒序（新的先处理）。
+
+    min_triage_relevance 不为 None 时，只返回预筛打分达到该阈值的文档 ——
+    这是把昂贵的逐篇 deep enrich 限制在真正相关的文档上的开关。
+    """
+    db_url = _get_db_url(db_url)
+    if not db_url:
+        return []
+    clauses = ["enriched_at IS NULL", "CHAR_LENGTH(title) >= %s"]
+    params: list[Any] = [max(1, int(min_title_length))]
+    if min_triage_relevance is not None:
+        clauses.append("triage_relevance IS NOT NULL AND triage_relevance >= %s")
+        params.append(int(min_triage_relevance))
+    if site_key:
+        clauses.append("site_key = %s")
+        params.append(site_key)
+    if level:
+        clauses.append("level = %s")
+        params.append(level)
+    params.append(max(1, int(limit)))
+    sql = f"""
+        SELECT id, site_key, site_name, level, region, title, url, published_at, full_text
+        FROM policy_documents
+        WHERE {' AND '.join(clauses)}
+        ORDER BY COALESCE(published_at, first_seen_at) DESC NULLS LAST, id
+        LIMIT %s
+    """
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(sql, tuple(params))
+            cols = [d.name for d in cur.description]
+            return [dict(zip(cols, row)) for row in cur.fetchall()]
+    except Exception as e:  # noqa: BLE001
+        logging.warning(f"Failed to query policy documents for enrichment: {e}")
+        return []
+
+
+def save_policy_enrichment(
+    doc_id: str,
+    fields: dict[str, Any],
+    *,
+    full_text: str | None = None,
+    db_url: str | None = None,
+) -> bool:
+    """回写 enrich 结果。只更新传入的字段，未识别的 key 会被忽略。"""
+    db_url = _get_db_url(db_url)
+    if not db_url or not doc_id:
+        return False
+
+    sets: list[str] = []
+    params: list[Any] = []
+    for key, column in _ENRICH_COLUMNS.items():
+        if key not in fields:
+            continue
+        value = fields[key]
+        if key in ("affected_parties", "key_provisions", "enrich_meta"):
+            value = json.dumps(value if value is not None else ({} if key == "enrich_meta" else []),
+                               ensure_ascii=False)
+        sets.append(f"{column} = %s")
+        params.append(value)
+
+    if full_text is not None:
+        sets.append("full_text = %s")
+        params.append(full_text)
+        sets.append("full_text_fetched_at = NOW()")
+
+    if not sets:
+        logging.warning(f"save_policy_enrichment 没有可写字段: doc_id={doc_id}")
+        return False
+
+    sets.append("enriched_at = NOW()")
+    params.append(doc_id)
+    sql = f"UPDATE policy_documents SET {', '.join(sets)} WHERE id = %s"
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(sql, tuple(params))
+            conn.commit()
+            return cur.rowcount > 0
+    except Exception as e:  # noqa: BLE001
+        logging.warning(f"Failed to save policy enrichment for {doc_id}: {e}")
+        return False
+
+
+def count_policy_documents(*, db_url: str | None = None) -> dict[str, int]:
+    db_url = _get_db_url(db_url)
+    if not db_url:
+        return {"total": 0, "enriched": 0, "unenriched": 0}
+    sql = """
+        SELECT COUNT(*) AS total,
+               COUNT(enriched_at) AS enriched,
+               COUNT(*) - COUNT(enriched_at) AS unenriched
+        FROM policy_documents
+    """
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(sql)
+            total, enriched, unenriched = cur.fetchone()
+            return {"total": int(total), "enriched": int(enriched), "unenriched": int(unenriched)}
+    except Exception as e:  # noqa: BLE001
+        logging.warning(f"Failed to count policy documents: {e}")
+        return {"total": 0, "enriched": 0, "unenriched": 0}
+
+
+def get_untriaged_documents(
+    *,
+    limit: int = 200,
+    site_key: str | None = None,
+    level: str | None = None,
+    min_title_length: int = 8,
+    db_url: str | None = None,
+) -> list[dict[str, Any]]:
+    """取尚未预筛的文档。只带标题等轻量字段 —— 预筛不需要正文。"""
+    db_url = _get_db_url(db_url)
+    if not db_url:
+        return []
+    clauses = ["triaged_at IS NULL", "CHAR_LENGTH(title) >= %s"]
+    params: list[Any] = [max(1, int(min_title_length))]
+    if site_key:
+        clauses.append("site_key = %s")
+        params.append(site_key)
+    if level:
+        clauses.append("level = %s")
+        params.append(level)
+    params.append(max(1, int(limit)))
+    sql = f"""
+        SELECT id, site_key, site_name, level, region, title, published_at
+        FROM policy_documents
+        WHERE {' AND '.join(clauses)}
+        ORDER BY COALESCE(published_at, first_seen_at) DESC NULLS LAST, id
+        LIMIT %s
+    """
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(sql, tuple(params))
+            cols = [d.name for d in cur.description]
+            return [dict(zip(cols, row)) for row in cur.fetchall()]
+    except Exception as e:  # noqa: BLE001
+        logging.warning(f"Failed to query untriaged policy documents: {e}")
+        return []
+
+
+def save_triage_results(
+    results: list[dict[str, Any]],
+    *,
+    db_url: str | None = None,
+) -> int:
+    """批量回写预筛结果。每条需含 id / ai_relevance / is_policy。"""
+    db_url = _get_db_url(db_url)
+    if not db_url or not results:
+        return 0
+    sql = """
+        UPDATE policy_documents
+        SET triaged_at = NOW(),
+            triage_relevance = %s,
+            triage_is_policy = %s
+        WHERE id = %s
+    """
+    saved = 0
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            for row in results:
+                doc_id = str(row.get("id", "")).strip()
+                if not doc_id:
+                    continue
+                relevance = row.get("ai_relevance")
+                relevance = int(relevance) if isinstance(relevance, int) and 1 <= relevance <= 5 else None
+                is_policy = row.get("is_policy")
+                cur.execute(
+                    sql,
+                    (relevance, bool(is_policy) if is_policy is not None else None, doc_id),
+                )
+                saved += cur.rowcount
+            conn.commit()
+    except Exception as e:  # noqa: BLE001
+        logging.warning(f"Failed to save policy triage results: {e}")
+    return saved
+
+
+def count_policy_triage(*, db_url: str | None = None) -> dict[str, int]:
+    """预筛分布，用于判断阈值设得合不合理。"""
+    db_url = _get_db_url(db_url)
+    if not db_url:
+        return {}
+    sql = """
+        SELECT COALESCE(triage_relevance::text, 'untriaged') AS bucket,
+               COUNT(*) AS n
+        FROM policy_documents
+        GROUP BY 1 ORDER BY 1
+    """
+    try:
+        with psycopg.connect(db_url) as conn:
+            cur = conn.cursor()
+            cur.execute(sql)
+            return {str(row[0]): int(row[1]) for row in cur.fetchall()}
+    except Exception as e:  # noqa: BLE001
+        logging.warning(f"Failed to count policy triage: {e}")
+        return {}

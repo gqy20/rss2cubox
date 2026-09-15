@@ -216,6 +216,68 @@ def _is_excluded(title: str, site: SiteSpec) -> bool:
     return any(pattern and pattern in title for pattern in site.title_exclude)
 
 
+def parse_rss_items(content: str | bytes, site: SiteSpec) -> tuple[list[PolicyItem], int]:
+    """解析站点自带的原生 RSS/Atom feed。
+
+    少数政府站点提供原生 feed（实测中只有中国政府网），这类源比 HTML 列表页
+    稳定得多，不需要维护选择器，所以单独走一个 tier。
+    """
+    if not content:
+        return [], 0
+    try:
+        import feedparser
+    except ImportError:
+        return [], 0
+
+    parsed = feedparser.parse(content)
+    raw_entries = list(getattr(parsed, "entries", None) or [])
+    items: list[PolicyItem] = []
+    seen: set[str] = set()
+    for entry in raw_entries:
+        title = re.sub(r"\s+", " ", str(getattr(entry, "title", "") or "")).strip()
+        link = str(getattr(entry, "link", "") or "").strip()
+        if not link or not title:
+            continue
+        if _is_excluded(title, site):
+            continue
+        if link in seen:
+            continue
+        seen.add(link)
+        published_at, raw_date = _entry_published(entry)
+        items.append(
+            PolicyItem(
+                site_key=site.key,
+                title=title,
+                url=link,
+                published_at=published_at,
+                raw_date=raw_date,
+            )
+        )
+        if len(items) >= site.max_items:
+            break
+    return items, len(raw_entries)
+
+
+def _entry_published(entry: Any) -> tuple[datetime | None, str]:
+    """feedparser 把日期解成 struct_time，优先 published 再回退 updated。"""
+    for attr in ("published_parsed", "updated_parsed"):
+        st = getattr(entry, attr, None)
+        if st:
+            try:
+                dt = datetime(*st[:6], tzinfo=timezone.utc)
+                raw = str(getattr(entry, attr.replace("_parsed", ""), "") or "")
+                return dt, raw
+            except (ValueError, TypeError):
+                continue
+    for attr in ("published", "updated"):
+        raw = str(getattr(entry, attr, "") or "")
+        if raw:
+            dt, matched = parse_policy_date(raw)
+            if dt:
+                return dt, matched or raw
+    return None, ""
+
+
 def parse_list_html(html: str, site: SiteSpec) -> tuple[list[PolicyItem], int]:
     """按配置解析列表页，返回 (items, 过滤前命中的列表项数)。"""
     if not html:
@@ -291,7 +353,9 @@ def scrape_site(
         _emit(log_event, result, site)
         return result
 
-    items, raw_count = parse_list_html(html, site)
+    items, raw_count = (
+        parse_rss_items(html, site) if site.tier == "rss" else parse_list_html(html, site)
+    )
     result.raw_item_count = raw_count
 
     if not items and llm_extractor is not None:

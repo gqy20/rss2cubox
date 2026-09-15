@@ -13,6 +13,16 @@
 # ── 国家级 ────────────────────────────────────────────────
 
 [[sites]]
+key        = "govcn_zhengce"
+name       = "中国政府网-国务院信息"
+level      = "national"
+region     = "全国"
+list_url   = "https://www.gov.cn/pushinfo/v150203/rss.xml"
+tier       = "rss"
+max_items  = 120
+note       = "实测 18 个候选源里唯一的原生 RSS，60 条、每日更新。中央/国务院层面的一手源。注意它是「原创推荐」编辑精选，不等于完整的政策文件库（后者只有 HTML，且返回 403）。"
+
+[[sites]]
 key           = "tc260_zqyj"
 name          = "全国网安标委(TC260)-征求意见与通知"
 level         = "national"
@@ -76,12 +86,14 @@ name          = "苏州市-政策文件"
 level         = "city"
 region        = "苏州"
 list_url      = "https://www.suzhou.gov.cn/szsrmzf/zfwj/zcfg.shtml"
-item_selector = "ul.infolist > li"
+# 页面上并列多个列表：ul.infolist 是时政要闻（实测仅 13/50 是政策），
+# 真正的政策列表是下面两个：jgfk=征求意见反馈（7/9）、tzgg=通知公告（10/16）。
+# cssselect 支持逗号组合选择器，所以一个站点可以取多个容器。
+item_selector = "ul.index-jgfk-list > li, ul.index-tzgg-list > li"
 title_attr    = "title"
 max_items     = 120
-# 该栏目混排了时政要闻，按标题特征排除（无法完全干净，enrich 阶段还会再过一道）
-title_exclude = ["习近平", "李克强", "会晤", "发言人", "新闻发布会", "查看更多"]
-note          = "列表项最多的市级源（41 条/页）。含新闻混排，已加排除词。"
+title_exclude = ["查看更多", "年度报告", "年度报表"]
+note          = "征求意见反馈栏目价值最高：能看到法规从征求意见到废止的完整生命周期。"
 
 # ── 以下为 JS 空壳站，需 playwright；先禁用，第二批再开 ──────
 

@@ -572,9 +572,16 @@ class TestRealConfigFile:
         assert len(sites) >= 6
         assert len({s.key for s in sites}) == len(sites)
 
-    def test_every_enabled_requests_site_has_playwright_tier_or_is_requests(self) -> None:
+    def test_tier_values_are_valid(self) -> None:
         for site in policy_config.load_sources(self.REPO_CONFIG, include_disabled=True):
-            assert site.tier in ("requests", "playwright")
+            assert site.tier in ("requests", "playwright", "rss")
+
+    def test_rss_tier_sites_need_no_item_selector(self) -> None:
+        for site in policy_config.load_sources(self.REPO_CONFIG, include_disabled=True):
+            if site.tier == "rss":
+                assert site.item_selector == ""
+            else:
+                assert site.item_selector, f"{site.key} 是 HTML 站点却没有 item_selector"
 
     def test_no_playwright_site_is_enabled_by_default(self) -> None:
         """playwright 站点在验证选择器前不应默认启用，否则会拖慢每次运行。"""

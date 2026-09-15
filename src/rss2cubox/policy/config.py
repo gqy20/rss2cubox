@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 LEVELS = frozenset({"national", "province", "city"})
-TIERS = frozenset({"requests", "playwright"})
+TIERS = frozenset({"requests", "playwright", "rss"})
 
 
 @dataclass(frozen=True)
@@ -30,7 +30,7 @@ class SiteSpec:
     url_attr: str = "href"
     date_selector: str = ""         # 留空则从 item 全文里正则提取
     base_url: str = ""              # urljoin 基准，留空则用 list_url
-    tier: str = "requests"          # requests | playwright
+    tier: str = "requests"          # requests | playwright | rss
     enabled: bool = True
     max_items: int = 200
     min_title_length: int = 8       # 过滤导航/装饰性短链接
@@ -42,7 +42,9 @@ class SiteSpec:
         return self.base_url or self.list_url
 
 
-_REQUIRED = ("key", "name", "level", "region", "list_url", "item_selector")
+_REQUIRED = ("key", "name", "level", "region", "list_url")
+# item_selector 只对 HTML 列表页有意义，rss tier 不需要
+_REQUIRED_BY_TIER = {"requests": ("item_selector",), "playwright": ("item_selector",), "rss": ()}
 
 
 def _coerce_bool(value: Any, default: bool) -> bool:
@@ -73,6 +75,8 @@ def _coerce_tuple(value: Any) -> tuple[str, ...]:
 def parse_site(raw: dict[str, Any]) -> SiteSpec:
     """把 TOML 里的一张表转成 SiteSpec，缺必填字段或取值非法直接报错。"""
     missing = [k for k in _REQUIRED if not str(raw.get(k, "")).strip()]
+    tier_raw = str(raw.get("tier", "requests")).strip().lower()
+    missing += [k for k in _REQUIRED_BY_TIER.get(tier_raw, ()) if not str(raw.get(k, "")).strip()]
     if missing:
         raise ValueError(f"站点配置缺少必填字段 {missing}: {raw.get('key', '<无 key>')}")
 
@@ -80,7 +84,7 @@ def parse_site(raw: dict[str, Any]) -> SiteSpec:
     if level not in LEVELS:
         raise ValueError(f"站点 {raw['key']} 的 level={level!r} 非法，应为 {sorted(LEVELS)}")
 
-    tier = str(raw.get("tier", "requests")).strip().lower()
+    tier = tier_raw
     if tier not in TIERS:
         raise ValueError(f"站点 {raw['key']} 的 tier={tier!r} 非法，应为 {sorted(TIERS)}")
 
@@ -90,7 +94,7 @@ def parse_site(raw: dict[str, Any]) -> SiteSpec:
         level=level,
         region=str(raw["region"]).strip(),
         list_url=str(raw["list_url"]).strip(),
-        item_selector=str(raw["item_selector"]).strip(),
+        item_selector=str(raw.get("item_selector", "")).strip(),
         title_selector=str(raw.get("title_selector", "a")).strip() or "a",
         title_attr=str(raw.get("title_attr", "title")).strip(),
         url_selector=str(raw.get("url_selector", "a")).strip() or "a",

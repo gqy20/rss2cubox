@@ -282,3 +282,83 @@ class TestQueryFilters:
         assert store.get_policy_documents(db_url="") == []
         assert store.get_source_states("") == []
         assert store.get_stale_sources(db_url="") == []
+
+
+class TestTriageStore:
+    """预筛层：把昂贵的逐篇 deep enrich 限制在真正相关的文档上。"""
+
+    def _seed(self, n: int = 4) -> list[str]:
+        items = [_item("t", i) for i in range(n)]
+        store.save_policy_documents(items, site_name="T", level="national", region="全国", db_url=_DB)
+        return [it.doc_id for it in items]
+
+    def test_untriaged_returns_only_untriaged(self) -> None:
+        ids = self._seed(3)
+        docs = store.get_untriaged_documents(limit=50, db_url=_DB)
+        got = {d["id"] for d in docs}
+        assert set(ids) <= got
+        # 只带轻量字段，不含正文
+        assert "full_text" not in docs[0]
+
+    def test_save_triage_marks_documents(self) -> None:
+        ids = self._seed(2)
+        assert set(ids) <= {d["id"] for d in store.get_untriaged_documents(limit=500, db_url=_DB)}
+
+        saved = store.save_triage_results(
+            [
+                {"id": ids[0], "is_policy": True, "ai_relevance": 5},
+                {"id": ids[1], "is_policy": False, "ai_relevance": 1},
+            ],
+            db_url=_DB,
+        )
+        assert saved == 2
+        dist = store.count_policy_triage(db_url=_DB)
+        assert dist.get("5", 0) >= 1 and dist.get("1", 0) >= 1
+        # 已预筛的不再出现在待预筛列表里
+        still = {d["id"] for d in store.get_untriaged_documents(limit=500, db_url=_DB)}
+        assert not (set(ids) & still)
+
+    def test_enrich_selection_respects_triage_threshold(self) -> None:
+        """核心行为：阈值过滤必须生效，否则停水通知会和法规文件同等消耗预算。
+
+        表里可能共存真实跑批数据，所以只验证本组三条的相对关系，不断言全局集合。
+        """
+        ids = self._seed(3)
+        store.save_triage_results(
+            [
+                {"id": ids[0], "is_policy": True, "ai_relevance": 5},
+                {"id": ids[1], "is_policy": True, "ai_relevance": 3},
+                {"id": ids[2], "is_policy": False, "ai_relevance": 1},
+            ],
+            db_url=_DB,
+        )
+        high = {d["id"] for d in store.get_documents_for_enrichment(limit=500, min_triage_relevance=4, db_url=_DB)}
+        assert ids[0] in high
+        assert ids[1] not in high
+        assert ids[2] not in high
+
+        mid = {d["id"] for d in store.get_documents_for_enrichment(limit=500, min_triage_relevance=3, db_url=_DB)}
+        assert {ids[0], ids[1]} <= mid
+        assert ids[2] not in mid
+
+    def test_no_threshold_means_no_triage_filter(self) -> None:
+        """min_triage_relevance=None 时不过滤，保持向后兼容。"""
+        ids = self._seed(2)
+        docs = store.get_documents_for_enrichment(limit=500, db_url=_DB)
+        assert set(ids) <= {d["id"] for d in docs}
+
+    def test_out_of_range_relevance_stored_as_null(self) -> None:
+        ids = self._seed(1)
+        store.save_triage_results([{"id": ids[0], "is_policy": True, "ai_relevance": 99}], db_url=_DB)
+        with psycopg.connect(_DB) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT triage_relevance, triaged_at IS NOT NULL FROM policy_documents WHERE id=%s", (ids[0],))
+            relevance, triaged = cur.fetchone()
+        assert relevance is None
+        assert triaged is True   # 仍然标记为已预筛，避免反复重试
+
+    def test_unknown_ids_are_ignored(self) -> None:
+        assert store.save_triage_results([{"id": "not_a_real_id", "is_policy": True, "ai_relevance": 5}], db_url=_DB) == 0
+
+    def test_empty_results_noop(self) -> None:
+        assert store.save_triage_results([], db_url=_DB) == 0
