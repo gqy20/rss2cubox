@@ -226,6 +226,60 @@ else
   echo "  · crontab 未安装（可选：make cron-install）"
 fi
 
+# ── 8. 政策信源 ─────────────────────────────────
+sec "8. 政策信源子系统"
+if [ ! -f policy_sources.toml ]; then
+  warn "policy_sources.toml 不存在"
+elif [ -x .venv/bin/python ] || command -v uv >/dev/null 2>&1; then
+  polinfo=$(LOCAL_DB_URL="${LOCAL_DB_URL:-}" uv run python - <<'PY' 2>&1
+from rss2cubox.policy import config as cfg, store
+try:
+    all_sites = cfg.load_sources("policy_sources.toml", include_disabled=True)
+    on = [s for s in all_sites if s.enabled]
+    print(f"SITES {len(on)}/{len(all_sites)}")
+    for lvl in ("national", "province", "city"):
+        n = sum(1 for s in on if s.level == lvl)
+        if n:
+            print(f"LEVEL {lvl} {n}")
+    pw = [s.key for s in on if s.tier == "playwright"]
+    if pw:
+        print("PW " + ",".join(pw))
+except Exception as e:
+    print(f"CFGERR {type(e).__name__}: {e}")
+    raise SystemExit
+states = store.get_source_states()
+if not states:
+    print("NORUN")
+else:
+    docs = store.get_policy_documents(limit=1)
+    stale = store.get_stale_sources(min_empty_runs=2)
+    okc = sum(1 for s in states if s.get("last_status") == "ok")
+    print(f"STATE {okc}/{len(states)}")
+    if stale:
+        print("STALE " + ",".join(f"{s['site_key']}({s['consecutive_empty_runs']})" for s in stale))
+PY
+)
+  case "$polinfo" in
+    *CFGERR*) bad "policy_sources.toml 解析失败: $(echo "$polinfo" | grep CFGERR | sed 's/^CFGERR //')" ;;
+    *)
+      sites_line=$(echo "$polinfo" | grep '^SITES' | head -1)
+      if [ -n "$sites_line" ]; then
+        ok "配置合法，启用 ${sites_line#SITES }（启用/总数）"
+        echo "     分级: $(echo "$polinfo" | grep '^LEVEL' | awk '{printf "%s=%s ", $2, $3}')"
+      fi
+      echo "$polinfo" | grep -q '^NORUN' && warn "还没有抓取记录 —— 执行 make policy"
+      st=$(echo "$polinfo" | grep '^STATE' | head -1)
+      [ -n "$st" ] && ok "上次抓取: ${st#STATE } 个站点状态 ok"
+      sl=$(echo "$polinfo" | grep '^STALE' | head -1)
+      if [ -n "$sl" ]; then
+        bad "疑似失效站点（连续空跑≥2次）: ${sl#STALE } —— 极可能是改版，需更新选择器"
+      fi
+      pw=$(echo "$polinfo" | grep '^PW' | head -1)
+      [ -n "$pw" ] && warn "已启用的 playwright 站点（慢）: ${pw#PW }"
+      ;;
+  esac
+fi
+
 # ── 汇总 ──────────────────────────────────────────────────────
 echo
 echo "════════════════════════════════════════════════"

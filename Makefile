@@ -31,7 +31,8 @@ UV   := uv
 NPX  := npx
 
 .PHONY: help up deps db db-init db-wait db-stop db-down db-logs db-psql db-reset \
-        run loop web dev doctor test lint logs cron-install cron-uninstall clean
+        run loop web dev doctor test lint logs cron-install cron-uninstall clean \
+        policy policy-dry policy-status policy-init
 
 # ── 帮助 ──────────────────────────────────────────────────────
 help: ## 显示所有可用命令
@@ -131,6 +132,21 @@ run: db-wait ## 跑一次后端 pipeline（fetch → enrich → push → global_
 
 loop: db-wait ## 跑 run_local_sync.sh（含 flock 防重入 + 预测闭环 + JSONL 日志）
 	@LOCAL_DB_URL='$(LOCAL_DB_URL)' scripts/run_local_sync.sh
+
+# ── 政策信源（独立于主 RSS 链路）────────────────────────────
+policy-init: db ## 建政策相关的表（policy_documents / policy_source_state）
+	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -c \
+	  "from rss2cubox.policy import ensure_policy_schema; import sys; sys.exit(0 if ensure_policy_schema() else 1)" \
+	  && echo "✓ 政策表已就绪"
+
+policy: db-wait policy-init ## 抓取政策信源并入库（配置见 policy_sources.toml）
+	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner $(POLICY_ARGS)
+
+policy-dry: ## 只抓取和解析，不写数据库（验证选择器用）
+	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --dry-run $(POLICY_ARGS)
+
+policy-status: db-wait ## 查看政策信源健康度与疑似失效站点
+	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --status
 
 web: db-wait ## 起前端 dev server（http://localhost:3424）
 	@echo "→ http://localhost:$(WEB_PORT)"

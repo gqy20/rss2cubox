@@ -272,3 +272,93 @@ uv run python scripts/legacy/backfill_bili_covers.py --dry-run --limit 20
 ```bash
 uv run python scripts/audit_ic_gqy_quality.py
 ```
+
+## 10) 政策信源子系统
+
+独立于主 RSS 链路的政策文件抓取，用于中国国家级 / 省级 / 市级政策监测。
+
+**为什么和主链路分开**：两者的抓取语义不同（RSS/Atom feed vs HTML 列表页），
+打分标尺也不同（主链路的 `enrich_agent` prompt 是围绕"AI 与智能体领域"硬编码的，
+`signal_type` / `market_stage` 是科技产品视角，拿去量法规文件会失真）。
+独立的配置文件、独立的表、独立的入口，删掉 `src/rss2cubox/policy/` 不会留下残留。
+
+```bash
+make policy           # 抓取并入库（配置见 policy_sources.toml）
+make policy-dry       # 只抓不入库，验证选择器用
+make policy-status    # 信源健康度 + 疑似失效站点
+make policy-init      # 建表
+```
+
+也可直接调 runner 做更细的过滤：
+
+```bash
+uv run python -m rss2cubox.policy_runner --only beijing_zhengce,tc260_zqyj
+uv run python -m rss2cubox.policy_runner --level province,city
+uv run python -m rss2cubox.policy_runner --include-disabled   # 连 playwright 站点一起试
+uv run python -m rss2cubox.policy_runner --status
+```
+
+### 加一个站点
+
+只改 `policy_sources.toml`，不用改代码：
+
+```toml
+[[sites]]
+key           = "suzhou_zcfg"        # 唯一标识
+name          = "苏州市-政策文件"
+level         = "city"               # national | province | city
+region        = "苏州"
+list_url      = "https://www.suzhou.gov.cn/szsrmzf/zfwj/zcfg.shtml"
+item_selector = "ul.infolist > li"   # CSS，命中列表项容器
+title_selector = "a"                 # 相对 item；广东站是 "span.name > a"
+title_attr    = "title"              # 优先取该属性，取不到回退到文本
+date_selector = "span"               # 留空则从 item 全文正则提取日期
+tier          = "requests"           # requests | playwright（JS 空壳站用后者）
+max_items     = 120
+title_exclude = ["查看更多", "新闻发布会"]   # 标题命中任一子串即丢弃
+```
+
+选择器怎么找：抓一次页面，找"同时含 `<a href>` 和日期"的 `<li>`，看它的父容器。
+`make policy-dry` 会报 `raw_items`（选择器命中数）和 `items`（过滤后），
+两者对不上就是选择器或过滤条件的问题。
+
+### 失效监测
+
+爬虫最危险的不是抓不到，而是**静默失效**：政府网站改版 → 选择器命中 0 项 →
+不报错 → 你以为"最近没有新政策"。所以 `policy_source_state` 记录每个站点的
+`consecutive_empty_runs`，达到 `POLICY_STALE_EMPTY_RUNS`（默认 2）就告警，
+并区分失效类型（修复动作不同）：
+
+| status | 含义 | 怎么办 |
+|---|---|---|
+| `parse_error` + `selector_matched_nothing` | 选择器一项都没命中，站点改版了 | 重新找选择器，改 TOML |
+| `empty` + `all_N_items_filtered` | 命中了列表项但全被过滤 | 检查 `min_title_length` / `title_exclude` |
+| `http_error` + `http_403/412` | 被反爬拦了 | 换 UA、换栏目路径，或改走 playwright |
+| `timeout` / `fetch_error` | 网络层问题 | 看是不是站点挂了或需要 playwright |
+
+`make policy-status` 和 `make doctor`（第 8 节）都会报疑似失效的站点。
+
+### 已知状态（2026-09-15 实测）
+
+- **可用（requests，6 个）**：TC260 征求意见、北京最新政策、上海政府规章、
+  浙江政策解读、广东全部文件、苏州政策文件。一次运行约 2s，约 400 条。
+- **JS 空壳，需 playwright（配置里已 `enabled=false`）**：江苏政策解读（requests
+  只拿到 1KB）、杭州信息公开、广东政策解读。
+- **抓不到**：深圳 `sz.gov.cn` SSLError；国务院政策文件库 403；国家药监局 412（反爬）。
+- **反直觉的一点**：中央部委站点（工信部 2KB、发改委 54B、司法部 119B、
+  市场监管总局 3.5KB）几乎全是 JS 空壳，而**地方站点多为服务端渲染**，
+  所以地方政策的抓取成本比中央部委低。
+
+### 还没做的部分
+
+- **政策 enrich**：`policy_documents` 表已预留 `jurisdiction` / `instrument_type` /
+  `stage` / `effective_date` / `affected_parties` / `obligation_level` /
+  `ai_relevance` / `summary` / `source_quote` 字段，但还没有对应的 agent。
+  需要一套独立于科技媒体视角的本体，且 `source_quote` 应设为 schema required
+  （政策分析不带原文引句基本等于幻觉）。
+- **详情页全文抓取**：可以复用现成的 `fulltext_fetcher.fetch_full_text()`（三级降级
+  trafilatura → playwright → 微信），尚未接进来。
+- **LLM 抽取降级**：`scrape_site(llm_extractor=...)` 的扩展点已留好
+  （CSS 解析出 0 条时调用），但还没接 agent。
+- **前端展示**：`store.get_policy_documents()` 已支持按 level/region/site_key/
+  未 enrich 过滤，可以直接作为 API route 的数据源。
