@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import Counter
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -19,6 +20,67 @@ DEFAULT_TWITTER_SPECIAL_INSTANCES: list[str] = []
 
 # feeds.txt 解析后的单条订阅源：{"kind": str, "value": str, "label": str, "priority": int}
 FeedSpec = dict[str, Any]
+
+# 实例冷却时长的倍率，按失败原因分级，乘在 RSSHUB_FAILURE_COOLDOWN_SECONDS 上。
+# 0.0 = 不冷却实例。分级的依据是「这次失败到底能不能说明实例坏了」：
+#   route      403/404 是路由需认证/不存在，换实例也没用，冷却只会误伤好实例
+#   timeout     ambiguous——实测 /juejin/* 这类抓取型路由在健康实例上也要 19~28s，
+#              超时很可能只是路由慢，所以只给很短的冷却，靠 streak 阶梯逐步升级
+#   connection 主机层不可达，实例确实坏了，标准冷却
+#   ratelimit  429 是我们自己打太狠，必须狠退避
+COOLDOWN_REASON_MULTIPLIER: dict[str, float] = {
+    "timeout": 0.2,
+    "connection": 1.0,
+    "ratelimit": 2.0,
+    "http5xx": 1.0,
+    "http4xx": 1.0,
+    "parse": 0.5,
+    "preflight": 1.0,
+    "other": 1.0,
+    "route": 0.0,
+}
+
+# FEED_SECTIONS_DISABLE 接受的 token -> 内部 bucket 名
+DISABLE_BUCKET_ALIASES: dict[str, str] = {
+    "twitter": "twitter_user",
+    "twitter_user": "twitter_user",
+    "bilibili": "bilibili_user_video",
+    "bilibili_user_video": "bilibili_user_video",
+    "werss": "werss",
+    "default": "default",
+}
+
+
+def classify_fetch_error(exc: BaseException) -> str:
+    """把抓取异常归类，用于决定实例冷却策略。见 COOLDOWN_REASON_MULTIPLIER。"""
+    if isinstance(exc, requests.exceptions.Timeout):
+        return "timeout"
+    if isinstance(exc, requests.exceptions.ConnectionError):
+        return "connection"
+    status = getattr(getattr(exc, "response", None), "status_code", None)
+    if isinstance(status, int):
+        if status == 429:
+            return "ratelimit"
+        if status in (403, 404):
+            return "route"
+        if 500 <= status < 600:
+            return "http5xx"
+        if 400 <= status < 500:
+            return "http4xx"
+    if isinstance(exc, ValueError):
+        return "parse"
+    return "other"
+
+
+def _resolve_max_candidates(explicit: int | None) -> int:
+    """单条路由最多试几个实例，0 = 不限制。"""
+    if explicit is not None:
+        return max(0, int(explicit))
+    raw = os.getenv("RSSHUB_MAX_CANDIDATES", "4").strip()
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        return 4
 
 
 def _parse_instance_list(raw: str) -> list[str]:
@@ -94,8 +156,11 @@ def _candidate_retry_limit(route: str, instance_base: str) -> int:
 class RSSHubInstancePool:
     instances: list[str]
     cooldown_seconds: int = 300
+    max_cooldown_seconds: int = 3600
     fail_until: dict[str, float] = field(default_factory=dict)
     fail_count: dict[str, int] = field(default_factory=dict)
+    fail_streak: dict[str, int] = field(default_factory=dict)
+    fail_reason: dict[str, str] = field(default_factory=dict)
     success_count: dict[str, int] = field(default_factory=dict)
     _lock: Lock = field(default_factory=Lock)
 
@@ -117,21 +182,137 @@ class RSSHubInstancePool:
         with self._lock:
             self.success_count[instance] = self.success_count.get(instance, 0) + 1
             self.fail_until.pop(instance, None)
+            self.fail_streak.pop(instance, None)
+            self.fail_reason.pop(instance, None)
             if instance in self.instances:
                 self.instances.remove(instance)
                 self.instances.insert(0, instance)
 
-    def mark_failure(self, instance: str, now_ts: float | None = None) -> None:
+    def mark_failure(self, instance: str, now_ts: float | None = None, *, reason: str = "other") -> int:
+        """记录一次失败，返回本次冷却秒数（0 表示不冷却）。
+
+        冷却时长按**连续**失败次数指数退避（fail_streak），封顶 max_cooldown_seconds；
+        再乘上 reason 对应的倍率。倍率为 0 的 reason（如 403/404）对实例
+        完全无副作用：这类失败反映的是路由问题，不该让好实例背锅。
+
+        fail_count 是累计值，只参与 _score 排序，不影响退避阶梯。
+        """
+        multiplier = COOLDOWN_REASON_MULTIPLIER.get(reason, 1.0)
+        if multiplier <= 0:
+            return 0
         now = now_ts or time.time()
         with self._lock:
             self.fail_count[instance] = self.fail_count.get(instance, 0) + 1
-            self.fail_until[instance] = now + max(0, self.cooldown_seconds)
+            streak = self.fail_streak.get(instance, 0) + 1
+            self.fail_streak[instance] = streak
+            self.fail_reason[instance] = reason
+            backoff = max(0, self.cooldown_seconds) * multiplier * (2 ** (streak - 1))
+            ceiling = max(self.cooldown_seconds, self.max_cooldown_seconds)
+            cooldown = int(min(backoff, ceiling))
+            self.fail_until[instance] = now + cooldown
             if instance in self.instances:
                 self.instances.remove(instance)
                 self.instances.append(instance)
+            return cooldown
 
     def _score(self, instance: str) -> int:
         return self.success_count.get(instance, 0) - self.fail_count.get(instance, 0)
+
+
+def _probe_instance(
+    base: str,
+    *,
+    connect_timeout: float,
+    read_timeout: float,
+) -> tuple[bool, str]:
+    """探活单个实例，返回 (是否存活, 失败原因)。
+
+    拿到任意非 5xx 的 HTTP 响应就算活 —— 这里探的是“实例在不在”，
+    不是“路由能不能用”，所以 404/403 也算活。
+    """
+    try:
+        response = requests.get(
+            f"{base}/",
+            timeout=(connect_timeout, read_timeout),
+            stream=True,
+            headers={"user-agent": "rss2cubox/0.1 (+preflight)"},
+        )
+    except Exception as exc:  # noqa: BLE001
+        return False, classify_fetch_error(exc)
+    try:
+        status = response.status_code
+    finally:
+        response.close()
+    if status >= 500:
+        return False, "http5xx"
+    return True, ""
+
+
+def preflight_instances(
+    pool: RSSHubInstancePool,
+    *,
+    connect_timeout_seconds: float = 3.0,
+    read_timeout_seconds: float = 5.0,
+    concurrency: int = 10,
+    log_event: Any = None,
+) -> dict[str, Any]:
+    """抓取开始前并发探活所有实例，把死的预先打上冷却。
+
+    目的是消除冷启动惊群：N 个并发路由同时启动时冷却表还是空的，
+    于是 N 个请求会一起撞向同一个坏实例（实测失败次数 ≈ 并发数）。
+    """
+    started = time.perf_counter()
+    targets = list(pool.instances)
+    alive: list[str] = []
+    dead: dict[str, str] = {}
+    cooldowns: dict[str, int] = {}
+
+    if targets:
+        workers = max(1, min(int(concurrency or 1), len(targets)))
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            futures = {
+                executor.submit(
+                    _probe_instance,
+                    target,
+                    connect_timeout=connect_timeout_seconds,
+                    read_timeout=read_timeout_seconds,
+                ): target
+                for target in targets
+            }
+            for future in as_completed(futures):
+                target = futures[future]
+                try:
+                    is_alive, reason = future.result()
+                except Exception as exc:  # noqa: BLE001
+                    is_alive, reason = False, classify_fetch_error(exc)
+                if is_alive:
+                    alive.append(target)
+                    continue
+                dead[target] = reason or "other"
+                cooldowns[target] = pool.mark_failure(target, reason="preflight")
+
+    duration_ms = int((time.perf_counter() - started) * 1000)
+    if log_event:
+        log_event(
+            "WARN" if dead else "INFO",
+            "rsshub_preflight_done",
+            stage="fetch",
+            probed=len(targets),
+            alive=len(alive),
+            dead=len(dead),
+            duration_ms=duration_ms,
+            dead_instances={
+                _mask_url(k): {"reason": v, "cooldown_seconds": cooldowns.get(k, 0)}
+                for k, v in dead.items()
+            },
+        )
+    return {
+        "probed": len(targets),
+        "alive": alive,
+        "dead": dead,
+        "cooldown_seconds": cooldowns,
+        "duration_ms": duration_ms,
+    }
 
 
 def load_lines(path: Path) -> list[str]:
@@ -204,6 +385,67 @@ def load_feed_specs(path: Path) -> list[FeedSpec]:
     return specs
 
 
+def spec_bucket(spec: FeedSpec) -> str:
+    """把一条 spec 归到可禁用的桶：werss / bilibili_user_video / twitter_user / default。"""
+    if str(spec.get("kind", "")) == "werss":
+        return "werss"
+    return _route_bucket(str(spec.get("value", "")))
+
+
+def parse_disabled_buckets(raw: str | None) -> set[str]:
+    """解析 FEED_SECTIONS_DISABLE，未识别的 token 直接忽略。"""
+    out: set[str] = set()
+    for part in str(raw or "").split(","):
+        token = part.strip().lower()
+        if not token:
+            continue
+        mapped = DISABLE_BUCKET_ALIASES.get(token)
+        if mapped:
+            out.add(mapped)
+    return out
+
+
+def filter_specs_by_buckets(
+    specs: list[FeedSpec],
+    disabled_raw: str | set[str] | None,
+    *,
+    log_event: Any = None,
+) -> tuple[list[FeedSpec], dict[str, int]]:
+    """按桶过滤掉结构性失效的源，返回 (保留的 specs, 各桶丢弃数)。
+
+    这些源不是“暂时挂了就靠熔断去发现”，而是配置上就拿不到数据
+    （比如 twitter 路由无认证实例、werss 服务未部署），每轮都轮一遍
+    候选实例纯属烧时间，所以在配置层直接关掉。
+    """
+    if disabled_raw is None or isinstance(disabled_raw, str):
+        disabled = parse_disabled_buckets(disabled_raw)
+    else:
+        disabled = {str(x) for x in disabled_raw}
+    if not disabled:
+        return list(specs), {}
+
+    kept: list[FeedSpec] = []
+    dropped: Counter[str] = Counter()
+    for spec in specs:
+        bucket = spec_bucket(spec)
+        if bucket in disabled:
+            dropped[bucket] += 1
+            continue
+        kept.append(spec)
+
+    if log_event and dropped:
+        log_event(
+            "INFO",
+            "feed_sections_disabled",
+            stage="fetch",
+            disabled=sorted(disabled),
+            dropped_total=sum(dropped.values()),
+            dropped_by_bucket=dict(dropped),
+            kept=len(kept),
+        )
+    return kept, dict(dropped)
+
+
 def load_rsshub_instances(path: Path, env_name: str = "RSSHUB_INSTANCES") -> list[str]:
     instances: list[str] = []
     # Private instances from secrets are preferred and always loaded first.
@@ -227,7 +469,13 @@ def load_rsshub_instances(path: Path, env_name: str = "RSSHUB_INSTANCES") -> lis
     return normalized
 
 
-def resolve_feed_urls(feed_kind: str, feed_value: str, rsshub_pool: RSSHubInstancePool) -> list[str]:
+def resolve_feed_urls(
+    feed_kind: str,
+    feed_value: str,
+    rsshub_pool: RSSHubInstancePool,
+    *,
+    max_candidates: int | None = None,
+) -> list[str]:
     value = feed_value.strip()
     if not value:
         return []
@@ -252,14 +500,26 @@ def resolve_feed_urls(feed_kind: str, feed_value: str, rsshub_pool: RSSHubInstan
         route = f"/{route}"
     ordered = rsshub_pool.ordered_instances()
     special = _route_special_instances(route)
+    special_norm: list[str] = []
     merged: list[str] = []
     seen: set[str] = set()
-    for base in special + ordered:
+    for base in special:
+        value = str(base or "").strip().rstrip("/")
+        if value and value not in seen:
+            seen.add(value)
+            special_norm.append(value)
+            merged.append(value)
+    for base in ordered:
         value = str(base or "").strip().rstrip("/")
         if not value or value in seen:
             continue
         seen.add(value)
         merged.append(value)
+    # 候选上限：实测绝大多数路由在前几个实例就命中，轮满整个池子纯属浪费。
+    # 但 bilibili/twitter 的专用实例不被挤掉，否则这些路由直接无实例可用。
+    limit = _resolve_max_candidates(max_candidates)
+    if limit > 0 and len(merged) > limit:
+        merged = merged[: max(limit, len(special_norm))]
     return [f"{base}{route}" for base in merged]
 
 
@@ -512,8 +772,10 @@ def parse_feed_with_fallback(
             except Exception as exc:  # noqa: BLE001
                 duration_ms = int((time.perf_counter() - start) * 1000)
                 is_last = retry_attempt >= retry_limit
+                reason = classify_fetch_error(exc)
+                cooldown_seconds = 0
                 if is_last and feed_kind == "rsshub":
-                    rsshub_pool.mark_failure(instance_base)
+                    cooldown_seconds = rsshub_pool.mark_failure(instance_base, reason=reason)
                 log_event(
                     "WARN",
                     "feed_candidate_failed",
@@ -524,6 +786,8 @@ def parse_feed_with_fallback(
                     retry_attempt=retry_attempt,
                     retry_limit=retry_limit,
                     duration_ms=duration_ms,
+                    reason=reason,
+                    cooldown_seconds=cooldown_seconds,
                     error=str(exc),
                 )
                 if is_last:
@@ -532,6 +796,7 @@ def parse_feed_with_fallback(
                         "attempt_index": idx,
                         "status": "failed",
                         "duration_ms": duration_ms,
+                        "reason": reason,
                         "error": str(exc)[:500],
                     })
                 if not is_last:

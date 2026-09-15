@@ -53,6 +53,11 @@ def _setup_runner_mocks(
 
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", max_items)
+    # 隔离实例池与预检：否则 main() 会读真实的 rsshub_instances.txt
+    # 并向公共实例发真实探测请求（预检本身由 test_feed_sources.py 单测覆盖）
+    monkeypatch.setattr(runner, "RSSHUB_INSTANCES_FILE", tmp_path / "no-such-instances.txt")
+    monkeypatch.setattr(runner, "RSSHUB_PREFLIGHT_ENABLED", False)
+    monkeypatch.setattr(runner, "FEED_SECTIONS_DISABLE", "")
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
@@ -830,3 +835,92 @@ class TestSaveFulltextBatchReturnsActualRowcount:
         # 当前 bug: 返回 2（循环迭代数）
         # 修复后: 应返回 1（实际命中）
         assert count == 1, f"期望返回 1 (实际命中)，实际返回 {count}"
+
+
+def test_main_runs_instance_preflight_when_enabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """预检开关打开时，main() 必须在抓取前探活实例池。"""
+    _setup_runner_mocks(monkeypatch, tmp_path)
+    monkeypatch.setattr(runner, "RSSHUB_PREFLIGHT_ENABLED", True)
+
+    calls: list[dict] = []
+
+    def fake_preflight(pool, **kwargs):  # noqa: ANN001
+        calls.append(kwargs)
+        return {
+            "probed": len(pool.instances),
+            "alive": list(pool.instances),
+            "dead": {},
+            "cooldown_seconds": {},
+            "duration_ms": 0,
+        }
+
+    monkeypatch.setattr(feed_sources, "preflight_instances", fake_preflight)
+    runner.main()
+
+    assert len(calls) == 1
+    assert calls[0]["concurrency"] == runner.FEED_FETCH_CONCURRENCY
+
+
+def test_main_skips_instance_preflight_when_disabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _setup_runner_mocks(monkeypatch, tmp_path)  # 默认已关闭
+    called: list[int] = []
+    monkeypatch.setattr(
+        feed_sources, "preflight_instances", lambda *a, **k: called.append(1) or {}
+    )
+    runner.main()
+    assert called == []
+
+
+def test_main_passes_cooldown_ceiling_to_pool(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """指数退避的封顶值必须从 runner 配置传到实例池。"""
+    _setup_runner_mocks(monkeypatch, tmp_path)
+    monkeypatch.setattr(runner, "RSSHUB_FAILURE_COOLDOWN_SECONDS", 100)
+    monkeypatch.setattr(runner, "RSSHUB_FAILURE_COOLDOWN_MAX_SECONDS", 900)
+
+    seen: list[feed_sources.RSSHubInstancePool] = []
+    monkeypatch.setattr(
+        feed_sources,
+        "collect_candidates_from_feeds",
+        lambda **kw: seen.append(kw["rsshub_pool"]) or ([], {}),
+    )
+    runner.main()
+
+    assert seen[0].cooldown_seconds == 100
+    assert seen[0].max_cooldown_seconds == 900
+
+
+def test_main_applies_feed_sections_disable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FEED_SECTIONS_DISABLE 必须在进入抓取前就把结构性失效的源过滤掉。"""
+    # 注意：_setup_runner_mocks 内部也会写 tmp_path/"feeds.txt"，所以用不同文件名，
+    # 并且必须在它之后再写，否则会被覆盖。
+    _setup_runner_mocks(monkeypatch, tmp_path)
+    feeds = tmp_path / "feeds_sections.txt"
+    feeds.write_text(
+        "[direct]\nhttps://feed.example/rss\n"
+        "[rsshub]\n/twitter/user/karpathy\n/sspai/index\n"
+        "[werss]\n/feed/MP_WXS_1.rss\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(runner, "FEEDS_FILE", feeds)
+    monkeypatch.setattr(runner, "FEED_SECTIONS_DISABLE", "twitter,werss")
+
+    seen: list[list] = []
+    monkeypatch.setattr(
+        feed_sources,
+        "collect_candidates_from_feeds",
+        lambda **kw: seen.append(kw["feed_specs"]) or ([], {}),
+    )
+    runner.main()
+
+    assert [spec["value"] for spec in seen[0]] == [
+        "https://feed.example/rss",
+        "/sspai/index",
+    ]

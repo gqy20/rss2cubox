@@ -74,6 +74,13 @@ FEED_READ_TIMEOUT_SECONDS = sync_pipeline.env_float("FEED_READ_TIMEOUT_SECONDS",
 FEED_FETCH_CONCURRENCY = max(1, sync_pipeline.env_int("FEED_FETCH_CONCURRENCY", 10))
 WERSS_FETCH_CONCURRENCY = max(1, sync_pipeline.env_int("WERSS_FETCH_CONCURRENCY", 50))
 RSSHUB_FAILURE_COOLDOWN_SECONDS = sync_pipeline.env_int("RSSHUB_FAILURE_COOLDOWN_SECONDS", 300)
+RSSHUB_FAILURE_COOLDOWN_MAX_SECONDS = max(
+    RSSHUB_FAILURE_COOLDOWN_SECONDS,
+    sync_pipeline.env_int("RSSHUB_FAILURE_COOLDOWN_MAX_SECONDS", 3600),
+)
+RSSHUB_PREFLIGHT_ENABLED = os.getenv("RSSHUB_PREFLIGHT_ENABLED", "true").strip().lower() in ("1", "true", "yes")
+RSSHUB_PREFLIGHT_TIMEOUT_SECONDS = sync_pipeline.env_float("RSSHUB_PREFLIGHT_TIMEOUT_SECONDS", 5.0)
+FEED_SECTIONS_DISABLE = os.getenv("FEED_SECTIONS_DISABLE", "").strip()
 FEED_CURSOR_LOOKBACK_HOURS = sync_pipeline.env_int("FEED_CURSOR_LOOKBACK_HOURS", 24)
 FEED_FAILURE_COOLDOWN_SECONDS = max(1, sync_pipeline.env_int("FEED_FAILURE_COOLDOWN_SECONDS", 60))
 FEED_FAILURE_COOLDOWN_MAX_SECONDS = max(
@@ -107,11 +114,25 @@ def main() -> None:
     _log_file = open(log_path, "a", encoding="utf-8")
 
     feed_specs = feed_sources.load_feed_specs(FEEDS_FILE)
+    feed_specs, _disabled_counts = feed_sources.filter_specs_by_buckets(
+        feed_specs,
+        FEED_SECTIONS_DISABLE,
+        log_event=log_event,
+    )
     rsshub_instances = feed_sources.load_rsshub_instances(RSSHUB_INSTANCES_FILE)
     rsshub_pool = RSSHubInstancePool(
         instances=rsshub_instances,
         cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_SECONDS,
+        max_cooldown_seconds=RSSHUB_FAILURE_COOLDOWN_MAX_SECONDS,
     )
+    if RSSHUB_PREFLIGHT_ENABLED and rsshub_instances:
+        feed_sources.preflight_instances(
+            rsshub_pool,
+            connect_timeout_seconds=min(FEED_CONNECT_TIMEOUT_SECONDS, 3.0),
+            read_timeout_seconds=RSSHUB_PREFLIGHT_TIMEOUT_SECONDS,
+            concurrency=FEED_FETCH_CONCURRENCY,
+            log_event=log_event,
+        )
     stage_metrics = StageMetrics()
     processed, feed_cursor = sync_pipeline.load_ic_state(
         api_url=IC_API_URL if IC_PUSH_ENABLED else "",

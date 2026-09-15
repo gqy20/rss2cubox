@@ -1,13 +1,20 @@
 # RSSHub public instance pool (one URL per line)
 # 常用实例放前面（按成功率排序）
-# 自定义 fork（gqy20/RSSHub）：包含 bilibili video-browser 路由
-https://rss.spriple.org
-https://rsshub.rssforever.com
-https://hub.slarker.me
-https://rsshub.pseudoyu.com
+# 排序依据：2026-09-15 实测（14 路由冒烟跑 + 单发探测 /sspai/index）
 https://rsshub.ktachibana.party
 https://rsshub.umzzz.com
+https://rsshub.rssforever.com
 https://rsshub.isrss.com
 https://rss.4040940.xyz
 https://rsshub.cups.moe
 https://rsshub.app
+
+# ── 已摘除（2026-09-15 实测）──────────────────────────────
+# rss.spriple.org      523 Origin Unreachable，10 次尝试全灭。
+#                      原注释标为「自定义 fork（gqy20/RSSHub），包含 bilibili
+#                      video-browser 路由」——如果它确实是 fork 的部署点，那
+#                      bilibili 路由现在已经没有可用实例了（另一个依赖
+#                      RSSHUB_PRIVATE_INSTANCES 也是 502）。修好后加回第一行。
+# hub.slarker.me       黑洞，35s 无响应直到超时。单个实例就占掉失败总耗时的
+#                      41.9%，是原来最大的性能杀手。
+# rsshub.pseudoyu.com  连接被拒（0.86s 快速失败，代价小但拿不到数据）。
