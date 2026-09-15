@@ -32,7 +32,7 @@ NPX  := npx
 
 .PHONY: help up deps db db-init db-wait db-stop db-down db-logs db-psql db-reset \
         run loop web dev doctor test lint logs cron-install cron-uninstall clean \
-        policy policy-dry policy-status policy-init
+        policy policy-dry policy-status policy-init policy-triage policy-enrich
 
 # ── 帮助 ──────────────────────────────────────────────────────
 help: ## 显示所有可用命令
@@ -144,6 +144,12 @@ policy: db-wait policy-init ## 抓取政策信源并入库（配置见 policy_so
 
 policy-dry: ## 只抓取和解析，不写数据库（验证选择器用）
 	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --dry-run $(POLICY_ARGS)
+
+policy-triage: db-wait policy-init ## 预筛：标题批量打分，筛出 AI 相关的（便宜）
+	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --triage $(POLICY_ARGS)
+
+policy-enrich: db-wait policy-init ## 预筛 + 逐篇结构化抽取（会调 LLM，~$0.14/篇）
+	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --enrich-only $(POLICY_ARGS)
 
 policy-status: db-wait ## 查看政策信源健康度与疑似失效站点
 	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --status

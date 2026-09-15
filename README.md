@@ -284,6 +284,8 @@ uv run python scripts/audit_ic_gqy_quality.py
 
 ```bash
 make policy           # 抓取并入库（配置见 policy_sources.toml）
+make policy-triage    # 预筛：标题批量打分，筛出 AI 相关的
+make policy-enrich    # 预筛 + 逐篇结构化抽取（会调 LLM，花钱）
 make policy-dry       # 只抓不入库，验证选择器用
 make policy-status    # 信源健康度 + 疑似失效站点
 make policy-init      # 建表
@@ -296,7 +298,56 @@ uv run python -m rss2cubox.policy_runner --only beijing_zhengce,tc260_zqyj
 uv run python -m rss2cubox.policy_runner --level province,city
 uv run python -m rss2cubox.policy_runner --include-disabled   # 连 playwright 站点一起试
 uv run python -m rss2cubox.policy_runner --status
+uv run python -m rss2cubox.policy_runner --triage --triage-limit 200
+uv run python -m rss2cubox.policy_runner --enrich-only --enrich-limit 20 --enrich-min-relevance 4
+uv run python -m rss2cubox.policy_runner --enrich-only --no-fulltext   # 只用标题抽，便宜但质量低
 ```
+
+### 三阶段流水线
+
+```
+fetch     列表页 → policy_documents（只有标题/链接/日期）
+  ↓
+triage    N 个标题打包一次 LLM 调用 → is_policy + ai_relevance(1-5)
+  ↓        只对 triage_relevance ≥ POLICY_ENRICH_MIN_RELEVANCE 的放行
+enrich    逐篇（带详情页正文）→ 完整政策本体字段
+```
+
+**为什么必须有 triage 这一层**：deep enrich 是逐篇一次 LLM 调用（实测 ~$0.14/篇，
+~25s/篇）。而政策源里混着大量民生通知（停水、月票、招考、活动报道）——
+实测 442 篇里**只有 12% 的 AI 相关度 ≥3**。
+
+| | 篇数 | 成本（CLI 记账值） |
+|---|---|---|
+| 不做预筛直接 enrich | 442 | ~$62 |
+| 先预筛再 enrich | 53 | ~$7.4 + 预筛 ~$3 |
+
+triage 用标题批量判断，10 条一批（实测 20 条会偏激进、出现
+`error_max_structured_output_retries`，50 条直接撞超时）。
+
+注意 triage 和 enrich 的打分可能不一致，这是**正常的且有用的**：triage 只看标题，
+enrich 看正文。实测有文档 triage 给 4 分、enrich 看完正文降到 2 分
+（标题像 AI 专项、实际是泛数字经济规划）——以 enrich 的结果为准。
+
+### 政策本体
+
+enrich 输出的字段与主链路的科技媒体视角完全分开：
+
+| 字段 | 说明 |
+|---|---|
+| `issuing_authority` / `document_number` | 发布机构 / 文号（如「网安秘字〔2026〕118号」）|
+| `jurisdiction` | 管辖范围 |
+| `instrument_type` | 按中国法律位阶：法律 > 行政法规 > 部门规章/地方性法规 > 地方政府规章 > 规范性文件 > 指导意见；另有征求意见稿/技术标准/规划/通知公告/司法解释 |
+| `stage` | 征求意见 / 已发布 / 已生效 / 已修订 / 已废止 / 不明 |
+| `effective_date` / `comment_deadline` | 生效日 / 征求意见截止日（**窗口期是预测价值最高的字段**）|
+| `affected_parties` | 适用主体，如「生成式AI服务提供者」 |
+| `obligation_level` | 强制 / 推荐 / 自愿 / 不适用 |
+| `ai_relevance` + `ai_relevance_reason` | 1-5 分，评分标准写死在 prompt 里，triage 与 enrich 共用同一套 |
+| `source_quote` | **schema required**，原文逐字引句。这是防幻觉的锚点，人工抽查时能立刻判断模型是不是在编 |
+| `confidence` | 只有标题没正文时代码会强制压到 ≤2（prompt 说了模型不一定听）|
+
+实测 24 篇的字段完整度：`source_quote` 24/24、`issuing_authority` 24/24、
+`document_number` 11/24（合理，不是所有文件都有文号），平均 confidence 3.0~5.0。
 
 ### 加一个站点
 
@@ -340,25 +391,32 @@ title_exclude = ["查看更多", "新闻发布会"]   # 标题命中任一子串
 
 ### 已知状态（2026-09-15 实测）
 
-- **可用（requests，6 个）**：TC260 征求意见、北京最新政策、上海政府规章、
-  浙江政策解读、广东全部文件、苏州政策文件。一次运行约 2s，约 400 条。
+- **可用（7 个）**：中国政府网国务院信息（tier=rss，60 条）、TC260 征求意见、
+  北京最新政策（300 条）、上海政府规章、浙江政策解读、广东全部文件、苏州政策文件。
+  一次全量抓取约 2s，共 442 条。
+- **苏州的坑**：`/szsrmzf/zfwj/zcfg.shtml` 页面上并列多个列表，`ul.infolist` 是时政要闻
+  （实测仅 13/50 是政策），真正的政策列表是 `ul.index-jgfk-list`（征求意见反馈，7/9）
+  和 `ul.index-tzgg-list`（通知公告，10/16）。改用组合选择器后噪音率从 67% 降到 29%。
+  **cssselect 支持逗号组合选择器，所以一个站点可以取多个容器，不需改引擎。**
 - **JS 空壳，需 playwright（配置里已 `enabled=false`）**：江苏政策解读（requests
   只拿到 1KB）、杭州信息公开、广东政策解读。
 - **抓不到**：深圳 `sz.gov.cn` SSLError；国务院政策文件库 403；国家药监局 412（反爬）。
 - **反直觉的一点**：中央部委站点（工信部 2KB、发改委 54B、司法部 119B、
   市场监管总局 3.5KB）几乎全是 JS 空壳，而**地方站点多为服务端渲染**，
   所以地方政策的抓取成本比中央部委低。
+- **另一个反直觉的点**：本机出口是美国加州 IP，但能直连 gov.cn / cac / miit / pbc
+  （200，<0.7s）。所以公共 RSSHub 实例对 `/gov/*` 路由返回 503 **不是因为境外 IP 被墙**，
+  而是那些路由自己失效了。自建 RSSHub 不一定比公共实例好，除非去改路由实现。
 
 ### 还没做的部分
 
-- **政策 enrich**：`policy_documents` 表已预留 `jurisdiction` / `instrument_type` /
-  `stage` / `effective_date` / `affected_parties` / `obligation_level` /
-  `ai_relevance` / `summary` / `source_quote` 字段，但还没有对应的 agent。
-  需要一套独立于科技媒体视角的本体，且 `source_quote` 应设为 schema required
-  （政策分析不带原文引句基本等于幻觉）。
-- **详情页全文抓取**：可以复用现成的 `fulltext_fetcher.fetch_full_text()`（三级降级
-  trafilatura → playwright → 微信），尚未接进来。
-- **LLM 抽取降级**：`scrape_site(llm_extractor=...)` 的扩展点已留好
-  （CSS 解析出 0 条时调用），但还没接 agent。
+- **算法备案清单**（beian.cac.gov.cn）：我认为的最高价值源 —— 官方口径的行业名录，
+  含算法名称/主体/应用场景/备案号，能直接回答“谁在做智能体”。527B 的 JS 空壳，
+  需 playwright；很可能有后端 JSON 接口，用浏览器看 network 面板比解析 DOM 稳得多。
+- **LLM 抽取降级**：`scrape_site(llm_extractor=...)` 扩展点已留好
+  （CSS 解析出 0 条时调用），但还没接 agent。接上后站点改版不会直接变成零数据。
 - **前端展示**：`store.get_policy_documents()` 已支持按 level/region/site_key/
   未 enrich 过滤，可以直接作为 API route 的数据源。
+- **征求意见的闭环验证**：`comment_deadline` 已经在抽了，但还没做到期跟踪。
+  这是与主链路 `trend_prediction_agent` + `prediction_review_agent` 结合最自然的点：
+  “征求意见稿第 X 条 → 预测最终稿会怎么改”是有明确验证点的可证伪预测。
