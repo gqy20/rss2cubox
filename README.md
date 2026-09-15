@@ -60,19 +60,59 @@ export IC_API_URL="http://ic.nexus.tashan.ac.cn/api/v1/articles/batch"
 export IC_SOURCE_TYPE="gqy"
 export MAX_ITEMS_PER_RUN="500"           # 单次运行总上限
 export FEED_FETCH_CONCURRENCY="4"
-export FEED_CONNECT_TIMEOUT_SECONDS="5"
-export FEED_READ_TIMEOUT_SECONDS="10"
+export FEED_CONNECT_TIMEOUT_SECONDS="3"
+# ⚠️ 不要调小：/juejin/* 这类抓取型路由在健康实例上实测要 19~28s，
+# 设成 10s 会直接杀掉它们。黑洞实例靠下面的启动预检治，不靠 read timeout。
+export FEED_READ_TIMEOUT_SECONDS="30"
 export FEED_FAILURE_COOLDOWN_SECONDS="60"
 export FEED_FAILURE_COOLDOWN_MAX_SECONDS="1800"
-export RSSHUB_FAILURE_COOLDOWN_SECONDS="300"
 export FEED_CURSOR_LOOKBACK_HOURS="24"
 
+# RSSHub 实例池调度
+export RSSHUB_FAILURE_COOLDOWN_SECONDS="900"      # 实例级基础冷却
+export RSSHUB_FAILURE_COOLDOWN_MAX_SECONDS="3600" # 指数退避封顶
+export RSSHUB_MAX_CANDIDATES="5"                  # 单条路由最多试几个实例（0=不限）
+export RSSHUB_PREFLIGHT_ENABLED="true"            # 抓取前并发探活，消除冷启动惊群
+export RSSHUB_PREFLIGHT_TIMEOUT_SECONDS="5"
+
+# 停用结构性失效的源（token: twitter / bilibili / werss / default）
+# 这些源不是“暂时挂了靠熔断发现”，而是配置上就拿不到数据，
+# 每轮都轮一遍候选实例纯属烧时间。修好后删 token 即可恢复，feeds.txt 不用改。
+export FEED_SECTIONS_DISABLE="twitter,bilibili,werss"
+
 # Agent SDK 分析（基于 Claude Agent SDK）
+export ANTHROPIC_AUTH_TOKEN="sk-..."     # 网关走 Authorization: Bearer
+export ANTHROPIC_BASE_URL="https://your-gateway"
+export ANTHROPIC_MODEL="your-model-id"
 export ENRICH_AGENT_ENABLED="true"
 export ENRICH_MAX_WORKERS="10"          # 并发工作数
 export ENRICH_ITEM_TIMEOUT_SECONDS="90"  # 单条目超时
 export ENRICH_MAX_BUDGET_USD="0.15"     # 单条目最大预算
 ```
+
+### 实例熔断与失败分级
+
+实例级冷却按**连续**失败次数指数退避（`RSSHUB_FAILURE_COOLDOWN_SECONDS × 2^(n-1)`，
+封顶 `RSSHUB_FAILURE_COOLDOWN_MAX_SECONDS`），再乘上一个按失败原因分级的倍率
+（见 `feed_sources.COOLDOWN_REASON_MULTIPLIER`）。分级的依据是“这次失败能不能说明实例坏了”：
+
+| 原因 | 倍率 | 说明 |
+|---|---|---|
+| `route` (403/404) | **0**（不冷却） | 路由需认证或不存在，换实例也没用，冷却只会误伤好实例 |
+| `timeout` | 0.2 | ambiguous：很可能只是路由慢（实测 juejin 要 19~28s），靠 streak 阶梯逐步升级 |
+| `parse` | 0.5 | 200 但内容不可解析，通常是实例返回了错误页 |
+| `connection` / `http5xx` / `preflight` | 1.0 | 主机不可达 / 网关故障 / 探活失败，实例确实坏了 |
+| `ratelimit` (429) | 2.0 | 是我们自己打太狠，必须狠退避 |
+
+一次成功会重置退避阶梯（`fail_streak`），但保留累计失败次数（`fail_count`），
+所以实例排序用的 `_score = success - fail` 语义不变。
+
+> 调优依据：2026-09-15 对同一组 14 条 rsshub 路由的对比实测。
+> 改动前 131s / 56 次失败请求 / 13 条成功；改动后均值 34.2s / 12.7 次失败 / 12.7 条成功。
+> 最大的单项收益不是缩短超时，而是**摘掉黑洞实例**（`hub.slarker.me` 35s 无响应，
+> 单个实例占掉失败总耗时的 41.9%）+ **启动预检**消除冷启动惊群。
+> 注意不要提高 `FEED_FETCH_CONCURRENCY` 来“提速”：部分超时是我们自己的并发
+> 打在公共实例上造成的限流（`rsshub.rssforever.com` 单发探测 200/2.7s，跑批时却多次超时）。
 
 根目录 `.env` 会在启动 `rss2cubox` 时自动加载。
 
