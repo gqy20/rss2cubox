@@ -3,7 +3,7 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 RUN_SCRIPT="$ROOT_DIR/scripts/run_local_sync.sh"
-CRON_SCHEDULE="${RSS2CUBOX_CRON_SCHEDULE:-0 */3 * * *}"
+CRON_SCHEDULE="${RSS2CUBOX_CRON_SCHEDULE:-0 */6 * * *}"
 CRON_MARKER="# rss2cubox local sync"
 CRON_LINE="$CRON_SCHEDULE $RUN_SCRIPT $CRON_MARKER"
 

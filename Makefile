@@ -32,6 +32,7 @@ NPX  := npx
 
 .PHONY: help up deps db db-init db-wait db-stop db-down db-logs db-psql db-reset \
         run loop web dev doctor test lint logs cron-install cron-uninstall cron-list clean \
+        cost cost-pricing cost-refresh \
         policy policy-dry policy-status policy-init policy-triage policy-enrich \
         policy-cron-install policy-cron-uninstall
 
@@ -187,8 +188,17 @@ logs: ## tail 最新一次 cron 日志
 	if [ -n "$$latest" ]; then echo "→ $$latest"; tail -f "$$latest"; \
 	else echo "· 还没有日志，先 make run 或 make loop"; fi
 
+cost: ## 核算最新一次运行的真实成本（按本地 model_pricing.json，不联网）
+	@$(UV) run python scripts/agent_cost.py $(COST_ARGS)
+
+cost-pricing: ## 查看本地模型单价表
+	@$(UV) run python scripts/agent_cost.py --show-pricing
+
+cost-refresh: ## 从网关重拉单价并覆写 model_pricing.json（唯一联网的成本命令）
+	@$(UV) run python scripts/agent_cost.py --refresh-pricing
+
 # ── 定时任务 ──────────────────────────────────────────────────
-cron-install: ## 安装主链路 crontab（默认每 3 小时，可用 RSS2CUBOX_CRON_SCHEDULE 覆盖）
+cron-install: ## 安装主链路 crontab（默认每 6 小时，可用 RSS2CUBOX_CRON_SCHEDULE 覆盖）
 	@scripts/install_local_cron.sh
 
 cron-uninstall: ## 从 crontab 移除主链路条目（不影响政策信源条目）
