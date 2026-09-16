@@ -274,7 +274,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     if not sites:
-        log_event("WARN", "policy_no_sites_selected", only=args.only, level=args.level)
+        log_event("WARN", "policy_no_sites_selected", only=args.only, level_filter=args.level)
         print("没有匹配的站点。检查 --only / --level 过滤条件，或配置文件里 enabled 是否为 false。")
         return 0
 

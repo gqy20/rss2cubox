@@ -474,3 +474,76 @@ class TestLevelBudgetInvariant:
         wait = max(1, min(2, max(1, int(l2 * 0.1))))
         inner = 2 + nav + wait
         assert inner < l2, f"T={item_timeout} 时 L2 内部 {inner}s ≥ 外层 {l2}s"
+
+
+class TestBatchLogEventSignature:
+    """回归：log_event 的签名是 (level, event, **fields)，任何叫 level 的字段都会撞名。
+
+    这个 bug 的实际后果很隐蔽：results[eid] 在 log_event 之前就赋值了，异常又在
+    ThreadPoolExecutor 里被吞掉，所以全文其实抓成功了，但 fulltext_done 事件
+    一条都记不出来 —— 日志上表现为"0 成功"，排查时被误导了很久。
+    """
+
+    @staticmethod
+    def _runner_style_log_event(level: str, event: str, **fields):
+        """与 runner.py / policy_runner.py / prediction_loop_runner.py 完全同签名。"""
+        return (level, event, fields)
+
+    def test_done_event_does_not_collide_with_level_param(self) -> None:
+        from rss2cubox.fulltext_fetcher import fetch_fulltext_batch
+
+        events = []
+        with patch("rss2cubox.fulltext_fetcher.fetch_full_text") as mock_fetch:
+            mock_fetch.return_value = FetchResult(text="x" * 200, source="trafilatura", level=1)
+            fetch_fulltext_batch(
+                [{"eid": "a1", "url": "https://e.com/1"}],
+                max_workers=1,
+                log_event=lambda *a, **k: events.append((a, k)),
+            )
+
+        names = [k.get("event") or (a[1] if len(a) > 1 else None) for a, k in events]
+        assert "fulltext_done" in names, f"成功事件未记录，实际事件: {names}"
+        done = next(k for a, k in events if (k.get("event") or (a[1] if len(a) > 1 else None)) == "fulltext_done")
+        # 层级字段必须改名，不能占用 level
+        assert done.get("fetch_level") == 1
+        assert "level" not in done
+
+    def test_real_runner_signature_accepts_both_events(self) -> None:
+        """直接用 runner 的真实签名跑，成功和失败两条路径都不能抛 TypeError。"""
+        from rss2cubox.fulltext_fetcher import fetch_fulltext_batch
+
+        captured = []
+
+        def log_event(level: str, event: str, **fields):
+            captured.append((level, event))
+
+        def fake_fetch(url: str):
+            if "bad" in url:
+                return FetchResult(error="all_levels_failed: l1=no_content | l2=disabled")
+            return FetchResult(text="y" * 200, source="trafilatura", level=1, elapsed_s=0.5)
+
+        with patch("rss2cubox.fulltext_fetcher.fetch_full_text", side_effect=fake_fetch):
+            result = fetch_fulltext_batch(
+                [{"eid": "ok", "url": "https://e.com/ok"}, {"eid": "bad", "url": "https://e.com/bad"}],
+                max_workers=2,
+                log_event=log_event,
+            )
+
+        assert ("INFO", "fulltext_done") in captured
+        assert ("WARN", "fulltext_failed") in captured
+        assert len(result) == 1 and "ok" in result
+
+    def test_no_log_event_kwarg_named_level_anywhere(self) -> None:
+        """静态兜底：源码里不得再出现向 log_event 传 level= 的写法。"""
+        import re
+        from pathlib import Path
+
+        src = Path(__file__).resolve().parent.parent / "src" / "rss2cubox"
+        offenders = []
+        for path in src.rglob("*.py"):
+            text = path.read_text(encoding="utf-8")
+            for match in re.finditer(r"log_event\(([^)]*)\)", text, re.S):
+                body = match.group(1)
+                if re.search(r"(?<![\w.])level\s*=", body):
+                    offenders.append(f"{path.name}: {body.strip()[:60]}")
+        assert not offenders, f"发现向 log_event 传 level= 的调用: {offenders}"

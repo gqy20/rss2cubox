@@ -408,7 +408,10 @@ def fetch_fulltext_batch(
                     "fulltext_done",
                     eid=eid,
                     source=result.source,
-                    level=result.level,
+                    # 不能叫 level：log_event 的签名是 (level, event, **fields)，
+                    # 同名关键字会直接 TypeError，而异常在 ThreadPoolExecutor 里被吞掉，
+                    # 表现为“全文抓取 0 成功”的假象。
+                    fetch_level=result.level,
                     char_count=len(result.text),
                     duration_ms=int(result.elapsed_s * 1000),
                 )
