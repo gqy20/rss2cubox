@@ -1186,3 +1186,40 @@ def collect_candidates_from_feeds(
     candidates.sort(key=lambda c: _feed_priority.get(c.get("source_feed", ""), 0), reverse=True)
 
     return candidates, last_build_cache
+
+
+def cap_candidates_per_source(
+    candidates: list[dict[str, Any]],
+    *,
+    max_per_source: int,
+    max_total: int,
+) -> list[dict[str, Any]]:
+    """按源限流后截取，避免单个高产源吃光整轮预算。
+
+    输入必须已按优先级排序：本函数保持顺序遍历，所以高优先级源仍然优先入选，
+    只是每个源最多贡献 max_per_source 条。
+
+    为什么需要：候选排序是 priority 降序 + 前缀截取，而 feed 的候选量差异极大
+    （实测 openai.com 单个 feed 1193 条、vercel 1578 条）。priority=5 的高产源
+    会占满 MAX_ITEMS_PER_RUN，实测一次 1500 篇的运行里 93% 的全文抓取都打在
+    openai.com 上——既让整轮产出毫无多样性，又因请求量过大触发对方反爬
+    （成功率从隔离测试的 60% 掉到 0%）。
+
+    max_per_source <= 0 表示不限流，退化为原来的前缀截取。
+    """
+    total = max(1, int(max_total))
+    per_source = int(max_per_source)
+    if per_source <= 0:
+        return candidates[:total]
+
+    counts: Counter[str] = Counter()
+    selected: list[dict[str, Any]] = []
+    for candidate in candidates:
+        source = str(candidate.get("source_feed", "") or "")
+        if counts[source] >= per_source:
+            continue
+        counts[source] += 1
+        selected.append(candidate)
+        if len(selected) >= total:
+            break
+    return selected

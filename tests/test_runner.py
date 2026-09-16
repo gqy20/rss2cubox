@@ -924,3 +924,63 @@ def test_main_applies_feed_sections_disable(
         "https://feed.example/rss",
         "/sspai/index",
     ]
+
+
+class TestCapCandidatesPerSource:
+    """单源限流：防止一个高产源吃光整轮预算。
+
+    实测背景：候选按 priority 降序排后直接前缀截取，openai.com 单个 feed
+    有 1193 条候选且 priority=5，结果一次 1500 篇的运行里 93% 的全文抓取
+    都打在 openai.com 上——产出毫无多样性，且请求量过大触发对方反爬。
+    """
+
+    @staticmethod
+    def _cands(spec: dict[str, int]) -> list[dict]:
+        out = []
+        for source, n in spec.items():
+            out.extend({"source_feed": source, "n": i} for i in range(n))
+        return out
+
+    def test_no_cap_is_plain_prefix(self) -> None:
+        cands = self._cands({"A": 5, "B": 5})
+        got = feed_sources.cap_candidates_per_source(cands, max_per_source=0, max_total=6)
+        assert [c["source_feed"] for c in got] == ["A"] * 5 + ["B"]
+
+    def test_cap_spreads_across_sources(self) -> None:
+        cands = self._cands({"A": 100, "B": 100, "C": 100})
+        got = feed_sources.cap_candidates_per_source(cands, max_per_source=2, max_total=6)
+        assert [c["source_feed"] for c in got] == ["A", "A", "B", "B", "C", "C"]
+
+    def test_cap_respects_total_limit(self) -> None:
+        cands = self._cands({"A": 100, "B": 100, "C": 100})
+        got = feed_sources.cap_candidates_per_source(cands, max_per_source=2, max_total=4)
+        assert len(got) == 4
+
+    def test_preserves_input_priority_order(self) -> None:
+        """限流不改变优先级偏好：已排序的输入，高优先级源仍然先入选。"""
+        cands = [{"source_feed": "hi", "n": i} for i in range(50)]
+        cands += [{"source_feed": "lo", "n": i} for i in range(50)]
+        got = feed_sources.cap_candidates_per_source(cands, max_per_source=10, max_total=15)
+        assert [c["source_feed"] for c in got] == ["hi"] * 10 + ["lo"] * 5
+
+    def test_small_sources_unaffected(self) -> None:
+        cands = self._cands({"A": 3, "B": 2})
+        got = feed_sources.cap_candidates_per_source(cands, max_per_source=60, max_total=100)
+        assert len(got) == 5
+
+    def test_missing_source_feed_key_grouped_as_empty(self) -> None:
+        cands = [{"n": 1}, {"n": 2}, {"source_feed": "A", "n": 3}]
+        got = feed_sources.cap_candidates_per_source(cands, max_per_source=1, max_total=10)
+        assert len(got) == 2  # 两条无 source_feed 的被当成同一个源，只留 1 条
+
+    def test_empty_input(self) -> None:
+        assert feed_sources.cap_candidates_per_source([], max_per_source=10, max_total=10) == []
+
+    def test_does_not_mutate_input(self) -> None:
+        cands = self._cands({"A": 5})
+        feed_sources.cap_candidates_per_source(cands, max_per_source=2, max_total=2)
+        assert len(cands) == 5
+
+    def test_negative_cap_treated_as_unlimited(self) -> None:
+        cands = self._cands({"A": 5})
+        assert len(feed_sources.cap_candidates_per_source(cands, max_per_source=-1, max_total=3)) == 3

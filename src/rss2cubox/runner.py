@@ -66,6 +66,10 @@ IC_SOURCE_TYPE = os.getenv("IC_SOURCE_TYPE", "gqy").strip() or "gqy"
 KEYWORDS_INCLUDE = [k.strip() for k in os.getenv("KEYWORDS_INCLUDE", "").split(",") if k.strip()]
 KEYWORDS_EXCLUDE = [k.strip() for k in os.getenv("KEYWORDS_EXCLUDE", "").split(",") if k.strip()]
 MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "300"))
+# 单个源每轮最多贡献多少候选，0 = 不限流。
+# 候选是 priority 降序 + 前缀截取，而各 feed 候选量差异极大（实测 openai 单 feed
+# 1193 条、vercel 1578 条），不限流时一个高产源就能吃光整轮预算。
+MAX_ITEMS_PER_SOURCE = max(0, sync_pipeline.env_int("MAX_ITEMS_PER_SOURCE", 60))
 
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
@@ -234,8 +238,14 @@ def main() -> None:
     stats["run_deduped"] += run_deduped
     stats["candidates"] = len(candidates)
 
-    candidates_for_run = candidates[: max(1, MAX_ITEMS_PER_RUN)]
+    candidates_for_run = feed_sources.cap_candidates_per_source(
+        candidates,
+        max_per_source=MAX_ITEMS_PER_SOURCE,
+        max_total=MAX_ITEMS_PER_RUN,
+    )
     stats["candidates_selected"] = len(candidates_for_run)
+    _selected_sources = {str(c.get("source_feed", "")) for c in candidates_for_run}
+    stats["sources_selected"] = len(_selected_sources)
     if len(candidates_for_run) < len(candidates):
         log_event(
             "INFO",
@@ -243,6 +253,8 @@ def main() -> None:
             stage="pre_push",
             selected=len(candidates_for_run),
             total=len(candidates),
+            sources_selected=len(_selected_sources),
+            max_per_source=MAX_ITEMS_PER_SOURCE,
         )
 
     # ── 全文抓取 ──
