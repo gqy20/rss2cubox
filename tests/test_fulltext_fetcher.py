@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from unittest.mock import patch, MagicMock
 
+import pytest
+
 from rss2cubox.fulltext_fetcher import FetchResult
 
 
@@ -357,3 +359,46 @@ class TestIsWechatUrl:
         from rss2cubox.fulltext_fetcher import _is_wechat_url
         assert _is_wechat_url("https://juejin.cn/post/abc") is False
         assert _is_wechat_url("") is False
+
+
+class TestLevelBudgetInvariant:
+    """L2 的内部预算必须显著小于它的外层预算。
+
+    回归背景：默认配置下 nav=15 + launch~2 + render_wait=2 ≈ 19s，而外层
+    _L2_TIMEOUT_S = min(20, T//2) 硬封顶 20s（把 FULLTEXT_ITEM_TIMEOUT_S 调多大
+    都没用），余量为零。只要有一点并发争抢，外层就会在 playwright 完成前砍掉它，
+    且被丢弃的子线程继续持有浏览器。实测一次完整运行 22 次全文尝试 0 成功，
+    而隔离测试同样的 URL 有 60% 成功率。
+    """
+
+    def test_playwright_inner_budget_fits_in_outer(self) -> None:
+        from rss2cubox import fulltext_fetcher as mod
+
+        # launch 开销按 2s 估
+        inner = 2 + mod._PLAYWRIGHT_NAVIGATION_TIMEOUT_S + mod._RENDER_EXTRA_WAIT_S
+        assert inner < mod._L2_TIMEOUT_S, (
+            f"L2 内部预算 {inner}s 必须小于外层 {mod._L2_TIMEOUT_S}s，"
+            f"否则外层超时会在 playwright 完成前砍掉它"
+        )
+
+    def test_inner_budget_keeps_at_least_25pct_margin(self) -> None:
+        from rss2cubox import fulltext_fetcher as mod
+
+        inner = 2 + mod._PLAYWRIGHT_NAVIGATION_TIMEOUT_S + mod._RENDER_EXTRA_WAIT_S
+        margin = (mod._L2_TIMEOUT_S - inner) / mod._L2_TIMEOUT_S
+        assert margin >= 0.25, f"L2 余量只有 {margin:.0%}，并发争抢下必然超时"
+
+    def test_l2_outer_budget_is_hard_capped_at_20(self) -> None:
+        """锁住这个反直觉的行为：调大 FULLTEXT_ITEM_TIMEOUT_S 并不能给 L2 更多时间。"""
+        from rss2cubox import fulltext_fetcher as mod
+
+        assert mod._L2_TIMEOUT_S <= 20
+
+    @pytest.mark.parametrize("item_timeout", [30, 60, 90, 120])
+    def test_invariant_holds_across_item_timeout_values(self, item_timeout: int) -> None:
+        """无论 FULLTEXT_ITEM_TIMEOUT_S 设多少，钳制逻辑都要保住余量。"""
+        l2 = min(20, item_timeout // 2)
+        nav = max(4, min(15, int(l2 * 0.5)))
+        wait = max(1, min(2, max(1, int(l2 * 0.1))))
+        inner = 2 + nav + wait
+        assert inner < l2, f"T={item_timeout} 时 L2 内部 {inner}s ≥ 外层 {l2}s"

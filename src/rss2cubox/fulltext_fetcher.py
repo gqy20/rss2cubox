@@ -38,6 +38,19 @@ _PLAYWRIGHT_NAVIGATION_TIMEOUT_S = max(8, min(20, int(os.getenv("PLAYWRIGHT_NAVI
 # 渲染后额外等待 JS 的时间
 _RENDER_EXTRA_WAIT_S = max(1, min(3, int(os.getenv("RENDER_EXTRA_WAIT_S", "2"))))
 
+# L2 的内部预算（launch + goto + render wait）必须显著小于它的外层预算
+# _L2_TIMEOUT_S，否则外层 _fetch_with_timeout 会在 playwright 完成前就砍掉它，
+# 而且被丢弃的子线程会继续持有浏览器。
+#
+# 默认值就是这个坑：nav=15 + launch~2 + wait=2 ≈ 19s，而 _L2_TIMEOUT_S 最多 20s
+# （min(20, T//2) 硬封顶，把 FULLTEXT_ITEM_TIMEOUT_S 调多大都没用），余量为零，
+# 只要有一点并发争抢就必然全部超时（实测一次完整运行 22 次尝试 0 成功）。
+# 这里把 nav 自动钳制到外层预算的一半，让错误配置无法成立。
+_PLAYWRIGHT_NAVIGATION_TIMEOUT_S = max(
+    4, min(_PLAYWRIGHT_NAVIGATION_TIMEOUT_S, int(_L2_TIMEOUT_S * 0.5))
+)
+_RENDER_EXTRA_WAIT_S = max(1, min(_RENDER_EXTRA_WAIT_S, max(1, int(_L2_TIMEOUT_S * 0.1))))
+
 
 def _is_wechat_url(url: str) -> bool:
     host = (url or "").strip().split("/")[2] if "//" in url else ""
