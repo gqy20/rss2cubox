@@ -351,50 +351,100 @@ L1 = min(10, T//3)     L2 = min(20, T//2)     L3 = min(15, T//2)
 
 ## 中断与恢复（durability）
 
-一轮完整运行要几小时，中断是常态而不是异常。这里有三个已经踩过的坑。
+一轮完整运行要几小时，中断是常态而不是异常。
 
-### 两阶段写入
+### 各阶段断点续跑能力（完整审计）
+
+**主链路 `runner.py`**
+
+| 阶段 | 单轮耗时 | 断点续跑 | 说明 |
+|---|---|---|---|
+| fetch（236 源）| ~9 min | ⚠️ 全有或全无 | 游标 `get_feed_cursors()` = `SELECT source_feed_id, MAX(publish_time) FROM articles GROUP BY 1`，**从已入库文章派生**。phase 1 之前中断则游标不动、全部重抓（无损失，只是重做）|
+| phase 1 存元数据 | 秒级 | ✅ | upsert 幂等 |
+| **fulltext（1500 篇）** | ~10–20 min | ✅ | `FULLTEXT_FLUSH_EVERY=50` 增量落库；重跑时缺失的 eid 会从库里回补 |
+| **enrich（1500 篇）** | ~5 h | ✅ | `ENRICH_FLUSH_EVERY=25` 增量落库 + `enriched_only` 去重基线，重跑自动跳过已完成的 |
+| IC push | 秒~分 | ❌ 不可续 | `articles` 表**没有 `exported` 列**，`mark_articles_exported` 只改内存字典。**但 IC 当前完全未使用**（见下），所以这个缺口暂无实际影响 |
+| global_agent | ~2 min | ⚠️ 单次保存 | 中断则本轮无洞察，下轮重跑 |
+
+**预测闭环 `prediction_loop_runner.py`**
+
+| 层级 | 断点续跑 |
+|---|---|
+| 阶段级 | ✅ marker 文件 `.rss2cubox-prediction-loop/{stage}.last_run`，`_mark_stage_done` 在阶段成功后才写；中断则 marker 不写、下次重跑该阶段 |
+| review 阶段内 | ✅ 逐条 `save_prediction_review(review)` |
+| cluster / generate 阶段内 | ❌ 批量保存。但它们是**单次 LLM 调用产出一批**，中断只损失一次调用（几分钟）而不是几小时，优先级低 |
+
+**政策链路 `policy_runner.py`**
+
+| 阶段 | 断点续跑 |
+|---|---|
+| fetch | ✅ 逐站点 `record_source_state` + `save_policy_documents`，upsert 幂等 |
+| **triage** | ✅ `on_batch_done` 每批落库（442 篇 ≈ 45 批 / 10 分钟）|
+| enrich | ✅ 逐篇 `save_policy_enrichment` |
+
+**IC 当前未使用**：`IC_PUSH_ENABLED=false`；历史 74 个日志文件全是 `ic_push_skipped`、
+0 条真实推送记录；前端 `API_SOURCE=local` 读本地 PG。CI 的 workflow 没设这个变量
+（代码默认 `true`），但仓库的 Actions 已整体禁用。所以 IC push 的断点缺口暂时不用管；
+真要启用 IC 前得先补 `exported` / `exported_at` 列。
+
+### 写入时序
 
 ```
-phase 1  fetch → 抓全文 → save_articles(_raw_articles)     ← 原文 + 全文先落盘
-phase 2  enrich → 结果攒在内存 analyses → 整轮结束再 save_articles
+phase 1  fetch → save_articles(元数据)              ← 先建行
+         fulltext → 每 50 篇 save_fulltext_batch    ← 增量 UPDATE 全文
+phase 2  enrich → 每 25 篇 save_articles            ← 增量写分析结果
+         整轮结束再 save_articles 一次（幂等）
 ```
 
-phase 1 先写是为了**先保住全文**（抓全文很贵，而 enrich 可能失败）。
-副作用是：中断后库里会有一批只有原文、没有分析结果的行。
+phase 1 必须在全文抓取**之前**：`save_fulltext_batch` 用的是
+`UPDATE ... WHERE id=eid`，行不存在就写不进去。
+
+phase 1 不写 `full_text` 列是安全的：`save_articles` 用 `_optional_text` 把缺失
+归一化成 NULL，而 `ON CONFLICT` 的 `COALESCE(EXCLUDED.full_text, articles.full_text)`
+会保住已有值。
+
+> `save_fulltext_batch` 其实早就写好了，但 `runner.py` 只 import 从没调用
+> （死导入）——原设计本来就打算这么做，只是没接上。
 
 ### 坑 1：去重基线曾把裸文章也算成已处理
 
 `get_all_article_ids()` 原本是 `SELECT id FROM articles`，不区分是否已 enrich。
 配合 phase 1 先写库，后果是：**运行只要在 phase 1 之后被中断（约第 10 分钟），
 这一整批文章就永久进入去重集、再也不会被 enrich**。实测三次中断留下了
-1501 篇这样的文章。
+1501 篇这样的文章：
+
+```
+批次                    文章数   已enrich   未enrich但已占位
+今天更早的被中断运行      1551       50            1501
+本次运行                 1500        0            1500
+```
 
 现在 `get_all_article_ids(enriched_only=True)` 只算 `reason` / `actionable` /
 `hidden_signal` 任一非空的行（对齐 `sync_pipeline.has_signal_analysis`，
 `core_event` 不是表字段），`load_local_state()` 在 `ENRICH_AGENT_ENABLED` 为真时启用它。
 
-**这个修复是自愁的**：之前被错误占位的行因为没 enrich 字段，会自动重新变成候选，
-不需要手工清理。enrich 关闭时沿用旧语义，避免每轮重复处理同一批。
+**这个修复是自愈的**：实测去重基线从 3060 降到 54，3006 篇被解放出来可重新处理，
+之前被错误占位的行不需要手工清理。enrich 关闭时沿用旧语义，避免每轮重复处理。
 
-### 坑 2：enrich 结果曾全程只在内存
+### 坑 2：enrich / 全文 / 预筛 曾全程只在内存
 
-`enrich_agent.py` 对数据库零引用，`analyze_candidates_with_agent` 只 `return analyses`。
-一轮 1500 篇要跑 5~6 小时，在第 1499 篇时被杀就全丢。
+三个地方是同一个模式：「全部跑完再一次性写」。
 
-现在支持**增量落库**：`analyze_candidates_with_agent(on_item_done=...)` 在每篇成功后
-回调，runner 侧缓冲到 `ENRICH_FLUSH_EVERY`（默认 25）篇就写一次库，收尾再 flush 一次。
+- `enrich_agent.py` 对数据库零引用，`analyze_candidates_with_agent` 只 `return analyses`
+- `fetch_fulltext_batch` 只返回 dict，phase 1 才写
+- `triage_agent` 把 45 批结果全收集完才 return
 
-- 回调用 `anyio.to_thread.run_sync` 执行，不堵事件循环
-- 回调异常被吞掉并记 `enrich_flush_failed` + 计入 `flush_failed`，
-  **落库失败不能让分析结果丢失**
-- 写入用的是与 phase 2 完全相同的 `build_processed_article` + `save_articles`，
-  后者是 upsert，所以 phase 2 重跑幂等
-- `ENRICH_FLUSH_EVERY=0` 可关闭增量落库
+现在三者都支持回调式增量落库（`on_item_done` / `on_result` / `on_batch_done`），
+共同约定：
 
-配合坑 1 的修复，中断后重跑会自动跳过已 enrich 的、只补未完成的。
+- 回调在工作线程里执行（`anyio.to_thread.run_sync`），不堵事件循环
+- **回调异常被吞掉并记事件**（`enrich_flush_failed` / `fulltext_flush_failed` /
+  `policy_triage_flush_failed`）——落库失败不能让分析结果丢失
+- 写入路径与最终批量写完全相同且幂等，所以收尾重跑一次无害
 
-### 坑 3：全文回补曾是“全有或全无”
+配合坑 1 的修复，中断后重跑会自动跳过已完成的、只补未完成的。
+
+### 坑 3：全文回补曾是「全有或全无」
 
 ```python
 if not _pre_ft and _db_url:        # 旧：只要本轮抓到了一篇，剩下缺的就不回补
@@ -408,7 +458,7 @@ if not _pre_ft and _db_url:        # 旧：只要本轮抓到了一篇，剩下�
 
 不会，但值得记下为什么：`build_processed_article`（phase 2 用）**不产出 `full_text` 字段**，
 而 `ON CONFLICT DO UPDATE` 里三个全文列用的是 `COALESCE(EXCLUDED.x, articles.x)`。
-**COALESCE 只防 NULL、不防空串**，而 phase 1 写的是 `... or ""` —— 看似会被覆盖。
+**COALESCE 只防 NULL、不防空串**，而旧代码 phase 1 写的是 `... or ""` —— 看似会被覆盖。
 实际安全是因为 `save_articles` 用 `_optional_text()` 把空串归一化成了 `None`：
 
 ```python
@@ -418,6 +468,15 @@ if not _pre_ft and _db_url:        # 旧：只要本轮抓到了一篇，剩下�
 
 三种场景实测均安全：phase2 不带该键 / 显式传 `''` / 传 `None`，全文都保住。
 但这个安全性**依赖于 `_optional_text` 的行为**，改它时要连带看 COALESCE。
+
+### 测试卫生：别把断点续跑的测试写成真实跑
+
+`test_batch_schedule.py` 的两个 `runner.main()` 测试曾长期打真实网络
+（全文抓取走真 playwright/trafilatura）并往真的 `articles` 表写假数据，
+只是被 `MAX_ITEMS_PER_SOURCE=60` 意外限制住所以没暴露。关掉限流后 500 篇
+全部真实抓取，直接挂死。用 faulthandler 抓栈确认是 playwright greenlet + SSL read
+后，在 mock 里关掉 `FULLTEXT_ENABLED` 并 `delenv LOCAL_DB_URL`。
+效果：该文件从挂死变成 12 passed / 0.29s，**全量测试从 250~460s 降到 ~108s**。
 
 ---
 
