@@ -184,6 +184,9 @@ async def run_json_agent(
                     message_type=type(message).__name__,
                 )
             if isinstance(message, ResultMessage):
+                # usage / model_usage 必须记下来：total_cost_usd 是 CLI 按它自己的
+                # Claude 定价表算的，走第三方网关时那个金额不代表真实账单。
+                # 真实成本 = token 数 × 网关单价，没有 usage 就算不出来。
                 emit(
                     "agent_sdk_result",
                     duration_ms=int((time.perf_counter() - query_started_at) * 1000),
@@ -193,6 +196,8 @@ async def run_json_agent(
                     has_structured_output=message.structured_output is not None,
                     num_turns=getattr(message, "num_turns", None),
                     total_cost_usd=getattr(message, "total_cost_usd", None),
+                    usage=getattr(message, "usage", None),
+                    model_usage=getattr(message, "model_usage", None),
                     stop_reason=getattr(message, "stop_reason", None),
                     session_id=getattr(message, "session_id", None),
                     errors=getattr(message, "errors", None),

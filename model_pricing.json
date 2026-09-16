@@ -1,0 +1,111 @@
+{
+  "_readme": [
+    "模型单价表 —— 本地维护，agent_cost.py 默认只读这个文件，不联网。",
+    "",
+    "计费公式（new-api 约定）：",
+    "  quota = input_tokens × model_ratio",
+    "        + output_tokens × model_ratio × completion_ratio",
+    "  金额  = quota / quota_per_unit        单位见 currency",
+    "  美元  = 金额 / usd_exchange_rate",
+    "",
+    "quota_type: 0 = 按 token 计费（用 model_ratio）；1 = 按次计费（用 model_price）",
+    "",
+    "更新方式：uv run python scripts/agent_cost.py --refresh-pricing",
+    "（该命令会联网拉一次网关定价并覆盖写回本文件，之后仍然离线使用）"
+  ],
+  "gateway": "https://newapi.tashan.chat",
+  "quota_per_unit": 500000,
+  "currency": "CNY",
+  "usd_exchange_rate": 7.3,
+  "updated_at": "2026-09-16",
+  "updated_from": "网关 /api/pricing 实拉",
+  "aliases": {
+    "ds-v4-flash": "deepseek-v4-flash-aistar"
+  },
+  "models": {
+    "Seedance2.0": {
+      "quota_type": 1,
+      "model_ratio": 0,
+      "completion_ratio": 0,
+      "model_price": 5
+    },
+    "HappyHorse-1.0-T2V": {
+      "quota_type": 1,
+      "model_ratio": 0,
+      "completion_ratio": 0,
+      "model_price": 5
+    },
+    "Kimi-K3": {
+      "quota_type": 0,
+      "model_ratio": 1.42857142855,
+      "completion_ratio": 5.00000000007,
+      "model_price": 0
+    },
+    "Qwen3.8-Max": {
+      "quota_type": 0,
+      "model_ratio": 0.7,
+      "completion_ratio": 1,
+      "model_price": 0
+    },
+    "glm5.2": {
+      "quota_type": 0,
+      "model_ratio": 0.57,
+      "completion_ratio": 3.508771929825,
+      "model_price": 0
+    },
+    "minimax-m3": {
+      "quota_type": 0,
+      "model_ratio": 0.15,
+      "completion_ratio": 4,
+      "model_price": 0
+    },
+    "glm-5.3-flash": {
+      "quota_type": 0,
+      "model_ratio": 0.055,
+      "completion_ratio": 1.818181818182,
+      "model_price": 0
+    },
+    "Wan2.7-T2V": {
+      "quota_type": 1,
+      "model_ratio": 0,
+      "completion_ratio": 0,
+      "model_price": 5
+    },
+    "DeepSeek-V4-Flash-0731": {
+      "quota_type": 0,
+      "model_ratio": 0.07,
+      "completion_ratio": 2,
+      "model_price": 0
+    },
+    "DeepSeek-V4-Pro-0813": {
+      "quota_type": 0,
+      "model_ratio": 0.2175,
+      "completion_ratio": 2,
+      "model_price": 0
+    },
+    "GLM-5.3": {
+      "quota_type": 0,
+      "model_ratio": 0.57,
+      "completion_ratio": 3.508771929825,
+      "model_price": 0
+    },
+    "deepseek-v4-flash-aistar": {
+      "quota_type": 0,
+      "model_ratio": 0.07,
+      "completion_ratio": 2,
+      "model_price": 0
+    },
+    "qwen3-embedding:8b": {
+      "quota_type": 0,
+      "model_ratio": 0.035,
+      "completion_ratio": 1,
+      "model_price": 0
+    },
+    "qwen3.6-27b": {
+      "quota_type": 0,
+      "model_ratio": 0.0714,
+      "completion_ratio": 4,
+      "model_price": 0
+    }
+  }
+}
