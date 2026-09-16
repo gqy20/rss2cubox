@@ -74,6 +74,8 @@ MAX_ITEMS_PER_SOURCE = max(0, sync_pipeline.env_int("MAX_ITEMS_PER_SOURCE", 60))
 # enrich 结果增量落库的批大小。结果原本全程只在内存里，一轮要跑几小时，
 # 中断就全丢（实测今天三次中断丢了 1501 篇的分析结果）。0 = 关闭增量落库。
 ENRICH_FLUSH_EVERY = max(0, sync_pipeline.env_int("ENRICH_FLUSH_EVERY", 25))
+# 全文增量落库的批大小。全文抓取一轮要 10~20 分钟，不增量写的话中断就全重抓。
+FULLTEXT_FLUSH_EVERY = max(0, sync_pipeline.env_int("FULLTEXT_FLUSH_EVERY", 50))
 
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
@@ -261,36 +263,15 @@ def main() -> None:
             max_per_source=MAX_ITEMS_PER_SOURCE,
         )
 
-    # ── 全文抓取 ──
-    ft_results: dict[str, Any] = {}
-    if fulltext_fetcher.FULLTEXT_ENABLED and _db_url:
-        log_event("INFO", "fulltext_start", stage="fulltext", count=len(candidates_for_run))
-        ft_start = time.perf_counter()
-        ft_results = fulltext_fetcher.fetch_fulltext_batch(
-            candidates_for_run,
-            max_workers=fulltext_fetcher.FULLTEXT_MAX_WORKERS,
-            log_event=log_event,
-        )
-        ft_elapsed = time.perf_counter() - ft_start
-        if ft_results:
-            log_event(
-                "INFO",
-                "fulltext_fetched",
-                stage="fulltext",
-                fetched=len(ft_results),
-                duration_ms=int(ft_elapsed * 1000),
-            )
-        else:
-            log_event("WARN", "fulltext_no_results", stage="fulltext")
-
-    _pre_ft = {eid: r.text for eid, r in ft_results.items() if r.text} if ft_results else {}
-
-    # ── Phase 1: 原始文章+全文入库（不依赖 AI 分析） ──
+    # ── Phase 1: 原始文章元数据入库（不含全文）──
+    # 必须在全文抓取**之前**：save_fulltext_batch 用的是 UPDATE ... WHERE id=eid，
+    # 行不存在就写不进去。提前建行也让"抓到一篇就落一篇"成为可能。
+    # 全文列这里不传，save_articles 会用 _optional_text 归一化成 NULL，
+    # 而 ON CONFLICT 里的 COALESCE 会保住已有值，所以后续重跑不会把全文抹掉。
     if _db_url and candidates_for_run:
         _raw_articles = []
         for item in candidates_for_run:
             eid = str(item.get("eid", "")).strip()
-            ft = ft_results.get(eid) if ft_results else None
             _raw_articles.append({
                 "id": eid,
                 "source_type": IC_SOURCE_TYPE,
@@ -303,20 +284,75 @@ def main() -> None:
                 "description": str(item.get("description", "")).strip(),
                 "publish_time": str(item.get("publish_time", "")).strip(),
                 "tags": [],
-                "full_text": getattr(ft, "text", None) or "" if ft else "",
-                "full_text_source": getattr(ft, "source", "") or "" if ft else "",
-                "full_text_fetched_at": datetime.now(timezone.utc).isoformat() if (ft and getattr(ft, "text", None)) else None,
             })
         try:
             phase1_saved = save_articles(_raw_articles, db_url=_db_url)
-            log_event(
-                "INFO",
-                "phase1_raw_saved",
-                stage="phase1",
-                count=phase1_saved,
-            )
+            log_event("INFO", "phase1_raw_saved", stage="phase1", count=phase1_saved)
         except Exception as e:
             log_event("WARN", "phase1_save_failed", stage="phase1", error=str(e))
+
+    # ── 全文抓取（边抓边增量落库）──
+    ft_results: dict[str, Any] = {}
+    if fulltext_fetcher.FULLTEXT_ENABLED and _db_url:
+        _ft_buffer: dict[str, Any] = {}
+        _ft_lock = threading.Lock()
+        _ft_stats = {"saved": 0, "batches": 0, "lost": 0}
+
+        def _flush_fulltext() -> None:
+            if not _ft_buffer:
+                return
+            batch = dict(_ft_buffer)
+            _ft_buffer.clear()
+            try:
+                save_fulltext_batch(batch, db_url=_db_url)
+                _ft_stats["saved"] += len(batch)
+                _ft_stats["batches"] += 1
+                log_event(
+                    "INFO", "fulltext_flush", stage="fulltext",
+                    saved=len(batch), total_saved=_ft_stats["saved"],
+                )
+            except Exception as exc:  # noqa: BLE001
+                _ft_stats["lost"] += len(batch)
+                log_event(
+                    "WARN", "fulltext_flush_error", stage="fulltext",
+                    error=f"{type(exc).__name__}: {str(exc)[:180]}", lost=len(batch),
+                )
+
+        def _on_fulltext_result(eid: str, result: Any) -> None:
+            if FULLTEXT_FLUSH_EVERY <= 0:
+                return
+            with _ft_lock:
+                _ft_buffer[eid] = result
+                if len(_ft_buffer) >= FULLTEXT_FLUSH_EVERY:
+                    _flush_fulltext()
+
+        log_event("INFO", "fulltext_start", stage="fulltext", count=len(candidates_for_run))
+        ft_start = time.perf_counter()
+        ft_results = fulltext_fetcher.fetch_fulltext_batch(
+            candidates_for_run,
+            max_workers=fulltext_fetcher.FULLTEXT_MAX_WORKERS,
+            log_event=log_event,
+            on_result=_on_fulltext_result,
+        )
+        with _ft_lock:
+            _flush_fulltext()
+        if FULLTEXT_FLUSH_EVERY > 0:
+            stats["fulltext_flushed"] = _ft_stats["saved"]
+            stats["fulltext_flush_lost"] = _ft_stats["lost"]
+        ft_elapsed = time.perf_counter() - ft_start
+        if ft_results:
+            log_event(
+                "INFO",
+                "fulltext_fetched",
+                stage="fulltext",
+                fetched=len(ft_results),
+                flushed=_ft_stats["saved"],
+                duration_ms=int(ft_elapsed * 1000),
+            )
+        else:
+            log_event("WARN", "fulltext_no_results", stage="fulltext")
+
+    _pre_ft = {eid: r.text for eid, r in ft_results.items() if r.text} if ft_results else {}
 
     # ── DB fallback: 本轮没抓到的全文，从库里回补以前抓过的 ──
     # 旧条件是 `if not _pre_ft`（全有或全无）：只要本轮抓到了一篇，剩下缺的

@@ -76,10 +76,19 @@ def _run_triage_stage(
         stats["triage_input"] = 0
         return
 
-    outcome = triage_policy_documents(docs, log_event=log_event)
-    saved = save_triage_results(outcome["results"])
+    flushed_ids: set[str] = set()
+
+    def _flush(rows: list[dict[str, Any]]) -> None:
+        save_triage_results(rows)
+        flushed_ids.update(str(r.get("id", "")) for r in rows)
+
+    outcome = triage_policy_documents(docs, log_event=log_event, on_batch_done=_flush)
+    # 兵底：回调未触发或抛异常的那部分补写一次（save_triage_results 是幂等 UPDATE）
+    remaining = [r for r in outcome["results"] if str(r.get("id", "")) not in flushed_ids]
+    saved = len(flushed_ids) + save_triage_results(remaining)
     stats.update({f"triage_{k}": v for k, v in outcome["stats"].items()})
     stats["triage_saved"] = saved
+    stats["triage_flushed_incrementally"] = len(flushed_ids)
 
 
 _RUN_ID = os.getenv("RSS2CUBOX_RUN_ID") or f"policy-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"

@@ -365,6 +365,7 @@ def fetch_fulltext_batch(
     *,
     max_workers: int | None = None,
     log_event: Callable[..., None] | None = None,
+    on_result: Callable[[str, "FetchResult"], None] | None = None,
 ) -> dict[str, FetchResult]:
     """并发批量抓取候选条目的全文。
 
@@ -372,9 +373,12 @@ def fetch_fulltext_batch(
         items: 候选列表，每项需包含 eid 和 url 字段。
         max_workers: 最大并发数，默认 FULLTEXT_MAX_WORKERS。
         log_event: 日志回调。
+        on_result: 单篇成功时的回调 (eid, result)，用于增量落库。
+            在工作线程里被调用，实现方自己保证线程安全；
+            抛异常不会影响抓取本身。
 
     Returns:
-        dict[eid, FetchResult]
+        dict[eid, FetchResult]（只含成功的）
     """
     if not items:
         return {}
@@ -415,6 +419,19 @@ def fetch_fulltext_batch(
                     char_count=len(result.text),
                     duration_ms=int(result.elapsed_s * 1000),
                 )
+            if on_result is not None:
+                # 增量落库钩子。异常不能影响抓取，也不能弄脏 results
+                try:
+                    on_result(eid, result)
+                except Exception as cb_exc:  # noqa: BLE001
+                    stats["flush_failed"] = stats.get("flush_failed", 0) + 1
+                    if log_event:
+                        log_event(
+                            "WARN",
+                            "fulltext_flush_failed",
+                            eid=eid,
+                            error=f"{type(cb_exc).__name__}: {str(cb_exc)[:160]}",
+                        )
         else:
             stats["failed"] += 1
             if log_event:

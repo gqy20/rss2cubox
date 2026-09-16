@@ -206,6 +206,7 @@ async def _triage_all(
     log_event: Any | None,
     *,
     max_concurrent: int,
+    on_batch_done: Any | None = None,
 ) -> list[dict[str, Any]]:
     semaphore = anyio.Semaphore(max(1, max_concurrent))
     collected: list[list[dict[str, Any]]] = []
@@ -214,6 +215,21 @@ async def _triage_all(
         async with semaphore:
             rows, _reason = await _triage_batch(batch, log_event)
             collected.append(rows)
+            # 每批跑完就落库，不等全部批次。442 篇要跑 ~10 分钟 / 45 批，
+            # 全部收集完再一次性写的话，中断就全部重来。
+            # 回调做的是阻塞 DB IO，放到线程里跑；异常不能影响其他批次。
+            if on_batch_done is not None and rows:
+                try:
+                    await anyio.to_thread.run_sync(on_batch_done, rows)
+                except Exception as exc:  # noqa: BLE001
+                    if log_event:
+                        log_event(
+                            "WARN",
+                            "policy_triage_flush_failed",
+                            stage="policy_triage",
+                            rows=len(rows),
+                            error=f"{type(exc).__name__}: {str(exc)[:160]}",
+                        )
 
     async with anyio.create_task_group() as tg:
         for batch in batches:
@@ -228,8 +244,12 @@ def triage_policy_documents(
     batch_size: int | None = None,
     max_concurrent: int | None = None,
     log_event: Any | None = None,
+    on_batch_done: Any | None = None,
 ) -> dict[str, Any]:
-    """对一批文档标题做预筛，返回 {results, stats}。"""
+    """对一批文档标题做预筛，返回 {results, stats}。
+
+    on_batch_done(rows) 在每批完成后被调用（工作线程里），用于增量落库。
+    """
     if not docs:
         return {"results": [], "stats": {"input": 0, "triaged": 0, "batches": 0, "policy": 0, "relevant": 0}}
 
@@ -248,7 +268,9 @@ def triage_policy_documents(
             max_concurrent=concurrent,
         )
 
-    results = anyio.run(partial(_triage_all, batches, log_event, max_concurrent=concurrent))
+    results = anyio.run(
+        partial(_triage_all, batches, log_event, max_concurrent=concurrent, on_batch_done=on_batch_done)
+    )
 
     threshold = max(1, int(os.getenv("POLICY_ENRICH_MIN_RELEVANCE", "3")))
     stats = {

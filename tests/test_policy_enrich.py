@@ -248,7 +248,7 @@ class TestTriageBatching:
         docs = [{"id": f"d{i}", "title": f"标题{i}"} for i in range(25)]
         captured: list[int] = []
 
-        async def fake_all(batches, log_event, *, max_concurrent):
+        async def fake_all(batches, log_event, *, max_concurrent, on_batch_done=None):
             captured.extend(len(b) for b in batches)
             return []
 
@@ -264,7 +264,7 @@ class TestTriageBatching:
     def test_stats_count_policy_and_relevant(self) -> None:
         docs = [{"id": f"d{i}", "title": f"标题{i}"} for i in range(5)]
 
-        async def fake_all(batches, log_event, *, max_concurrent):
+        async def fake_all(batches, log_event, *, max_concurrent, on_batch_done=None):
             return [
                 {"id": "d0", "is_policy": True, "ai_relevance": 5, "reason": ""},
                 {"id": "d1", "is_policy": True, "ai_relevance": 3, "reason": ""},
@@ -280,3 +280,68 @@ class TestTriageBatching:
         assert stats["policy"] == 4
         assert stats["relevant"] == 2
         assert stats["uncovered"] == 0
+
+
+class TestTriageIncrementalFlush:
+    """triage 增量落库：442 篇约 45 批 / 10 分钟，全收集完再写则中断全部重来。"""
+
+    def test_on_batch_done_fires_per_batch(self) -> None:
+        batches_seen: list[int] = []
+        docs = [{"id": f"d{i}", "title": f"标题{i}"} for i in range(25)]
+
+        async def fake_batch(batch, log_event=None):  # noqa: ANN001
+            return [{"id": d["id"], "is_policy": True, "ai_relevance": 3, "reason": ""} for d in batch], "ok"
+
+        with patch.object(triage_agent, "_triage_batch", new=fake_batch):
+            out = triage_agent.triage_policy_documents(
+                docs, batch_size=10, max_concurrent=2,
+                on_batch_done=lambda rows: batches_seen.append(len(rows)),
+            )
+
+        assert sorted(batches_seen) == [5, 10, 10]
+        assert out["stats"]["triaged"] == 25
+
+    def test_on_batch_done_exception_does_not_break_triage(self) -> None:
+        events: list[str] = []
+        docs = [{"id": f"d{i}", "title": f"标题{i}"} for i in range(6)]
+
+        async def fake_batch(batch, log_event=None):  # noqa: ANN001
+            return [{"id": d["id"], "is_policy": True, "ai_relevance": 4, "reason": ""} for d in batch], "ok"
+
+        def boom(rows):  # noqa: ANN001
+            raise RuntimeError("db down")
+
+        with patch.object(triage_agent, "_triage_batch", new=fake_batch):
+            out = triage_agent.triage_policy_documents(
+                docs, batch_size=3, max_concurrent=2, on_batch_done=boom,
+                log_event=lambda lv, ev, **kw: events.append(ev),
+            )
+
+        assert out["stats"]["triaged"] == 6, "回调抛异常不能丢掉预筛结果"
+        assert "policy_triage_flush_failed" in events
+
+    def test_failed_batch_does_not_fire_callback(self) -> None:
+        calls: list[int] = []
+        docs = [{"id": f"d{i}", "title": f"标题{i}"} for i in range(4)]
+
+        async def fake_batch(batch, log_event=None):  # noqa: ANN001
+            return [], "timeout"
+
+        with patch.object(triage_agent, "_triage_batch", new=fake_batch):
+            out = triage_agent.triage_policy_documents(
+                docs, batch_size=2, max_concurrent=1,
+                on_batch_done=lambda rows: calls.append(len(rows)),
+            )
+
+        assert calls == [], "空结果不该触发落库"
+        assert out["stats"]["uncovered"] == 4
+
+    def test_no_callback_is_backward_compatible(self) -> None:
+        docs = [{"id": "d0", "title": "标题"}]
+
+        async def fake_batch(batch, log_event=None):  # noqa: ANN001
+            return [{"id": "d0", "is_policy": True, "ai_relevance": 5, "reason": ""}], "ok"
+
+        with patch.object(triage_agent, "_triage_batch", new=fake_batch):
+            out = triage_agent.triage_policy_documents(docs, batch_size=10)
+        assert out["stats"]["triaged"] == 1

@@ -547,3 +547,73 @@ class TestBatchLogEventSignature:
                 if re.search(r"(?<![\w.])level\s*=", body):
                     offenders.append(f"{path.name}: {body.strip()[:60]}")
         assert not offenders, f"发现向 log_event 传 level= 的调用: {offenders}"
+
+
+class TestFulltextIncrementalFlush:
+    """全文增量落库：一轮抓取要 10~20 分钟，不增量写则中断全部重抓。"""
+
+    def test_on_result_fires_for_each_success_only(self) -> None:
+        from rss2cubox.fulltext_fetcher import fetch_fulltext_batch
+
+        seen: list[tuple[str, int]] = []
+
+        def fake_fetch(url: str):
+            if "bad" in url:
+                return FetchResult(error="all_levels_failed: l1=no_content")
+            return FetchResult(text="正文" * 100, source="trafilatura", level=1, elapsed_s=0.3)
+
+        with patch("rss2cubox.fulltext_fetcher.fetch_full_text", side_effect=fake_fetch):
+            result = fetch_fulltext_batch(
+                [{"eid": "ok1", "url": "https://e.com/a"},
+                 {"eid": "bad1", "url": "https://e.com/bad"},
+                 {"eid": "ok2", "url": "https://e.com/b"}],
+                max_workers=2,
+                on_result=lambda eid, r: seen.append((eid, len(r.text))),
+            )
+
+        assert sorted(e for e, _ in seen) == ["ok1", "ok2"], "失败的篇目不该触发回调"
+        assert len(result) == 2
+
+    def test_on_result_exception_does_not_break_fetching(self) -> None:
+        """落库失败不能影响抓取，也不能弄脏返回的 results。"""
+        from rss2cubox.fulltext_fetcher import fetch_fulltext_batch
+
+        events: list[str] = []
+
+        def boom(eid, result):  # noqa: ANN001
+            raise RuntimeError("db down")
+
+        with patch("rss2cubox.fulltext_fetcher.fetch_full_text",
+                   return_value=FetchResult(text="正文" * 100, source="trafilatura", level=1)):
+            result = fetch_fulltext_batch(
+                [{"eid": f"e{i}", "url": f"https://e.com/{i}"} for i in range(3)],
+                max_workers=2,
+                on_result=boom,
+                log_event=lambda lv, ev, **kw: events.append(ev),
+            )
+
+        assert len(result) == 3, "回调抛异常不能丢掉抓取结果"
+        assert events.count("fulltext_flush_failed") == 3
+
+    def test_no_callback_is_backward_compatible(self) -> None:
+        from rss2cubox.fulltext_fetcher import fetch_fulltext_batch
+
+        with patch("rss2cubox.fulltext_fetcher.fetch_full_text",
+                   return_value=FetchResult(text="正文" * 100, source="trafilatura", level=1)):
+            result = fetch_fulltext_batch([{"eid": "e0", "url": "https://e.com/0"}], max_workers=1)
+        assert len(result) == 1
+
+    def test_skipped_items_do_not_fire_callback(self) -> None:
+        """缺 eid 或 url 的条目直接跳过，不该触发回调。"""
+        from rss2cubox.fulltext_fetcher import fetch_fulltext_batch
+
+        seen: list[str] = []
+        with patch("rss2cubox.fulltext_fetcher.fetch_full_text",
+                   return_value=FetchResult(text="正文" * 100, source="trafilatura", level=1)):
+            fetch_fulltext_batch(
+                [{"eid": "", "url": "https://e.com/x"}, {"eid": "e1", "url": ""},
+                 {"eid": "e2", "url": "https://e.com/y"}],
+                max_workers=1,
+                on_result=lambda eid, r: seen.append(eid),
+            )
+        assert seen == ["e2"]
