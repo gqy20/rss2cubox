@@ -289,6 +289,34 @@ make policy-enrich    # 预筛 + 逐篇结构化抽取（会调 LLM，花钱）
 make policy-dry       # 只抓不入库，验证选择器用
 make policy-status    # 信源健康度 + 疑似失效站点
 make policy-init      # 建表
+make policy-cron-install    # 装政策专用 crontab（默认每天 7:30 / 19:30）
+make policy-cron-uninstall  # 只卸政策条目，不动主链路
+make cron-list              # 看本项目装了哪些 cron
+```
+
+### 定时运行
+
+政策链路与主链路**分开两个 cron**，因为节奏不同：主链路每 3 小时（科技媒体更新快），
+政策源每天 2 次就够（政府站点更新慢，但征求意见窗口期短，不能太久不看）。
+
+```bash
+make policy-cron-install                              # 默认 30 7,19 * * *
+POLICY_CRON_SCHEDULE="0 8 * * *" make policy-cron-install   # 自定义
+make policy-cron-uninstall                            # 按 marker 精确删除
+```
+
+`scripts/run_policy_sync.sh` 把三个阶段分开执行并分别记录退出码，从 cron 日志
+能直接看出是哪一步挂了：
+
+```
+fetch   → triage → enrich
+logs/policy/YYYY-MM-DD/HH-MM-SS.log
+.rss2cubox-policy.lock（与主链路的 .rss2cubox-local.lock 互不阻塞）
+```
+
+成本控制：每次 cron 默认只 enrich `POLICY_CRON_ENRICH_LIMIT=10` 篇且要求
+相关度 ≥3，单次上限约 $1.4。想只抓取+预筛不花钱，在 crontab 行前加
+`POLICY_CRON_ENRICH=false`。
 ```
 
 也可直接调 runner 做更细的过滤：

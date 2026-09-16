@@ -10,7 +10,7 @@ build/
 logs/
 
 # local runtime state
-.rss2cubox-local.lock
+.rss2cubox-*.lock
 .rss2cubox-prediction-loop/
 
 # web

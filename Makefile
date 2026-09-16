@@ -31,8 +31,9 @@ UV   := uv
 NPX  := npx
 
 .PHONY: help up deps db db-init db-wait db-stop db-down db-logs db-psql db-reset \
-        run loop web dev doctor test lint logs cron-install cron-uninstall clean \
-        policy policy-dry policy-status policy-init policy-triage policy-enrich
+        run loop web dev doctor test lint logs cron-install cron-uninstall cron-list clean \
+        policy policy-dry policy-status policy-init policy-triage policy-enrich \
+        policy-cron-install policy-cron-uninstall
 
 # ── 帮助 ──────────────────────────────────────────────────────
 help: ## 显示所有可用命令
@@ -187,11 +188,21 @@ logs: ## tail 最新一次 cron 日志
 	else echo "· 还没有日志，先 make run 或 make loop"; fi
 
 # ── 定时任务 ──────────────────────────────────────────────────
-cron-install: ## 安装 crontab（默认每 3 小时，可用 RSS2CUBOX_CRON_SCHEDULE 覆盖）
+cron-install: ## 安装主链路 crontab（默认每 3 小时，可用 RSS2CUBOX_CRON_SCHEDULE 覆盖）
 	@scripts/install_local_cron.sh
 
-cron-uninstall: ## 从 crontab 移除本项目条目
-	@crontab -l 2>/dev/null | grep -v 'rss2cubox' | crontab - && echo "✓ 已移除" || echo "· crontab 里没有相关条目"
+cron-uninstall: ## 从 crontab 移除主链路条目（不影响政策信源条目）
+	@crontab -l 2>/dev/null | grep -Fv '# rss2cubox local sync' | crontab - \
+	  && echo "✓ 已移除主链路条目" || echo "· crontab 里没有主链路条目"
+
+policy-cron-install: ## 安装政策信源 crontab（默认每天 7:30/19:30，可用 POLICY_CRON_SCHEDULE 覆盖）
+	@scripts/install_policy_cron.sh
+
+policy-cron-uninstall: ## 从 crontab 移除政策信源条目（不影响主链路）
+	@scripts/install_policy_cron.sh --uninstall
+
+cron-list: ## 列出 crontab 里与本项目相关的条目
+	@crontab -l 2>/dev/null | grep -F 'rss2cubox' || echo "· 没有安装任何本项目 cron"
 
 clean: ## 清理缓存（不动 .venv / 容器 / 数据）
 	@find . -name "__pycache__" -type d -not -path "./.venv/*" -not -path "*/node_modules/*" -exec rm -rf {} + 2>/dev/null || true
