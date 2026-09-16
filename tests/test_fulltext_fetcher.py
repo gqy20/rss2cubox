@@ -11,7 +11,7 @@ from rss2cubox.fulltext_fetcher import FetchResult
 # ── 测试 L1 trafilatura ────────────────────────────────
 class TestL1Trafilatura:
     def test_l1_success(self):
-        with patch("trafilatura.fetch_url") as mock_dl, \
+        with patch("rss2cubox.fulltext_fetcher._l1_download") as mock_dl, \
              patch("trafilatura.extract") as mock_ex:
             mock_dl.return_value = "<html><article><p>Hello World</p></article>"
             mock_ex.return_value = "Hello World " * 10  # ≥ 80 chars
@@ -23,27 +23,99 @@ class TestL1Trafilatura:
             assert result.source == "trafilatura"
             assert result.level == 1
 
-    def test_l1_download_empty(self):
-        with patch("trafilatura.fetch_url", return_value=""):
+    def test_l1_falls_back_to_trafilatura_fetcher(self):
+        """requests 下载失败时要回退到 trafilatura 自己的下载器。"""
+        with patch("rss2cubox.fulltext_fetcher._l1_download", return_value=""), \
+             patch("trafilatura.fetch_url", return_value="<html>fb</html>") as mock_fb, \
+             patch("trafilatura.extract", return_value="y" * 100):
+            from rss2cubox.fulltext_fetcher import _fetch_l1_trafilatura
+
+            result = _fetch_l1_trafilatura("https://example.com/x")
+            mock_fb.assert_called_once()
+            assert result.text == "y" * 100
+
+    def test_l1_download_empty_returns_error_result(self):
+        with patch("rss2cubox.fulltext_fetcher._l1_download", return_value=""), \
+             patch("trafilatura.fetch_url", return_value=""):
             from rss2cubox.fulltext_fetcher import _fetch_l1_trafilatura
 
             result = _fetch_l1_trafilatura("https://example.com/empty")
-            assert result is None
+            assert result is not None and result.text == ""
+            assert result.error == "l1_download_failed"
 
-    def test_l1_extract_too_short(self):
-        with patch("trafilatura.fetch_url", return_value="<html>short</html>"), \
+    def test_l1_extract_too_short_reports_length(self):
+        with patch("rss2cubox.fulltext_fetcher._l1_download", return_value="<html>short</html>"), \
              patch("trafilatura.extract", return_value="x" * 30):
             from rss2cubox.fulltext_fetcher import _fetch_l1_trafilatura
 
             result = _fetch_l1_trafilatura("https://example.com/short")
-            assert result is None
+            assert result.text == ""
+            assert result.error == "l1_text_too_short:30"
 
-    def test_l1_exception(self):
-        with patch("trafilatura.fetch_url", side_effect=Exception("timeout")):
+    def test_l1_exception_reports_type(self):
+        with patch("rss2cubox.fulltext_fetcher._l1_download", side_effect=RuntimeError("boom")):
             from rss2cubox.fulltext_fetcher import _fetch_l1_trafilatura
 
             result = _fetch_l1_trafilatura("https://example.com/error")
-            assert result is None
+            assert result.text == ""
+            assert "RuntimeError" in result.error and "boom" in result.error
+
+
+class TestL1UsesProxyAwareDownloader:
+    """回归：trafilatura.fetch_url 不读代理环境变量，必须自己用 requests 下载。
+
+    实测背景：本机访问境外站点必须走本地代理（huggingface.co 走代理 200/1.7s，
+    直连 20s 超时）。trafilatura.fetch_url 基于 urllib3.PoolManager，不读
+    HTTP(S)_PROXY，所以会直连并挂到 30s 失败。这一个差别导致一次完整运行里
+    全文抓取 0/368 全部失败，而隔离测试（恰好命中不需要代理的站点）看起来正常。
+    """
+
+    def test_download_uses_requests_not_trafilatura_fetcher(self):
+        from rss2cubox.fulltext_fetcher import _l1_download
+
+        with patch("requests.get") as mock_get, \
+             patch("trafilatura.fetch_url") as mock_tf:
+            mock_get.return_value = MagicMock(
+                status_code=200, text="<html>ok</html>", encoding="utf-8",
+                raise_for_status=lambda: None,
+            )
+            assert _l1_download("https://example.com/a") == "<html>ok</html>"
+            mock_get.assert_called_once()
+            mock_tf.assert_not_called()   # 不能走 trafilatura 的直连下载器
+
+    def test_download_returns_empty_on_http_error(self):
+        from rss2cubox.fulltext_fetcher import _l1_download
+
+        with patch("requests.get") as mock_get:
+            def boom():
+                raise RuntimeError("403 Client Error")
+            mock_get.return_value = MagicMock(raise_for_status=boom)
+            assert _l1_download("https://example.com/blocked") == ""
+
+    def test_download_returns_empty_on_network_error(self):
+        from rss2cubox.fulltext_fetcher import _l1_download
+
+        with patch("requests.get", side_effect=OSError("unreachable")):
+            assert _l1_download("https://example.com/x") == ""
+
+    def test_download_fixes_missing_charset(self):
+        """未声明 charset 时 requests 默认 ISO-8859-1，中文站会乱码。"""
+        from rss2cubox.fulltext_fetcher import _l1_download
+
+        resp = MagicMock(status_code=200, encoding="ISO-8859-1",
+                         apparent_encoding="gb2312", raise_for_status=lambda: None)
+        resp.text = "政策"
+        with patch("requests.get", return_value=resp):
+            _l1_download("https://example.gov.cn/x")
+        assert resp.encoding == "gb2312"
+
+    def test_download_timeout_leaves_margin_for_outer_budget(self):
+        """下载超时必须小于外层 L1 预算，否则又是“内部≈外层”的老坑。"""
+        import inspect
+        from rss2cubox import fulltext_fetcher as mod
+
+        src = inspect.getsource(mod._l1_download)
+        assert "_L1_TIMEOUT_S - 1" in src
 
 
 # ── 测试 L2 Playwright ────────────────────────────────

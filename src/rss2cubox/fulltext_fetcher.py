@@ -57,6 +57,12 @@ _PLAYWRIGHT_NAVIGATION_TIMEOUT_S = max(
 _RENDER_EXTRA_WAIT_S = max(1, min(_RENDER_EXTRA_WAIT_S, max(1, int(_L2_TIMEOUT_S * 0.1))))
 
 
+_L1_USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+)
+
+
 def _is_wechat_url(url: str) -> bool:
     host = (url or "").strip().split("/")[2] if "//" in url else ""
     return "mp.weixin.qq.com" in host or "weixin.qq.com" in host
@@ -94,14 +100,46 @@ def _fetch_with_timeout(fetch_fn: Callable, url: str, timeout_s: float) -> Fetch
 
 
 # ── Level 1: trafilatura 直连 ────────────────────────────
+def _l1_download(url: str) -> str:
+    """用 requests 下载 HTML，失败返回空串。
+
+    必须自己下载而不是用 trafilatura.fetch_url：后者基于 urllib3.PoolManager，
+    **不读 HTTP(S)_PROXY 环境变量**。而本机访问大部分境外站点必须走本地代理
+    （实测 huggingface.co 走代理 200/1.7s，直连 20s 超时）。
+    用 fetch_url 会直连并挂到超时（实测 30.1s 失败），而 requests 会读代理
+    环境变量（实测 1.2~1.5s 成功）。这一个差别导致了全文抓取阶段
+    在真实运行里 0/368 全部失败。
+    """
+    import requests
+
+    # 下载超时必须给外层 L1 预算留余量，否则又是“内部≈外层”的老坑
+    download_timeout = max(3.0, min(8.0, _L1_TIMEOUT_S - 1))
+    try:
+        response = requests.get(
+            url,
+            timeout=(4.0, download_timeout),
+            headers={"user-agent": _L1_USER_AGENT, "accept-language": "en,zh-CN;q=0.9"},
+        )
+        response.raise_for_status()
+    except Exception:  # noqa: BLE001
+        return ""
+    # 未声明 charset 时 requests 会默认 ISO-8859-1，中文站会乱码
+    if not response.encoding or response.encoding.lower() in ("iso-8859-1", "latin-1", "ascii"):
+        response.encoding = response.apparent_encoding or "utf-8"
+    return response.text or ""
+
+
 def _fetch_l1_trafilatura(url: str) -> FetchResult | None:
     import trafilatura
 
     t0 = time.perf_counter()
     try:
-        downloaded = trafilatura.fetch_url(url, no_ssl=True)
+        downloaded = _l1_download(url)
         if not downloaded:
-            return None
+            # 回退到 trafilatura 自己的下载器（它有自己的重试与 robots 处理）
+            downloaded = trafilatura.fetch_url(url, no_ssl=True) or ""
+        if not downloaded:
+            return FetchResult(error="l1_download_failed", level=1, elapsed_s=time.perf_counter() - t0)
         text = trafilatura.extract(
             downloaded,
             output_format="txt",
@@ -111,10 +149,17 @@ def _fetch_l1_trafilatura(url: str) -> FetchResult | None:
             include_formatting=True,
         )
         if not text or len(text.strip()) < 80:
-            return None
+            return FetchResult(
+                error=f"l1_text_too_short:{len((text or '').strip())}",
+                level=1,
+                elapsed_s=time.perf_counter() - t0,
+            )
         return FetchResult(text=text.strip(), source="trafilatura", level=1, elapsed_s=time.perf_counter() - t0)
-    except Exception:
-        return None
+    except Exception as exc:  # noqa: BLE001
+        return FetchResult(
+            error=f"l1_{type(exc).__name__}: {str(exc)[:100]}", level=1,
+            elapsed_s=time.perf_counter() - t0,
+        )
 
 
 # ── Level 2: Playwright 渲染 + 智能提取 ───────────────────
