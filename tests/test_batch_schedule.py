@@ -55,10 +55,24 @@ def _mock_runner_main(monkeypatch: pytest.MonkeyPatch, feeds_file: Path, max_ite
         posted_batches.append(articles)
         return "ok"
 
-    from rss2cubox import runner, feed_sources, sync_pipeline, enrich_agent
+    from rss2cubox import runner, feed_sources, sync_pipeline, enrich_agent, fulltext_fetcher
 
     monkeypatch.setattr(runner, "FEEDS_FILE", feeds_file)
     monkeypatch.setattr(runner, "MAX_ITEMS_PER_RUN", max_items)
+    # 这一组测试验证的是 MAX_ITEMS_PER_RUN 的截断语义，与单源限流正交，
+    # 所以关掉限流（否则单个 feed 会被 MAX_ITEMS_PER_SOURCE 默认值 60 截断）。
+    # 限流本身由 test_runner_source_cap 单独验证。
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_SOURCE", 0)
+    # 隔离实例池与预检，否则 main() 会向公共 RSSHub 实例发真实探测请求
+    monkeypatch.setattr(runner, "RSSHUB_INSTANCES_FILE", feeds_file.parent / "no-such-instances.txt")
+    monkeypatch.setattr(runner, "RSSHUB_PREFLIGHT_ENABLED", False)
+    monkeypatch.setattr(runner, "FEED_SECTIONS_DISABLE", "")
+    monkeypatch.setattr(runner, "ENRICH_FLUSH_EVERY", 0)
+    # 关掉全文抓取与本地库写入。不关的话 runner.main() 会对几百条候选发
+    # 真实的 playwright/trafilatura 请求（实测直接挂死），并把几百行假数据
+    # 写进真的 articles 表。这组测试只关心批次调度语义，不应碰网络与数据库。
+    monkeypatch.delenv("LOCAL_DB_URL", raising=False)
+    monkeypatch.setattr(fulltext_fetcher, "FULLTEXT_ENABLED", False)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])
     monkeypatch.setattr(runner, "IC_API_URL", "https://fake.api.com/api/v1/articles/batch")
@@ -354,3 +368,42 @@ def test_enrich_max_workers_respects_env_override(monkeypatch: pytest.MonkeyPatc
     assert "os.getenv" in src
     # 确认使用 max(1, int(...)) 保护
     assert "max(1, int(os.getenv" in src or "max(1,int(os.getenv" in src
+
+
+def test_runner_source_cap_limits_single_prolific_feed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """单源限流在 runner 层真的生效。
+
+    背景：候选按 priority 降序排后截取，实测 openai.com 单个 feed 有 1193 条候选
+    且 priority=5，一次 1500 篇的运行里 93% 的全文抓取都打在它一个域名上。
+    """
+    feeds_file = tmp_path / "feeds.txt"
+    feeds_file.write_text("https://feed.example/rss\n", encoding="utf-8")
+
+    from rss2cubox import runner
+
+    posted_batches = _mock_runner_main(monkeypatch, feeds_file, max_items=1200, n_entries=500)
+    # _mock_runner_main 默认关掉限流以隔离 MAX_ITEMS_PER_RUN 的语义，这里显式打开
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_SOURCE", 60)
+
+    runner.main()
+
+    total_pushed = sum(len(batch) for batch in posted_batches)
+    assert total_pushed == 60, f"单源应被限到 60 条，实际 {total_pushed}"
+
+
+def test_runner_source_cap_zero_means_unlimited(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    feeds_file = tmp_path / "feeds.txt"
+    feeds_file.write_text("https://feed.example/rss\n", encoding="utf-8")
+
+    from rss2cubox import runner
+
+    posted_batches = _mock_runner_main(monkeypatch, feeds_file, max_items=1200, n_entries=500)
+    monkeypatch.setattr(runner, "MAX_ITEMS_PER_SOURCE", 0)
+
+    runner.main()
+
+    assert sum(len(batch) for batch in posted_batches) == 500

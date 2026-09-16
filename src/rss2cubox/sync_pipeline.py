@@ -252,7 +252,11 @@ def load_local_state(
     if not db_url:
         return {}, {}
 
-    article_ids = get_all_article_ids(db_url)
+    # enrich 开启时，只有真正完成分析的文章才算“已处理”。
+    # 否则 phase 1 写入的裸文章（只有原文 + 全文）会在中断后永久占着去重位。
+    # enrich 关闭时沿用原语义，避免每轮重复处理同一批文章。
+    enrich_enabled = os.getenv("ENRICH_AGENT_ENABLED", "true").strip().lower() not in ("false", "0", "no")
+    article_ids = get_all_article_ids(db_url, enriched_only=enrich_enabled)
 
     processed: dict[str, dict[str, Any]] = {}
     for eid in article_ids:

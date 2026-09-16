@@ -554,16 +554,19 @@ def get_articles_by_date(
         return [_row_to_article(row) for row in rows]
 
 
-def get_all_article_ids(db_url: str | None = None) -> set[str]:
-    """Get all processed article IDs from local PostgreSQL.
-
-    Used for deduplication before sending to IC API.
+def get_all_article_ids(db_url: str | None = None, *, enriched_only: bool = False) -> set[str]:
+    """Get article IDs used as the dedup baseline.
 
     Args:
         db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        enriched_only: 只算已完成 enrich 的文章。enrich 开启时必须用这个：
+            runner 在 enrich **之前**就会把候选写库（phase 1，为了先保住全文），
+            而一轮 enrich 要跑几小时。如果中断后这些只有原文、没有分析结果的行
+            也算“已处理”，它们就永久占着去重位、再也不会被 enrich。
+            实测今天三次中断就留下了 1501 篇这样的文章。
 
     Returns:
-        Set of all article IDs (stable_id / eid).
+        Set of article IDs (stable_id / eid).
     """
     db_url = _get_db_url(db_url)
 
@@ -571,10 +574,19 @@ def get_all_article_ids(db_url: str | None = None) -> set[str]:
         logging.warning("LOCAL_DB_URL not set, returning empty article IDs set")
         return set()
 
+    sql = "SELECT id FROM articles WHERE id IS NOT NULL AND id != ''"
+    if enriched_only:
+        # 对齐 sync_pipeline.has_signal_analysis 的判定（core_event 不是表字段）
+        sql += (
+            " AND (COALESCE(reason, '') <> ''"
+            " OR COALESCE(actionable, '') <> ''"
+            " OR COALESCE(hidden_signal, '') <> '')"
+        )
+
     try:
         with psycopg.connect(db_url) as conn:
             cur = conn.cursor()
-            cur.execute("SELECT id FROM articles WHERE id IS NOT NULL AND id != ''")
+            cur.execute(sql)
             rows = cur.fetchall()
             return {str(row[0]) for row in rows}
     except Exception as e:

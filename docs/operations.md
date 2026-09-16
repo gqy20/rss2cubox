@@ -349,6 +349,78 @@ L1 = min(10, T//3)     L2 = min(20, T//2)     L3 = min(15, T//2)
 
 ---
 
+## 中断与恢复（durability）
+
+一轮完整运行要几小时，中断是常态而不是异常。这里有三个已经踩过的坑。
+
+### 两阶段写入
+
+```
+phase 1  fetch → 抓全文 → save_articles(_raw_articles)     ← 原文 + 全文先落盘
+phase 2  enrich → 结果攒在内存 analyses → 整轮结束再 save_articles
+```
+
+phase 1 先写是为了**先保住全文**（抓全文很贵，而 enrich 可能失败）。
+副作用是：中断后库里会有一批只有原文、没有分析结果的行。
+
+### 坑 1：去重基线曾把裸文章也算成已处理
+
+`get_all_article_ids()` 原本是 `SELECT id FROM articles`，不区分是否已 enrich。
+配合 phase 1 先写库，后果是：**运行只要在 phase 1 之后被中断（约第 10 分钟），
+这一整批文章就永久进入去重集、再也不会被 enrich**。实测三次中断留下了
+1501 篇这样的文章。
+
+现在 `get_all_article_ids(enriched_only=True)` 只算 `reason` / `actionable` /
+`hidden_signal` 任一非空的行（对齐 `sync_pipeline.has_signal_analysis`，
+`core_event` 不是表字段），`load_local_state()` 在 `ENRICH_AGENT_ENABLED` 为真时启用它。
+
+**这个修复是自愁的**：之前被错误占位的行因为没 enrich 字段，会自动重新变成候选，
+不需要手工清理。enrich 关闭时沿用旧语义，避免每轮重复处理同一批。
+
+### 坑 2：enrich 结果曾全程只在内存
+
+`enrich_agent.py` 对数据库零引用，`analyze_candidates_with_agent` 只 `return analyses`。
+一轮 1500 篇要跑 5~6 小时，在第 1499 篇时被杀就全丢。
+
+现在支持**增量落库**：`analyze_candidates_with_agent(on_item_done=...)` 在每篇成功后
+回调，runner 侧缓冲到 `ENRICH_FLUSH_EVERY`（默认 25）篇就写一次库，收尾再 flush 一次。
+
+- 回调用 `anyio.to_thread.run_sync` 执行，不堵事件循环
+- 回调异常被吞掉并记 `enrich_flush_failed` + 计入 `flush_failed`，
+  **落库失败不能让分析结果丢失**
+- 写入用的是与 phase 2 完全相同的 `build_processed_article` + `save_articles`，
+  后者是 upsert，所以 phase 2 重跑幂等
+- `ENRICH_FLUSH_EVERY=0` 可关闭增量落库
+
+配合坑 1 的修复，中断后重跑会自动跳过已 enrich 的、只补未完成的。
+
+### 坑 3：全文回补曾是“全有或全无”
+
+```python
+if not _pre_ft and _db_url:        # 旧：只要本轮抓到了一篇，剩下缺的就不回补
+```
+
+实测一次运行抓到 1473/1500，剩下 27 篇即使库里有历史全文也被跳过
+（日志 `fulltext_recovered_from_db=0` 印证）。现在改成**只查缺失的 eid 并合并**，
+事件里会报 `missing` 和 `recovered` 两个数。
+
+### phase 2 会不会把全文覆盖掉？
+
+不会，但值得记下为什么：`build_processed_article`（phase 2 用）**不产出 `full_text` 字段**，
+而 `ON CONFLICT DO UPDATE` 里三个全文列用的是 `COALESCE(EXCLUDED.x, articles.x)`。
+**COALESCE 只防 NULL、不防空串**，而 phase 1 写的是 `... or ""` —— 看似会被覆盖。
+实际安全是因为 `save_articles` 用 `_optional_text()` 把空串归一化成了 `None`：
+
+```python
+"full_text": _optional_text(article.get("full_text")),
+# _optional_text: text = str(value or "").strip(); return text or None
+```
+
+三种场景实测均安全：phase2 不带该键 / 显式传 `''` / 传 `None`，全文都保住。
+但这个安全性**依赖于 `_optional_text` 的行为**，改它时要连带看 COALESCE。
+
+---
+
 ## 成本核算
 
 ### 为什么不能信 SDK 报的金额

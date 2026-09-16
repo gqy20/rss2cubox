@@ -288,8 +288,15 @@ async def _enrich_all(
     log_event: Any,
     *,
     pre_fetched_texts: dict[str, str] | None = None,
+    on_item_done: Any | None = None,
 ) -> dict[str, int]:
     import anyio
+
+    # 下面多处直接调 log_event(...)，在入口归一化成 no-op，
+    # 免得每个调用点都要写 if log_event 保护。
+    if log_event is None:
+        def log_event(*_args: Any, **_kwargs: Any) -> None:
+            return None
 
     semaphore = anyio.Semaphore(ENRICH_MAX_WORKERS)
     stats = {"started": 0, "succeeded": 0, "failed": 0, "empty": 0, "retried": 0, "retried_succeeded": 0}
@@ -377,6 +384,21 @@ async def _enrich_all(
                         cluster_hint=merged.get("cluster_hint", ""),
                         hidden_signal=merged.get("hidden_signal", "")[:40],
                     )
+                    # 增量落库钩子。回调做的是阻塞 DB IO，放到线程里跑，
+                    # 否则会堵住事件循环、拖慢其他并发中的 enrich。
+                    # 回调异常不能影响 enrich 本身（落库失败不该让分析结果丢失）。
+                    if on_item_done is not None:
+                        try:
+                            await anyio.to_thread.run_sync(on_item_done, item, merged)
+                        except Exception as cb_exc:  # noqa: BLE001
+                            stats["flush_failed"] = stats.get("flush_failed", 0) + 1
+                            log_event(
+                                "WARN",
+                                "enrich_flush_failed",
+                                stage="enrich",
+                                eid=eid,
+                                error=f"{type(cb_exc).__name__}: {str(cb_exc)[:160]}",
+                            )
                 else:
                     is_timeout = "timeout_after" in reason
                     if is_timeout:
@@ -397,6 +419,7 @@ def analyze_candidates_with_agent(
     candidates: list[dict],
     log_event: Any,
     pre_fetched_texts: dict[str, str] | None = None,
+    on_item_done: Any | None = None,
 ) -> dict[str, dict[str, Any]]:
     analyses: dict[str, dict[str, Any]] = {}
     if not candidates:
@@ -429,7 +452,7 @@ def analyze_candidates_with_agent(
     try:
         import anyio
         from functools import partial
-        enrich_stats = anyio.run(partial(_enrich_all, _enrich_candidates, analyses, log_event, pre_fetched_texts=pre_fetched_texts))
+        enrich_stats = anyio.run(partial(_enrich_all, _enrich_candidates, analyses, log_event, pre_fetched_texts=pre_fetched_texts, on_item_done=on_item_done))
         log_event(
             "INFO",
             "enrich_complete",

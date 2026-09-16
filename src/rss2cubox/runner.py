@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import threading
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -70,6 +71,9 @@ MAX_ITEMS_PER_RUN = int(os.getenv("MAX_ITEMS_PER_RUN", "300"))
 # 候选是 priority 降序 + 前缀截取，而各 feed 候选量差异极大（实测 openai 单 feed
 # 1193 条、vercel 1578 条），不限流时一个高产源就能吃光整轮预算。
 MAX_ITEMS_PER_SOURCE = max(0, sync_pipeline.env_int("MAX_ITEMS_PER_SOURCE", 60))
+# enrich 结果增量落库的批大小。结果原本全程只在内存里，一轮要跑几小时，
+# 中断就全丢（实测今天三次中断丢了 1501 篇的分析结果）。0 = 关闭增量落库。
+ENRICH_FLUSH_EVERY = max(0, sync_pipeline.env_int("ENRICH_FLUSH_EVERY", 25))
 
 ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com").strip()
 ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "").strip()
@@ -314,24 +318,82 @@ def main() -> None:
         except Exception as e:
             log_event("WARN", "phase1_save_failed", stage="phase1", error=str(e))
 
-    # ── DB fallback: 内存无全文时从数据库恢复 ──
-    if not _pre_ft and _db_url and candidates_for_run:
-        _eids = [str(item.get("eid", "")).strip() for item in candidates_for_run if item.get("eid")]
-        _recovered = get_fulltexts_by_eids(_eids, db_url=_db_url)
-        if _recovered:
-            _pre_ft = _recovered
+    # ── DB fallback: 本轮没抓到的全文，从库里回补以前抓过的 ──
+    # 旧条件是 `if not _pre_ft`（全有或全无）：只要本轮抓到了一篇，剩下缺的
+    # 就永远不会回补。实测一次运行抓到 1473/1500，剩下 27 篇即使库里有历史
+    # 全文也被跳过。改成只查缺失的 eid，并合并而不是覆盖。
+    if _db_url and candidates_for_run:
+        _missing_eids = [
+            str(item.get("eid", "")).strip()
+            for item in candidates_for_run
+            if str(item.get("eid", "")).strip() and str(item.get("eid", "")).strip() not in _pre_ft
+        ]
+        if _missing_eids:
+            _recovered = get_fulltexts_by_eids(_missing_eids, db_url=_db_url)
+            if _recovered:
+                _pre_ft.update(_recovered)
+                log_event(
+                    "INFO",
+                    "fulltext_recovered_from_db",
+                    stage="fulltext",
+                    missing=len(_missing_eids),
+                    recovered=len(_recovered),
+                )
+
+    # ── enrich 结果增量落库 ──
+    # 每完成 ENRICH_FLUSH_EVERY 篇就写一次库，中断只损失未满一批的部分。
+    # 写入用的是与 phase 2 完全相同的 build_processed_article + save_articles，
+    # 而 save_articles 是 upsert 且 full_text 用 COALESCE 保护，所以幂等、不会吃掉全文。
+    _flush_buffer: list[dict[str, Any]] = []
+    _flush_lock = threading.Lock()
+    _flush_stats = {"saved": 0, "batches": 0, "lost": 0}
+
+    def _flush_now() -> None:
+        if not _flush_buffer:
+            return
+        batch = list(_flush_buffer)
+        _flush_buffer.clear()
+        try:
+            save_articles(batch, db_url=_db_url)
+            _flush_stats["saved"] += len(batch)
+            _flush_stats["batches"] += 1
             log_event(
-                "INFO",
-                "fulltext_recovered_from_db",
-                stage="fulltext",
-                count=len(_recovered),
+                "INFO", "enrich_flush", stage="enrich",
+                saved=len(batch), total_saved=_flush_stats["saved"],
             )
+        except Exception as exc:  # noqa: BLE001
+            _flush_stats["lost"] += len(batch)
+            log_event(
+                "WARN", "enrich_flush_error", stage="enrich",
+                error=f"{type(exc).__name__}: {str(exc)[:180]}", lost=len(batch),
+            )
+
+    def _on_enrich_item_done(item: dict[str, Any], analysis: dict[str, Any]) -> None:
+        """单篇 enrich 完成时的回调（在 anyio 工作线程里执行）。"""
+        if not _db_url or ENRICH_FLUSH_EVERY <= 0:
+            return
+        if not sync_pipeline.has_signal_analysis(analysis):
+            return
+        record = sync_pipeline.build_processed_article(
+            item=item, analysis=analysis, now_iso=now, source_type=IC_SOURCE_TYPE,
+        )
+        with _flush_lock:
+            _flush_buffer.append(record)
+            if len(_flush_buffer) >= ENRICH_FLUSH_EVERY:
+                _flush_now()
 
     analyses = enrich_agent.analyze_candidates_with_agent(
         candidates=candidates_for_run,
         log_event=log_event,
         pre_fetched_texts=_pre_ft if _pre_ft else None,
+        on_item_done=_on_enrich_item_done,
     )
+    with _flush_lock:
+        _flush_now()
+    if ENRICH_FLUSH_EVERY > 0 and _db_url:
+        stats["enrich_flushed"] = _flush_stats["saved"]
+        stats["enrich_flush_lost"] = _flush_stats["lost"]
+        log_event("INFO", "enrich_flush_summary", stage="enrich", **_flush_stats)
     stats["ai_analyzed"] = len(candidates_for_run)
     ai_enabled = stats["ai_enabled"]
     if ai_enabled and analyses:
