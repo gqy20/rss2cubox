@@ -27,6 +27,11 @@ class FetchResult:
 FULLTEXT_ENABLED = os.getenv("FULLTEXT_ENABLED", "true").lower() not in ("false", "0", "no")
 FULLTEXT_MAX_WORKERS = max(1, int(os.getenv("FULLTEXT_MAX_WORKERS", "10")))
 FULLTEXT_ITEM_TIMEOUT_S = max(5, int(os.getenv("FULLTEXT_ITEM_TIMEOUT_S", "30")))
+# L2（playwright）总开关。关掉后只用 trafilatura，抓不到就退回摘要。
+# 存在的理由：L2 每个 URL 都 chromium.launch() 一次，在 runner 进程内与主流程
+# 并发时会严重拖慢整体（实测全文阶段 0.6 篇/分钟，隔离测试同样配置 38 篇/分钟），
+# 且连 L1 都会被拖到超时。排查这类问题时可以先关掉它做对照。
+FULLTEXT_ENABLE_PLAYWRIGHT = os.getenv("FULLTEXT_ENABLE_PLAYWRIGHT", "true").lower() not in ("false", "0", "no")
 
 # 每级内部超时分配（总和不超过 FULLTEXT_ITEM_TIMEOUT_S）
 _L1_TIMEOUT_S = min(10, FULLTEXT_ITEM_TIMEOUT_S // 3)       # trafilatura 上限 ~10s
@@ -291,7 +296,9 @@ def fetch_full_text(url: str) -> FetchResult:
 
     # L2: Playwright（较慢，~7-20s）
     remaining = FULLTEXT_ITEM_TIMEOUT_S - (time.perf_counter() - t0)
-    if remaining > 5:
+    if not FULLTEXT_ENABLE_PLAYWRIGHT:
+        levels.append("l2=disabled")
+    elif remaining > 5:
         l2_budget = min(remaining - 1, _L2_TIMEOUT_S)
         result = _fetch_with_timeout(_fetch_l2_playwright, url, l2_budget)
         if result and result.text:
