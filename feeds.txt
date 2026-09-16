@@ -349,7 +349,8 @@
 # — 从 The Decoder & AI Weekly 共同引用
 # ======== 全渠道信源发现：OPML 挖矿 + 公司博客矩阵 + 学术/播客/VC/政策 ========
 # — AI 公司官方博客（新发现）
-2	https://openai.com/blog/rss.xml # OpenAI Blog（产品+研究，与 /news/rss 互补）
+# 已移除 openai.com/blog/rss.xml —— 实测与 openai.com/news/rss.xml 完全相同
+# （各 1193 条，交集 1193），原注释「与 /news/rss 互补」是错的
 2	https://www.together.ai/blog/rss.xml # Together AI Blog（开源模型生态）
 2	https://www.microsoft.com/en-us/research/feed/ # Microsoft Research（前沿研究）
 2	https://blogs.nvidia.com/feed/ # NVIDIA Blog（GPU/芯片/AI 硬件，与企业开发者博客互补）

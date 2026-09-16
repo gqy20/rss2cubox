@@ -253,7 +253,50 @@ class TestFetchFullText:
 
             result = fetch_full_text("https://fail.example.com")
             assert result.text == ""
-            assert result.error == "all_levels_failed"
+            assert result.error.startswith("all_levels_failed")
+
+    def test_error_distinguishes_no_content_from_timeout(self):
+        """回归：原来超时、抛异常、跑完但无正文全部报成 None，
+        最后只剩一个笼统的 all_levels_failed，无法判断该调超时还是该换抽取方式。"""
+        with patch("rss2cubox.fulltext_fetcher._fetch_l1_trafilatura") as mock_l1, \
+             patch("rss2cubox.fulltext_fetcher._fetch_l2_playwright") as mock_l2, \
+             patch("rss2cubox.fulltext_fetcher._is_wechat_url") as mock_wc:
+            mock_l1.return_value = None
+            mock_l2.return_value = None
+            mock_wc.return_value = False
+
+            from rss2cubox.fulltext_fetcher import fetch_full_text
+
+            err = fetch_full_text("https://fail.example.com").error
+            assert "l1=no_content" in err
+            assert "l2=no_content" in err
+
+    def test_error_reports_l2_timeout_explicitly(self):
+        """L2 超时必须能看出来 —— 这正是并发过高时的真实形态。"""
+        import time as _time
+
+        def slow(_url):  # noqa: ANN001
+            _time.sleep(3)
+            return None
+
+        with patch("rss2cubox.fulltext_fetcher._fetch_l1_trafilatura", return_value=None), \
+             patch("rss2cubox.fulltext_fetcher._fetch_l2_playwright", side_effect=slow), \
+             patch("rss2cubox.fulltext_fetcher._is_wechat_url", return_value=False), \
+             patch("rss2cubox.fulltext_fetcher._L2_TIMEOUT_S", 0.5):
+            from rss2cubox.fulltext_fetcher import fetch_full_text
+
+            err = fetch_full_text("https://slow.example.com").error
+            assert "l2=timeout>" in err
+
+    def test_error_propagates_exception_type(self):
+        with patch("rss2cubox.fulltext_fetcher._fetch_l1_trafilatura",
+                   side_effect=RuntimeError("boom")), \
+             patch("rss2cubox.fulltext_fetcher._fetch_l2_playwright", return_value=None), \
+             patch("rss2cubox.fulltext_fetcher._is_wechat_url", return_value=False):
+            from rss2cubox.fulltext_fetcher import fetch_full_text
+
+            err = fetch_full_text("https://err.example.com").error
+            assert "l1=RuntimeError" in err and "boom" in err
 
     def test_empty_url(self):
         from rss2cubox.fulltext_fetcher import fetch_full_text

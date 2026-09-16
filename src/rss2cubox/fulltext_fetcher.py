@@ -45,7 +45,12 @@ def _is_wechat_url(url: str) -> bool:
 
 
 def _fetch_with_timeout(fetch_fn: Callable, url: str, timeout_s: float) -> FetchResult | None:
-    """在子线程中执行 fetch_fn(url)，超过 timeout_s 秒返回 None（不阻塞调用线程）。"""
+    """在子线程中执行 fetch_fn(url)，不阻塞调用线程。
+
+    失败时返回**带 error 的 FetchResult** 而不是 None，因为调用方需要区分
+    三种形态：超时 / 抛异常 / 跑完但没抽到正文。原来统一返回 None，
+    最后只能报一个笼统的 all_levels_failed，排查时完全无从下手。
+    """
     result_container: list[FetchResult | None] = [None]
     exception_holder: list[BaseException | None] = [None]
 
@@ -60,9 +65,13 @@ def _fetch_with_timeout(fetch_fn: Callable, url: str, timeout_s: float) -> Fetch
     t.join(timeout=timeout_s)
 
     if t.is_alive():
-        return None  # 超时，子线程会被 GC 回收（daemon=True）
+        # 超时，子线程会被 GC 回收（daemon=True）
+        return FetchResult(error=f"timeout>{timeout_s:.0f}s")
     if exception_holder[0] is not None:
-        return None
+        exc = exception_holder[0]
+        return FetchResult(error=f"{type(exc).__name__}: {str(exc)[:100]}")
+    if result_container[0] is None:
+        return FetchResult(error="no_content")
     return result_container[0]
 
 
@@ -247,26 +256,42 @@ def fetch_full_text(url: str) -> FetchResult:
         return FetchResult(error="empty_url")
 
     t0 = time.perf_counter()
+    levels: list[str] = []
 
     if _is_wechat_url(url):
         result = _fetch_with_timeout(_fetch_l3_wechat, url, _L3_TIMEOUT_S)
-        return result or FetchResult(error="wechat_failed", level=3, elapsed_s=time.perf_counter() - t0)
+        if result and result.text:
+            result.elapsed_s = time.perf_counter() - t0
+            return result
+        return FetchResult(
+            error=f"wechat_failed: l3={getattr(result, 'error', '') or 'empty'}",
+            level=3,
+            elapsed_s=time.perf_counter() - t0,
+        )
 
     # L1: trafilatura（快速，~1-10s）
     result = _fetch_with_timeout(_fetch_l1_trafilatura, url, _L1_TIMEOUT_S)
     if result and result.text:
         result.elapsed_s = time.perf_counter() - t0
         return result
+    levels.append(f"l1={getattr(result, 'error', '') or 'empty'}")
 
     # L2: Playwright（较慢，~7-20s）
     remaining = FULLTEXT_ITEM_TIMEOUT_S - (time.perf_counter() - t0)
     if remaining > 5:
-        result = _fetch_with_timeout(_fetch_l2_playwright, url, min(remaining - 1, _L2_TIMEOUT_S))
+        l2_budget = min(remaining - 1, _L2_TIMEOUT_S)
+        result = _fetch_with_timeout(_fetch_l2_playwright, url, l2_budget)
         if result and result.text:
             result.elapsed_s = time.perf_counter() - t0
             return result
+        levels.append(f"l2={getattr(result, 'error', '') or 'empty'}")
+    else:
+        levels.append(f"l2=skipped_budget_left={remaining:.0f}s")
 
-    return FetchResult(error="all_levels_failed", elapsed_s=time.perf_counter() - t0)
+    return FetchResult(
+        error="all_levels_failed: " + " | ".join(levels),
+        elapsed_s=time.perf_counter() - t0,
+    )
 
 
 # ── 并发批量抓取 ─────────────────────────────────────
