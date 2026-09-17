@@ -1,6 +1,7 @@
 """Shared Claude Agent SDK JSON runner."""
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import time
