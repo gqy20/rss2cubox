@@ -34,7 +34,7 @@ SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
                     "cluster_key": {"type": "string"},
                     "label": {"type": "string"},
                     "normalized_label": {"type": "string"},
-                    "signal_type": {"type": "integer", "minimum": 1, "maximum": 12},
+                    "signal_type": {"type": "integer", "minimum": 1, "maximum": 12, "description": "固定分类编号，有效范围 1~12（12=噪声/与AI无关）。绝不能编造范围外的编号"},
                     "status": {"type": "string", "enum": ["new", "warming", "bursting", "cooling", "mature", "invalid"]},
                     "summary": {"type": "string"},
                     "entities": {"type": "array", "items": {"type": "string"}},
@@ -75,6 +75,8 @@ SYSTEM_PROMPT = (
     "只在索引不足以判断某一篇归属时按 ref 精确 Grep，且次数受限——不要通读整个文件。"
     "不要做 embedding，不要臆造不存在的文章。输出必须符合 JSON Schema。"
     "cluster_key 必须稳定，格式为 '<signal_type>:<normalized_label>'。"
+    "** signal_type 是固定分类编号，有效范围 1~12，参考索引里的 sig 字段；"
+    "12 表示噪声/与 AI 无关。绝不能编造 13、14 之类的新编号。**"
     "status 只能是 new、warming、bursting、cooling、mature、invalid。"
     "只输出 cluster_key、label、normalized_label、signal_type、status、summary、entities、watch_keywords "
     "以及可选的 first_seen_at、last_seen_at。聚合评分（avg_importance 等）由程序从真实文章计算，不要输出。"
