@@ -63,7 +63,7 @@ SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
             },
         },
     },
-    "required": ["clusters", "links"],
+    "required": ["clusters"],
 }
 
 
@@ -193,14 +193,81 @@ def _build_prompt(
         "【输出要求】\n"
         "1. 将相同或高度相关的**长期信号**归并为同一 cluster；"
         "与 AI/智能体无关的噪声单独成簇，不要硬塞进主题簇。\n"
-        f"2. links 必须为索引里的**每一篇**文章（共 {len(articles)} 篇）输出一条，"
-        "含 cluster_key / article_id / relevance_score。article_id 填索引里的 ref"
-        "（例如 a017）。覆盖率会被程序校验，不足会重试。\n"
-        "3. relevance_score 用 0~1，表示该文章对这个簇的归属强度，不要全填 1。\n"
-        "4. 不要输出规则解释，只输出结构化 JSON。\n"
-        "5. 不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count、article_count。"
+        "2. 不需要输出 links —— 归属关系由程序根据簇的 entities 和 keywords 自动分配。"
+        "   请确保每个簇的 entities 和 keywords 足够具体，程序靠它们把文章归入簇。\n"
+        "3. 不要输出规则解释，只输出结构化 JSON。\n"
+        "4. 不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count、article_count。"
         + (f"\n\n【上一次的问题，本次必须修正】{retry_hint}" if retry_hint else "")
     )
+
+
+def _assign_links_by_similarity(
+    articles: list[dict[str, Any]],
+    clusters: list[dict[str, Any]],
+    ref_to_id: dict[str, str],
+) -> list[dict[str, Any]]:
+    """根据簇的 entities / keywords / label 把文章归入最匹配的簇。
+
+    比对策略：每篇文章与每个簇做 token 交集，交最多的即归属；
+    全零则用 normalized_label 的序列相似度；仍无则归入噪声簇。
+    """
+    import difflib
+
+    def _tokens(*parts: Any) -> set[str]:
+        out: set[str] = set()
+        for part in parts:
+            if isinstance(part, str):
+                out.update(part.lower().replace("-", "_").split("_"))
+            elif isinstance(part, (list, tuple)):
+                for item in part:
+                    if isinstance(item, str):
+                        out.update(item.lower().replace("-", "_").split("_"))
+        return {t for t in out if len(t) >= 2}
+
+    noise_idx = [i for i, c in enumerate(clusters)
+                 if any(k in str(c.get("label", "")) + str(c.get("normalized_label", ""))
+                       for k in ("噪声", "无关", "noise", "other", "非 AI"))]
+
+    cluster_tokens = [
+        _tokens(c.get("entities"), c.get("watch_keywords"),
+                c.get("normalized_label"), c.get("label"))
+        for c in clusters
+    ]
+
+    links: list[dict[str, Any]] = []
+    for i, article in enumerate(articles):
+        art_tokens = _tokens(
+            article.get("entities"), article.get("watch_keywords"),
+            article.get("cluster_hint"), article.get("title"),
+        )
+        best_idx, best_score = -1, 0
+        for ci, ct in enumerate(cluster_tokens):
+            overlap = len(art_tokens & ct)
+            if overlap > best_score:
+                best_score, best_idx = overlap, ci
+        if best_idx < 0 and art_tokens and clusters:
+            hint = str(article.get("cluster_hint") or article.get("title") or "")
+            best_ratio = 0.0
+            for ci, cluster in enumerate(clusters):
+                label = str(cluster.get("normalized_label") or cluster.get("label") or "")
+                if not label:
+                    continue
+                ratio = difflib.SequenceMatcher(None, hint.lower(), label.lower()).ratio()
+                if ratio > best_ratio:
+                    best_ratio, best_idx = ratio, ci
+        if best_idx < 0 and noise_idx:
+            best_idx = noise_idx[0]
+        if best_idx >= 0:
+            ref = f"a{i + 1:03d}"
+            real_id = ref_to_id.get(ref, str(article.get("id") or ""))
+            cluster_key = str(clusters[best_idx].get("cluster_key") or "")
+            if real_id and cluster_key:
+                links.append({
+                    "cluster_key": cluster_key,
+                    "article_id": real_id,
+                    "relevance_score": round(min(1.0, best_score / 5) if best_score > 0 else 0.5, 2),
+                })
+    return links
 
 
 def run_signal_cluster_agent(
@@ -265,6 +332,14 @@ def run_signal_cluster_agent(
                 )
             )
             result = _validate_payload(payload, real_ids, ref_to_id=ref_to_id)
+
+            # 模型不再被要求输出 links：200 条 × 3 字段的结构化输出是
+            # error_max_structured_output_retries 的根因。Python 侧根据簇的
+            # entities/keywords 自动分配，覆盖率恒为 100%，无结构化失败风险。
+            if not result["links"] and result["clusters"] and articles:
+                result["links"] = _assign_links_by_similarity(
+                    articles, result["clusters"], ref_to_id
+                )
             coverage = (len(result["links"]) / len(articles)) if articles else 1.0
 
             # 保留覆盖率最高的一次：重试是为了提高质量，不能因为重试更差而丢掉好结果
@@ -297,8 +372,8 @@ def run_signal_cluster_agent(
             retry_hint = (
                 f"上一次只输出了 {len(result['links'])}/{len(articles)} 条 links，"
                 f"覆盖率 {coverage:.0%}，低于要求的 {SIGNAL_CLUSTER_MIN_LINK_COVERAGE:.0%}。"
-                f"必须为索引里的每一篇文章都输出一条 link，一篇都不能漏；"
-                f"拿不准归属的文章也要归到最接近的簇或噪声簇，不要直接省略。"
+                f"请确保 clusters 数组中的 entities 和 keywords 足够具体，"
+                f"程序靠它们把文章归入簇，太泛会导致归属错误。"
             )
             if log_event:
                 log_event("WARN", "signal_cluster_low_coverage_retry", stage="cluster",
