@@ -35,7 +35,7 @@ TREND_PREDICTION_OUTPUT_SCHEMA = {
                     "status": {"type": "string", "enum": ["pending"]},
                 },
                 "required": [
-                    "signal_cluster_key", "prediction_type", "horizon_days",
+                    "signal_cluster_key", "prediction_type",
                     "prediction_title", "prediction_body",
                     "watch_keywords", "expected_evidence", "disconfirming_evidence",
                     "baseline_metrics", "confidence", "status",
@@ -131,13 +131,13 @@ def run_trend_prediction_agent(
     # 过滤无效 prediction 而非丢弃全部
     valid_keys = {str(cluster.get("cluster_key")) for cluster in clusters if cluster.get("cluster_key")}
     valid = [p for p in predictions if str(p.get("signal_cluster_key")) in valid_keys][:max_predictions]
-    # 时间字段由 Python 确定（模型生成的时间不可信，见 schema 注释）
+    # 时间字段由 Python 确定（模型生成的时间不可信，见 schema 注释）。
+    # horizon_days 也一样：实测模型给出过 735/869683 这种值，而窗口是固定的。
     for p in valid:
         p["created_at"] = now_dt.isoformat()
         p["target_start_at"] = now_dt.isoformat()
         p["target_end_at"] = target_end.isoformat()
-        if not isinstance(p.get("horizon_days"), int) or p.get("horizon_days", 0) < 1:
-            p["horizon_days"] = horizon_days
+        p["horizon_days"] = horizon_days
     return valid
 
 # _budget 已抽取到 agent_sdk_runner._budget
