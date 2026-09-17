@@ -576,3 +576,48 @@ class TestClusterAggregatesFromRealArticles:
             got = cur.fetchone()
         assert got[0] == 0
         assert float(got[1]) == pytest.approx(0.65)
+
+
+class TestSignalTypeDerivation:
+    """signal_type 从 cluster_key 前缀解析（模型不再输出该字段）。
+
+    实测（ploop8/9 transcript）：模型把分类编号填成强度分数
+    （809/909/893 = 成员重要度总和），5+ 次校验全败；而 key 前缀
+    （"9:nvidia-hf-acquisition"）从来没写错过。第三次踩到同一类坑
+    （avg_importance 编 0~1000、horizon_days 编 735、signal_type 编 809）：
+    凡模型能回显错的字段，都该由 Python 从确定性来源推导。
+    """
+
+    def _validate(self, clusters: list) -> dict:
+        from rss2cubox.signal_cluster_agent import _validate_payload
+        return _validate_payload({"clusters": clusters, "links": []}, set())
+
+    def test_derived_from_key_prefix(self) -> None:
+        result = self._validate([
+            {"cluster_key": "9:nvidia-hf-acquisition", "label": "x", "normalized_label": "y"},
+            {"cluster_key": "11:robotics-embodied", "label": "x", "normalized_label": "y"},
+        ])
+        assert result["clusters"][0]["signal_type"] == 9
+        assert result["clusters"][1]["signal_type"] == 11
+
+    def test_model_garbage_value_overridden(self) -> None:
+        """模型把强度分数填进 signal_type 也会被 key 前缀覆盖。"""
+        result = self._validate([
+            {"cluster_key": "9:nvidia-hf-acquisition", "signal_type": 909, "label": "x"},
+        ])
+        assert result["clusters"][0]["signal_type"] == 9
+
+    def test_invalid_prefix_clamps_to_12(self) -> None:
+        for bad_key in ("13:invented", "abc:no-number", "0:zero", ":empty", "no-colon"):
+            result = self._validate([
+                {"cluster_key": bad_key, "label": "x", "normalized_label": "y"},
+            ])
+            assert result["clusters"][0]["signal_type"] == 12, f"key={bad_key}"
+
+    def test_missing_signal_type_field_is_fine(self) -> None:
+        """schema 已把 signal_type 从 required 移除，模型不输出也能落地。"""
+        result = self._validate([
+            {"cluster_key": "1:frontier-model", "label": "x", "normalized_label": "y",
+             "status": "new", "summary": "s", "entities": [], "watch_keywords": []},
+        ])
+        assert result["clusters"][0]["signal_type"] == 1

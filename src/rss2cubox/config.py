@@ -148,7 +148,7 @@ _TABLE: list[tuple[str, str, Any, str, str]] = [
     ("AGENT_SDK_MAX_STRUCTURED_OUTPUT_RETRIES", "int", "5", "agentsdk", "结构化输出自校正重试上限（传给 CLI 的原生 MAX_STRUCTURED_OUTPUT_RETRIES 环境变量，默认 5）。每次重试重发完整上下文，调高会多花 token；schema 精简后通常一次通过"),
     ("PREDICTION_LOOP_ARTICLE_LIMIT", "int", "500", "prediction", "cluster 从 DB 取多少篇（之后还会被 SIGNAL_CLUSTER_MAX_ARTICLES 二次截断）"),
     ("SIGNAL_CLUSTER_MAX_ARTICLES", "int", "200", "prediction", "单次调用处理的文章数。索引+明细文件模式下 200 篇的索引约 14K tokens（原先全字段内联实测 197,530 tokens、占窗口 98.8%）"),
-    ("SIGNAL_CLUSTER_MAX_TURNS", "int", "30", "prediction", "cluster agent 轮数上限。不用 200（daily_report 就是 200，实跑 25 轮烧 798K input tokens），但也不能压到个位数——聚类需要对拿不准的文章翻明细，压太死等于禁止深入（实测 12 轮时模型一次文件都没打开）"),
+    ("SIGNAL_CLUSTER_MAX_TURNS", "int", "40", "prediction", "cluster agent 轮数上限。不用 200（daily_report 就是 200，实跑 25 轮烧 798K input tokens），但也不能压到个位数——聚类需要对拿不准的文章翻明细，压太死等于禁止深入（实测 12 轮时模型一次文件都没打开）"),
     ("SIGNAL_CLUSTER_MIN_LINK_COVERAGE", "float", "0.9", "prediction", "links 覆盖率下限，低于此值带明确缺口数字重试。实测同一批数据两次分别给出 200/200 和 95/200，方差很大"),
     ("SIGNAL_CLUSTER_MAX_ATTEMPTS", "int", "2", "prediction", "覆盖率不足时的最大尝试次数。保留覆盖率最高的一次，不会因为重试更差而丢掉好结果"),
     ("PREDICTION_LOOP_CLUSTER_LIMIT", "int", "20", "prediction", "generate 阶段取多少个簇"),

@@ -31,10 +31,12 @@ SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "cluster_key": {"type": "string"},
+                    "cluster_key": {"type": "string", "description": "格式 '<signal_type>:<normalized_label>'，前缀是下述 12 类编号"},
                     "label": {"type": "string"},
                     "normalized_label": {"type": "string"},
-                    "signal_type": {"type": "integer", "minimum": 1, "maximum": 12, "description": "固定分类编号，有效范围 1~12（12=噪声/与AI无关）。绝不能编造范围外的编号"},
+                    # signal_type 已从模型输出中移除：程序从 cluster_key 前缀解析。
+                    # 实测模型把分类编号填成强度分数（809/909 = 成员重要度总和），
+                    # 5+ 次校验全败；而 key 前缀它从来没写错过——确定性来源交给 Python。
                     "status": {"type": "string", "enum": ["new", "warming", "bursting", "cooling", "mature", "invalid"]},
                     "summary": {"type": "string"},
                     "entities": {"type": "array", "items": {"type": "string"}},
@@ -43,10 +45,9 @@ SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
                     "last_seen_at": {"type": "string"},
                     # avg_importance / avg_confidence 已从模型输出中移除：
                     # save_signal_clusters 从真实文章 SQL 聚合，模型给的值从不被使用。
-                    # 实测模型在 0~1 与 0~1000 刻度间摇摆，23 次结构化重试全因它。
                 },
                 "required": [
-                    "cluster_key", "label", "normalized_label", "signal_type", "status",
+                    "cluster_key", "label", "normalized_label", "status",
                     "summary", "entities", "watch_keywords",
                 ],
             },
@@ -84,16 +85,17 @@ SYSTEM_PROMPT = (
     "4.【洞察】summary 必须写出这个簇的底层信号是什么、成员间的关系"
     "（演化/佐证/分歧），不是话题词罗列。\n"
     "不要做 embedding，不要臆造不存在的文章。输出必须符合 JSON Schema。"
-    "cluster_key 必须稳定，格式为 '<signal_type>:<normalized_label>'。"
-    "signal_type 是固定分类编号，取值及含义（与 enrich 阶段一致）：\n"
+    "cluster_key 必须稳定，格式为 '<signal_type>:<normalized_label>'，"
+    "前缀 signal_type 是固定分类编号，取值及含义（与 enrich 阶段一致）：\n"
     "  1=模型能力  2=基础设施/算力/芯片  3=开发者工作流  4=产品化/应用层\n"
     "  5=开源生态  6=研究论文/算法  7=安全/风险/对齐  8=监管/政策\n"
     "  9=商业/融资/组织动作  10=数据/评测/Benchmark  11=机器人/具身智能  12=其他/噪声\n"
-    "每个簇按内容选最贴近的编号；多个簇可以共用同一编号（key 靠 normalized_label 区分）。"
-    "绝不能编造 13、14 之类范围外的编号。"
-    "status 只能是 new、warming、bursting、cooling、mature、invalid。"
-    "只输出 cluster_key、label、normalized_label、signal_type、status、summary、entities、watch_keywords "
-    "以及可选的 first_seen_at、last_seen_at。聚合评分（avg_importance 等）由程序从真实文章计算，不要输出。"
+    "每个簇按内容选最贴近的编号写进 key 前缀；多个簇可以共用同一编号"
+    "（key 靠 normalized_label 区分）。signal_type 字段不需要输出——"
+    "程序直接从 key 前缀解析。\n"
+    "status 只能是 new、warming、bursting、cooling、mature、invalid。\n"
+    "只输出 cluster_key、label、normalized_label、status、summary、entities、watch_keywords "
+    "以及可选的 first_seen_at、last_seen_at。"
     "不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count 等字段。"
 )
 
@@ -119,7 +121,7 @@ SIGNAL_CLUSTER_MAX_ARTICLES = max(10, int(os.getenv("SIGNAL_CLUSTER_MAX_ARTICLES
 # 防止重蹈 daily_report 的覆辙（max_turns=200 → 实跑 25 轮 → 798K input tokens）。
 # 轮数上限。不用 200（daily_report 就是 200，实跑 25 轮烧掉 798K input tokens），
 # 但也不能压到个位数：聚类需要对拿不准的文章去翻明细，压太死等于禁止深入。
-SIGNAL_CLUSTER_MAX_TURNS = max(3, int(os.getenv("SIGNAL_CLUSTER_MAX_TURNS", "30")))
+SIGNAL_CLUSTER_MAX_TURNS = max(3, int(os.getenv("SIGNAL_CLUSTER_MAX_TURNS", "40")))
 # links 覆盖率低于此值就重试一次。实测同一批数据两次运行分别给出 200/200 和
 # 95/200，方差很大，而 links 为空时 13 个簇的 article_count 会全是 0。
 SIGNAL_CLUSTER_MIN_LINK_COVERAGE = min(
@@ -418,6 +420,19 @@ def _validate_payload(
         links = []
     if not isinstance(clusters, list) or not isinstance(links, list):
         raise RuntimeError("invalid_signal_cluster_payload")
+
+    # signal_type 由 cluster_key 前缀解析（模型不再输出该字段）。实测模型会把
+    # 分类编号填成强度分数（809/909 = 成员重要度总和），5+ 次校验全败；
+    # 而 key 前缀它从来没写错过。前缀非法时锢位到 12（其他/噪声）。
+    for cluster in clusters:
+        if not isinstance(cluster, dict):
+            continue
+        prefix = str(cluster.get("cluster_key") or "").split(":", 1)[0]
+        try:
+            parsed = int(prefix)
+        except (TypeError, ValueError):
+            parsed = 12
+        cluster["signal_type"] = parsed if 1 <= parsed <= 12 else 12
 
     refs = ref_to_id or {}
     cluster_keys = {str(c.get("cluster_key")) for c in clusters if c.get("cluster_key")}
