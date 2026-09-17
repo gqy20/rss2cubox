@@ -72,7 +72,7 @@ def run_prediction_review_agent(
                 schema=PREDICTION_REVIEW_OUTPUT_SCHEMA,
                 max_turns=20,
                 max_budget_usd=_budget("PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD", 10.0),
-                timeout_seconds=_agent_timeout("PREDICTION_REVIEW_AGENT_TIMEOUT_SECONDS", default=300, minimum=120),
+                timeout_seconds=_agent_timeout("PREDICTION_REVIEW_AGENT_TIMEOUT_SECONDS", default=900, minimum=120),
                 sdk_log=sdk_logger,
             ),
             agent_name="prediction_review",

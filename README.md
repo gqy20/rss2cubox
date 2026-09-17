@@ -95,9 +95,22 @@ https://openai.com/news/rss.xml
 
 **`policy_sources.toml`** — 政策信源清单（加站点只改这个文件，不用改代码）
 
-**`.env`** — 运行参数（从 `.env.example` 复制，逐项有注释）
+**`.env`** — 运行参数（从 `.env.example` 复制）
+
+`.env` 里**只放必填项和实际偏离默认值的调优结果**，等于默认值的不写。
+全部 103 个配置项（名字、类型、默认值、说明）都在 `src/rss2cubox/config.py` 的
+注册表里，用命令查看：
+
+```bash
+make config                 # 列出全部，● 标记被 .env 覆盖的
+make config-help            # 同上，并显示每项说明
+make doctor                 # 体检：顺带检查必填项是否缺失
+```
 
 > ⚠️ `.env` 的优先级**高于** shell 环境变量。临时改配置请直接改 `.env`，在终端 `export` 不会生效。
+>
+> 要改某个值的**默认行为**，改 `config.py` 而不是往 `.env` 里加一行——
+> `tests/test_config_registry.py` 会强制注册表与代码默认值一致。
 
 暂时不想抓某类源，用 `FEED_SECTIONS_DISABLE`（如 `twitter,bilibili,werss`）停用，不用删 `feeds.txt` 里的行。
 

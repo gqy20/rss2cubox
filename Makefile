@@ -32,7 +32,7 @@ NPX  := npx
 
 .PHONY: help up deps db db-init db-wait db-stop db-down db-logs db-psql db-reset \
         run loop web dev doctor test lint logs cron-install cron-uninstall cron-list clean \
-        cost cost-pricing cost-refresh \
+        cost cost-pricing cost-refresh config config-help \
         policy policy-dry policy-status policy-init policy-triage policy-enrich \
         policy-cron-install policy-cron-uninstall
 
@@ -196,6 +196,12 @@ cost-pricing: ## 查看本地模型单价表
 
 cost-refresh: ## 从网关重拉单价并覆写 model_pricing.json（唯一联网的成本命令）
 	@$(UV) run python scripts/agent_cost.py --refresh-pricing
+
+config: ## 列出全部配置项（标出哪些被 .env 覆盖、哪些必填项缺失）
+	@$(UV) run python -m rss2cubox.config $(CONFIG_ARGS)
+
+config-help: ## 列出全部配置项并带上每项的说明
+	@$(UV) run python -m rss2cubox.config --help-text
 
 # ── 定时任务 ──────────────────────────────────────────────────
 cron-install: ## 安装主链路 crontab（默认每 6 小时，可用 RSS2CUBOX_CRON_SCHEDULE 覆盖）

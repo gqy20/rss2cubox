@@ -132,7 +132,7 @@ def run_signal_cluster_agent(
                 schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
                 max_turns=200,
                 max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
-                timeout_seconds=_agent_timeout("SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS", default=300, minimum=120),
+                timeout_seconds=_agent_timeout("SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS", default=900, minimum=120),
                 sdk_log=sdk_logger,
             ),
             agent_name="signal_cluster",

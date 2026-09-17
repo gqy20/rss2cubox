@@ -28,9 +28,65 @@
 
 ---
 
-## 环境变量完整参考
+## 配置系统
 
-`.env` 是带注释的模板见 [.env.example](../.env.example)。这里只记**调优时容易踩的坑**。
+**全部 103 个配置项的唯一声明处是 `src/rss2cubox/config.py` 的注册表**，每项含
+名字、类型（bool/int/float/str/csv）、默认值、分组、说明。
+
+```bash
+make config                                   # 列出全部，● 标记被覆盖的
+make config-help                              # 同上 + 每项说明
+make config CONFIG_ARGS="--overridden-only"   # 只看被覆盖的
+make config CONFIG_ARGS="--group policy"      # 只看某一组
+make config CONFIG_ARGS="--names"             # 只输出变量名（脚本用）
+```
+
+输出里凭据类（`*TOKEN` / `*API_KEY` / `*DB_URL` / `*DATABASE_URL` / `*PASSWORD` /
+`*SECRET` / `*DSN`）只显示头 8 尾 4，可以直接贴到 issue 里。
+
+### 三条约定
+
+1. **`.env` 只放两类东西**：必填项（凭据 / DB / IC 端点），以及当前**实际偏离
+   默认值**的调优结果。等于默认值的一律不写——那是噪音。
+   按这条原则精简后 `.env` 从 48 行降到 19 行（`make config` 会报
+   「103 个配置项，其中 19 个被覆盖」，两者应当对得上）。
+2. **要改默认值就改 `config.py`，不要写进 `.env`。** 例如 cluster agent 的超时
+   原本是 300s、实测必然失败，正确做法是把代码默认值改成 900，而不是在 `.env`
+   里写一行 `SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS=900`。
+3. **`tests/test_config_registry.py` 强制注册表与代码不漂移。** 它扫描 `src/` 和
+   `scripts/` 里所有读环境变量的写法（`os.getenv` / `os.environ` / `env_int` /
+   `env_float` / `_budget` / `_agent_timeout` / `cfg.*`），断言：
+   - 代码读的每个变量都已在注册表登记
+   - 注册表里没有无人读取的死配置
+   - 每个变量的默认值在注册表与代码字面量里**完全一致**
+   - 每项都有非平凡的说明文字（不能只是重复变量名）
+
+   这一层是关键：不要求一次性重写 10 个模块的读取方式，但保证注册表不会在几周后
+   重新变成第二份过期文档。
+
+### 为什么需要这个
+
+`SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS=300` 这个值原先只存在于
+`signal_cluster_agent.py:135` 的代码字面量里，任何配置文件都看不到它——
+这正是它长期没人发现、直到聚类静默失败才暴露的原因。
+
+同类问题还有一个：`ANTHROPIC_BASE_URL` 在 `runner.py` 里默认
+`https://api.anthropic.com`，在 `scripts/agent_cost.py` 里默认空串——
+**同一个变量两个默认值**。注册表 + 防漂移测试能抓住这类分歧。
+
+### 迁移状态
+
+注册表已是事实来源，但各模块仍在用 `os.getenv("X", default)` 直接读取
+（10 个模块、101 处）。这是**有意的渐进式迁移**：防漂移测试保证两边默认值一致，
+所以不迁移也不会出错；后续可以逐个模块改成 `cfg.int("X")` 而不必一次性大改。
+
+新代码应该直接用 `from rss2cubox.config import cfg`。
+
+---
+
+## 调优时容易踩的坑
+
+完整配置清单用 `make config-help` 看，模板见 [.env.example](../.env.example)。这里只记踩过的坑。
 
 ### `.env` 的优先级高于 shell
 

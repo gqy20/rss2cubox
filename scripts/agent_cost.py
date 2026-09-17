@@ -87,10 +87,14 @@ def refresh_pricing(path: Path = PRICING_FILE) -> int:
     import requests
 
     _load_env()
-    base_url = os.getenv("ANTHROPIC_BASE_URL", "").strip()
-    token = (os.getenv("ANTHROPIC_AUTH_TOKEN") or os.getenv("ANTHROPIC_API_KEY") or "").strip()
-    if not base_url or not token:
-        print("需要 .env 里的 ANTHROPIC_BASE_URL 和 ANTHROPIC_AUTH_TOKEN", file=sys.stderr)
+    # 走 config 读取，避免这里再维护一套 ANTHROPIC_BASE_URL 的默认值
+    # （原先这里默认空串、runner.py 默认 api.anthropic.com，同一个变量两个默认值）
+    from rss2cubox.config import cfg as _cfg
+
+    base_url = _cfg.str("ANTHROPIC_BASE_URL")
+    token = _cfg.str("ANTHROPIC_AUTH_TOKEN") or _cfg.str("ANTHROPIC_API_KEY")
+    if not token:
+        print("需要 .env 里的 ANTHROPIC_AUTH_TOKEN", file=sys.stderr)
         return 2
 
     resp = requests.get(f"{base_url.rstrip('/')}/api/pricing", params={"key": token}, timeout=20)
