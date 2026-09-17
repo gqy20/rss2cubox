@@ -217,6 +217,11 @@ class TestRunJsonAgentTimeout:
             "subtype": "",
             "structured_output": None,
         })
+        # run_json_agent 的完整消息流消费需要这些类型（isinstance 检查用）
+        for name in ("AssistantMessage", "RateLimitEvent", "StreamEvent",
+                     "TaskNotificationMessage", "TaskProgressMessage",
+                     "TextBlock", "ThinkingBlock", "ToolResultBlock", "ToolUseBlock"):
+            setattr(sdk_mock, name, type(name, (), {}))
         sdk_mock.query = MagicMock()
         sdk_mock.create_sdk_mcp_server = MagicMock()
 

@@ -47,6 +47,73 @@ def extract_json_from_text(text: str) -> dict | list | None:
     return None
 
 
+# ── 可诊断性：stderr 尾部 + 异常分类（模式取自 TrendPluse）────
+# CLI 子进程的 stderr 是排查「Command failed with exit code 1」的唯一线索，
+# 但默认只打终端、不进事件流。这里留最近 N 行，出错时拼进异常消息。
+_STDERR_TAIL_LINES = 20
+
+
+def _make_stderr_capture():
+    """返回 (缓冲列表, 可给 ClaudeAgentOptions.stderr 的回调)。"""
+    lines = []
+    seen = set()
+
+    def _handle(message):
+        stripped = message.strip() if isinstance(message, str) else str(message).strip()
+        if not stripped:
+            return
+        if stripped in seen:
+            return
+        seen.add(stripped)
+        lines.append(stripped)
+        if len(lines) > _STDERR_TAIL_LINES:
+            del lines[: len(lines) - _STDERR_TAIL_LINES]
+
+    return lines, _handle
+
+
+def _classify_sdk_exception(exc):
+    """把 SDK 调用的异常归类为稳定类别，用于日志过滤与统计。"""
+    if isinstance(exc, TimeoutError):
+        return "timeout"
+    if isinstance(exc, _StructuredOutputError):
+        return "structured_output_error"
+    if isinstance(exc, ValueError):
+        return "validation_error"
+
+    message = str(exc).lower()
+    if "error_max_structured_output_retries" in message:
+        return "structured_output_retries_exhausted"
+    if "exit code" in message or "command failed" in message:
+        return "process_error"
+    if "canceled" in message or "cancelled" in message:
+        return "cancelled"
+    if "rate" in message and "limit" in message:
+        return "rate_limit"
+    return "unknown"
+
+
+def _stderr_tail(lines):
+    return " | ".join(lines[-_STDERR_TAIL_LINES:]) if lines else ""
+
+
+def _enriched_error(exc, stderr_lines):
+    """把 stderr 尾部拼进异常消息，让「exit code 1」不再是死胡同。"""
+    tail = _stderr_tail(stderr_lines)
+    if not tail:
+        return str(exc) or type(exc).__name__
+    return str(exc) + "; stderr_tail=" + tail
+
+
+# 可重试的异常。error_max_structured_output_retries 跑 30 分钟后零产出全损，
+# 没有外层重试就是彻底白跑。RuntimeError 覆盖 CLI 的各种进程级失败。
+RETRYABLE_SDK_ERRORS = (
+    TimeoutError,
+    _StructuredOutputError,
+    RuntimeError,
+)
+
+
 async def run_json_agent(
     *,
     prompt: str,
@@ -65,7 +132,20 @@ async def run_json_agent(
     sdk_log: Callable[..., None] | None = None,
 ) -> dict[str, Any]:
     try:
-        from claude_agent_sdk import ClaudeAgentOptions, ResultMessage, query  # type: ignore
+        from claude_agent_sdk import (  # type: ignore
+    AssistantMessage,
+    ClaudeAgentOptions,
+    RateLimitEvent,
+    ResultMessage,
+    StreamEvent,
+    TaskNotificationMessage,
+    TaskProgressMessage,
+    TextBlock,
+    ThinkingBlock,
+    ToolResultBlock,
+    ToolUseBlock,
+    query,
+)
     except ImportError as exc:
         raise RuntimeError("claude_agent_sdk_import_error") from exc
 
@@ -85,6 +165,7 @@ async def run_json_agent(
         _enrich_session_dir.mkdir(parents=True, exist_ok=True)
         _resolved_env["CLAUDE_CONFIG_DIR"] = str(_enrich_session_dir)
 
+    stderr_lines, stderr_capture = _make_stderr_capture()
     options = ClaudeAgentOptions(
         system_prompt=system_prompt,
         allowed_tools=allowed_tools or [],
@@ -94,7 +175,7 @@ async def run_json_agent(
         max_budget_usd=max_budget_usd,
         cwd=cwd or Path.cwd(),
         setting_sources=setting_sources,
-        stderr=stderr,
+        stderr=(lambda line: (stderr_capture(line), stderr(line) if stderr else None)),
         output_format={"type": "json_schema", "schema": schema},
         env=_resolved_env,
     )
@@ -171,9 +252,10 @@ async def run_json_agent(
     query_started_at = time.perf_counter()
     emit("agent_sdk_query_start")
     saw_message = False
+    tool_call_count = 0
 
     async def _consume_query():
-        nonlocal saw_message
+        nonlocal saw_message, tool_call_count
         async for message in query(prompt=prompt, options=options, transport=transport):
             if not saw_message:
                 saw_message = True
@@ -183,6 +265,58 @@ async def run_json_agent(
                     total_duration_ms=int((time.perf_counter() - started_at) * 1000),
                     message_type=type(message).__name__,
                 )
+
+            # ── 中间消息：可观测性的主体 ──
+            # 之前只处理 ResultMessage，工具调用/思考/限流完全不可见，排查
+            # 「CLI exit 1 但拿不到任何信息」只能靠写一次性诊断脚本。
+            if isinstance(message, AssistantMessage):
+                for block in (getattr(message, "content", None) or []):
+                    block_type = type(block).__name__
+                    if block_type == "ToolUseBlock":
+                        tool_call_count += 1
+                        emit(
+                            "agent_sdk_tool_use",
+                            tool=getattr(block, "name", ""),
+                            tool_input=json.dumps(
+                                getattr(block, "input", {}),
+                                ensure_ascii=False,
+                                default=str,
+                            )[:200],
+                            call_index=tool_call_count,
+                        )
+                    elif block_type == "ToolResultBlock":
+                        content = getattr(block, "content", None)
+                        content_str = ""
+                        if isinstance(content, list):
+                            for part in content:
+                                if type(part).__name__ == "TextBlock":
+                                    content_str = (getattr(part, "text", "") or "")[:200]
+                                    break
+                        elif isinstance(content, str):
+                            content_str = content[:200]
+                        emit(
+                            "agent_sdk_tool_result",
+                            tool_use_id=getattr(block, "tool_use_id", ""),
+                            is_error=bool(getattr(block, "is_error", False)),
+                            content=content_str,
+                        )
+                    elif block_type == "ThinkingBlock":
+                        thinking = (getattr(block, "thinking", "") or "")[:300]
+                        if thinking:
+                            emit("agent_sdk_thinking", thinking=thinking)
+            elif isinstance(message, RateLimitEvent):
+                emit(
+                    "agent_sdk_rate_limit",
+                    retry_after_ms=getattr(message, "retry_after_ms", None),
+                )
+            elif isinstance(message, (TaskProgressMessage, TaskNotificationMessage)):
+                emit(
+                    "agent_sdk_task_update",
+                    message_type=type(message).__name__,
+                    payload=str(message)[:200],
+                )
+            # StreamEvent 量大，只在需要极细粒度调试时才考虑记
+
             if isinstance(message, ResultMessage):
                 # usage / model_usage 必须记下来：total_cost_usd 是 CLI 按它自己的
                 # Claude 定价表算的，走第三方网关时那个金额不代表真实账单。
@@ -191,6 +325,7 @@ async def run_json_agent(
                     "agent_sdk_result",
                     duration_ms=int((time.perf_counter() - query_started_at) * 1000),
                     total_duration_ms=int((time.perf_counter() - started_at) * 1000),
+                    tool_calls=tool_call_count,
                     is_error=message.is_error,
                     subtype=message.subtype,
                     has_structured_output=message.structured_output is not None,
@@ -206,7 +341,8 @@ async def run_json_agent(
                     return message.structured_output
                 raw_result = getattr(message, "result", None) or ""
                 if message.is_error:
-                    raise RuntimeError(message.subtype or "agent_error")
+                    raise RuntimeError(_enriched_error(
+                        RuntimeError(message.subtype or "agent_error"), stderr_lines))
                 raise _StructuredOutputError(raw_result, message.subtype or "no_structured_output")
 
     try:
@@ -489,22 +625,62 @@ async def run_with_fallback(
     agent_name: str,
     validate: Callable[[dict[str, Any]], bool],
     sdk_log: Callable[..., None] | None = None,
+    max_attempts: int = 2,
+    retry_delay_seconds: float = 5.0,
 ) -> dict[str, Any]:
-    """执行 Agent 并自动处理 StructuredOutputError fallback 解析。
+    """执行 Agent 并自动处理 StructuredOutputError fallback 解析与可重试错误。
 
-    正常结果直接返回；Schema 验证失败时尝试 extract_json_from_text 提取 JSON，
-    通过 validate 回调校验提取结果是否可用。
+    三层容错：
+    1. 正常结果直接返回
+    2. Schema 验证失败时尝试 extract_json_from_text 提取 JSON（原有行为）
+    3. 可重试异常（timeout / 结构化输出失败 / CLI 进程错误）整体重试
+
+    第 3 层是后加的：实测一次 cluster 调用跑 30 分钟后
+    error_max_structured_output_retries、零产出全损 —— 没有外层重试，
+    一次瞬态失败就把整轮工作作废。max_attempts 默认 2，够处理瞬态问题
+    又不至于把运行时间翻太多倍。
     """
     logger = make_sdk_logger(agent_name, log_event=sdk_log)
-    try:
-        _actual = coro() if callable(coro) else coro
-        result = await _actual
-        return result
-    except _StructuredOutputError as e:
-        logger(f"{agent_name}_fallback_start")
-        fallback = extract_json_from_text(e.raw_text)
-        if isinstance(fallback, dict) and validate(fallback):
-            logger(f"{agent_name}_fallback_ok")
-            return fallback
-        logger(f"{agent_name}_fallback_failed", raw_preview=e.raw_text[:300])
-        raise
+
+    async def _one_attempt():
+        try:
+            _actual = coro() if callable(coro) else coro
+            result = await _actual
+            return result
+        except _StructuredOutputError as e:
+            logger(f"{agent_name}_fallback_start")
+            fallback = extract_json_from_text(e.raw_text)
+            if isinstance(fallback, dict) and validate(fallback):
+                logger(f"{agent_name}_fallback_ok")
+                return fallback
+            logger(f"{agent_name}_fallback_failed", raw_preview=e.raw_text[:300])
+            raise
+
+    last_exc = None
+    for attempt in range(1, max(1, max_attempts) + 1):
+        try:
+            return await _one_attempt()
+        except RETRYABLE_SDK_ERRORS as exc:
+            last_exc = exc
+            category = _classify_sdk_exception(exc)
+            if attempt >= max(1, max_attempts):
+                logger(
+                    f"{agent_name}_retries_exhausted",
+                    attempts=max(1, max_attempts),
+                    category=category,
+                    error=str(exc)[:300],
+                )
+                break
+            logger(
+                f"{agent_name}_retrying",
+                attempt=attempt,
+                next_attempt=attempt + 1,
+                max_attempts=max_attempts,
+                category=category,
+                wait_seconds=retry_delay_seconds,
+                error=str(exc)[:200],
+            )
+            await asyncio.sleep(retry_delay_seconds)
+        # 非可重试异常直接抛出
+    assert last_exc is not None
+    raise last_exc

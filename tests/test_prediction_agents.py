@@ -292,7 +292,14 @@ class TestClusterIndexAndFileMode:
             assert "hidden_signal" in row and "reason" in row
 
     def test_index_much_smaller_than_full_inline(self) -> None:
-        """核心收益：索引体积必须远小于全字段内联。"""
+        """索引体积必须显著小于全字段内联，否则又回到指令稀释的老问题。
+
+        阈值取 0.6 而不是更小：索引**故意**包含 hidden_signal 与 reason（enrich
+        产出中分析密度最高的两个字段）。省掉它们能让索引降到全字段的 15%，
+        但实测那样模型会「仅依赖索引分组、未通读明细文件」，对信息不足的文章
+        只能靠标题猜。真实数据下含这两个字段的索引是全字段的 33.5%
+        （39,119 / 116,824 tokens），质量优先，这个比例是可以接受的。
+        """
         import json
         from rss2cubox.signal_cluster_agent import _build_index
 
@@ -300,9 +307,34 @@ class TestClusterIndexAndFileMode:
         index, _refs, _detail = _build_index(arts)
         index_chars = len(json.dumps(index, ensure_ascii=False))
         full_chars = len(json.dumps(arts, ensure_ascii=False))
-        assert index_chars < full_chars * 0.35, (
+        assert index_chars < full_chars * 0.6, (
             f"索引 {index_chars} 字符未显著小于全字段 {full_chars} 字符"
         )
+
+    def test_index_carries_analytical_fields(self) -> None:
+        """索引必须带 hidden_signal / reason —— 这是"质量优先"的核心。
+
+        回归：曾经为了压缩体积省掉它们，模型自述「仅依赖索引进行分组，
+        未通读明细文件」，对索引稀疏的文章「按标题/已知归属归入相应簇」。
+        """
+        from rss2cubox.signal_cluster_agent import _build_index
+
+        index, _refs, _detail = _build_index(self._articles(3))
+        for row in index:
+            assert row.get("signal"), "索引必须含 hidden_signal（键名 signal）"
+            assert row.get("why"), "索引必须含 reason（键名 why）"
+            assert row.get("hint") is not None
+
+    def test_bulk_fields_stay_in_detail_file_only(self) -> None:
+        """低分析密度的长字段只放明细文件，不进 prompt。"""
+        from rss2cubox.signal_cluster_agent import _build_index
+
+        index, _refs, detail = _build_index(self._articles(3))
+        bulk = {"description", "actionable", "prediction", "disconfirming_evidence", "url"}
+        for row in index:
+            assert not (bulk & set(row)), f"索引里混进了应留在文件的字段: {bulk & set(row)}"
+        for row in detail:
+            assert bulk <= set(row), "明细文件必须保留这些字段供按需查阅"
 
     def test_detail_written_as_jsonl_one_per_line(self) -> None:
         """JSONL 而非 JSON 数组：这样 Grep 能按行精确定位、Read 能分页。"""

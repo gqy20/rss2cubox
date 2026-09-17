@@ -1,19 +1,26 @@
 {
   "_readme": [
-    "模型单价表 —— 本地维护，agent_cost.py 默认只读这个文件，不联网。",
+    "模型单价表 —— agent_cost.py / token_pricing.py 默认只读这个文件，不联网。",
     "",
-    "计费公式（new-api 约定）：",
+    "计费公式（new-api quota 约定）：",
     "  quota = input_tokens × model_ratio",
     "        + output_tokens × model_ratio × completion_ratio",
+    "        + cache_read × model_ratio × cache_read_ratio",
+    "        + cache_write × model_ratio × cache_write_ratio",
     "  金额  = quota / quota_per_unit        单位见 currency",
     "  美元  = 金额 / usd_exchange_rate",
     "",
-    "quota_type: 0 = 按 token 计费（用 model_ratio）；1 = 按次计费（用 model_price）",
+    "quota_mode_defaults.cache_read_ratio 默认 1.0（按 input 同价计，成本上界）。",
+    "Anthropic 官方对 cache_read 打 0.1 折扣；tashan 网关是否对 cache 计费无法从",
+    "外部确认，所以宁可高估。确认后再把这两个值改掉。",
     "",
-    "更新方式：uv run python scripts/agent_cost.py --refresh-pricing",
-    "（该命令会联网拉一次网关定价并覆盖写回本文件，之后仍然离线使用）"
+    "更新方式：uv run python scripts/agent_cost.py --refresh-pricing"
   ],
   "gateway": "https://newapi.tashan.chat",
+  "quota_mode_defaults": {
+    "cache_read_ratio": 1.0,
+    "cache_write_ratio": 1.0
+  },
   "quota_per_unit": 500000,
   "currency": "CNY",
   "usd_exchange_rate": 7.3,

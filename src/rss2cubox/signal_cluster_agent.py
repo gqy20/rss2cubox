@@ -100,8 +100,15 @@ def build_cluster_key(article: dict[str, Any]) -> str:
 SIGNAL_CLUSTER_MAX_ARTICLES = max(10, int(os.getenv("SIGNAL_CLUSTER_MAX_ARTICLES", "200")))
 # 索引在 prompt 里、明细在文件里。这两个值限制 agent 翻文件的次数，
 # 防止重蹈 daily_report 的覆辙（max_turns=200 → 实跑 25 轮 → 798K input tokens）。
-SIGNAL_CLUSTER_MAX_TURNS = max(3, int(os.getenv("SIGNAL_CLUSTER_MAX_TURNS", "12")))
-SIGNAL_CLUSTER_MAX_DETAIL_READS = max(0, int(os.getenv("SIGNAL_CLUSTER_MAX_DETAIL_READS", "5")))
+# 轮数上限。不用 200（daily_report 就是 200，实跑 25 轮烧掉 798K input tokens），
+# 但也不能压到个位数：聚类需要对拿不准的文章去翻明细，压太死等于禁止深入。
+SIGNAL_CLUSTER_MAX_TURNS = max(3, int(os.getenv("SIGNAL_CLUSTER_MAX_TURNS", "30")))
+# links 覆盖率低于此值就重试一次。实测同一批数据两次运行分别给出 200/200 和
+# 95/200，方差很大，而 links 为空时 13 个簇的 article_count 会全是 0。
+SIGNAL_CLUSTER_MIN_LINK_COVERAGE = min(
+    1.0, max(0.0, float(os.getenv("SIGNAL_CLUSTER_MIN_LINK_COVERAGE", "0.9")))
+)
+SIGNAL_CLUSTER_MAX_ATTEMPTS = max(1, int(os.getenv("SIGNAL_CLUSTER_MAX_ATTEMPTS", "2")))
 
 
 def _build_index(
@@ -125,6 +132,13 @@ def _build_index(
             "ref": ref,
             "title": str(article.get("title") or "")[:160],
             "hint": str(article.get("cluster_hint") or "")[:80],
+            # hidden_signal 与 reason 是 enrich 产出里分析密度最高的两个字段
+            # （实测平均 131 / 50 字符）。加进索引只多约 14K tokens（占 200K 窗口
+            # 的 7%），但能让模型基于实质内容归并，而不是靠标题猜。
+            # 曾经省掉它们，结果模型自述「仅依赖索引分组，未通读明细文件」，
+            # 对索引稀疏的文章只能「按标题/已知归属归入相应簇」。
+            "signal": str(article.get("hidden_signal") or "")[:220],
+            "why": str(article.get("reason") or "")[:120],
             "entities": [str(x)[:40] for x in (article.get("entities") or [])][:6],
             "keywords": [str(x)[:30] for x in (article.get("watch_keywords") or [])][:6],
             "imp": article.get("importance_score"),
@@ -132,14 +146,61 @@ def _build_index(
             "date": str(article.get("publish_time") or "")[:10],
         })
         detail: dict[str, Any] = {"ref": ref, "id": real_id}
-        for key in ("title", "cluster_hint", "entities", "watch_keywords", "hidden_signal",
-                    "reason", "actionable", "signal_type", "evidence_type", "evidence_strength",
-                    "novelty_score", "impact_horizon", "market_stage", "confidence",
-                    "importance_score", "publish_time", "source_feed_name", "url"):
+        for key in ("title", "description", "cluster_hint", "entities", "watch_keywords",
+                    "hidden_signal", "reason", "actionable", "prediction",
+                    "disconfirming_evidence", "signal_type", "evidence_type",
+                    "evidence_strength", "novelty_score", "impact_horizon", "market_stage",
+                    "confidence", "importance_score", "publish_time", "source_feed_name", "url"):
             if key in article:
                 detail[key] = article[key]
         detail_rows.append(detail)
     return index_rows, ref_to_id, detail_rows
+
+
+def _build_prompt(
+    *,
+    articles: list[dict[str, Any]],
+    index_rows: list[dict[str, Any]],
+    detail_path: str,
+    existing_clusters: list[dict[str, Any]],
+    now_dt: datetime,
+    retry_hint: str = "",
+) -> str:
+    """构造 prompt。
+
+    设计取向是**质量优先**：索引里带 hidden_signal 与 reason（enrich 产出中分析
+    密度最高的字段），让模型有实质内容可推理；明细文件保留其余字段供按需深入。
+
+    曾经写过「主要依据索引」「最多 5 次 Grep」「不要 Read 整个文件」这类劝退话，
+    结果模型一次文件都没打开，自述「仅依赖索引进行分组，未通读明细文件」，
+    对索引稀疏的文章「按标题/已知归属归入相应簇」。轮数是省下来了，深度没了。
+    现在改为说明何时值得深入，并把轮数上限交给 SIGNAL_CLUSTER_MAX_TURNS 控制。
+    """
+    return (
+        f"共有 {len(articles)} 篇候选文章，当前时间 {now_dt.isoformat()}。\n\n"
+        f"【索引】下面是**全部 {len(articles)} 篇**的索引，字段为 "
+        "ref / 标题 / 聚类提示 / 隐藏信号 / 判定理由 / 实体 / 关键词 / 重要度 / 信号类型 / 日期：\n"
+        f"{json.dumps(index_rows, ensure_ascii=False)}\n\n"
+        f"【明细文件】每篇的完整字段（含 description、actionable、prediction、"
+        f"disconfirming_evidence、url、来源等）在 {detail_path}\n"
+        '（JSONL，每行一篇，行内含 "ref" 字段）。用 Grep 按 ref 取单篇，例如：\n'
+        f'    Grep  pattern=\'"ref": "a017"\'  path={detail_path}\n'
+        "索引已足够完成大部分归并；**但当某几篇的归属拿不准、或需要判断它们是否真的"
+        "属于同一长期信号时，应当去查明细再定**，不要凭标题猜。\n"
+        "可以一次 Grep 多个 ref，也可以 Read 文件的某个区间来批量查看。\n\n"
+        "【已有簇】\n"
+        f"{json.dumps(existing_clusters, ensure_ascii=False)}\n\n"
+        "【输出要求】\n"
+        "1. 将相同或高度相关的**长期信号**归并为同一 cluster；"
+        "与 AI/智能体无关的噪声单独成簇，不要硬塞进主题簇。\n"
+        f"2. links 必须为索引里的**每一篇**文章（共 {len(articles)} 篇）输出一条，"
+        "含 cluster_key / article_id / relevance_score。article_id 填索引里的 ref"
+        "（例如 a017）。覆盖率会被程序校验，不足会重试。\n"
+        "3. relevance_score 用 0~1，表示该文章对这个簇的归属强度，不要全填 1。\n"
+        "4. 不要输出规则解释，只输出结构化 JSON。\n"
+        "5. 不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count、article_count。"
+        + (f"\n\n【上一次的问题，本次必须修正】{retry_hint}" if retry_hint else "")
+    )
 
 
 def run_signal_cluster_agent(
@@ -160,78 +221,93 @@ def run_signal_cluster_agent(
     index_rows, ref_to_id, detail_rows = _build_index(articles)
     detail_path = write_temp_jsonl(detail_rows)
 
-    prompt = (
-        f"共有 {len(articles)} 篇候选文章，当前时间 {now_dt.isoformat()}。\n\n"
-        f"【索引】下面是**全部 {len(articles)} 篇**的索引"
-        "（ref / 标题 / 聚类提示 / 实体 / 关键词 / 重要度 / 信号类型 / 日期）。\n"
-        "索引已经覆盖所有文章，归并分组的判断请**主要依据索引**：\n"
-        f"{json.dumps(index_rows, ensure_ascii=False)}\n\n"
-        f"【明细文件】完整明细在 {detail_path}\n"
-        '（JSONL 格式，每行一篇文章，行内含 "ref" 字段）。\n'
-        "只在索引信息不足以判断某一篇的归属时，才用 Grep 按 ref 精确取那一行，例如：\n"
-        f'    Grep  pattern=\'"ref": "a017"\'  path={detail_path}\n'
-        f"**最多 {SIGNAL_CLUSTER_MAX_DETAIL_READS} 次**。\n"
-        "不要 Read 整个文件，也不要逐篇读取 —— 索引已经是完整的，翻文件只会浪费轮次。\n\n"
-        "【已有簇】\n"
-        f"{json.dumps(existing_clusters or [], ensure_ascii=False)}\n\n"
-        "【输出要求】\n"
-        "1. 将相同或高度相关的长期信号归并为同一 cluster。\n"
-        "2. links 必须为索引里的**每一篇**文章输出一条，含 cluster_key / article_id / "
-        "relevance_score 三个字段。article_id 填索引里的 ref（例如 a017），不要填别的形式。"
-        "覆盖率会被程序校验，漏掉的文章会被记为未归类并告警。\n"
-        "3. 不要输出规则解释，只输出结构化 JSON。\n"
-        "4. 不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count、article_count。"
-    )
-
-    sdk_logger = make_sdk_logger("signal_cluster", log_event=log_event,
-                                article_count=len(articles),
-                                existing_cluster_count=len(existing_clusters or []),
-                                prompt_chars=len(prompt),
-                                detail_path=detail_path)
+    real_ids = {str(a["id"]) for a in articles if a.get("id")}
+    result: dict[str, Any] = {"clusters": [], "links": [], "unmapped_refs": 0}
+    best: dict[str, Any] = result
+    best_coverage = -1.0
 
     try:
-        payload = anyio.run(
-            partial(
-                run_with_fallback,
-                partial(
-                    run_json_agent,
-                    prompt=prompt,
-                    system_prompt=SYSTEM_PROMPT,
-                    schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
-                    allowed_tools=["Read", "Grep", "Glob"],
-                    max_turns=SIGNAL_CLUSTER_MAX_TURNS,
-                    max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
-                    timeout_seconds=_agent_timeout("SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS", default=900, minimum=120),
-                    setting_sources=None,
-                    sdk_log=sdk_logger,
-                ),
-                agent_name="signal_cluster",
-                validate=lambda d: isinstance(d.get("clusters"), list),
-                sdk_log=log_event,
+        retry_hint = ""
+        for attempt in range(1, SIGNAL_CLUSTER_MAX_ATTEMPTS + 1):
+            prompt = _build_prompt(
+                articles=articles,
+                index_rows=index_rows,
+                detail_path=detail_path,
+                existing_clusters=existing_clusters or [],
+                now_dt=now_dt,
+                retry_hint=retry_hint,
             )
-        )
+            sdk_logger = make_sdk_logger("signal_cluster", log_event=log_event,
+                                        article_count=len(articles),
+                                        existing_cluster_count=len(existing_clusters or []),
+                                        prompt_chars=len(prompt),
+                                        detail_path=detail_path,
+                                        attempt=attempt)
+
+            payload = anyio.run(
+                partial(
+                    run_with_fallback,
+                    partial(
+                        run_json_agent,
+                        prompt=prompt,
+                        system_prompt=SYSTEM_PROMPT,
+                        schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
+                        allowed_tools=["Read", "Grep", "Glob"],
+                        max_turns=SIGNAL_CLUSTER_MAX_TURNS,
+                        max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
+                        timeout_seconds=_agent_timeout("SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS", default=1800, minimum=120),
+                        setting_sources=None,
+                        sdk_log=sdk_logger,
+                    ),
+                    agent_name="signal_cluster",
+                    validate=lambda d: isinstance(d.get("clusters"), list),
+                    sdk_log=log_event,
+                )
+            )
+            result = _validate_payload(payload, real_ids, ref_to_id=ref_to_id)
+            coverage = (len(result["links"]) / len(articles)) if articles else 1.0
+
+            # 保留覆盖率最高的一次：重试是为了提高质量，不能因为重试更差而丢掉好结果
+            if coverage > best_coverage:
+                best, best_coverage = result, coverage
+
+            # links 覆盖率必须显式告警。曾有一次运行 links 返回空数组，13 个簇全部
+            # article_count=0、signal_cluster_articles 空表，但整条链路零告警，
+            # 是查数据库时才发现的 —— "成功"的事件路径掩盖了空结果。
+            if log_event:
+                log_event(
+                    "INFO" if coverage >= SIGNAL_CLUSTER_MIN_LINK_COVERAGE else "WARN",
+                    "signal_cluster_link_coverage",
+                    stage="cluster",
+                    attempt=attempt,
+                    articles=len(articles),
+                    links=len(result["links"]),
+                    clusters=len(result["clusters"]),
+                    coverage=round(coverage, 3),
+                    min_coverage=SIGNAL_CLUSTER_MIN_LINK_COVERAGE,
+                    unmapped=result.get("unmapped_refs", 0),
+                )
+
+            if coverage >= SIGNAL_CLUSTER_MIN_LINK_COVERAGE:
+                break
+            if attempt >= SIGNAL_CLUSTER_MAX_ATTEMPTS:
+                break
+            # 实测同一批数据两次运行分别给出 200/200 和 95/200，方差很大，
+            # 所以覆盖率不足时带着明确的缺口数字重试一次。
+            retry_hint = (
+                f"上一次只输出了 {len(result['links'])}/{len(articles)} 条 links，"
+                f"覆盖率 {coverage:.0%}，低于要求的 {SIGNAL_CLUSTER_MIN_LINK_COVERAGE:.0%}。"
+                f"必须为索引里的每一篇文章都输出一条 link，一篇都不能漏；"
+                f"拿不准归属的文章也要归到最接近的簇或噪声簇，不要直接省略。"
+            )
+            if log_event:
+                log_event("WARN", "signal_cluster_low_coverage_retry", stage="cluster",
+                          attempt=attempt, coverage=round(coverage, 3),
+                          next_attempt=attempt + 1)
     finally:
         cleanup_temp_files(detail_path)
 
-    real_ids = {str(a["id"]) for a in articles if a.get("id")}
-    result = _validate_payload(payload, real_ids, ref_to_id=ref_to_id)
-
-    # links 覆盖率必须显式告警。上一次运行 links 返回空数组，13 个簇全部
-    # article_count=0、signal_cluster_articles 空表，但整条链路没有任何告警，
-    # 是查数据库时才发现的 —— "成功"的事件路径掩盖了空结果。
-    coverage = (len(result["links"]) / len(articles)) if articles else 0.0
-    if log_event:
-        log_event(
-            "INFO" if coverage >= 0.8 else "WARN",
-            "signal_cluster_link_coverage",
-            stage="cluster",
-            articles=len(articles),
-            links=len(result["links"]),
-            clusters=len(result["clusters"]),
-            coverage=round(coverage, 3),
-            unmapped=result.get("unmapped_refs", 0),
-        )
-    return result
+    return best
 
 
 def _validate_payload(

@@ -487,6 +487,32 @@ avg_importance=2.667, avg_confidence=4.000`，与手工计算完全一致，
 
 ---
 
+## 成本核算的实现
+
+真实成本的计价逻辑在 `src/rss2cubox/token_pricing.py`（移植自 manim-agent
+的同名模块并扩展了 new-api quota 模式），`scripts/agent_cost.py` 只做日志分析。
+
+### 与旧实现的差异
+
+| | 旧 agent_cost.py | 新 token_pricing.py |
+|---|---|---|
+| 形态 | 脚本 | **库**，可在运行中实时调用 |
+| 单位 | quota 比例再换算 | 直接 CNY / 百万 tokens |
+| cache 计价 | **不计** | ✅ cache_read / cache_write 单独定价 |
+| 分档计价 | 无 | ✅ 按上下文长度分 tiers |
+| 模型名推断 | `<unknown>` | ✅ 从 model_usage 自动推断（修复了 12 次 unknown） |
+| 字段兼容 | camelCase + snake_case | ✅ 五种命名都认 |
+
+### cache 计价的不确定性
+
+`quota_mode_defaults.cache_read_ratio` 默认 1.0（按 input 同价，成本上界）。
+Anthropic 官方对 cache_read 打 0.1 折扣；tashan 网关是否对 cache 计费无法
+从外部确认，所以宁可高估。实测 cluster 一次调用有 125,312 个 cache_read
+tokens，按 1.0 计价约 ¥0.0175 —— 如果网关打 0.1 折，实际是 ¥0.00175。
+确认后在 `model_pricing.json` 的 `quota_mode_defaults` 里改。
+
+---
+
 ## 中断与恢复（durability）
 
 一轮完整运行要几小时，中断是常态而不是异常。
@@ -807,7 +833,16 @@ cluster 产出新结果会级联触发 generate（删 marker 使其立即 due）
 
 `agent_sdk_result` 记录：`total_cost_usd`（**Claude 价，不代表真实账单**）、
 `usage`、`model_usage`（含各模型 token 数，`make cost` 靠这个算真实成本）、
-`num_turns`、`subtype`、`is_error`、`stop_reason`。
+`num_turns`、`tool_calls`（本次调用的工具调用次数）、`subtype`、`is_error`、`stop_reason`。
+
+**中间消息事件**（排查 agent 行为的关键，之前完全没有）：
+- `agent_sdk_tool_use`：模型发起了一次工具调用（tool 名 + 入参摘要）
+- `agent_sdk_tool_result`：工具返回结果（是否出错 + 内容摘要）
+- `agent_sdk_thinking`：模型的推理片段
+- `agent_sdk_rate_limit`：触发了限流（retry_after_ms）
+- `agent_sdk_task_update`：后台任务进度
+
+有了这些，"agent 到底有没有翻文件、调了几次、在哪一步卡住"直接看日志，不用再写诊断脚本。
 
 ⚠️ `run_summary` 里的 `pushed` / `push_attempted` 统计的是**写入本地库的文章数**，
 与是否推送到 IC 无关（赋值在 `if IC_PUSH_ENABLED` 之外）。判断有没有真推 IC

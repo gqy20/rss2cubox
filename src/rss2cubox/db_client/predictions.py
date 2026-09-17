@@ -127,9 +127,16 @@ def get_recent_enriched_articles(
                 SELECT {ARTICLE_SELECT_COLUMNS}
                 FROM articles
                 WHERE publish_time >= NOW() - (%s * INTERVAL '1 day')
+                  -- 必须是真正 enrich 过的文章。原条件是 hidden_signal IS NOT NULL OR ...，
+                  -- 但 save_articles 写入的是空字符串而不是 NULL，所以 IS NOT NULL 对
+                  -- 每一行都成立、过滤形同虚设：实测取回 500 篇里只有 214 篇真 enrich 过，
+                  -- 286 篇空壳被当成信号喂给聚类 agent，导致它只能靠标题猜。
+                  -- 判据与 sync_pipeline.has_signal_analysis / get_all_article_ids(enriched_only)
+                  -- 保持一致。
                   AND (
-                    hidden_signal IS NOT NULL OR cluster_hint IS NOT NULL
-                    OR signal_type IS NOT NULL OR entities != '[]'::jsonb
+                    COALESCE(reason, '') <> ''
+                    OR COALESCE(actionable, '') <> ''
+                    OR COALESCE(hidden_signal, '') <> ''
                   )
                 ORDER BY publish_time DESC
                 LIMIT %s
