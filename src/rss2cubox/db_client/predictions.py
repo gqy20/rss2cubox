@@ -1,6 +1,7 @@
 """Prediction Loop CRUD — signal clusters, trend predictions, reviews."""
 import json
 import logging
+from datetime import datetime
 from typing import Any
 
 import psycopg
@@ -650,6 +651,22 @@ def save_trend_predictions(
     db_url = _get_db_url(db_url)
     if not db_url or not predictions:
         return 0
+
+    # 防御：坏日期毁掉整批保存（实测模型生成过 2026-09-077）。
+    # 单行过滤 + 告警，不让一行拖垮全部。
+    def _parseable(value: Any) -> bool:
+        try:
+            datetime.fromisoformat(str(value))
+            return True
+        except (TypeError, ValueError):
+            return False
+
+    bad = [p for p in predictions
+           if not (_parseable(p.get("target_start_at")) and _parseable(p.get("target_end_at")))]
+    if bad:
+        logging.warning("dropping %d predictions with unparseable dates: %r",
+                        len(bad), [p.get("target_start_at") for p in bad[:3]])
+        predictions = [p for p in predictions if p not in bad]
 
     try:
         with psycopg.connect(db_url) as conn:

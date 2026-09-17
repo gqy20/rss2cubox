@@ -41,8 +41,9 @@ SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
                     "watch_keywords": {"type": "array", "items": {"type": "string"}},
                     "first_seen_at": {"type": "string"},
                     "last_seen_at": {"type": "string"},
-                    "avg_importance": {"type": "number"},
-                    "avg_confidence": {"type": "number"},
+                    # avg_importance / avg_confidence 已从模型输出中移除：
+                    # save_signal_clusters 从真实文章 SQL 聚合，模型给的值从不被使用。
+                    # 实测模型在 0~1 与 0~1000 刻度间摇摆，23 次结构化重试全因它。
                 },
                 "required": [
                     "cluster_key", "label", "normalized_label", "signal_type", "status",
@@ -76,7 +77,7 @@ SYSTEM_PROMPT = (
     "cluster_key 必须稳定，格式为 '<signal_type>:<normalized_label>'。"
     "status 只能是 new、warming、bursting、cooling、mature、invalid。"
     "只输出 cluster_key、label、normalized_label、signal_type、status、summary、entities、watch_keywords "
-    "以及可选的 first_seen_at、last_seen_at、avg_importance、avg_confidence。"
+    "以及可选的 first_seen_at、last_seen_at。聚合评分（avg_importance 等）由程序从真实文章计算，不要输出。"
     "不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count 等字段。"
 )
 
@@ -392,7 +393,10 @@ def _validate_payload(
     ref_to_id: dict[str, str] | None = None,
 ) -> dict[str, Any]:
     clusters = payload.get("clusters")
+    # links 已从模型输出中移除（Python 自动分配），但兼容旧模型仍输出 links 的情况
     links = payload.get("links")
+    if links is None:
+        links = []
     if not isinstance(clusters, list) or not isinstance(links, list):
         raise RuntimeError("invalid_signal_cluster_payload")
 
