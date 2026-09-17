@@ -220,7 +220,8 @@ class TestRunJsonAgentTimeout:
         # run_json_agent 的完整消息流消费需要这些类型（isinstance 检查用）
         for name in ("AssistantMessage", "RateLimitEvent", "StreamEvent",
                      "TaskNotificationMessage", "TaskProgressMessage",
-                     "TextBlock", "ThinkingBlock", "ToolResultBlock", "ToolUseBlock"):
+                     "TextBlock", "ThinkingBlock", "ToolResultBlock", "ToolUseBlock",
+                     "UserMessage"):
             setattr(sdk_mock, name, type(name, (), {}))
         sdk_mock.query = MagicMock()
         sdk_mock.create_sdk_mcp_server = MagicMock()
@@ -521,3 +522,142 @@ class TestEnrichRetry:
 
 
 import sys  # noqa: E402
+
+
+class TestConsumeQueryContract:
+    """SDK 生成器消费契约（修复重试时 CancelledError 毒化事件循环的 bug）。
+
+    根因：在 async for 循环体内 raise/return 会把 SDK 的 async generator
+    悬空（PEP 533 被推迟，async for 不负责关闭迭代器），事件循环的
+    finalizer 之后在任意时刻异步 aclose 它，teardown 杀 CLI 子进程时
+    触发 anyio cancel scope 取消，毒死后续重试。
+
+    契约：循环体内只记录；迭代到自然耗尽（生成器自己走完
+    finally: await query.close()）之后才在循环外抛/返回。
+    """
+
+    @pytest.fixture()
+    def _patch_sdk(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        import types
+
+        sdk_mock = types.ModuleType("claude_agent_sdk")
+        sdk_mock.ClaudeAgentOptions = type("ClaudeAgentOptions", (), {"__init__": lambda self, **kw: None})
+        for name in ("AssistantMessage", "RateLimitEvent", "StreamEvent",
+                     "TaskNotificationMessage", "TaskProgressMessage",
+                     "TextBlock", "ThinkingBlock", "ToolResultBlock", "ToolUseBlock",
+                     "UserMessage"):
+            setattr(sdk_mock, name, type(name, (), {}))
+        sdk_mock.ResultMessage = type("ResultMessage", (), {
+            "__init__": lambda self, **kw: None,
+            "is_error": False, "subtype": "", "structured_output": None,
+            "errors": None,
+        })
+        sdk_mock.query = MagicMock()
+        monkeypatch.setitem(sys.modules, "claude_agent_sdk", sdk_mock)
+
+    @staticmethod
+    def _error_msg(subtype: str, errors: list | None = None) -> Any:
+        from claude_agent_sdk import ResultMessage  # noqa: F811
+
+        msg = ResultMessage()
+        msg.is_error = True
+        msg.subtype = subtype
+        msg.structured_output = None
+        msg.errors = errors
+        return msg
+
+    @pytest.mark.asyncio
+    async def test_error_path_consumes_generator_to_exhaustion(
+        self, _patch_sdk
+    ) -> None:
+        """错误路径：ResultMessage(is_error) 之后生成器必须被消费到耗尽。
+
+        之前的实现看到 is_error 直接 raise，把生成器悬空。修复后循环
+        迭代到自然结束（trailing 消息也被消费）才在循环外抛。
+        """
+        from claude_agent_sdk import query  # noqa: F811
+
+        error = self._error_msg("error_max_structured_output_retries",
+                                ["Failed to provide valid structured output after 5 attempts"])
+        consumed: list[int] = []
+
+        async def _gen(**kw):
+            for i in range(3):
+                consumed.append(i)
+                if i == 2:
+                    yield error
+                else:
+                    yield object()  # 占位中间消息
+
+        query.side_effect = _gen
+
+        from rss2cubox.agent_sdk_runner import run_json_agent
+
+        with pytest.raises(RuntimeError) as ei:
+            await run_json_agent(
+                prompt="test", system_prompt="s",
+                schema={"type": "object", "properties": {}},
+                timeout_seconds=5.0,
+            )
+        # 生成器被消费到耗尽（3 条全部 yield 完）
+        assert consumed == [0, 1, 2]
+        # ResultMessage.errors 的具体信息并入异常（之前只有裸 subtype）
+        assert "error_max_structured_output_retries" in str(ei.value)
+        assert "after 5 attempts" in str(ei.value)
+
+    @pytest.mark.asyncio
+    async def test_user_message_tool_results_emitted(self, _patch_sdk) -> None:
+        """UserMessage 里的 ToolResultBlock 应发 agent_sdk_tool_result 事件。
+
+        StructuredOutput 的校验反馈（Output does not match required schema: …）
+        走这条路径——之前完全不处理，模型失败 5 次我们一条反馈都看不到。
+        """
+        from claude_agent_sdk import AssistantMessage, ResultMessage, ToolResultBlock, ToolUseBlock, UserMessage  # noqa: F811
+
+        use = ToolUseBlock()
+        use.id = "tu_1"
+        use.name = "StructuredOutput"
+        use.input = {"clusters": []}
+
+        res = ToolResultBlock()
+        res.tool_use_id = "tu_1"
+        res.content = "Output does not match required schema: clusters/0/avg_importance: must be number"
+        res.is_error = True
+
+        asst = AssistantMessage()
+        asst.content = [use]
+        asst.model = "m"
+        um = UserMessage()
+        um.content = [res]
+
+        ok = ResultMessage()
+        ok.is_error = False
+        ok.subtype = "success"
+        ok.structured_output = {"clusters": []}
+
+        async def _gen(**kw):
+            for m in (asst, um, ok):
+                yield m
+
+        from claude_agent_sdk import query  # noqa: F811
+        query.side_effect = _gen
+
+        events: list[dict] = []
+
+        def _capture(event: str, **fields) -> None:
+            events.append({"event": event, **fields})
+
+        from rss2cubox.agent_sdk_runner import run_json_agent
+
+        await run_json_agent(
+            prompt="test", system_prompt="s",
+            schema={"type": "object", "properties": {}},
+            timeout_seconds=5.0, sdk_log=_capture,
+        )
+
+        tool_results = [e for e in events if e["event"] == "agent_sdk_tool_result"]
+        assert len(tool_results) == 1
+        # tool_use_id → 工具名映射生效
+        assert tool_results[0]["tool"] == "StructuredOutput"
+        assert tool_results[0]["is_error"] is True
+        assert "must be number" in tool_results[0]["content"]

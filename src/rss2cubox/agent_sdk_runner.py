@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import re
 import time
 from pathlib import Path
@@ -99,11 +100,19 @@ def _stderr_tail(lines):
 
 
 def _enriched_error(exc, stderr_lines):
-    """把 stderr 尾部拼进异常消息，让「exit code 1」不再是死胡同。"""
+    """把 stderr 尾部拼进异常消息，让「exit code 1」不再是死胡同。
+
+    始终返回 Exception（早期版本返回字符串，raise 字符串是 TypeError，
+    只有被外层 RuntimeError 包裹时才碰巧能用）。
+    """
+    msg = str(exc) or type(exc).__name__
     tail = _stderr_tail(stderr_lines)
-    if not tail:
-        return str(exc) or type(exc).__name__
-    return str(exc) + "; stderr_tail=" + tail
+    if tail:
+        msg = f"{msg}; stderr_tail={tail}"
+    enriched = RuntimeError(msg)
+    if isinstance(exc, BaseException):
+        enriched.__cause__ = exc
+    return enriched
 
 
 # 可重试的异常。error_max_structured_output_retries 跑 30 分钟后零产出全损，
@@ -145,6 +154,7 @@ async def run_json_agent(
     ThinkingBlock,
     ToolResultBlock,
     ToolUseBlock,
+    UserMessage,
     query,
 )
     except ImportError as exc:
@@ -165,6 +175,13 @@ async def run_json_agent(
         _enrich_session_dir = (cwd or Path.cwd()).parent / "logs" / "enrich-sessions"
         _enrich_session_dir.mkdir(parents=True, exist_ok=True)
         _resolved_env["CLAUDE_CONFIG_DIR"] = str(_enrich_session_dir)
+    # 结构化输出自校正重试上限（CLI 原生环境变量，默认 5）：
+    # schema 校验失败时模型会看到具体错误并自我修正，上限耗尽才报
+    # error_max_structured_output_retries。经 options.env 传给 CLI 子进程。
+    if "MAX_STRUCTURED_OUTPUT_RETRIES" not in _resolved_env:
+        _resolved_env["MAX_STRUCTURED_OUTPUT_RETRIES"] = (
+            os.getenv("AGENT_SDK_MAX_STRUCTURED_OUTPUT_RETRIES", "5")
+        )
 
     stderr_lines, stderr_capture = _make_stderr_capture()
     options = ClaudeAgentOptions(
@@ -254,103 +271,173 @@ async def run_json_agent(
     emit("agent_sdk_query_start")
     saw_message = False
     tool_call_count = 0
+    # tool_use_id → tool 名称映射：UserMessage 里的 ToolResultBlock 只有 id，
+    # 没有工具名，需要从 AssistantMessage 的 ToolUseBlock 里建立映射
+    tool_names: dict[str, str] = {}
 
     async def _consume_query():
         nonlocal saw_message, tool_call_count
-        async for message in query(prompt=prompt, options=options, transport=transport):
-            if not saw_message:
-                saw_message = True
-                emit(
-                    "agent_sdk_first_message",
-                    duration_ms=int((time.perf_counter() - query_started_at) * 1000),
-                    total_duration_ms=int((time.perf_counter() - started_at) * 1000),
-                    message_type=type(message).__name__,
-                )
+        # 消费契约（SDK client.py 的注释点名了这个问题）：async for 循环体
+        # raise/return 不会关闭生成器（PEP 533 被推迟），悬空的生成器会被
+        # 事件循环的 finalizer 在任意时刻异步 aclose（实测发生在重试的
+        # asyncio.sleep 期间），其 finally: await query.close() 杀子进程时
+        # 触发 anyio cancel scope 取消，毒死后续尝试。
+        # 所以：循环体内只记录，绝不 raise/return；迭代到自然耗尽（生成器
+        # 自己跑完 finally），循环外再抛。超时取消路径用 detached task 兑底。
+        failure: Any = None          # is_error=True 的 ResultMessage
+        result: Any = None           # 正常的 ResultMessage
+        output: Any = None           # structured_output
+        raw_text = ""
+        cli_query = query(prompt=prompt, options=options, transport=transport)
+        try:
+            async for message in cli_query:
+                if not saw_message:
+                    saw_message = True
+                    emit(
+                        "agent_sdk_first_message",
+                        duration_ms=int((time.perf_counter() - query_started_at) * 1000),
+                        total_duration_ms=int((time.perf_counter() - started_at) * 1000),
+                        message_type=type(message).__name__,
+                    )
 
-            # ── 中间消息：可观测性的主体 ──
-            # 之前只处理 ResultMessage，工具调用/思考/限流完全不可见，排查
-            # 「CLI exit 1 但拿不到任何信息」只能靠写一次性诊断脚本。
-            if isinstance(message, AssistantMessage):
-                for block in (getattr(message, "content", None) or []):
-                    block_type = type(block).__name__
-                    if block_type == "ToolUseBlock":
-                        tool_call_count += 1
-                        emit(
-                            "agent_sdk_tool_use",
-                            tool=getattr(block, "name", ""),
-                            tool_input=json.dumps(
-                                getattr(block, "input", {}),
-                                ensure_ascii=False,
-                                default=str,
-                            )[:200],
-                            call_index=tool_call_count,
-                        )
-                    elif block_type == "ToolResultBlock":
-                        content = getattr(block, "content", None)
-                        content_str = ""
-                        if isinstance(content, list):
-                            for part in content:
-                                if type(part).__name__ == "TextBlock":
-                                    content_str = (getattr(part, "text", "") or "")[:200]
-                                    break
-                        elif isinstance(content, str):
-                            content_str = content[:200]
-                        emit(
-                            "agent_sdk_tool_result",
-                            tool_use_id=getattr(block, "tool_use_id", ""),
-                            is_error=bool(getattr(block, "is_error", False)),
-                            content=content_str,
-                        )
-                    elif block_type == "ThinkingBlock":
-                        thinking = (getattr(block, "thinking", "") or "")[:300]
-                        if thinking:
-                            emit("agent_sdk_thinking", thinking=thinking)
-            elif isinstance(message, RateLimitEvent):
-                emit(
-                    "agent_sdk_rate_limit",
-                    retry_after_ms=getattr(message, "retry_after_ms", None),
-                )
-            elif isinstance(message, (TaskProgressMessage, TaskNotificationMessage)):
-                emit(
-                    "agent_sdk_task_update",
-                    message_type=type(message).__name__,
-                    payload=str(message)[:200],
-                )
-            # StreamEvent 量大，只在需要极细粒度调试时才考虑记
+                # ── 中间消息：可观测性的主体 ──
+                # 之前只处理 ResultMessage，工具调用/思考/限流完全不可见，排查
+                # 「CLI exit 1 但拿不到任何信息」只能靠写一次性诊断脚本。
+                if isinstance(message, AssistantMessage):
+                    for block in (getattr(message, "content", None) or []):
+                        block_type = type(block).__name__
+                        if block_type == "ToolUseBlock":
+                            tool_call_count += 1
+                            block_id = getattr(block, "id", "") or ""
+                            block_name = getattr(block, "name", "") or ""
+                            if block_id:
+                                tool_names[block_id] = block_name
+                            emit(
+                                "agent_sdk_tool_use",
+                                tool=block_name,
+                                tool_use_id=block_id,
+                                tool_input=json.dumps(
+                                    getattr(block, "input", {}),
+                                    ensure_ascii=False,
+                                    default=str,
+                                )[:200],
+                                call_index=tool_call_count,
+                            )
+                        elif block_type == "ToolResultBlock":
+                            content = getattr(block, "content", None)
+                            content_str = ""
+                            if isinstance(content, list):
+                                for part in content:
+                                    if type(part).__name__ == "TextBlock":
+                                        content_str = (getattr(part, "text", "") or "")[:200]
+                                        break
+                            elif isinstance(content, str):
+                                content_str = content[:200]
+                            emit(
+                                "agent_sdk_tool_result",
+                                tool_use_id=getattr(block, "tool_use_id", ""),
+                                is_error=bool(getattr(block, "is_error", False)),
+                                content=content_str,
+                            )
+                        elif block_type == "ThinkingBlock":
+                            thinking = (getattr(block, "thinking", "") or "")[:300]
+                            if thinking:
+                                emit("agent_sdk_thinking", thinking=thinking)
+                elif isinstance(message, UserMessage):
+                    # 工具结果（含 StructuredOutput 的校验反馈）走 UserMessage。
+                    # 之前完全不处理，模型结构化输出失败 5 次时我们看不到
+                    # 任何一条「Output does not match required schema: …」反馈，
+                    # 只能盲猜它为什么重试。
+                    content = getattr(message, "content", None)
+                    if isinstance(content, list):
+                        for block in content:
+                            if type(block).__name__ == "ToolResultBlock":
+                                block_content = getattr(block, "content", None)
+                                content_str = ""
+                                if isinstance(block_content, list):
+                                    for part in block_content:
+                                        if type(part).__name__ == "TextBlock":
+                                            content_str = (getattr(part, "text", "") or "")[:300]
+                                            break
+                                elif isinstance(block_content, str):
+                                    content_str = block_content[:300]
+                                emit(
+                                    "agent_sdk_tool_result",
+                                    tool=tool_names.get(getattr(block, "tool_use_id", ""), ""),
+                                    tool_use_id=getattr(block, "tool_use_id", ""),
+                                    is_error=bool(getattr(block, "is_error", False)),
+                                    content=content_str,
+                                )
+                elif isinstance(message, RateLimitEvent):
+                    emit(
+                        "agent_sdk_rate_limit",
+                        retry_after_ms=getattr(message, "retry_after_ms", None),
+                    )
+                elif isinstance(message, (TaskProgressMessage, TaskNotificationMessage)):
+                    emit(
+                        "agent_sdk_task_update",
+                        message_type=type(message).__name__,
+                        payload=str(message)[:200],
+                    )
+                # StreamEvent 量大，只在需要极细粒度调试时才考虑记
 
-            if isinstance(message, ResultMessage):
-                # usage / model_usage 必须记下来：total_cost_usd 是 CLI 按它自己的
-                # Claude 定价表算的，走第三方网关时那个金额不代表真实账单。
-                # 真实成本 = token 数 × 网关单价，没有 usage 就算不出来。
-                emit(
-                    "agent_sdk_result",
-                    duration_ms=int((time.perf_counter() - query_started_at) * 1000),
-                    total_duration_ms=int((time.perf_counter() - started_at) * 1000),
-                    tool_calls=tool_call_count,
-                    is_error=message.is_error,
-                    subtype=message.subtype,
-                    has_structured_output=message.structured_output is not None,
-                    num_turns=getattr(message, "num_turns", None),
-                    total_cost_usd=getattr(message, "total_cost_usd", None),
-                    usage=getattr(message, "usage", None),
-                    model_usage=getattr(message, "model_usage", None),
-                    stop_reason=getattr(message, "stop_reason", None),
-                    session_id=getattr(message, "session_id", None),
-                    errors=getattr(message, "errors", None),
-                )
-                if message.structured_output is not None:
-                    return message.structured_output
-                raw_result = getattr(message, "result", None) or ""
-                if message.is_error:
-                    raise RuntimeError(_enriched_error(
-                        RuntimeError(message.subtype or "agent_error"), stderr_lines))
-                raise _StructuredOutputError(raw_result, message.subtype or "no_structured_output")
+                if isinstance(message, ResultMessage):
+                    # usage / model_usage 必须记下来：total_cost_usd 是 CLI 按它自己的
+                    # Claude 定价表算的，走第三方网关时那个金额不代表真实账单。
+                    # 真实成本 = token 数 × 网关单价，没有 usage 就算不出来。
+                    emit(
+                        "agent_sdk_result",
+                        duration_ms=int((time.perf_counter() - query_started_at) * 1000),
+                        total_duration_ms=int((time.perf_counter() - started_at) * 1000),
+                        tool_calls=tool_call_count,
+                        is_error=message.is_error,
+                        subtype=message.subtype,
+                        has_structured_output=message.structured_output is not None,
+                        num_turns=getattr(message, "num_turns", None),
+                        total_cost_usd=getattr(message, "total_cost_usd", None),
+                        usage=getattr(message, "usage", None),
+                        model_usage=getattr(message, "model_usage", None),
+                        stop_reason=getattr(message, "stop_reason", None),
+                        session_id=getattr(message, "session_id", None),
+                        errors=getattr(message, "errors", None),
+                    )
+                    # 只记录，不在这里抛：ResultMessage 通常是流里最后一条，
+                    # 迭代会自然结束、生成器自己走完 teardown。
+                    output = message.structured_output
+                    raw_text = getattr(message, "result", None) or ""
+                    if message.is_error:
+                        failure = message
+                    else:
+                        result = message
+
+        except asyncio.CancelledError:
+            # 超时路径（wait_for 取消）：当前任务已取消，无法在本任务 await
+            # aclose——把 teardown 交给独立任务确定性执行，避免生成器被
+            # 事件循环 finalizer 在任意时刻异步关闭（那会毒化事件循环）。
+            close_task = asyncio.ensure_future(cli_query.aclose())
+            close_task.add_done_callback(
+                lambda t: t.exception() if not t.cancelled() else None
+            )
+            raise
+        # 循环自然耗尽（生成器已在同任务内完成 finally: query.close()）。
+        # 现在才抛异常/返回——安全。
+        if failure is not None:
+            # errors 数组里是「Failed to provide valid structured output
+            # after N attempts」这类具体信息，并入异常而不是只报 subtype
+            detail = "; ".join(getattr(failure, "errors", None) or [])
+            exc = RuntimeError(failure.subtype or "agent_error")
+            if detail:
+                exc = RuntimeError(f"{failure.subtype or 'agent_error'}: {detail}")
+            raise _enriched_error(exc, stderr_lines)
+        if result is not None and output is not None:
+            return output
+        if result is not None:
+            raise _StructuredOutputError(raw_text, result.subtype or "no_structured_output")
+        raise RuntimeError("no_result")
 
     try:
-        import asyncio as _asyncio
-
         if timeout_seconds and timeout_seconds > 0:
-            result = await _asyncio.wait_for(_consume_query(), timeout=timeout_seconds)
+            result = await asyncio.wait_for(_consume_query(), timeout=timeout_seconds)
         else:
             result = await _consume_query()
         return result
@@ -363,14 +450,6 @@ async def run_json_agent(
             timeout_seconds=int(timeout_seconds) if timeout_seconds else None,
         )
         raise
-
-    emit(
-        "agent_sdk_no_result",
-        duration_ms=int((time.perf_counter() - query_started_at) * 1000),
-        total_duration_ms=int((time.perf_counter() - started_at) * 1000),
-        error="no ResultMessage received from agent",
-    )
-    raise RuntimeError("no_result")
 
 
 # ── Shared utility factories (TDD Green phase) ──────────────────────────────

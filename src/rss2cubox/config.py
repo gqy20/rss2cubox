@@ -37,6 +37,7 @@ GROUPS: list[tuple[str, str]] = [
     ("global", "global_agent（全局洞察）"),
     ("prediction", "预测闭环"),
     ("policy", "政策信源"),
+    ("agentsdk", "Claude Agent SDK"),
     ("runtime", "运行时"),
     ("legacy", "历史迁移脚本"),
 ]
@@ -144,6 +145,7 @@ _TABLE: list[tuple[str, str, Any, str, str]] = [
     ("PREDICTION_REVIEW_INTERVAL_HOURS", "int", "24", "prediction", "review 阶段最小间隔"),
     ("DAILY_REPORT_INTERVAL_HOURS", "int", "24", "prediction", "日报阶段最小间隔"),
     ("PREDICTION_LOOP_ARTICLE_DAYS", "int", "30", "prediction", "cluster 取最近多少天的文章"),
+    ("AGENT_SDK_MAX_STRUCTURED_OUTPUT_RETRIES", "int", "5", "agentsdk", "结构化输出自校正重试上限（传给 CLI 的原生 MAX_STRUCTURED_OUTPUT_RETRIES 环境变量，默认 5）。每次重试重发完整上下文，调高会多花 token；schema 精简后通常一次通过"),
     ("PREDICTION_LOOP_ARTICLE_LIMIT", "int", "500", "prediction", "cluster 从 DB 取多少篇（之后还会被 SIGNAL_CLUSTER_MAX_ARTICLES 二次截断）"),
     ("SIGNAL_CLUSTER_MAX_ARTICLES", "int", "200", "prediction", "单次调用处理的文章数。索引+明细文件模式下 200 篇的索引约 14K tokens（原先全字段内联实测 197,530 tokens、占窗口 98.8%）"),
     ("SIGNAL_CLUSTER_MAX_TURNS", "int", "30", "prediction", "cluster agent 轮数上限。不用 200（daily_report 就是 200，实跑 25 轮烧 798K input tokens），但也不能压到个位数——聚类需要对拿不准的文章翻明细，压太死等于禁止深入（实测 12 轮时模型一次文件都没打开）"),
