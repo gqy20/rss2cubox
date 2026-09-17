@@ -70,9 +70,19 @@ SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
 
 SYSTEM_PROMPT = (
     "你是 Signal Cluster Agent，负责把已结构化 enrich 的文章归并为长期 AI 发展信号簇。"
-    "输入给出全部文章的索引（ref/标题/聚类提示/实体/关键词/重要度/信号类型/日期），"
-    "索引已覆盖所有文章，分组应主要依据索引。hidden_signal 等更细的字段在明细文件里，"
-    "只在索引不足以判断某一篇归属时按 ref 精确 Grep，且次数受限——不要通读整个文件。"
+    "这是深度分析任务，不是按标题分箱——簇的边界、噪声识别、信号演化关系"
+    "都依赖完整证据。工作规程：\n"
+    "1.【通读】先分批 Read 明细文件全文（JSONL，每行一篇）。索引里的 signal/why "
+    "是截断版（220/120 字符），明细里有完整版，还有 actionable / prediction / "
+    "disconfirming_evidence / evidence_strength / novelty / market_stage 这些"
+    "索引没有的字段。每次 Read 用 offset/limit 取约 30 行，读到文件末尾为止。"
+    "这一步不许跳过、不许抽样。\n"
+    "2.【归并】基于完整证据判断哪些文章反映同一底层长期信号：同一事件的不同"
+    "报道归并；实体重叠但底层信号不同的拆开；与 AI/智能体无关的归噪声簇。\n"
+    "3.【复核】草拟分簇后，对边界成员（entities 跨多个簇、hint 与 signal 矛盾的）"
+    "用 Grep 回查完整记录再定，不要凭标题猜。\n"
+    "4.【洞察】summary 必须写出这个簇的底层信号是什么、成员间的关系"
+    "（演化/佐证/分歧），不是话题词罗列。\n"
     "不要做 embedding，不要臆造不存在的文章。输出必须符合 JSON Schema。"
     "cluster_key 必须稳定，格式为 '<signal_type>:<normalized_label>'。"
     "** signal_type 是固定分类编号，有效范围 1~12，参考索引里的 sig 字段；"
@@ -172,25 +182,28 @@ def _build_prompt(
     """构造 prompt。
 
     设计取向是**质量优先**：索引里带 hidden_signal 与 reason（enrich 产出中分析
-    密度最高的字段），让模型有实质内容可推理；明细文件保留其余字段供按需深入。
+    密度最高的字段），让模型有实质内容可推理；明细文件保留完整版供通读。
 
-    曾经写过「主要依据索引」「最多 5 次 Grep」「不要 Read 整个文件」这类劝退话，
-    结果模型一次文件都没打开，自述「仅依赖索引进行分组，未通读明细文件」，
-    对索引稀疏的文章「按标题/已知归属归入相应簇」。轮数是省下来了，深度没了。
-    现在改为说明何时值得深入，并把轮数上限交给 SIGNAL_CLUSTER_MAX_TURNS 控制。
+    Prompt 演化史（每次都有实测依据）：
+    - 「最多 5 次 Grep / 不要 Read 整个文件」→ 模型一次文件都不打开，
+      靠标题分箱，簇标签合格但零洞察；
+    - 改成「按需深入」→ 5 轮 / 2 次读取就交卷，仍是表层归并；
+    - 现在：强制通读规程（分批 Read 完整明细文件 → 归并 → 边界复核），
+      深度是硬性要求而非可选项。轮数上限由 SIGNAL_CLUSTER_MAX_TURNS 控制，
+      预期 10~20 轮是正常工作形态。
     """
     return (
         f"共有 {len(articles)} 篇候选文章，当前时间 {now_dt.isoformat()}。\n\n"
         f"【索引】下面是**全部 {len(articles)} 篇**的索引，字段为 "
         "ref / 标题 / 聚类提示 / 隐藏信号 / 判定理由 / 实体 / 关键词 / 重要度 / 信号类型 / 日期：\n"
         f"{json.dumps(index_rows, ensure_ascii=False)}\n\n"
-        f"【明细文件】每篇的完整字段（含 description、actionable、prediction、"
-        f"disconfirming_evidence、url、来源等）在 {detail_path}\n"
-        '（JSONL，每行一篇，行内含 "ref" 字段）。用 Grep 按 ref 取单篇，例如：\n'
+        f"【明细文件】{detail_path}（JSONL，共 {len(articles)} 行，每行一篇，行内含 ref 字段）。"
+        "索引里的 signal/why 是截断版，这里的才是完整版，另有 actionable / prediction / "
+        "disconfirming_evidence / evidence_strength / novelty / market_stage。\n"
+        "** 第一件事：分批 Read 通读全文，每次用 offset/limit 取约 30 行，读到末尾为止。**\n"
+        "通读后如需复核某几篇，可以 Grep 按行精确定位：\n"
         f'    Grep  pattern=\'"ref": "a017"\'  path={detail_path}\n'
-        "索引已足够完成大部分归并；**但当某几篇的归属拿不准、或需要判断它们是否真的"
-        "属于同一长期信号时，应当去查明细再定**，不要凭标题猜。\n"
-        "可以一次 Grep 多个 ref，也可以 Read 文件的某个区间来批量查看。\n\n"
+        "也可以 Read 文件的某个区间来批量查看。\n\n"
         "【已有簇】\n"
         f"{json.dumps(existing_clusters, ensure_ascii=False)}\n\n"
         "【输出要求】\n"
@@ -324,7 +337,7 @@ def run_signal_cluster_agent(
                         schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
                         allowed_tools=["Read", "Grep", "Glob"],
                         max_turns=SIGNAL_CLUSTER_MAX_TURNS,
-                        max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 10.0),
+                        max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 20.0),
                         timeout_seconds=_agent_timeout("SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS", default=1800, minimum=120),
                         setting_sources=None,
                         sdk_log=sdk_logger,

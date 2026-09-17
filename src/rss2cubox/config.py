@@ -158,7 +158,7 @@ _TABLE: list[tuple[str, str, Any, str, str]] = [
     ("PREDICTION_LOOP_REVIEW_ARTICLE_LIMIT", "int", "200", "prediction", "review 单条预测取多少篇窗口内文章做证据"),
     ("PREDICTION_LOOP_REVIEW_HISTORY_LIMIT", "int", "150", "prediction", "generate 带入多少条历史复盘做自我改进"),
     ("SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS", "float", "1800", "prediction", "cluster 单次调用超时。原默认 300 实测必然 TimeoutError → clusters=0 → 整条闭环空转"),
-    ("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", "float", "10.0", "prediction", "cluster 单次预算"),
+    ("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", "float", "20.0", "prediction", "cluster 单次预算（CLI 价计；强制通读明细后 ~15 轮 ≈ 2.2M input ≈ $7，网关真实成本约 ¥0.16）"),
     ("TREND_PREDICTION_AGENT_TIMEOUT_SECONDS", "float", "900", "prediction", "generate 单次调用超时"),
     ("TREND_PREDICTION_AGENT_MAX_BUDGET_USD", "float", "10.0", "prediction", "generate 单次预算"),
     ("PREDICTION_REVIEW_AGENT_TIMEOUT_SECONDS", "float", "900", "prediction", "review 单条预测的超时"),
