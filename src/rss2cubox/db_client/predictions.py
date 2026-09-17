@@ -495,15 +495,70 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
         if ck:
             link_counts[ck] = link_counts.get(ck, 0) + 1
 
+    # 聚合评分从 links 指向的真实文章算，不采信模型自己填的值。
+    #
+    # 原先直接写 "avg_importance": cluster.get("avg_importance")，而模型给的是
+    # 0~1 区间（实测 0.60~0.77），articles.importance_score 却是 1~5。
+    # prediction_agent 的 prompt 又要求「优先选择 avg_importance 高（≥3.5）的 cluster」，
+    # 于是这条筛选规则永远命中不了任何簇 —— 静默失效，且从日志看不出来。
+    # source_count 同理：prompt 明确禁止模型输出它，所以恒为 0。
+    #
+    # 这在 links 为空时无从计算；links 修好之后才有条件做这件事。
+    link_article_ids: dict[str, list[str]] = {}
+    for link in cluster_result.get("links", []):
+        if not isinstance(link, dict):
+            continue
+        ck = str(link.get("cluster_key") or "").strip()
+        aid = str(link.get("article_id") or "").strip()
+        if ck and aid:
+            link_article_ids.setdefault(ck, []).append(aid)
+
+    agg_stats: dict[str, dict[str, Any]] = {}
+
+    def _avg(members: list[tuple], idx: int) -> float | None:
+        values = [m[idx] for m in members if m[idx] is not None]
+        return round(sum(values) / len(values), 3) if values else None
+
     try:
         with psycopg.connect(db_url) as conn:
             cur = conn.cursor()
             cur.execute(ARTICLES_SCHEMA)
             cur.execute(PREDICTION_LOOP_SCHEMA)
+
+            all_linked_ids = {aid for ids in link_article_ids.values() for aid in ids}
+            if all_linked_ids:
+                cur.execute(
+                    """
+                    SELECT id, source_feed_id, importance_score,
+                           evidence_strength, novelty_score, confidence
+                    FROM articles WHERE id = ANY(%s)
+                    """,
+                    (list(all_linked_ids),),
+                )
+                rows_by_id = {row[0]: row for row in cur.fetchall()}
+                for ck, ids in link_article_ids.items():
+                    members = [rows_by_id[i] for i in ids if i in rows_by_id]
+                    if not members:
+                        continue
+                    agg_stats[ck] = {
+                        "article_count": len(members),
+                        "source_count": len({m[1] for m in members if m[1]}),
+                        "avg_importance": _avg(members, 2),
+                        "avg_evidence_strength": _avg(members, 3),
+                        "avg_novelty": _avg(members, 4),
+                        "avg_confidence": _avg(members, 5),
+                    }
+
             for cluster in cluster_result.get("clusters", []):
                 cluster_key = str(cluster.get("cluster_key") or "").strip()
                 normalized_label = str(cluster.get("normalized_label") or cluster_key.split(":", 1)[-1]).strip()
                 article_count = int(cluster.get("article_count") or link_counts.get(cluster_key, 0))
+                _stats = agg_stats.get(cluster_key, {})
+
+                def _pick(field: str, _c: dict = cluster, _s: dict = _stats) -> Any:
+                    """优先用从真实文章算出的值，缺失时回退到模型给的值。"""
+                    value = _s.get(field)
+                    return value if value is not None else _c.get(field)
                 cur.execute(
                     """
                     INSERT INTO signal_clusters (
@@ -544,12 +599,14 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
                         "watch_keywords": json.dumps(_string_list(cluster.get("watch_keywords"), 20), ensure_ascii=False),
                         "first_seen_at": cluster.get("first_seen_at"),
                         "last_seen_at": cluster.get("last_seen_at"),
-                        "article_count": article_count,
-                        "source_count": int(cluster.get("source_count") or 0),
-                        "avg_importance": cluster.get("avg_importance"),
-                        "avg_evidence_strength": cluster.get("avg_evidence_strength"),
-                        "avg_novelty": cluster.get("avg_novelty"),
-                        "avg_confidence": cluster.get("avg_confidence"),
+                        "article_count": _stats.get("article_count") or article_count,
+                        "source_count": _stats.get("source_count")
+                        if _stats.get("source_count") is not None
+                        else int(cluster.get("source_count") or 0),
+                        "avg_importance": _pick("avg_importance"),
+                        "avg_evidence_strength": _pick("avg_evidence_strength"),
+                        "avg_novelty": _pick("avg_novelty"),
+                        "avg_confidence": _pick("avg_confidence"),
                     },
                 )
                 row = cur.fetchone()

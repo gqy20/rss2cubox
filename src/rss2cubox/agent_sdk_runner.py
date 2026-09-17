@@ -394,6 +394,21 @@ def write_temp_json(data: Any, *, suffix: str = ".json") -> str:
     return f.name
 
 
+def write_temp_jsonl(rows: list[Any], *, suffix: str = ".jsonl") -> str:
+    """每行一个 JSON 对象写入临时文件，返回路径（调用方负责清理）。
+
+    用 JSONL 而不是一整个 JSON 数组，是为了让 agent 能用 Grep 按行精确定位
+    单条记录、用 Read 的 offset/limit 分页，而不必把整个文件拉进上下文。
+    """
+    import tempfile
+
+    f = tempfile.NamedTemporaryFile(mode="w", suffix=suffix, delete=False, encoding="utf-8")
+    for row in rows:
+        f.write(json.dumps(row, ensure_ascii=False) + "\n")
+    f.close()
+    return f.name
+
+
 def cleanup_temp_files(*paths: str) -> None:
     """安全删除临时文件，忽略不存在或权限错误。"""
     for p in paths:

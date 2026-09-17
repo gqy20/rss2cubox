@@ -405,6 +405,88 @@ L1 = min(10, T//3)     L2 = min(20, T//2)     L3 = min(15, T//2)
 
 ---
 
+## Agent 的输入方式：三种模式
+
+项目里同时存在三种把数据交给模型的方式，选哪种取决于任务是否需要全局视野。
+
+| 模式 | 做法 | 用在 | allowed_tools |
+|---|---|---|---|
+| **A 索引 + 文件** | 全量数据的**索引**进 prompt，明细写 JSONL 临时文件，给 `Read`/`Grep`/`Glob` 按需取 | `signal_cluster_agent`、`global_agent`、`daily_report_agent` | `Read, Grep, Glob` (+ `read_webpage`) |
+| **B 全量内联** | 数据 `json.dumps` 进 prompt | `prediction_agent`、`prediction_review_agent`、政策 triage / enrich | `[]` |
+| **C 内联 + 取原文工具** | 正文内联，另给一个按需抓网页的 MCP 工具 | `enrich_agent` | `mcp__enrich-tools__read_webpage` |
+
+模式 A 的关键是**索引必须覆盖全部条目**，这样 agent 有全局视野、不必通读文件；
+明细文件只用于边界判断。`signal_cluster_agent` 的 prompt 里明确写了
+「最多 N 次 Grep，不要 Read 整个文件」，并把 `max_turns` 从 200 降到 12。
+
+### 为什么必须限制轮数
+
+多轮对话**每轮都要重发累积上下文**，所以「写文件让它自己翻」并不天然更省。
+实测对比（同一次运行）：
+
+```
+daily_report（模式A，max_turns=200）  25 轮   798,305 input tok   ¥0.114
+signal_cluster（模式A，max_turns=12）   3 轮    69,935 input tok   ¥0.022
+```
+
+`daily_report` 的 25 轮是因为 `max_turns=200` 没有任何实际约束。**模式 A 若不限制
+轮数，成本会比模式 B 更高。**
+
+### 索引用短序号 ref，不用真实 id
+
+索引里每篇文章用 `a001` 这样的序号，`_build_index()` 返回 `ref → 真实 id` 映射，
+`_validate_payload()` 负责回映（同时兼容模型直接吐真实 id 的情况）。
+
+理由：4 字符 vs 64 字符 sha256，200 篇约省 4,000 input + 2,600 output tokens；
+序号不会碰撞；回映只是查表，还能校验模型有没有编造 ref（编造的计入 `unmapped_refs`）。
+
+### 改造 signal_cluster 的实测效果
+
+同一批 200 篇文章：
+
+| | 改造前（模式 B 全量内联） | 改造后（模式 A 索引+文件） |
+|---|---|---|
+| input tokens | 197,530（占 200K 窗口 **98.8%**） | **69,935**（-65%） |
+| cache_read tokens | 0 | 125,312（索引稳定，命中缓存） |
+| output tokens | 7,575 | 42,147 |
+| 轮数 | 4 | 3 |
+| **links** | **0** | **200（覆盖率 1.0）** |
+| 真实成本 | ¥0.0520 | **¥0.0216**（-58%） |
+| 耗时 | 293s | 523s（+78%） |
+
+耗时变长是**因为输出变完整了**：原先 293s 产出的是 links 为空的半成品，
+现在 523s 产出 200 条 links + 12 个簇。
+
+**`links=0` 的根因是指令稀释，不是输出预算**：links 用 64 位 id 只需约 4,700
+output tokens，而 `maxOutputTokens=32000`、实际只用了 11,772。prompt 从 197K
+降到 70K 后模型就把 links 完整输出了。
+
+### links 覆盖率必须显式告警
+
+`signal_cluster_link_coverage` 事件在覆盖率 <0.8 时用 WARN 级别。
+上一次运行 links 返回空数组，13 个簇全部 `article_count=0`、
+`signal_cluster_articles` 空表，但**整条链路零告警**，是查数据库时才发现的。
+这和 `fulltext_done` 事件丢失是同一类问题：成功的事件路径掩盖了空结果。
+
+### 聚合评分从真实文章算，不采信模型
+
+`save_signal_clusters` 原先直接写 `"avg_importance": cluster.get("avg_importance")`。
+模型给的是 **0~1 区间**（实测 0.60~0.77），而 `articles.importance_score` 是 **1~5**，
+`prediction_agent` 的 prompt 又要求「优先选择 avg_importance ≥3.5 的 cluster」——
+**这条筛选规则从来没命中过任何簇**，且完全静默。
+
+`source_count` 同理：prompt 明确禁止模型输出它，所以恒为 0。
+
+现在 `article_count` / `source_count` / `avg_importance` / `avg_evidence_strength` /
+`avg_novelty` / `avg_confidence` 全部由 links 指向的真实文章用 SQL 聚合算出，
+模型值只在没有 links 时作回退。实测 6 篇文章 → `article_count=6, source_count=2,
+avg_importance=2.667, avg_confidence=4.000`，与手工计算完全一致，
+模型编的 0.65/0.75 被覆盖。
+
+这件事**在 links 为空时无从做起**，是 links 修好之后才具备条件。
+
+---
+
 ## 中断与恢复（durability）
 
 一轮完整运行要几小时，中断是常态而不是异常。
