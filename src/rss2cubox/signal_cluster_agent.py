@@ -41,8 +41,8 @@ SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
                     "summary": {"type": "string"},
                     "entities": {"type": "array", "items": {"type": "string"}},
                     "watch_keywords": {"type": "array", "items": {"type": "string"}},
-                    "first_seen_at": {"type": "string"},
-                    "last_seen_at": {"type": "string"},
+                    # first_seen_at / last_seen_at 已移除：SQL 从成员文章 publish_time
+                    # 推导。模型生成的时间字符串不可信（实测秒位写成 085）。
                     # avg_importance / avg_confidence 已从模型输出中移除：
                     # save_signal_clusters 从真实文章 SQL 聚合，模型给的值从不被使用。
                 },
@@ -94,8 +94,8 @@ SYSTEM_PROMPT = (
     "（key 靠 normalized_label 区分）。signal_type 字段不需要输出——"
     "程序直接从 key 前缀解析。\n"
     "status 只能是 new、warming、bursting、cooling、mature、invalid。\n"
-    "只输出 cluster_key、label、normalized_label、status、summary、entities、watch_keywords "
-    "以及可选的 first_seen_at、last_seen_at。"
+    "只输出 cluster_key、label、normalized_label、status、summary、entities、watch_keywords。"
+    "first_seen_at/last_seen_at 与聚合评分一样由程序从真实文章计算，不要输出。"
     "不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count 等字段。"
 )
 

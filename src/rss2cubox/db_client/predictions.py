@@ -490,6 +490,17 @@ def get_prediction_window_articles(prediction: dict[str, Any], limit: int = 200,
         return []
 
 
+def _safe_ts(value: Any) -> Any:
+    """模型生成的时间字符串只有能被 fromisoformat 解析才放行，否则 None。"""
+    if value is None:
+        return None
+    try:
+        datetime.fromisoformat(str(value))
+        return value
+    except (TypeError, ValueError):
+        return None
+
+
 def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url: str | None = None) -> dict[str, int]:
     db_url = _get_db_url(db_url)
     if not db_url:
@@ -538,7 +549,7 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
                 cur.execute(
                     """
                     SELECT id, source_feed_id, importance_score,
-                           evidence_strength, novelty_score, confidence
+                           evidence_strength, novelty_score, confidence, publish_time
                     FROM articles WHERE id = ANY(%s)
                     """,
                     (list(all_linked_ids),),
@@ -548,6 +559,7 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
                     members = [rows_by_id[i] for i in ids if i in rows_by_id]
                     if not members:
                         continue
+                    pub_times = [m[6] for m in members if m[6] is not None]
                     agg_stats[ck] = {
                         "article_count": len(members),
                         "source_count": len({m[1] for m in members if m[1]}),
@@ -555,6 +567,11 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
                         "avg_evidence_strength": _avg(members, 3),
                         "avg_novelty": _avg(members, 4),
                         "avg_confidence": _avg(members, 5),
+                        # 时间戳从真实文章推导：模型生成的时间字符串不可信
+                        # （实测 2026-09-15T20:13:085+00:00，秒位 085 直接让
+                        # 整批保存崩掉）。同一原则第五例。
+                        "first_seen_at": min(pub_times) if pub_times else None,
+                        "last_seen_at": max(pub_times) if pub_times else None,
                     }
 
             for cluster in cluster_result.get("clusters", []):
@@ -605,8 +622,8 @@ def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url
                         "summary": cluster.get("summary") or "",
                         "entities": json.dumps(_string_list(cluster.get("entities"), 20), ensure_ascii=False),
                         "watch_keywords": json.dumps(_string_list(cluster.get("watch_keywords"), 20), ensure_ascii=False),
-                        "first_seen_at": cluster.get("first_seen_at"),
-                        "last_seen_at": cluster.get("last_seen_at"),
+                        "first_seen_at": _stats.get("first_seen_at") or _safe_ts(cluster.get("first_seen_at")),
+                        "last_seen_at": _stats.get("last_seen_at") or _safe_ts(cluster.get("last_seen_at")),
                         "article_count": _stats.get("article_count") or article_count,
                         "source_count": _stats.get("source_count")
                         if _stats.get("source_count") is not None
