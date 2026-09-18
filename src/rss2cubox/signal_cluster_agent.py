@@ -21,83 +21,13 @@ from rss2cubox.agent_sdk_runner import (
     run_with_fallback,
     write_temp_jsonl,
 )
+from rss2cubox.prompt_registry import get, param
 
+# system_prompt / 输出 schema 集中在项目根 prompts/signal_cluster.yaml。
+_PROMPT = get("signal_cluster")
 
-SIGNAL_CLUSTER_OUTPUT_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "clusters": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "cluster_key": {"type": "string", "description": "格式 '<signal_type>:<normalized_label>'，前缀是下述 12 类编号"},
-                    "label": {"type": "string"},
-                    "normalized_label": {"type": "string"},
-                    # signal_type 已从模型输出中移除：程序从 cluster_key 前缀解析。
-                    # 实测模型把分类编号填成强度分数（809/909 = 成员重要度总和），
-                    # 5+ 次校验全败；而 key 前缀它从来没写错过——确定性来源交给 Python。
-                    "status": {"type": "string", "enum": ["new", "warming", "bursting", "cooling", "mature", "invalid"]},
-                    "summary": {"type": "string"},
-                    "entities": {"type": "array", "items": {"type": "string"}},
-                    "watch_keywords": {"type": "array", "items": {"type": "string"}},
-                    # first_seen_at / last_seen_at 已移除：SQL 从成员文章 publish_time
-                    # 推导。模型生成的时间字符串不可信（实测秒位写成 085）。
-                    # avg_importance / avg_confidence 已从模型输出中移除：
-                    # save_signal_clusters 从真实文章 SQL 聚合，模型给的值从不被使用。
-                },
-                "required": [
-                    "cluster_key", "label", "normalized_label", "status",
-                    "summary", "entities", "watch_keywords",
-                ],
-            },
-        },
-        "links": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "cluster_key": {"type": "string"},
-                    "article_id": {"type": "string"},
-                    "relevance_score": {"type": "number", "minimum": 0, "maximum": 1},
-                },
-                "required": ["cluster_key", "article_id", "relevance_score"],
-            },
-        },
-    },
-    "required": ["clusters"],
-}
-
-
-SYSTEM_PROMPT = (
-    "你是 Signal Cluster Agent，负责把已结构化 enrich 的文章归并为长期 AI 发展信号簇。"
-    "这是深度分析任务，不是按标题分箱——簇的边界、噪声识别、信号演化关系"
-    "都依赖完整证据。工作规程：\n"
-    "1.【通读】先分批 Read 明细文件全文（JSONL，每行一篇）。索引里的 signal/why "
-    "是截断版（220/120 字符），明细里有完整版，还有 actionable / prediction / "
-    "disconfirming_evidence / evidence_strength / novelty / market_stage 这些"
-    "索引没有的字段。每次 Read 用 offset/limit 取约 30 行，读到文件末尾为止。"
-    "这一步不许跳过、不许抽样。\n"
-    "2.【归并】基于完整证据判断哪些文章反映同一底层长期信号：同一事件的不同"
-    "报道归并；实体重叠但底层信号不同的拆开；与 AI/智能体无关的归噪声簇。\n"
-    "3.【复核】草拟分簇后，对边界成员（entities 跨多个簇、hint 与 signal 矛盾的）"
-    "用 Grep 回查完整记录再定，不要凭标题猜。\n"
-    "4.【洞察】summary 必须写出这个簇的底层信号是什么、成员间的关系"
-    "（演化/佐证/分歧），不是话题词罗列。\n"
-    "不要做 embedding，不要臆造不存在的文章。输出必须符合 JSON Schema。"
-    "cluster_key 必须稳定，格式为 '<signal_type>:<normalized_label>'，"
-    "前缀 signal_type 是固定分类编号，取值及含义（与 enrich 阶段一致）：\n"
-    "  1=模型能力  2=基础设施/算力/芯片  3=开发者工作流  4=产品化/应用层\n"
-    "  5=开源生态  6=研究论文/算法  7=安全/风险/对齐  8=监管/政策\n"
-    "  9=商业/融资/组织动作  10=数据/评测/Benchmark  11=机器人/具身智能  12=其他/噪声\n"
-    "每个簇按内容选最贴近的编号写进 key 前缀；多个簇可以共用同一编号"
-    "（key 靠 normalized_label 区分）。signal_type 字段不需要输出——"
-    "程序直接从 key 前缀解析。\n"
-    "status 只能是 new、warming、bursting、cooling、mature、invalid。\n"
-    "只输出 cluster_key、label、normalized_label、status、summary、entities、watch_keywords。"
-    "first_seen_at/last_seen_at 与聚合评分一样由程序从真实文章计算，不要输出。"
-    "不要输出 recent_count_7d、previous_count_7d、burst_ratio、source_count 等字段。"
-)
+SYSTEM_PROMPT = _PROMPT.system_prompt
+SIGNAL_CLUSTER_OUTPUT_SCHEMA = _PROMPT.output_schema
 
 
 def normalize_cluster_label(value: str) -> str:
@@ -116,18 +46,16 @@ def build_cluster_key(article: dict[str, Any]) -> str:
     return f"{signal_type}:{normalize_cluster_label(raw_label)}"
 
 
-SIGNAL_CLUSTER_MAX_ARTICLES = max(10, int(os.getenv("SIGNAL_CLUSTER_MAX_ARTICLES", "200")))
+SIGNAL_CLUSTER_MAX_ARTICLES = param("signal_cluster", "max_articles", 200, env_var="SIGNAL_CLUSTER_MAX_ARTICLES", minimum=10)
 # 索引在 prompt 里、明细在文件里。这两个值限制 agent 翻文件的次数，
 # 防止重蹈 daily_report 的覆辙（max_turns=200 → 实跑 25 轮 → 798K input tokens）。
 # 轮数上限。不用 200（daily_report 就是 200，实跑 25 轮烧掉 798K input tokens），
 # 但也不能压到个位数：聚类需要对拿不准的文章去翻明细，压太死等于禁止深入。
-SIGNAL_CLUSTER_MAX_TURNS = max(3, int(os.getenv("SIGNAL_CLUSTER_MAX_TURNS", "40")))
+SIGNAL_CLUSTER_MAX_TURNS = param("signal_cluster", "max_turns", 40, env_var="SIGNAL_CLUSTER_MAX_TURNS", minimum=3)
 # links 覆盖率低于此值就重试一次。实测同一批数据两次运行分别给出 200/200 和
 # 95/200，方差很大，而 links 为空时 13 个簇的 article_count 会全是 0。
-SIGNAL_CLUSTER_MIN_LINK_COVERAGE = min(
-    1.0, max(0.0, float(os.getenv("SIGNAL_CLUSTER_MIN_LINK_COVERAGE", "0.9")))
-)
-SIGNAL_CLUSTER_MAX_ATTEMPTS = max(1, int(os.getenv("SIGNAL_CLUSTER_MAX_ATTEMPTS", "2")))
+SIGNAL_CLUSTER_MIN_LINK_COVERAGE = param("signal_cluster", "min_link_coverage", 0.9, env_var="SIGNAL_CLUSTER_MIN_LINK_COVERAGE", minimum=0.0, maximum=1.0)
+SIGNAL_CLUSTER_MAX_ATTEMPTS = param("signal_cluster", "max_attempts", 2, env_var="SIGNAL_CLUSTER_MAX_ATTEMPTS", minimum=1)
 
 
 def _build_index(
@@ -330,6 +258,7 @@ def run_signal_cluster_agent(
                                         article_count=len(articles),
                                         existing_cluster_count=len(existing_clusters or []),
                                         prompt_chars=len(prompt),
+                                        prompt_version=_PROMPT.version,
                                         detail_path=detail_path,
                                         attempt=attempt)
 
@@ -343,8 +272,12 @@ def run_signal_cluster_agent(
                         schema=SIGNAL_CLUSTER_OUTPUT_SCHEMA,
                         allowed_tools=["Read", "Grep", "Glob"],
                         max_turns=SIGNAL_CLUSTER_MAX_TURNS,
-                        max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", 20.0),
-                        timeout_seconds=_agent_timeout("SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS", default=1800, minimum=120),
+                        max_budget_usd=_budget("SIGNAL_CLUSTER_AGENT_MAX_BUDGET_USD", param("signal_cluster", "max_budget_usd", 20.0)),
+                        timeout_seconds=_agent_timeout(
+                            "SIGNAL_CLUSTER_AGENT_TIMEOUT_SECONDS",
+                            default=param("signal_cluster", "timeout_seconds", 1800),
+                            minimum=120,
+                        ),
                         setting_sources=None,
                         sdk_log=sdk_logger,
                     ),

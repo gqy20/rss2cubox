@@ -108,15 +108,27 @@ class TestMakeStderrLogger:
 class TestBudgetHelper:
     """_budget 辅助函数应正确解析环境变量。"""
 
-    def test_returns_none_when_env_unset(self) -> None:
-        """环境变量未设置时返回 None。"""
+    def test_returns_default_when_env_unset(self) -> None:
+        """环境变量未设置时返回 default（通常是 yml 层解析出的值）。
+
+        历史行为是恒返回 None，导致调用方声称的默认预算从未生效。
+        """
         import os
         from rss2cubox.agent_sdk_runner import _budget
 
         key = f"_TEST_BUDGET_{id(os.getpid())}"
         os.environ.pop(key, None)
-        result = _budget(key, "10.0")
-        assert result is None
+        result = _budget(key, 10.0)
+        assert result == 10.0
+
+    def test_returns_none_when_default_is_none(self) -> None:
+        """default 显式为 None 时表示不限制预算。"""
+        import os
+        from rss2cubox.agent_sdk_runner import _budget
+
+        key = f"_TEST_BUDGET_{id(os.getpid())}"
+        os.environ.pop(key, None)
+        assert _budget(key, None) is None
 
     def test_parses_valid_float(self) -> None:
         """有效浮点值应返回 float。"""
@@ -129,15 +141,26 @@ class TestBudgetHelper:
         assert result == 5.5
         os.environ.pop(key, None)
 
-    def test_returns_none_for_empty_string(self) -> None:
-        """空字符串视为未设置。"""
+    def test_returns_default_for_empty_string(self) -> None:
+        """空字符串视为未设置，回落到 default。"""
         import os
         from rss2cubox.agent_sdk_runner import _budget
 
         key = f"_TEST_BUDGET_{id(os.getpid())}"
         os.environ[key] = ""
-        result = _budget(key, "10.0")
-        assert result is None
+        result = _budget(key, 10.0)
+        assert result == 10.0
+        os.environ.pop(key, None)
+
+    def test_returns_default_for_invalid_value(self) -> None:
+        """非法数值回落到 default 而非 None。"""
+        import os
+        from rss2cubox.agent_sdk_runner import _budget
+
+        key = f"_TEST_BUDGET_{id(os.getpid())}"
+        os.environ[key] = "not-a-number"
+        result = _budget(key, 7.5)
+        assert result == 7.5
         os.environ.pop(key, None)
 
     def test_strips_whitespace(self) -> None:

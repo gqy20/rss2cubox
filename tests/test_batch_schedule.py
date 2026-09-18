@@ -341,33 +341,40 @@ def test_global_batch_size_configurable(monkeypatch: pytest.MonkeyPatch) -> None
 
 
 def test_enrich_max_workers_default_is_5() -> None:
-    """ENRICH_MAX_WORKERS 默认值应为 5（而非旧的10）。"""
-    from rss2cubox.enrich_agent import ENRICH_MAX_WORKERS
+    """ENRICH_MAX_WORKERS 默认值应为 5（而非旧的10）。
 
-    # 注意：如果 .env 中设置了 ENRICH_MAX_WORKERS，会覆盖默认值
-    # 这里测试的是代码中的默认值
-    # 由于 load_dotenv(override=True) 在模块加载时执行，需要检查原始默认值
+    参数读取已迁移到 prompt_registry.param 三层解析
+    （.env > prompts/enrich.yaml params > 代码默认值），
+    源码嗅探改为验证 param 调用的代码默认值。
+    """
     import inspect
-    source = inspect.getsource(type(ENRICH_MAX_WORKERS).__class__) if False else ""
-    # 直接检查：os.getenv 的默认参数
+
     from rss2cubox import enrich_agent
+    from rss2cubox.prompt_registry import get
+
     src = inspect.getsource(enrich_agent)
-    assert 'os.getenv("ENRICH_MAX_WORKERS", "10")' in src or 'os.getenv("ENRICH_MAX_WORKERS", 10)' in src or '"10"' in src.split('ENRICH_MAX_WORKERS')[1][:20], (
-        "ENRICH_MAX_WORKERS 的 os.getenv 默认值应为 '10'"
+    assert 'param("enrich", "max_workers", 10' in src, (
+        "ENRICH_MAX_WORKERS 应通过 param('enrich', 'max_workers', 10, ...) 读取"
     )
+    # yml 层与代码默认值同源
+    assert get("enrich").params["max_workers"] == 10
 
 
 def test_enrich_max_workers_respects_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
-    """ENRICH_MAX_WORKERS 应可通过环境变量覆盖。"""
-    # 验证机制存在：环境变量优先于代码默认值
-    from rss2cubox import enrich_agent
+    """ENRICH_MAX_WORKERS 应可通过环境变量覆盖（env > yml > default）。"""
     import inspect
 
+    from rss2cubox import enrich_agent
+    from rss2cubox.prompt_registry import param
+
     src = inspect.getsource(enrich_agent)
-    assert "ENRICH_MAX_WORKERS" in src
-    assert "os.getenv" in src
-    # 确认使用 max(1, int(...)) 保护
-    assert "max(1, int(os.getenv" in src or "max(1,int(os.getenv" in src
+    assert 'param("enrich", "max_workers", 10' in src
+    assert 'env_var="ENRICH_MAX_WORKERS"' in src
+    assert 'minimum=1' in src  # param 内 clamp，等价于原 max(1, int(...)) 保护
+
+    # 行为验证：env 覆盖 yml/默认值
+    monkeypatch.setenv("ENRICH_MAX_WORKERS", "3")
+    assert param("enrich", "max_workers", 10, env_var="ENRICH_MAX_WORKERS", minimum=1) == 3
 
 
 def test_runner_source_cap_limits_single_prolific_feed(

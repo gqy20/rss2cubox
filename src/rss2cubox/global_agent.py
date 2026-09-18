@@ -28,87 +28,27 @@ from rss2cubox.agent_sdk_runner import (
     run_with_fallback,
     write_temp_json,
 )
+from rss2cubox.prompt_registry import get, param
 
+# ENABLED / ENABLE_SKILLS 是部署开关（env-only）；数值型运行参数走
+# param 三层解析：.env 环境变量 > prompts/global.yaml params > 代码默认值。
 GLOBAL_AGENT_ENABLED = os.getenv("GLOBAL_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
 GLOBAL_AGENT_ENABLE_SKILLS = os.getenv("GLOBAL_AGENT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
-GLOBAL_AGENT_MIN_CANDIDATES = max(1, int(os.getenv("GLOBAL_AGENT_MIN_CANDIDATES", "3")))
-GLOBAL_AGENT_BATCH_SIZE = max(1, int(os.getenv("GLOBAL_AGENT_BATCH_SIZE", "200")))
-GLOBAL_AGENT_MAX_CONCURRENT = max(1, int(os.getenv("GLOBAL_AGENT_MAX_CONCURRENT", "10")))
-GLOBAL_AGENT_TIMEOUT_SECONDS = max(60, int(os.getenv("GLOBAL_AGENT_TIMEOUT_SECONDS", "300")))
-_global_agent_max_budget_raw = os.getenv("GLOBAL_AGENT_MAX_BUDGET_USD", "50.0").strip()
-try:
-    GLOBAL_AGENT_MAX_BUDGET_USD = float(_global_agent_max_budget_raw) if _global_agent_max_budget_raw else None
-except ValueError:
-    GLOBAL_AGENT_MAX_BUDGET_USD = None
+GLOBAL_AGENT_MIN_CANDIDATES = param("global", "min_candidates", 3, env_var="GLOBAL_AGENT_MIN_CANDIDATES", minimum=1)
+GLOBAL_AGENT_BATCH_SIZE = param("global", "batch_size", 200, env_var="GLOBAL_AGENT_BATCH_SIZE", minimum=1)
+GLOBAL_AGENT_MAX_CONCURRENT = param("global", "max_concurrent", 10, env_var="GLOBAL_AGENT_MAX_CONCURRENT", minimum=1)
+GLOBAL_AGENT_TIMEOUT_SECONDS = param("global", "timeout_seconds", 300, env_var="GLOBAL_AGENT_TIMEOUT_SECONDS", minimum=60)
+GLOBAL_AGENT_MAX_BUDGET_USD = param("global", "max_budget_usd", 50.0, env_var="GLOBAL_AGENT_MAX_BUDGET_USD")
 # JINA 常量已迁移到 get_jina_config()
 
-_SIGNAL_ITEM_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "text": {"type": "string", "maxLength": 1000},
-        "source_urls": {
-            "type": "array",
-            "items": {"type": "string"},
-            "maxItems": 10,
-        },
-        "source_titles": {
-            "type": "array",
-            "items": {"type": "string", "maxLength": 200},
-            "maxItems": 10,
-        },
-    },
-    "required": ["text"],
-}
+# system_prompt / 输出 schema 集中在项目根 prompts/global.yaml
+#（signal_item 在 yml 里用锚点复用，三处 items 引用同一结构）。
+_PROMPT = get("global")
+
+SYSTEM_PROMPT = _PROMPT.system_prompt
 
 # JSON Schema 用于 output_format（CLI 层自动验证）
-GLOBAL_OUTPUT_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "trends": {
-            "type": "array",
-            "items": _SIGNAL_ITEM_SCHEMA,
-        },
-        "weak_signals": {
-            "type": "array",
-            "items": _SIGNAL_ITEM_SCHEMA,
-        },
-        "daily_advices": {
-            "type": "array",
-            "items": _SIGNAL_ITEM_SCHEMA,
-        },
-        "key_topics": {
-            "type": "array",
-            "items": {"type": "string"},
-        },
-        "confidence_level": {
-            "type": "string",
-            "enum": ["high", "medium", "low"],
-        },
-    },
-    "required": ["trends", "weak_signals", "daily_advices"],
-}
-
-SYSTEM_PROMPT = (
-    "你是一位顶级科技产业与投资分析师，尤其深耕 AI 与智能体（AI Agent）领域，专注从海量 RSS 信息流中提炼宏观趋势与深层弱信号。"
-    "你拥有 read_webpage 工具，可随时获取任何 URL 的完整正文（优先走 Jina Reader 返回 Markdown；"
-    "若目标站点屏蔽了 Jina（如掘金返回 451），工具会自动降级到 Playwright 真实浏览器渲染并提取正文）。"
-    "对于值得深挖的情报，主动调用 read_webpage 阅读原文，不要仅凭摘要做判断。"
-    "【关注重点】在提炼趋势和弱信号时，请特别关注以下方向：\n"
-    "- AI 模型能力突破（新架构、新基准、Scaling Law 变化）\n"
-    "- AI Agent / 智能体框架、工具链、多智能体协作、Agent 运行时\n"
-    "- LLM 应用层创新（RAG、推理优化、长上下文、多模态）\n"
-    "- 开源模型与生态动态（权重开源、微调方案、社区趋势）\n"
-    "- AI 基础设施（算力、芯片、推理优化、训练框架）\n"
-    "以上方向的信号应在 trends 和 weak_signals 中获得适当体现，但不要刻意拔高——仍需基于事实客观判断。\n"
-    "【溯源要求】输出每条 trend / weak_signal / daily_advice 时，必须同时标注支撑来源：\n"
-    "- source_urls: 支撑该结论的原文 URL 列表（从输入情报中选取最相关的 1-5 条）\n"
-    "- source_titles: 对应的文章标题（与 source_urls 一一对应）\n"
-    "- 如果某条结论是综合推断、无法归因到具体文章，source_urls 可为空数组 []\n"
-    "- 绝对不要编造 URL，只使用输入数据中已存在的 url 字段\n"
-    "完成所有分析后，直接输出结构化 JSON 格式的报告。"
-    "【JSON 输出强制要求】你的回答必须且只能是合法的 JSON 对象，以 { 开始，以 } 结束。不要输出任何解释性文字、前言、Markdown 标记或代码块标记（```json 或 ```）。trends/weak_signals/daily_advices 数组中的 source_urls 字段填入原始 URL 字符串即可。"
-    "所有输出文字必须使用简体中文，语言专业、精炼，不要废话。"
-)
+GLOBAL_OUTPUT_SCHEMA = _PROMPT.output_schema
 
 # JINA 常量已迁移到 get_jina_config()
 
@@ -239,7 +179,7 @@ async def _run_agent(
 
     stderr_lines, stderr_logger = make_stderr_logger("global_agent", limit=80)
 
-    sdk_logger = make_sdk_logger("global", log_event=log_event, source_count=len(high_value_items))
+    sdk_logger = make_sdk_logger("global", log_event=log_event, source_count=len(high_value_items), prompt_version=_PROMPT.version)
 
     try:
         structured_output = await run_with_fallback(

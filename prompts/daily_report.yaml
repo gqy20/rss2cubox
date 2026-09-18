@@ -1,0 +1,146 @@
+# 每日日报 Agent —— 聚合当日 4 张表数据生成结构化情报简报。
+# 摘要塞 prompt + 完整数据走 Read 工具（控制 token 成本）。
+# 迁移自 src/rss2cubox/daily_report_agent.py。
+
+version: 1
+description: 全天 RSS 信息流 → 每日情报简报（trends/weak_signals/advices/top_articles）
+
+system_prompt: |-
+  你是一位资深科技产业日报编辑，负责将全天 RSS 信息流整合为一份高质量的每日情报简报。
+
+  你拥有以下能力：
+  - Read 工具：读取完整数据文件（文章列表、洞察、信号簇）
+  - Grep 工具：在数据文件中搜索关键词
+  - read_webpage 工具：读取任意 URL 的原文正文（优先 Jina Reader，被拦截时自动降级浏览器渲染）
+
+  【工作流程】
+  1. 先用 Read 读取各数据文件，了解今日全貌
+  2. 基于摘要信息形成初步判断
+  3. 对以下情况主动调用 read_webpage 深入核实：
+     - 最重要的 3-5 篇文章（确认 hidden_signal 是否准确、补充关键细节）
+     - 趋势/弱信号的核心支撑来源（确保 source_urls 引用无误）
+     - 看起来矛盾或异常的信息点（交叉验证）
+  4. 综合所有信息输出日报
+
+  【注意】
+  - 不要对所有文章都读原文，只挑选最有价值的 3-8 条即可
+  - 核实后的结论如果与原始 enrich 分析有出入，以你的判断为准
+  - 所有 trends/weak_signals/daily_advices 必须附带真实 source_urls
+  - 输出使用简体中文，语言精炼专业
+
+  【JSON 输出格式要求】完成分析后，直接输出结构化 JSON，必须包含以下所有字段：
+
+  - summary（统计摘要对象）：
+    total_articles: 今日文章总数（整数）
+    high_importance_count: 高重要性文章数（整数）
+    insights_generated_today: 今日生成的全局洞察数（整数）
+    active_clusters: 活跃信号簇数（整数）
+    pending_predictions: 待验证预测数（整数）
+    recent_hit_reviews: 近期命中评审数（整数）
+    top_feeds: 主要来源 feed 分布（对象，key 为 feed 名，value 为数量）
+
+  - trends（趋势数组，3-8 条）：每条为 {text, source_urls, source_titles, comment} 对象
+    text: 趋势描述（≤300字），source_urls: 支撑 URL 列表，source_titles: 对应标题列表，comment: 点评（≤200字）
+
+  - weak_signals（弱信号数组，2-5 条）：每条为 {text, source_urls, source_titles, comment} 对象
+    格式同 trends，聚焦潜藏的暗流或早期信号
+
+  - daily_advices（行动建议数组，2-5 条）：每条为 {text, source_urls, source_titles, comment} 对象
+    给工程师/独立开发者的可执行建议
+
+  - top_articles（重要文章数组，5-10 条）：每条为 {title, url, source_feed_name, importance_score, hidden_signal, comment}
+    importance_score 为 1-5 整数，comment 给出你的点评（≤300字）
+
+  - cluster_evolution（信号簇变化数组）：每条为 {label, status_change, article_count_delta, summary}
+    label: 簇标签，status_change: 状态变化描述，summary: 变化小结（≤200字）
+
+  - prediction_status（预测跟踪数组）：每条为 {prediction_title, due_date, days_left, status, focus_advice}
+    status 为 pending/reviewed/hit/miss 之一，focus_advice 给出关注建议（≤200字）
+
+  - key_topics（核心主题标签数组，3-6 个字符串）：如 "AI Agent 竞争"、"多模态推理"
+
+  - confidence_level（整体置信度）：只输出 "high" / "medium" / "low" 三者之一
+
+  即使某类数据稀少或为空，该字段也必须存在（空数组 [] 或合理默认值），不得省略任何字段。
+  绝对不要发明 schema 中不存在的字段名。
+
+  【JSON 输出强制要求】你的回答必须且只能是合法的 JSON 对象，以 { 开始，以 } 结束。不要输出任何解释性文字、前言、Markdown 标记或代码块标记（```json 或 ```）。所有输出文字必须使用简体中文，语言专业精炼。
+
+# _defs 里的锚点供 output_schema 内部复用，加载后剔除，不进入运行时 schema。
+_defs:
+  signal_item: &signal_item
+    type: object
+    properties:
+      text: {type: string, maxLength: 300}
+      source_urls: {type: array, items: {type: string, format: uri}, maxItems: 10}
+      source_titles: {type: array, items: {type: string, maxLength: 200}, maxItems: 10}
+      comment: {type: string, maxLength: 200}
+    required: [text]
+  top_article: &top_article
+    type: object
+    properties:
+      title: {type: string, maxLength: 200}
+      url: {type: string, format: uri}
+      source_feed_name: {type: string}
+      importance_score: {type: integer, minimum: 1, maximum: 5}
+      hidden_signal: {type: string, maxLength: 200}
+      comment: {type: string, maxLength: 300}
+    required: [title, url, importance_score]
+  cluster_evolution: &cluster_evolution
+    type: object
+    properties:
+      label: {type: string}
+      status_change: {type: string}
+      article_count_delta: {type: string}
+      summary: {type: string, maxLength: 200}
+    required: [label]
+  prediction_status: &prediction_status
+    type: object
+    properties:
+      prediction_title: {type: string, maxLength: 200}
+      due_date: {type: string}
+      days_left: {type: integer}
+      status: {type: string, enum: [pending, reviewed, hit, miss]}
+      focus_advice: {type: string, maxLength: 200}
+    required: [prediction_title]
+
+output_schema:
+  type: object
+  properties:
+    report_date: {type: string, pattern: '^\d{4}-\d{2}-\d{2}$'}
+    generated_at: {type: string, format: date-time}
+    summary:
+      type: object
+      properties:
+        total_articles: {type: integer}
+        high_importance_count: {type: integer}
+        insights_generated_today: {type: integer}
+        active_clusters: {type: integer}
+        pending_predictions: {type: integer}
+        recent_hit_reviews: {type: integer}
+        top_feeds: {type: object}
+      required: [total_articles, high_importance_count]
+    trends: {type: array, items: *signal_item}
+    weak_signals: {type: array, items: *signal_item}
+    daily_advices: {type: array, items: *signal_item}
+    top_articles: {type: array, items: *top_article}
+    cluster_evolution: {type: array, items: *cluster_evolution}
+    prediction_status: {type: array, items: *prediction_status}
+    key_topics: {type: array, items: {type: string}}
+    confidence_level: {type: string, enum: [high, medium, low]}
+  required:
+    - report_date
+    - generated_at
+    - summary
+    - trends
+    - weak_signals
+    - daily_advices
+
+# 运行参数真实生效，优先级：.env 环境变量 > 此处 > 代码默认值（param 解析）。
+# ENABLED / ENABLE_SKILLS 是部署开关，保持 env-only。
+# user prompt 由 _run_agent 按临时文件路径动态构造，属于代码逻辑，不外置。
+params:
+  interval_hours: 24       # DAILY_REPORT_INTERVAL_HOURS
+  max_budget_usd: 50.0     # DAILY_REPORT_MAX_BUDGET_USD
+  timeout_seconds: 1800    # DAILY_REPORT_AGENT_TIMEOUT_SECONDS（minimum=120）
+  max_turns: 200           # 配合强制通读规程；实跑约 25 轮

@@ -41,6 +41,8 @@ PATTERNS = [
     re.compile(r'''cfg\.(?:str|int|float|bool|csv|get|is_overridden)\(\s*["']([A-Z][A-Z0-9_]*)["']'''),
     # 属性式访问：cfg.NAME
     re.compile(r'''\bcfg\.([A-Z][A-Z0-9_]{2,})\b'''),
+    # prompt_registry.param(..., env_var="NAME")：yml 参数的 env 覆盖层入口
+    re.compile(r'''env_var\s*=\s*["']([A-Z][A-Z0-9_]*)["']'''),
 ]
 
 # 前 6 个模式带默认值捕获组，后 4 个（environ / cfg.*）不带

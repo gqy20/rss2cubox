@@ -499,17 +499,20 @@ def make_stderr_logger(prefix: str, limit: int = 60) -> tuple[list[str], Callabl
     return lines, _log
 
 
-def _budget(name: str, default: float) -> float | None:
-    """从环境变量解析预算值。未设置或空字符串时返回 default 对应的 None 语义。"""
-    import os as _os
+def _budget(name: str, default: float | None = None) -> float | None:
+    """从环境变量解析预算值。未设置/空/非法时返回 default（通常是 yml 值经
+    prompt_registry.param 解析后的结果，param 内部兜底代码字面量默认）。
 
-    raw = _os.environ.get(name, "")
-    if not raw.strip():
-        return None
+    显式传 None 表示不限制预算。历史上 default 从未生效（恒返回 None），
+    属于实现 bug：调用方声称的「默认 2.0 美元」从未真正限制过任何调用。
+    """
+    raw = os.environ.get(name, "").strip()
+    if not raw:
+        return default
     try:
-        return float(raw.strip())
+        return float(raw)
     except (ValueError, TypeError):
-        return None
+        return default
 
 
 def _agent_timeout(env_key: str, *, default: float = 300, minimum: float = 30) -> float | None:

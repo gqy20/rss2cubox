@@ -23,71 +23,19 @@ from rss2cubox.agent_sdk_runner import (
     run_json_agent,
     run_with_fallback,
 )
+from rss2cubox.prompt_registry import get, param
+
+# system_prompt / 输出 schema / user 静态指令集中在项目根 prompts/policy_triage.yaml：
+# 修改判定标准只动 yml，下次运行生效，日志带 prompt_version 便于追溯。
+# 运行参数优先级：.env 环境变量 > yml params > 代码默认值（param 负责解析）。
+_PROMPT = get("policy_triage")
 
 # 每批标题数。实测：10 条稳定成功；20 条偏激进（多次出现
 # error_max_structured_output_retries）；50 条直接撞满超时。
-TRIAGE_BATCH_SIZE = max(1, int(os.getenv("POLICY_TRIAGE_BATCH_SIZE", "10")))
+TRIAGE_BATCH_SIZE = param("policy_triage", "batch_size", 10, env_var="POLICY_TRIAGE_BATCH_SIZE", minimum=1)
 
-TRIAGE_OUTPUT_SCHEMA: dict[str, Any] = {
-    "type": "object",
-    "properties": {
-        "results": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "id": {"type": "string", "description": "必须原样回填输入的 id"},
-                    "is_policy": {
-                        "type": "boolean",
-                        "description": "是否为真正的政策/法规/规章/标准/规划文件",
-                    },
-                    "ai_relevance": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 5,
-                        "description": "与 AI/智能体的相关度，标准同 deep enrich",
-                    },
-                    "reason": {"type": "string", "description": "≤20 字的判定依据（可选）"},
-                },
-                # reason 故意不列入 required：它是调试用的，一旦要求必填，
-                # 模型漏一个就会让整批 schema 校验失败并重试至死，
-                # 实测表现为 error_max_structured_output_retries、整批 20 条全丢。
-                "required": ["id", "is_policy", "ai_relevance"],
-            },
-        },
-    },
-    "required": ["results"],
-}
-
-
-SYSTEM_PROMPT = (
-    "你是中国政策情报的预筛员。任务是对一批政策类网站的条目**标题**做快速分类，"
-    "决定哪些值得进入后续的深度结构化抽取。你只看标题，不追求精确，追求便宜且不漏。\n"
-    "\n"
-    "【is_policy 判定】\n"
-    "true：法律/行政法规/部门规章/地方性法规/地方政府规章/规范性文件/指导意见/"
-    "征求意见稿/技术标准/规划/实施方案/管理办法，以及它们的解读、废止、修订、批复。\n"
-    "false：民生服务通知（停水停电、公交月票、招考报名、场馆开放、活动打卡）、"
-    "人事任免、会议报道、领导活动、统计数据发布、工作报告、节日慰问、招商引资签约。\n"
-    "\n"
-    "【ai_relevance 评分标准】与深度抽取阶段保持完全一致：\n"
-    "5 = 直接规制 AI/算法/大模型/智能体本身（生成式AI服务、算法推荐、深度合成、"
-    "AI安全标准、大模型备案、人工智能产业条例）\n"
-    "4 = 不点名 AI 但直接约束 AI 系统必然涉及的对象（数据跨境、个人信息处理、"
-    "自动化决策、训练数据、算力、数据要素）\n"
-    "3 = 行业性政策，AI 是其中一个受影响方向（金融/医疗/交通/教育/制造的数字化智能化条款）\n"
-    "2 = 泛数字经济、科技创新政策，与 AI 间接相关\n"
-    "1 = 与 AI 基本无关\n"
-    "\n"
-    "【重要】\n"
-    "- 标题信息不足以判断时，宁可给低分也不要给高分；但 is_policy 存疑时倾向 true，"
-    "因为漏掉一份真政策的代价高于多抽一篇。\n"
-    "- reason 可选，写的话要简短具体，指出标题里哪个词决定了你的判断。\n"
-    "- 但必须为输入里的**每一个** id 都返回一条结果，id 原样回填，"
-    "不得改写、不得遗漏、不得新增。\n"
-    "\n"
-    "只输出符合 JSON Schema 的结构化结果。"
-)
+SYSTEM_PROMPT = _PROMPT.system_prompt
+TRIAGE_OUTPUT_SCHEMA: dict[str, Any] = _PROMPT.output_schema
 
 
 def _build_prompt(batch: list[dict[str, Any]]) -> str:
@@ -105,11 +53,7 @@ def _build_prompt(batch: list[dict[str, Any]]) -> str:
         {
             "count": len(slim),
             "items": slim,
-            "instructions": [
-                "为每一个 id 返回一条结果，id 原样回填。",
-                "只依据标题判断，不要推测标题之外的内容。",
-                "ai_relevance 用 1-5 的整数。",
-            ],
+            "instructions": _PROMPT.instructions_list,
         },
         ensure_ascii=False,
     )
@@ -120,7 +64,7 @@ async def _triage_batch(
     log_event: Any | None = None,
 ) -> tuple[list[dict[str, Any]], str]:
     valid_ids = {str(doc.get("id", "")) for doc in batch}
-    sdk_logger = make_sdk_logger("policy_triage", log_event=log_event, batch_size=len(batch))
+    sdk_logger = make_sdk_logger("policy_triage", log_event=log_event, batch_size=len(batch), prompt_version=_PROMPT.version)
 
     def _fail(reason: str) -> tuple[list[dict[str, Any]], str]:
         # 失败必须打日志：否则整批静默返回空，只能从 uncovered 反推出事了
@@ -143,9 +87,13 @@ async def _triage_batch(
                 schema=TRIAGE_OUTPUT_SCHEMA,
                 allowed_tools=[],
                 mcp_servers=None,
-                max_turns=10,
-                max_budget_usd=_budget("POLICY_TRIAGE_MAX_BUDGET_USD", 2.0),
-                timeout_seconds=_agent_timeout("POLICY_TRIAGE_TIMEOUT_SECONDS", default=240, minimum=90),
+                max_turns=param("policy_triage", "max_turns", 10),
+                max_budget_usd=_budget("POLICY_TRIAGE_MAX_BUDGET_USD", param("policy_triage", "max_budget_usd", 2.0)),
+                timeout_seconds=_agent_timeout(
+                    "POLICY_TRIAGE_TIMEOUT_SECONDS",
+                    default=param("policy_triage", "timeout_seconds", 240),
+                    minimum=90,
+                ),
                 setting_sources=None,
                 sdk_log=sdk_logger,
             ),
@@ -254,7 +202,7 @@ def triage_policy_documents(
         return {"results": [], "stats": {"input": 0, "triaged": 0, "batches": 0, "policy": 0, "relevant": 0}}
 
     size = batch_size or TRIAGE_BATCH_SIZE
-    concurrent = max_concurrent or max(1, int(os.getenv("POLICY_TRIAGE_MAX_CONCURRENT", "3")))
+    concurrent = max_concurrent or param("policy_triage", "max_concurrent", 3, env_var="POLICY_TRIAGE_MAX_CONCURRENT", minimum=1)
     batches = [docs[i : i + size] for i in range(0, len(docs), size)]
 
     if log_event:
@@ -272,7 +220,7 @@ def triage_policy_documents(
         partial(_triage_all, batches, log_event, max_concurrent=concurrent, on_batch_done=on_batch_done)
     )
 
-    threshold = max(1, int(os.getenv("POLICY_ENRICH_MIN_RELEVANCE", "3")))
+    threshold = param("policy_enrich", "min_relevance", 3, env_var="POLICY_ENRICH_MIN_RELEVANCE", minimum=1)
     stats = {
         "input": len(docs),
         "triaged": len(results),

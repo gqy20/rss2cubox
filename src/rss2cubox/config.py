@@ -189,6 +189,7 @@ _TABLE: list[tuple[str, str, Any, str, str]] = [
 
     # runtime
     ("RSS2CUBOX_RUN_ID", "str", "", "runtime", "一次运行的稳定 ID，留空则自动生成"),
+    ("RSS2CUBOX_PROMPTS_DIR", "str", "", "runtime", "提示词 yml 目录，留空用项目根 prompts/"),
 
     # legacy
     ("MIGRATE_BATCH_SIZE", "int", "100", "legacy", "scripts/legacy/migrate_processed_items_to_ic.py 的批大小（--batch-size 的默认值）"),

@@ -20,6 +20,7 @@ dependencies = [
   "trafilatura>=2.0.0",
   "cssselect>=1.2.0",
   "yt-dlp",
+  "pyyaml>=6.0.3",
 ]
 
 [project.optional-dependencies]

@@ -9,63 +9,13 @@ from typing import Any
 import anyio
 
 from rss2cubox.agent_sdk_runner import _StructuredOutputError, _agent_timeout, _budget, extract_json_from_text, make_sdk_logger, run_json_agent, run_with_fallback
+from rss2cubox.prompt_registry import get, param
 
+# system_prompt / 输出 schema / user 静态指令集中在项目根 prompts/prediction.yaml。
+_PROMPT = get("prediction")
 
-TREND_PREDICTION_OUTPUT_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "predictions": {
-            "type": "array",
-            "items": {
-                "type": "object",
-                "properties": {
-                    "signal_cluster_key": {"type": "string"},
-                    "prediction_type": {"type": "integer", "minimum": 1, "maximum": 5},
-                    # created_at / target_start_at / target_end_at 由 Python 侧确定：
-                    # 模型生成的时间字符串不可信（实测生成过 2026-09-077 这种非法日期，
-                    # 导致整批预测保存失败）
-                    "horizon_days": {"type": "integer", "minimum": 1},
-                    "prediction_title": {"type": "string"},
-                    "prediction_body": {"type": "string"},
-                    "watch_keywords": {"type": "array", "items": {"type": "string"}},
-                    "expected_evidence": {"type": "object"},
-                    "disconfirming_evidence": {"type": "string"},
-                    "baseline_metrics": {"type": "object"},
-                    "confidence": {"type": "integer", "minimum": 1, "maximum": 5},
-                    "status": {"type": "string", "enum": ["pending"]},
-                },
-                "required": [
-                    "signal_cluster_key", "prediction_type",
-                    "prediction_title", "prediction_body",
-                    "watch_keywords", "expected_evidence", "disconfirming_evidence",
-                    "baseline_metrics", "confidence", "status",
-                ],
-            },
-        },
-    },
-    "required": ["predictions"],
-}
-
-
-SYSTEM_PROMPT = (
-    "你是 AI 趋势预测 Agent，尤其深耕 AI 与智能体（AI Agent）领域，负责基于 signal_clusters 生成未来可验证的趋势预测。"
-    "预测必须绑定输入中的 signal_cluster_key，必须可证伪，不能输出泛泛趋势。"
-    "expected_evidence 必须包含 minimum_support_count、required_source_count、required_evidence_types。"
-    "必须参考 historical_reviews，避免重复低质量预测，并吸收 improvement_advice 调整证据门槛。"
-    "prediction_type: 1=延续预测，2=转阶段预测，3=扩散预测，4=反转预测，5=迟到验证。"
-    "【关注重点】在挑选预测目标时，优先考虑以下方向的 cluster：\n"
-    "- AI 模型能力突破（新架构、新基准、Scaling Law 变化）\n"
-    "- AI Agent / 智能体框架、工具链、多智能体协作\n"
-    "- LLM 应用层创新（RAG、推理优化、长上下文、多模态）\n"
-    "- 开源模型与生态动态（权重开源、微调方案、社区趋势）\n"
-    "- AI 基础设施（算力、芯片、推理优化、训练框架）\n"
-    "以上方向在其他条件相同时应优先被选为预测目标，但不要为了凑数而强行选择弱信号。\n"
-    "【评分利用】每个 cluster 都带有聚合评分字段，请据此筛选：\n"
-    "- 优先选择 avg_importance 高（≥3.5）的 cluster，这类信号重要性高\n"
-    "- avg_confidence 低的 cluster（<3）即使 importance 高也应降低优先级或提高证据门槛\n"
-    "- 避免对同一 normalized_label 或相似 entities 的 cluster 反复预测，除非有明确的新进展信号\n"
-    "只输出符合 JSON Schema 的结构化结果。"
-)
+SYSTEM_PROMPT = _PROMPT.system_prompt
+TREND_PREDICTION_OUTPUT_SCHEMA = _PROMPT.output_schema
 
 
 def run_trend_prediction_agent(
@@ -90,13 +40,7 @@ def run_trend_prediction_agent(
             "max_predictions": max_predictions,
             "clusters": clusters,
             "historical_reviews": historical_reviews or [],
-            "instructions": [
-                "只从输入 clusters 中选择值得预测的信号，优先选择 AI/智能体方向且评分高的 cluster。",
-                "每条预测必须绑定 signal_cluster_key。",
-                "利用 cluster 的 avg_importance、avg_confidence 做筛选排序，不要忽略这些字段。",
-                "参考 historical_reviews 中的 score、why_score、improvement_advice，避免重复已失败模式。",
-                "不要输出超过 max_predictions 条。",
-            ],
+            "instructions": _PROMPT.instructions_list,
         },
         ensure_ascii=False,
     )
@@ -104,7 +48,8 @@ def run_trend_prediction_agent(
     sdk_logger = make_sdk_logger("trend_prediction", log_event=log_event,
                                 cluster_count=len(clusters),
                                 historical_review_count=len(historical_reviews or []),
-                                max_predictions=max_predictions)
+                                max_predictions=max_predictions,
+                                prompt_version=_PROMPT.version)
 
     payload = anyio.run(
         partial(
@@ -114,9 +59,13 @@ def run_trend_prediction_agent(
                 prompt=prompt,
                 system_prompt=SYSTEM_PROMPT,
                 schema=TREND_PREDICTION_OUTPUT_SCHEMA,
-                max_turns=20,
-                max_budget_usd=_budget("TREND_PREDICTION_AGENT_MAX_BUDGET_USD", 10.0),
-                timeout_seconds=_agent_timeout("TREND_PREDICTION_AGENT_TIMEOUT_SECONDS", default=900, minimum=120),
+                max_turns=param("prediction", "max_turns", 20),
+                max_budget_usd=_budget("TREND_PREDICTION_AGENT_MAX_BUDGET_USD", param("prediction", "max_budget_usd", 10.0)),
+                timeout_seconds=_agent_timeout(
+                    "TREND_PREDICTION_AGENT_TIMEOUT_SECONDS",
+                    default=param("prediction", "timeout_seconds", 900),
+                    minimum=120,
+                ),
                 sdk_log=sdk_logger,
             ),
             agent_name="trend_prediction",

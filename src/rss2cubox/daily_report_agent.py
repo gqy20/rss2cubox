@@ -19,151 +19,25 @@ from pathlib import Path
 from typing import Any
 
 from dotenv import load_dotenv
+from rss2cubox.prompt_registry import get, param
 
 load_dotenv(override=True)
 
+# ENABLED / ENABLE_SKILLS 是部署开关（env-only）；数值型运行参数走
+# param 三层解析：.env 环境变量 > prompts/daily_report.yaml params > 代码默认值。
 DAILY_REPORT_ENABLED = os.getenv("DAILY_REPORT_ENABLED", "true").lower() not in ("false", "0", "no")
-DAILY_REPORT_INTERVAL_HOURS = max(1, int(os.getenv("DAILY_REPORT_INTERVAL_HOURS", "24")))
-DAILY_REPORT_MAX_BUDGET_USD_raw = os.getenv("DAILY_REPORT_MAX_BUDGET_USD", "50").strip()
-try:
-    DAILY_REPORT_MAX_BUDGET_USD = float(DAILY_REPORT_MAX_BUDGET_USD_raw) if DAILY_REPORT_MAX_BUDGET_USD_raw else None
-except ValueError:
-    DAILY_REPORT_MAX_BUDGET_USD = 0.15
-
 DAILY_REPORT_ENABLE_SKILLS = os.getenv("DAILY_REPORT_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
+DAILY_REPORT_INTERVAL_HOURS = param("daily_report", "interval_hours", 24, env_var="DAILY_REPORT_INTERVAL_HOURS", minimum=1)
+DAILY_REPORT_MAX_BUDGET_USD = param("daily_report", "max_budget_usd", 50.0, env_var="DAILY_REPORT_MAX_BUDGET_USD")
 
-_SIGNAL_ITEM_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "text": {"type": "string", "maxLength": 300},
-        "source_urls": {"type": "array", "items": {"type": "string", "format": "uri"}, "maxItems": 10},
-        "source_titles": {"type": "array", "items": {"type": "string", "maxLength": 200}, "maxItems": 10},
-        "comment": {"type": "string", "maxLength": 200},
-    },
-    "required": ["text"],
-}
+# system_prompt / 输出 schema 集中在项目根 prompts/daily_report.yaml
+#（signal_item / top_article 等子 schema 在 yml 里用锚点复用）。
+_PROMPT = get("daily_report")
 
-_TOP_ARTICLE_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "title": {"type": "string", "maxLength": 200},
-        "url": {"type": "string", "format": "uri"},
-        "source_feed_name": {"type": "string"},
-        "importance_score": {"type": "integer", "minimum": 1, "maximum": 5},
-        "hidden_signal": {"type": "string", "maxLength": 200},
-        "comment": {"type": "string", "maxLength": 300},
-    },
-    "required": ["title", "url", "importance_score"],
-}
+SYSTEM_PROMPT = _PROMPT.system_prompt
 
-_CLUSTER_EVOLUTION_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "label": {"type": "string"},
-        "status_change": {"type": "string"},
-        "article_count_delta": {"type": "string"},
-        "summary": {"type": "string", "maxLength": 200},
-    },
-    "required": ["label"],
-}
-
-_PREDICTION_STATUS_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "prediction_title": {"type": "string", "maxLength": 200},
-        "due_date": {"type": "string"},
-        "days_left": {"type": "integer"},
-        "status": {"type": "string", "enum": ["pending", "reviewed", "hit", "miss"]},
-        "focus_advice": {"type": "string", "maxLength": 200},
-    },
-    "required": ["prediction_title"],
-}
-
-DAILY_REPORT_OUTPUT_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "report_date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
-        "generated_at": {"type": "string", "format": "date-time"},
-        "summary": {
-            "type": "object",
-            "properties": {
-                "total_articles": {"type": "integer"},
-                "high_importance_count": {"type": "integer"},
-                "insights_generated_today": {"type": "integer"},
-                "active_clusters": {"type": "integer"},
-                "pending_predictions": {"type": "integer"},
-                "recent_hit_reviews": {"type": "integer"},
-                "top_feeds": {"type": "object"},
-            },
-            "required": ["total_articles", "high_importance_count"],
-        },
-        "trends": {"type": "array", "items": _SIGNAL_ITEM_SCHEMA},
-        "weak_signals": {"type": "array", "items": _SIGNAL_ITEM_SCHEMA},
-        "daily_advices": {"type": "array", "items": _SIGNAL_ITEM_SCHEMA},
-        "top_articles": {"type": "array", "items": _TOP_ARTICLE_SCHEMA},
-        "cluster_evolution": {"type": "array", "items": _CLUSTER_EVOLUTION_SCHEMA},
-        "prediction_status": {"type": "array", "items": _PREDICTION_STATUS_SCHEMA},
-        "key_topics": {"type": "array", "items": {"type": "string"}},
-        "confidence_level": {"type": "string", "enum": ["high", "medium", "low"]},
-    },
-    "required": [
-        "report_date", "generated_at", "summary",
-        "trends", "weak_signals", "daily_advices",
-    ],
-}
-
-SYSTEM_PROMPT = (
-    "你是一位资深科技产业日报编辑，负责将全天 RSS 信息流整合为一份高质量的每日情报简报。\n\n"
-    "你拥有以下能力：\n"
-    "- Read 工具：读取完整数据文件（文章列表、洞察、信号簇）\n"
-    "- Grep 工具：在数据文件中搜索关键词\n"
-    "- read_webpage 工具：读取任意 URL 的原文正文（优先 Jina Reader，被拦截时自动降级浏览器渲染）\n\n"
-
-    "【工作流程】\n"
-    "1. 先用 Read 读取各数据文件，了解今日全貌\n"
-    "2. 基于摘要信息形成初步判断\n"
-    "3. 对以下情况主动调用 read_webpage 深入核实：\n"
-    "   - 最重要的 3-5 篇文章（确认 hidden_signal 是否准确、补充关键细节）\n"
-    "   - 趋势/弱信号的核心支撑来源（确保 source_urls 引用无误）\n"
-    "   - 看起来矛盾或异常的信息点（交叉验证）\n"
-    "4. 综合所有信息输出日报\n\n"
-
-    "【注意】\n"
-    "- 不要对所有文章都读原文，只挑选最有价值的 3-8 条即可\n"
-    "- 核实后的结论如果与原始 enrich 分析有出入，以你的判断为准\n"
-    "- 所有 trends/weak_signals/daily_advices 必须附带真实 source_urls\n"
-    "- 输出使用简体中文，语言精炼专业\n\n"
-
-    "【JSON 输出格式要求】完成分析后，直接输出结构化 JSON，必须包含以下所有字段：\n\n"
-    "- summary（统计摘要对象）：\n"
-    "  total_articles: 今日文章总数（整数）\n"
-    "  high_importance_count: 高重要性文章数（整数）\n"
-    "  insights_generated_today: 今日生成的全局洞察数（整数）\n"
-    "  active_clusters: 活跃信号簇数（整数）\n"
-    "  pending_predictions: 待验证预测数（整数）\n"
-    "  recent_hit_reviews: 近期命中评审数（整数）\n"
-    "  top_feeds: 主要来源 feed 分布（对象，key 为 feed 名，value 为数量）\n\n"
-    "- trends（趋势数组，3-8 条）：每条为 {text, source_urls, source_titles, comment} 对象\n"
-    "  text: 趋势描述（≤300字），source_urls: 支撑 URL 列表，source_titles: 对应标题列表，comment: 点评（≤200字）\n\n"
-    "- weak_signals（弱信号数组，2-5 条）：每条为 {text, source_urls, source_titles, comment} 对象\n"
-    "  格式同 trends，聚焦潜藏的暗流或早期信号\n\n"
-    "- daily_advices（行动建议数组，2-5 条）：每条为 {text, source_urls, source_titles, comment} 对象\n"
-    "  给工程师/独立开发者的可执行建议\n\n"
-    "- top_articles（重要文章数组，5-10 条）：每条为 {title, url, source_feed_name, importance_score, hidden_signal, comment}\n"
-    "  importance_score 为 1-5 整数，comment 给出你的点评（≤300字）\n\n"
-    "- cluster_evolution（信号簇变化数组）：每条为 {label, status_change, article_count_delta, summary}\n"
-    "  label: 簇标签，status_change: 状态变化描述，summary: 变化小结（≤200字）\n\n"
-    "- prediction_status（预测跟踪数组）：每条为 {prediction_title, due_date, days_left, status, focus_advice}\n"
-    "  status 为 pending/reviewed/hit/miss 之一，focus_advice 给出关注建议（≤200字）\n\n"
-    "- key_topics（核心主题标签数组，3-6 个字符串）：如 \"AI Agent 竞争\"、\"多模态推理\"\n\n"
-    "- confidence_level（整体置信度）：只输出 \"high\" / \"medium\" / \"low\" 三者之一\n\n"
-    "即使某类数据稀少或为空，该字段也必须存在（空数组 [] 或合理默认值），不得省略任何字段。\n"
-    "绝对不要发明 schema 中不存在的字段名。\n\n"
-
-    "【JSON 输出强制要求】你的回答必须且只能是合法的 JSON 对象，以 { 开始，以 } 结束。"
-    "不要输出任何解释性文字、前言、Markdown 标记或代码块标记（```json 或 ```）。"
-    "所有输出文字必须使用简体中文，语言专业精炼。"
-)
+# JSON Schema 用于 output_format（CLI 层自动验证）
+DAILY_REPORT_OUTPUT_SCHEMA = _PROMPT.output_schema
 
 
 # _normalize_signal_item 已迁移到 agent_sdk_runner.normalize_signal_item（enable_comment=True, max_text_length=300）
@@ -380,7 +254,7 @@ async def _run_agent(
 
     stderr_lines, stderr_logger = make_stderr_logger("daily_report", limit=80)
 
-    sdk_logger = make_sdk_logger("daily_report", log_event=log_event)
+    sdk_logger = make_sdk_logger("daily_report", log_event=log_event, prompt_version=_PROMPT.version)
 
     max_retries = 3
     last_error: str | None = None
@@ -410,9 +284,13 @@ async def _run_agent(
                 schema=DAILY_REPORT_OUTPUT_SCHEMA,
                 allowed_tools=allowed_tools,
                 mcp_servers={"daily-report-tools": server},
-                max_turns=200,
+                max_turns=param("daily_report", "max_turns", 200),
                 max_budget_usd=DAILY_REPORT_MAX_BUDGET_USD,
-                timeout_seconds=_agent_timeout("DAILY_REPORT_AGENT_TIMEOUT_SECONDS", default=1800, minimum=120),
+                timeout_seconds=_agent_timeout(
+                    "DAILY_REPORT_AGENT_TIMEOUT_SECONDS",
+                    default=param("daily_report", "timeout_seconds", 1800),
+                    minimum=120,
+                ),
                 cwd=Path.cwd(),
                 setting_sources=["project"] if DAILY_REPORT_ENABLE_SKILLS else None,
                 stderr=stderr_logger,
@@ -444,7 +322,7 @@ async def _run_agent(
                 print(f"[daily_report] fallback 也失败: {e.raw_text[:300]}", flush=True)
             last_error = f"structured_output_fallback_failed: missing required fields"
         except TimeoutError as exc:
-            last_error = f"TimeoutError after {_agent_timeout('DAILY_REPORT_AGENT_TIMEOUT_SECONDS', default=1800, minimum=120)}s"
+            last_error = f"TimeoutError after {_agent_timeout('DAILY_REPORT_AGENT_TIMEOUT_SECONDS', default=param('daily_report', 'timeout_seconds', 1800), minimum=120)}s"
             print(f"[daily_report] 超时 (第{attempt + 1}次): {last_error}", flush=True)
         except RuntimeError as exc:
             last_error = str(exc) or type(exc).__name__

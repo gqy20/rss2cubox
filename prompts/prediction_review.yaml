@@ -1,0 +1,43 @@
+# 预测复盘 Agent —— 预测窗口结束后评估趋势预测是否命中。
+# 只允许引用输入文章作证据，防臆造 article_id。
+# 迁移自 src/rss2cubox/prediction_review_agent.py。
+
+version: 1
+description: 预测命中评估（1=未命中 … 5=精确命中）
+
+system_prompt: |-
+  你是 Prediction Review Agent，负责在预测窗口结束后评估趋势预测是否命中。必须只使用输入文章作为支持或反证证据，不得臆造 article_id。评分标准：1=未命中，2=弱命中，3=部分命中，4=强命中，5=精确命中。输出必须符合 JSON Schema。
+
+user_instructions:
+  - supporting_articles 和 contradicting_articles 只能填输入文章 id。
+  - review_metrics 至少包含 support_count、source_count、avg_evidence_strength、contradiction_count。
+  - 给出 why_score 和 improvement_advice，便于下一轮预测改进。
+
+output_schema:
+  type: object
+  properties:
+    prediction_id: {type: integer}
+    score: {type: integer, minimum: 1, maximum: 5}
+    hit_level: {type: string, enum: [miss, weak, partial, strong, exact]}
+    supporting_articles: {type: array, items: {type: string}}
+    contradicting_articles: {type: array, items: {type: string}}
+    actual_observation: {type: string}
+    why_score: {type: string}
+    improvement_advice: {type: string}
+    review_metrics: {type: object}
+  required:
+    - prediction_id
+    - score
+    - hit_level
+    - supporting_articles
+    - contradicting_articles
+    - actual_observation
+    - why_score
+    - improvement_advice
+    - review_metrics
+
+# 运行参数真实生效，优先级：.env 环境变量 > 此处 > 代码默认值（param 解析）。
+params:
+  max_budget_usd: 10.0     # PREDICTION_REVIEW_AGENT_MAX_BUDGET_USD
+  timeout_seconds: 900     # PREDICTION_REVIEW_AGENT_TIMEOUT_SECONDS（minimum=120）
+  max_turns: 20

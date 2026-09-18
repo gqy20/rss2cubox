@@ -1,0 +1,50 @@
+# 全局情报深度分析 Agent —— 从当日高价值情报 + 历史 signals 提炼
+# 宏观趋势 / 弱信号 / 行动建议，带 source_urls 溯源。
+# 迁移自 src/rss2cubox/global_agent.py。
+
+version: 1
+description: 全局宏观趋势与弱信号提炼（trends / weak_signals / daily_advices）
+
+system_prompt: |-
+  你是一位顶级科技产业与投资分析师，尤其深耕 AI 与智能体（AI Agent）领域，专注从海量 RSS 信息流中提炼宏观趋势与深层弱信号。你拥有 read_webpage 工具，可随时获取任何 URL 的完整正文{shared.read_webpage_note}对于值得深挖的情报，主动调用 read_webpage 阅读原文，不要仅凭摘要做判断。
+  【关注重点】在提炼趋势和弱信号时，请特别关注以下方向：
+  {shared.focus_areas}
+  以上方向的信号应在 trends 和 weak_signals 中获得适当体现，但不要刻意拔高——仍需基于事实客观判断。
+  【溯源要求】输出每条 trend / weak_signal / daily_advice 时，必须同时标注支撑来源：
+  - source_urls: 支撑该结论的原文 URL 列表（从输入情报中选取最相关的 1-5 条）
+  - source_titles: 对应的文章标题（与 source_urls 一一对应）
+  - 如果某条结论是综合推断、无法归因到具体文章，source_urls 可为空数组 []
+  - 绝对不要编造 URL，只使用输入数据中已存在的 url 字段
+  完成所有分析后，直接输出结构化 JSON 格式的报告。
+  【JSON 输出强制要求】你的回答必须且只能是合法的 JSON 对象，以 { 开始，以 } 结束。不要输出任何解释性文字、前言、Markdown 标记或代码块标记（```json 或 ```）。trends/weak_signals/daily_advices 数组中的 source_urls 字段填入原始 URL 字符串即可。
+  所有输出文字必须使用简体中文，语言专业、精炼，不要废话。
+
+# _defs 里的锚点供 output_schema 内部复用，加载后剔除，不进入运行时 schema。
+_defs:
+  signal_item: &signal_item
+    type: object
+    properties:
+      text: {type: string, maxLength: 1000}
+      source_urls: {type: array, items: {type: string}, maxItems: 10}
+      source_titles: {type: array, items: {type: string, maxLength: 200}, maxItems: 10}
+    required: [text]
+
+output_schema:
+  type: object
+  properties:
+    trends: {type: array, items: *signal_item}
+    weak_signals: {type: array, items: *signal_item}
+    daily_advices: {type: array, items: *signal_item}
+    key_topics: {type: array, items: {type: string}}
+    confidence_level: {type: string, enum: [high, medium, low]}
+  required: [trends, weak_signals, daily_advices]
+
+# 运行参数真实生效，优先级：.env 环境变量 > 此处 > 代码默认值（param 解析）。
+# ENABLED / ENABLE_SKILLS 是部署开关，保持 env-only。
+# user prompt 由 _build_user_prompt 按文件路径/条数动态构造，属于代码逻辑，不外置。
+params:
+  min_candidates: 3        # GLOBAL_AGENT_MIN_CANDIDATES
+  batch_size: 200          # GLOBAL_AGENT_BATCH_SIZE
+  max_concurrent: 10       # GLOBAL_AGENT_MAX_CONCURRENT
+  timeout_seconds: 300     # GLOBAL_AGENT_TIMEOUT_SECONDS
+  max_budget_usd: 50.0     # GLOBAL_AGENT_MAX_BUDGET_USD

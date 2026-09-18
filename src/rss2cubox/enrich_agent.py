@@ -24,116 +24,29 @@ from typing import Any
 from dotenv import load_dotenv
 
 from rss2cubox.agent_sdk_runner import get_jina_config, make_sdk_logger, make_stderr_logger, run_json_agent
+from rss2cubox.prompt_registry import get, param
 from rss2cubox.webpage_reader import read_webpage_text
 
 # 加载 .env 文件（本地开发时 .env 优先级最高，覆盖系统环境变量）
 load_dotenv(override=True)
 
+# ENABLED / ENABLE_SKILLS 是部署开关（env-only）；数值型运行参数走
+# param 三层解析：.env 环境变量 > prompts/enrich.yaml params > 代码默认值。
 ENRICH_AGENT_ENABLED = os.getenv("ENRICH_AGENT_ENABLED", "true").lower() not in ("false", "0", "no")
-ENRICH_MAX_WORKERS = max(1, int(os.getenv("ENRICH_MAX_WORKERS", "10")))
-ENRICH_ITEM_TIMEOUT_SECONDS = max(10, int(os.getenv("ENRICH_ITEM_TIMEOUT_SECONDS", "120")))
 ENRICH_ENABLE_SKILLS = os.getenv("ENRICH_ENABLE_SKILLS", "true").lower() in ("1", "true", "yes")
-ENRICH_MAX_RETRIES = max(0, int(os.getenv("ENRICH_MAX_RETRIES", "1")))
-ENRICH_RETRY_BACKOFF_SECONDS = max(1, float(os.getenv("ENRICH_RETRY_BACKOFF_SECONDS", "30")))
+ENRICH_MAX_WORKERS = param("enrich", "max_workers", 10, env_var="ENRICH_MAX_WORKERS", minimum=1)
+ENRICH_ITEM_TIMEOUT_SECONDS = param("enrich", "item_timeout_seconds", 120, env_var="ENRICH_ITEM_TIMEOUT_SECONDS", minimum=10)
+ENRICH_MAX_RETRIES = param("enrich", "max_retries", 1, env_var="ENRICH_MAX_RETRIES", minimum=0)
+ENRICH_RETRY_BACKOFF_SECONDS = param("enrich", "retry_backoff_seconds", 30.0, env_var="ENRICH_RETRY_BACKOFF_SECONDS", minimum=1)
 # JINA 常量已迁移到 get_jina_config()，在 _enrich_one 中按需调用
-_enrich_max_budget_raw = os.getenv("ENRICH_MAX_BUDGET_USD", "15.0").strip()
-try:
-    ENRICH_MAX_BUDGET_USD = float(_enrich_max_budget_raw) if _enrich_max_budget_raw else None
-except ValueError:
-    ENRICH_MAX_BUDGET_USD = None
+ENRICH_MAX_BUDGET_USD = param("enrich", "max_budget_usd", 15.0, env_var="ENRICH_MAX_BUDGET_USD")
 
-# JSON Schema 用于 output_format（CLI 层自动验证）
-ENRICH_OUTPUT_SCHEMA = {
-    "type": "object",
-    "properties": {
-        "core_event": {"type": "string", "maxLength": 100},
-        "reason": {"type": "string", "maxLength": 120},
-        "hidden_signal": {"type": "string", "maxLength": 200},
-        "actionable": {"type": "string", "maxLength": 100},
-        "tags": {"type": "array", "items": {"type": "string"}, "maxItems": 5},
-        "importance_score": {"type": "integer", "minimum": 1, "maximum": 5},
-        "content_source": {"type": "string", "enum": ["full_text", "summary_only"]},
-        "signal_type": {"type": "integer", "minimum": 1, "maximum": 12},
-        "evidence_type": {"type": "integer", "minimum": 1, "maximum": 12},
-        "evidence_strength": {"type": "integer", "minimum": 1, "maximum": 5},
-        "novelty_score": {"type": "integer", "minimum": 1, "maximum": 5},
-        "impact_horizon": {"type": "integer", "minimum": 1, "maximum": 5},
-        "audience": {
-            "type": "array",
-            "items": {"type": "integer", "minimum": 1, "maximum": 8},
-            "maxItems": 3,
-        },
-        "market_stage": {"type": "integer", "minimum": 1, "maximum": 6},
-        "confidence": {"type": "integer", "minimum": 1, "maximum": 5},
-        "entities": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
-        "cluster_hint": {"type": "string", "maxLength": 60},
-        "watch_keywords": {"type": "array", "items": {"type": "string"}, "maxItems": 8},
-        "prediction": {"type": "string", "maxLength": 160},
-        "disconfirming_evidence": {"type": "string", "maxLength": 160},
-    },
-    "required": [
-        "core_event",
-        "reason",
-        "hidden_signal",
-        "actionable",
-        "tags",
-        "importance_score",
-        "content_source",
-        "signal_type",
-        "evidence_type",
-        "evidence_strength",
-        "novelty_score",
-        "impact_horizon",
-        "audience",
-        "market_stage",
-        "confidence",
-        "entities",
-        "cluster_hint",
-        "watch_keywords",
-        "prediction",
-        "disconfirming_evidence",
-    ],
-}
+# JSON Schema 与 system_prompt 集中在项目根 prompts/enrich.yaml，
+# 修改字段定义或判定标准只动 yml，下次运行生效。
+_PROMPT = get("enrich")
 
-
-SYSTEM_PROMPT = (
-    "你是一位顶级科技产业分析师，尤其深耕 AI 与智能体（AI Agent）领域，正在对一篇已通过初筛的高价值文章进行深度精读。\n"
-    "你已拥有文章的标题与初步摘要，但你必须先调用 read_webpage 工具获取原文全文，才能进行后续分析。\n"
-    "（该工具优先走 Jina Reader 返回 Markdown；若目标站点屏蔽了 Jina，会自动降级到 Playwright 真实浏览器渲染。）\n"
-    "【强制要求】在输出任何 JSON 分析结果之前，你必须先成功调用 read_webpage 获取并阅读完原文全文。\n"
-    "如果 read_webpage 工具调用失败（即返回「网页读取失败」），你必须重试一次；若仍然失败，则输出 JSON 但 core_event、reason、hidden_signal、actionable 字段必须注明「原文读取失败，仅基于摘要」。\n"
-    "阅读完毕后，直接以 JSON 格式输出分析结果。\n"
-    "【关注重点】请特别留意以下方向的事件，在评分时适当体现其重要性：\n"
-    "- AI 模型能力突破（新架构、新基准、Scaling Law 变化）\n"
-    "- AI Agent / 智能体框架、工具链、多智能体协作\n"
-    "- LLM 应用层创新（RAG、推理优化、长上下文、多模态）\n"
-    "- 开源模型与生态动态（权重开源、微调方案、社区趋势）\n"
-    "- AI 基础设施（算力、芯片、推理优化、训练框架）\n"
-    "以上方向的信号在其他条件相同时应获得略高的 importance_score 和 novelty_score，但不要刻意拔高——仍需基于事实客观判断。\n"
-    "【结构化稳定性要求】所有用于筛选的编码字段必须只输出整数或整数数组，不要输出中文枚举名、解释文本或\"3=开发者工作流\"这类混合字符串。\n"
-    "字段要求：\n"
-    "- core_event：冷静客观地用一句话描述事实（≤60字）\n"
-    "- reason：简要说明这条信息为什么值得保留（≤60字）\n"
-    "- hidden_signal：这意味着什么？背后的范式转移、行业冲击或深层技术含义（≤100字）\n"
-    "- actionable：工程师/独立开发者应如何行动？（≤60字）\n"
-    "- tags：输出 1-3 个精准标签，必须是字符串数组\n"
-    "- importance_score：文章重要程度，1-5 分（1=一般资讯，2=值得关注，3=重要，4=非常重要，5=重大突破/必读）\n"
-    "- content_source：必须注明本次分析的文本来源，值为「full_text」表示使用了全文，值为「summary_only」表示仅使用了摘要\n"
-    "- signal_type：只输出数字。1=模型能力，2=基础设施/算力/芯片，3=开发者工作流，4=产品化/应用层，5=开源生态，6=研究论文/算法，7=安全/风险/对齐，8=监管/政策，9=商业/融资/组织动作，10=数据/评测/Benchmark，11=机器人/具身智能，12=其他\n"
-    "- evidence_type：只输出数字。1=官方发布，2=论文/预印本，3=Benchmark/评测结果，4=代码仓库/开源项目，5=产品上线/功能发布，6=融资/并购/财报，7=招聘/组织调整，8=安全事件/事故，9=工程实践/技术博客，10=媒体报道，11=观点/评论，12=教程/二手整理\n"
-    "- evidence_strength：只输出 1-5。1=弱，2=一般，3=中等，4=强，5=极强\n"
-    "- novelty_score：只输出 1-5。1=已知延续，2=小幅变化，3=明显新动向，4=早期新范式，5=罕见/首次出现/可能开启新方向\n"
-    "- impact_horizon：只输出数字。1=天级，2=周级，3=月级，4=季度级，5=年级\n"
-    "- audience：输出 1-3 个数字。1=研究者，2=AI工程师，3=独立开发者，4=产品/创业者，5=投资/战略，6=政策/合规，7=安全团队，8=普通用户\n"
-    "- market_stage：只输出数字。1=研究探索，2=Demo/实验，3=早期产品，4=工程化采用，5=规模化商业化，6=成熟基础设施\n"
-    "- confidence：只输出 1-5。1=低，2=偏低，3=中，4=高，5=很高\n"
-    "- entities：抽取公司、模型、框架、论文、数据集、Benchmark、产品等实体，最多 8 个\n"
-    "- cluster_hint：用一个短语概括可聚类的信号主题（≤30字）\n"
-    "- watch_keywords：后续追踪该信号的关键词，最多 8 个\n"
-    "- prediction：如果该信号成立，未来 7/30/90 天应看到什么后续证据（≤80字）\n"
-    "- disconfirming_evidence：什么后续现象会削弱或证伪该信号（≤80字）\n"
-    "所有输出必须使用简体中文。"
-)
+SYSTEM_PROMPT = _PROMPT.system_prompt
+ENRICH_OUTPUT_SCHEMA = _PROMPT.output_schema
 
 
 def _build_user_prompt(item: dict, original: dict, *, pre_fetched_text: str | None = None) -> str:
@@ -228,7 +141,7 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None, 
     eid_short = item.get("eid", "")[:8]
     stderr_lines, stderr_logger = make_stderr_logger(f"enrich_agent:{eid_short}", limit=40)
 
-    sdk_logger = make_sdk_logger("enrich", log_event=log_event, eid=item.get("eid", ""), url=expected_url)
+    sdk_logger = make_sdk_logger("enrich", log_event=log_event, eid=item.get("eid", ""), url=expected_url, prompt_version=_PROMPT.version)
 
     max_attempts = 1 + ENRICH_MAX_RETRIES
     base_timeout = float(ENRICH_ITEM_TIMEOUT_SECONDS)
@@ -243,7 +156,7 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None, 
                 schema=ENRICH_OUTPUT_SCHEMA,
                 allowed_tools=allowed_tools,
                 mcp_servers={"enrich-tools": server},
-                max_turns=20,
+                max_turns=param("enrich", "max_turns", 20),
                 max_budget_usd=ENRICH_MAX_BUDGET_USD,
                 timeout_seconds=timeout,
                 cwd=Path.cwd(),
