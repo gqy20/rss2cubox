@@ -349,7 +349,7 @@ export default function Reader({
           <div className="segments" role="tablist" aria-label="内容筛选">
             {(policy
               ? [
-                  ['all', '全部文件'],
+                  ['all', '全部政策'],
                   ['relevant', '高相关政策'],
                   ['analyzed', '已分析'],
                 ]

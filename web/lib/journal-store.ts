@@ -267,6 +267,9 @@ export async function readPolicies(
 ): Promise<PageResult<Policy>> {
   const where: string[] = [],
     values: unknown[] = []
+  // 预筛相关度 <2 的（停水通知、民生提示类）默认不出现在政策库任何视图；
+  // 保留在库里用于去重与信源监控，直链访问不受影响。
+  where.push('triage_relevance >= 2')
   const sourceRef = params.get('sourceRef') || ''
   if (sourceRef && !/^policy:[a-f0-9]{32}$/.test(sourceRef))
     throw new Error('Invalid source')
@@ -313,7 +316,7 @@ export async function policyFacets() {
     region: string | null
     stage: string | null
     instrument_type: string | null
-  }>('SELECT DISTINCT region,stage,instrument_type FROM policy_documents')
+  }>('SELECT DISTINCT region,stage,instrument_type FROM policy_documents WHERE triage_relevance >= 2')
 }
 export async function signalSources() {
   return query<{ source: string }>(

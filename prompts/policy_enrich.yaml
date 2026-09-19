@@ -110,7 +110,9 @@ params:
   max_workers: 4             # POLICY_ENRICH_MAX_WORKERS
   fulltext_workers: 6        # POLICY_FULLTEXT_MAX_WORKERS
   max_text_chars: 12000      # POLICY_ENRICH_MAX_TEXT_CHARS
-  min_relevance: 3           # POLICY_ENRICH_MIN_RELEVANCE，triage 后进入 deep enrich 的门槛
+  min_relevance: 2           # POLICY_ENRICH_MIN_RELEVANCE，triage 后进入 deep enrich 的门槛。
+                             # 2026-09-19 由 3 降到 2：实测浅判 2 分的 86 篇里 63% 深度复评 rel≥3、31% 达 4+，
+                             # 标题浅判对"正文才有 AI 内容"的文件偏保守。
   max_budget_usd: 1.0        # POLICY_ENRICH_MAX_BUDGET_USD
   timeout_seconds: 180       # POLICY_ENRICH_TIMEOUT_SECONDS（minimum=60）
   max_turns: 6

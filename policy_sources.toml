@@ -85,6 +85,9 @@ key           = "suzhou_zcfg"
 name          = "苏州市-政策文件"
 level         = "city"
 region        = "苏州"
+# 2026-09-19 禁用：triage 实测 42 条里 0 条 AI 相关度 ≥3，30 条非政策（停水/月票类），
+# 信噪比过低。若后续要恢复，先跑 policy-triage 复核。
+enabled       = false
 list_url      = "https://www.suzhou.gov.cn/szsrmzf/zfwj/zcfg.shtml"
 # 页面上并列多个列表：ul.infolist 是时政要闻（实测仅 13/50 是政策），
 # 真正的政策列表是下面两个：jgfk=征求意见反馈（7/9）、tzgg=通知公告（10/16）。
