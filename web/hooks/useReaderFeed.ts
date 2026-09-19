@@ -55,8 +55,19 @@ const empty = <T>(key: string): State<T> => ({
 async function request<T>(
   url: string,
   signal: AbortSignal,
+  selectedIds?: string[] | null,
 ): Promise<PageResult<T>> {
-  const response = await fetch(url, { signal, cache: 'no-store' }),
+  const response = await fetch(url, {
+      signal,
+      cache: 'no-store',
+      ...(selectedIds
+        ? {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids: selectedIds }),
+          }
+        : {}),
+    }),
     body = await response.json()
   if (!response.ok) throw new Error(body.error || '加载失败，请重试')
   if (
@@ -67,8 +78,16 @@ async function request<T>(
     throw new Error('加载位置不可用，请刷新列表')
   return body
 }
-export function useReaderFeed<T extends Item>(kind: string, encoded: string) {
-  const key = `${kind}?${encoded}`
+export function useReaderFeed<T extends Item>(
+  kind: string,
+  encoded: string,
+  selectedIds?: string[] | null,
+) {
+  const selectionKey = selectedIds
+      ? JSON.stringify([...selectedIds].sort())
+      : '',
+    waiting = selectedIds === null
+  const key = `${kind}?${encoded}${selectedIds !== undefined ? '|saved:' + selectionKey : ''}`
   const [revision, setRevision] = useState(0)
   const [state, setState] = useState<State<T>>(() => {
     const saved = cache.get(key)
@@ -86,6 +105,10 @@ export function useReaderFeed<T extends Item>(kind: string, encoded: string) {
   const controllerRef = useRef<AbortController | null>(null),
     moreBusy = useRef<AbortController | null>(null)
   useEffect(() => {
+    if (waiting) {
+      setState(empty<T>(key))
+      return
+    }
     const controller = new AbortController()
     controllerRef.current = controller
     moreBusy.current = null
@@ -98,7 +121,11 @@ export function useReaderFeed<T extends Item>(kind: string, encoded: string) {
       })
     } else {
       setState(empty<T>(key))
-      request<T>(`/api/reader/${kind}?${encoded}`, controller.signal)
+      request<T>(
+        `/api/reader/${kind}?${encoded}`,
+        controller.signal,
+        selectedIds,
+      )
         .then((result) => {
           if (controller.signal.aborted) return
           remember(key, result)
@@ -130,6 +157,7 @@ export function useReaderFeed<T extends Item>(kind: string, encoded: string) {
         const fresh = await request<T>(
           `/api/reader/${kind}?${encoded}`,
           controller.signal,
+          selectedIds,
         )
         if (controller.signal.aborted) return
         const known = new Set(stateRef.current.result?.data.map((r) => r.id))
@@ -152,7 +180,7 @@ export function useReaderFeed<T extends Item>(kind: string, encoded: string) {
       controller.abort()
       clearInterval(timer)
     }
-  }, [key, kind, encoded, revision])
+  }, [key, kind, encoded, revision, selectionKey, waiting])
   const loadMore = useCallback(async () => {
     const controller = controllerRef.current,
       latest = stateRef.current,
@@ -173,6 +201,7 @@ export function useReaderFeed<T extends Item>(kind: string, encoded: string) {
       const next = await request<T>(
         `/api/reader/${kind}?${encoded}&cursor=${encodeURIComponent(result.nextCursor)}`,
         controller.signal,
+        selectedIds,
       )
       if (controller.signal.aborted) return
       if (next.hasMore && next.nextCursor === result.nextCursor)
@@ -205,7 +234,7 @@ export function useReaderFeed<T extends Item>(kind: string, encoded: string) {
     } finally {
       if (moreBusy.current === controller) moreBusy.current = null
     }
-  }, [key, kind, encoded])
+  }, [key, kind, encoded, selectionKey])
   const refresh = useCallback(() => {
     cache.delete(key)
     controllerRef.current?.abort()

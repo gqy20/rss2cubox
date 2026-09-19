@@ -24,6 +24,24 @@ afterEach(() => {
   vi.useRealTimers()
 })
 describe('continuous reader feed', () => {
+  it('waits for browser bookmarks, then scopes the read-only request using a POST body', async () => {
+    const fetcher = vi.fn().mockResolvedValue(response(['saved'], null))
+    vi.stubGlobal('fetch', fetcher)
+    const { result, rerender } = renderHook(
+      ({ ids }: { ids: string[] | null }) =>
+        useReaderFeed<{ id: string }>('signals', 'saved=1', ids),
+      { initialProps: { ids: null } as { ids: string[] | null } },
+    )
+    expect(fetcher).not.toHaveBeenCalled()
+    rerender({ ids: ['saved'] })
+    await waitFor(() => expect(result.current.loading).toBe(false))
+    expect(fetcher.mock.calls[0][0]).toBe('/api/reader/signals?saved=1')
+    expect(fetcher.mock.calls[0][1]).toMatchObject({
+      method: 'POST',
+      body: JSON.stringify({ ids: ['saved'] }),
+    })
+  })
+
   it('appends once without duplicate rows and preserves the scroll checkpoint', async () => {
     let resolveMore!: (r: Response) => void
     const fetcher = vi

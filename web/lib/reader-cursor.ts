@@ -19,6 +19,10 @@ export function cursorQuery(kind: SearchScope, params: URLSearchParams) {
     'region',
     'stage',
     'instrument_type',
+    'topic',
+    'sourceRef',
+    'saved',
+    'selection',
   ]
   const filters = keys.map((key) => [key, (params.get(key) || '').trim()])
   return createHash('sha256')
@@ -73,4 +77,11 @@ export function cursorBoundary(
   const index = values.length
   values.push(cursor.rank, cursor.time, cursor.id)
   return `((${rank}) > $${index + 1}::int OR ((${rank}) = $${index + 1}::int AND (${time},id) < ($${index + 2}::timestamptz,$${index + 3}::text)))`
+}
+
+export function savedFingerprint(ids: string[]) {
+  return createHash('sha256')
+    .update(JSON.stringify([...new Set(ids)].sort()))
+    .digest('hex')
+    .slice(0, 24)
 }

@@ -20,6 +20,16 @@ describe('stable reading cursor', () => {
     expect(decodeCursor(encodeCursor(value), signature)).toEqual(value))
   it('cannot reuse an article cursor with changed filters or in policies', () => {
     expect(() =>
+      decodeCursor(
+        encodeCursor(value),
+        cursorQuery(
+          'signals',
+          new URLSearchParams('search=AI&mode=high&topic=12'),
+        ),
+      ),
+    ).toThrow('Invalid cursor')
+
+    expect(() =>
       decodeCursor(encodeCursor(value), cursorQuery('policies', params)),
     ).toThrow('Invalid cursor')
     expect(() =>

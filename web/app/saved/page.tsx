@@ -5,6 +5,8 @@ import type { Policy } from '../../lib/journal-types'
 import { getBookmarks, BookmarkButton } from '../journal/Actions'
 import { PageHeading, Empty, ArticleRows } from '../journal/Shared'
 import Link from 'next/link'
+import { policyDestination } from '../../lib/reading-context'
+import { useWindowReadingPosition } from '../../hooks/useReadingPosition'
 export default function SavedPage() {
   const [rows, setRows] = useState<Row[]>([]),
     [policies, setPolicies] = useState<Policy[]>([]),
@@ -46,8 +48,21 @@ export default function SavedPage() {
         )
       }
       if (!signal.aborted) {
-        setRows(articles)
-        setPolicies(docs)
+        setRows(
+          articles.sort(
+            (a, b) =>
+              Date.parse(b.time) - Date.parse(a.time) ||
+              (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
+          ),
+        )
+        setPolicies(
+          docs.sort(
+            (a, b) =>
+              (Date.parse(b.published_at || '') || 0) -
+                (Date.parse(a.published_at || '') || 0) ||
+              (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
+          ),
+        )
         setMissing(failures)
         setLoading(false)
       }
@@ -61,12 +76,10 @@ export default function SavedPage() {
       window.removeEventListener('storage', load)
     }
   }, [retry])
+  useWindowReadingPosition('saved', !loading)
   return (
     <>
-      <PageHeading
-        title="我的收藏"
-        description="留给下一次认真阅读。收藏保存在当前浏览器，不跨设备同步。"
-      />
+      <PageHeading title="我的收藏" />
       {missing > 0 && (
         <div className="data-notice">
           {missing} 条收藏暂时无法加载。
@@ -83,12 +96,17 @@ export default function SavedPage() {
           <div className="loading-skeleton" />
         ) : rows.length || policies.length ? (
           <>
-            <ArticleRows rows={rows} />
+            {rows.length > 0 && (
+              <ArticleRows
+                rows={rows}
+                context={{ from: '/saved', filters: { saved: '1' } }}
+              />
+            )}
             {policies.map((p) => (
               <div className="reading-row" key={p.id}>
                 <Link
                   className="reading-copy reading-title"
-                  href={`/policies/${encodeURIComponent(p.id)}`}
+                  href={policyDestination(p.id, { from: '/saved' })}
                 >
                   {p.title}
                   <span className="metadata">政策 · {p.region}</span>
@@ -104,6 +122,7 @@ export default function SavedPage() {
           />
         )}
       </section>
+      <p className="snapshot-note">收藏保存在当前浏览器，不跨设备同步。</p>
     </>
   )
 }

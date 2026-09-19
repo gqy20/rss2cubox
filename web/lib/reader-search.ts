@@ -8,6 +8,9 @@ export const filterKeys = [
   'region',
   'stage',
   'instrument_type',
+  'topic',
+  'sourceRef',
+  'saved',
 ] as const
 export function scopeForPath(pathname: string): SearchScope {
   return pathname.startsWith('/policies') ? 'policies' : 'signals'
@@ -22,6 +25,7 @@ export function readerUrl(
   if (resetPage) {
     next.delete('page')
     next.delete('id')
+    next.delete('tab')
   }
   for (const [key, value] of Object.entries(changes)) {
     const normalized =

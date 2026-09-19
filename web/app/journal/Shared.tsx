@@ -4,15 +4,19 @@ import { ArrowRight, FileText, Inbox, AlertCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Row } from '../types'
 import type { Policy } from '../../lib/journal-types'
-import { dateLabel, excerpt, safeUrl } from '../../lib/journal-utils'
+import { dateLabel, safeUrl } from '../../lib/journal-utils'
 import { BookmarkButton } from './Actions'
+import { articleTeaser } from '../../lib/topic-utils'
+import {
+  articleDestination,
+  policyDestination,
+  type ReadingContext,
+} from '../../lib/reading-context'
 export function PageHeading({
   title,
-  description,
   children,
 }: {
   title: string
-  description?: string
   children?: ReactNode
 }) {
   return (
@@ -22,7 +26,6 @@ export function PageHeading({
           <h1>{title}</h1>
           {children && <div className="heading-actions">{children}</div>}
         </div>
-        {description && <p>{description}</p>}
       </div>
     </div>
   )
@@ -103,7 +106,13 @@ export function ExternalLink({
     <span>{children}</span>
   )
 }
-export function ArticleRows({ rows }: { rows: Row[] }) {
+export function ArticleRows({
+  rows,
+  context,
+}: {
+  rows: Row[]
+  context?: ReadingContext
+}) {
   return rows.length ? (
     <div className="reading-list">
       {rows.map((row) => (
@@ -113,15 +122,16 @@ export function ArticleRows({ rows }: { rows: Row[] }) {
           </span>
           <div className="reading-copy">
             <Link
-              href={`/signals?id=${encodeURIComponent(row.id)}`}
+              href={articleDestination(row.id, context)}
               className="reading-title"
             >
               {row.title || '未命名文章'}
             </Link>
-            <p>
-              {excerpt(row.core_event || row.hidden_signal, 110) ||
-                '打开文章，查看原始内容与分析。'}
-            </p>
+            {articleTeaser(row.title, row.core_event || row.hidden_signal) && (
+              <p>
+                {articleTeaser(row.title, row.core_event || row.hidden_signal)}
+              </p>
+            )}
             <div className="metadata">
               <span>{row.source}</span>
               <span>{dateLabel(row.time)}</span>
@@ -141,7 +151,15 @@ export function ArticleRows({ rows }: { rows: Row[] }) {
     />
   )
 }
-export function PolicyRows({ rows }: { rows: Policy[] }) {
+export function PolicyRows({
+  rows,
+  context,
+  matchTerms,
+}: {
+  rows: Policy[]
+  context?: ReadingContext
+  matchTerms?: string[]
+}) {
   return rows.length ? (
     <div className="policy-teasers">
       {rows.map((policy) => (
@@ -150,9 +168,21 @@ export function PolicyRows({ rows }: { rows: Policy[] }) {
             <FileText size={19} strokeWidth={1.5} />
           </span>
           <div>
-            <Link href={`/policies/${encodeURIComponent(policy.id)}`}>
+            <Link href={policyDestination(policy.id, context)}>
               {policy.title}
             </Link>
+            {matchTerms && (
+              <p className="policy-match-reason">
+                匹配词：
+                {matchTerms
+                  .filter((term) =>
+                    `${policy.title} ${policy.summary || ''}`
+                      .toLowerCase()
+                      .includes(term.toLowerCase()),
+                  )
+                  .join('、') || '未记录具体命中词'}
+              </p>
+            )}
             <div className="metadata">
               <span>{policy.region || '地区未明确'}</span>
               <span>{dateLabel(policy.published_at)}</span>

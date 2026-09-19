@@ -73,6 +73,45 @@ describe('reading safety and selection', () => {
   })
 })
 describe('policy and signal query boundaries', () => {
+  it('keeps source and saved-article scope in the database query', async () => {
+    dbQuery
+      .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+      .mockResolvedValueOnce({ rows: [] })
+    const hash = 'a'.repeat(32)
+    await readSignals(
+      new URLSearchParams({ sourceRef: 'tech:' + hash, saved: '1' }),
+      ['saved-id'],
+    )
+    const [sql, values] = dbQuery.mock.calls[1]
+    expect(sql).toContain('md5(source_feed_id) = $1')
+    expect(sql).toContain('id = ANY($2::text[])')
+    expect(values.slice(0, 2)).toEqual([hash, ['saved-id']])
+  })
+  it('does not fall back to every article for missing saved selection', async () => {
+    await expect(
+      readSignals(new URLSearchParams({ saved: '1' })),
+    ).rejects.toThrow('Missing saved selection')
+    expect(dbQuery).not.toHaveBeenCalled()
+  })
+
+  it('filters topic membership before keyset pagination', async () => {
+    dbQuery
+      .mockResolvedValueOnce({ rows: [{ total: 1 }] })
+      .mockResolvedValueOnce({ rows: [] })
+    await readSignals(new URLSearchParams({ topic: '12' }))
+    const [sql, values] = dbQuery.mock.calls[1]
+    expect(sql).toContain(
+      'sca.article_id=articles.id AND sca.cluster_id=$1::int',
+    )
+    expect(values[0]).toBe(12)
+  })
+  it('rejects invalid topic identifiers', async () => {
+    await expect(
+      readSignals(new URLSearchParams({ topic: '12 OR 1=1' })),
+    ).rejects.toThrow('Invalid topic')
+    expect(dbQuery).not.toHaveBeenCalled()
+  })
+
   it('rejects impossible dates before contacting the database', async () => {
     await expect(
       readSignals(new URLSearchParams({ date: '2026-02-31' })),

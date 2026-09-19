@@ -77,6 +77,8 @@ export const clusterStatus: Record<string, string> = {
   bursting: '集中出现',
   mature: '稳定关注',
   declining: '热度回落',
+  invalid: '已排除',
+  archived: '已归档',
 }
 export const predictionStatus: Record<string, string> = {
   pending: '待验证',

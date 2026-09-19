@@ -1,4 +1,5 @@
 import { Pool, type QueryResultRow } from 'pg'
+import { createHash } from 'node:crypto'
 import { cache } from 'react'
 import { formatLocalArticleRow } from './localArticleRows'
 import { buildContentSearch, type SearchScope } from './reader-search'
@@ -7,6 +8,7 @@ import {
   decodeCursor,
   encodeCursor,
   cursorBoundary,
+  savedFingerprint,
 } from './reader-cursor'
 import { diverseArticles } from './journal-utils'
 import { loadIcArticles } from './signalStore'
@@ -75,13 +77,27 @@ export async function policyStats(): Promise<PolicyStats> {
 }
 export async function readSignals(
   params: URLSearchParams,
+  selectedIds?: string[],
 ): Promise<PageResult<Row>> {
+  if (params.get('saved') === '1' && selectedIds === undefined)
+    throw new Error('Missing saved selection')
+  if (selectedIds !== undefined) {
+    params = new URLSearchParams(params)
+    params.set('selection', savedFingerprint(selectedIds))
+  }
+  const sourceRef = params.get('sourceRef') || ''
+  if (sourceRef && !/^tech:[a-f0-9]{32}$/.test(sourceRef))
+    throw new Error('Invalid source')
   const page = pageNumber(params)
   const search = (params.get('search') || '').trim().slice(0, 300)
   const source = params.get('source') || '',
     tag = params.get('tag') || '',
     date = params.get('date') || ''
   const mode = params.get('mode') || 'all'
+  const topic = params.get('topic')?.trim() || ''
+  if (topic && (!/^[1-9]\d*$/.test(topic) || Number(topic) > 2147483647))
+    throw new Error('Invalid topic')
+
   if (
     date &&
     (!/^\d{4}-\d{2}-\d{2}$/.test(date) ||
@@ -91,8 +107,25 @@ export async function readSignals(
     throw new Error('Invalid date')
   if (process.env.API_SOURCE && process.env.API_SOURCE !== 'local') {
     let rows = (await loadIcArticles()) as Row[]
+    const topicIds = topic
+      ? new Set(
+          (
+            await query<{ article_id: string }>(
+              'SELECT article_id FROM signal_cluster_articles WHERE cluster_id=$1',
+              [Number(topic)],
+            )
+          ).map((r) => r.article_id),
+        )
+      : null
     rows = rows.filter(
       (r) =>
+        (!selectedIds || selectedIds.includes(r.id)) &&
+        (!sourceRef ||
+          sourceRef ===
+            `tech:${createHash('md5')
+              .update(r.source_feed || '')
+              .digest('hex')}`) &&
+        (!topicIds || topicIds.has(r.id)) &&
         (!search || Boolean(articleMatch(r, search))) &&
         (!source || r.source === source) &&
         (!tag || r.tags?.includes(tag)) &&
@@ -182,6 +215,13 @@ export async function readSignals(
     values.push(...searchWhere.values)
     where.push(searchWhere.where)
   }
+  if (topic)
+    add(
+      'EXISTS (SELECT 1 FROM signal_cluster_articles sca WHERE sca.article_id=articles.id AND sca.cluster_id=?::int)',
+      Number(topic),
+    )
+  if (sourceRef) add('md5(source_feed_id) = ?', sourceRef.slice(5))
+  if (selectedIds !== undefined) add('id = ANY(?::text[])', selectedIds)
   if (source) add('source_feed_name = ?', source)
   if (tag) add('tags @> ?::jsonb', JSON.stringify([tag]))
   if (date)
@@ -227,11 +267,18 @@ export async function readPolicies(
 ): Promise<PageResult<Policy>> {
   const where: string[] = [],
     values: unknown[] = []
+  const sourceRef = params.get('sourceRef') || ''
+  if (sourceRef && !/^policy:[a-f0-9]{32}$/.test(sourceRef))
+    throw new Error('Invalid source')
   const search = (params.get('search') || '').trim().slice(0, 300)
   const searchWhere = buildContentSearch(search, 'policies')
   if (searchWhere) {
     values.push(...searchWhere.values)
     where.push(searchWhere.where)
+  }
+  if (sourceRef) {
+    values.push(sourceRef.slice(7))
+    where.push(`md5(site_key)=$${values.length}`)
   }
   for (const key of ['region', 'stage', 'instrument_type'] as const) {
     const value = params.get(key)
@@ -275,7 +322,14 @@ export async function signalSources() {
 }
 export async function readClusters() {
   return query<Cluster>(
-    'SELECT id,label,summary,status,article_count,source_count,entities,watch_keywords,updated_at FROM signal_clusters ORDER BY updated_at DESC,id DESC',
+    `SELECT sc.id,sc.label,sc.summary,sc.status,COALESCE(linked.article_count,0)::int AS article_count,
+      COALESCE(linked.source_count,0)::int AS source_count,sc.entities,sc.watch_keywords,sc.updated_at
+    FROM signal_clusters sc
+    LEFT JOIN (
+      SELECT ca.cluster_id,count(*)::int AS article_count,count(DISTINCT NULLIF(a.source_feed_id,''))::int AS source_count
+      FROM signal_cluster_articles ca JOIN articles a ON a.id=ca.article_id GROUP BY ca.cluster_id
+    ) linked ON linked.cluster_id=sc.id
+    ORDER BY sc.updated_at DESC,sc.id DESC`,
   )
 }
 export async function readPredictions() {
@@ -389,7 +443,7 @@ export const getJournal = cache(async (): Promise<JournalData> => {
 })
 export async function topicArticles(id: number) {
   const rows = await query(
-    `SELECT a.*,COALESCE(a.publish_time,a.created_at) AS display_time FROM articles a JOIN signal_cluster_articles ca ON ca.article_id=a.id WHERE ca.cluster_id=$1 ORDER BY ca.relevance_score DESC NULLS LAST,a.publish_time DESC LIMIT 30`,
+    `SELECT a.*,COALESCE(a.publish_time,a.created_at) AS display_time FROM articles a JOIN signal_cluster_articles ca ON ca.article_id=a.id WHERE ca.cluster_id=$1 ORDER BY COALESCE(a.publish_time,a.created_at) DESC NULLS LAST,a.id DESC LIMIT 30`,
     [id],
   )
   return rows.map(formatLocalArticleRow)
@@ -526,4 +580,29 @@ async function readCursorPage<T extends QueryResultRow = QueryResultRow>(
           })
         : null,
   }
+}
+
+// Shared server-only connection access for the monitoring read model.
+export { query as queryJournal }
+
+export async function topicName(id: string) {
+  if (!/^[1-9]\d*$/.test(id) || Number(id) > 2147483647) return null
+  const [topic] = await query<{ label: string }>(
+    'SELECT label FROM signal_clusters WHERE id=$1',
+    [Number(id)],
+  )
+  return topic?.label || null
+}
+
+export async function readerSourceName(ref: string) {
+  if (!/^(tech|policy):[a-f0-9]{32}$/.test(ref)) return null
+  const tech = ref.startsWith('tech:'),
+    hash = ref.split(':')[1]
+  const [row] = await query<{ name: string }>(
+    tech
+      ? 'SELECT source_feed_name AS name FROM articles WHERE md5(source_feed_id)=$1 ORDER BY created_at DESC LIMIT 1'
+      : 'SELECT site_name AS name FROM policy_documents WHERE md5(site_key)=$1 ORDER BY first_seen_at DESC LIMIT 1',
+    [hash],
+  )
+  return row?.name || null
 }

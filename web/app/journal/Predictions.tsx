@@ -1,6 +1,11 @@
 'use client'
 import { ScoreIndicator } from './Numbers'
-import { useState, type ReactNode } from 'react'
+import { type ReactNode } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { safeReturnPath, withOrigin } from '../../lib/reading-context'
+import { ReturnLink } from './ReadingNavigation'
+import { useWindowReadingPosition } from '../../hooks/useReadingPosition'
+import { clearMemory } from '../../lib/reading-memory'
 import Link from 'next/link'
 import type { Prediction, Review } from '../../lib/journal-types'
 import { dateLabel, predictionStatus } from '../../lib/journal-utils'
@@ -17,8 +22,39 @@ export default function Predictions({
   initialId?: string
   overview?: ReactNode
 }) {
-  const [filter, setFilter] = useState('all'),
-    [search, setSearch] = useState('')
+  const params = useSearchParams(),
+    query = params.toString(),
+    targetId = params.get('id') || ''
+  const filter = ['pending', 'reviewed'].includes(params.get('filter') || '')
+      ? params.get('filter')!
+      : 'all',
+    search = params.get('q') || ''
+  const origin = safeReturnPath(params.get('from'))
+  const expanded = new Set(
+    (params.has('open') ? params.get('open') || '' : targetId)
+      .split(',')
+      .filter((id) => /^\d+$/.test(id)),
+  )
+  const update = (changes: Record<string, string | null>) => {
+    const next = new URLSearchParams(query)
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === null) next.delete(key)
+      else next.set(key, value)
+    }
+    const href = `/predictions${next.size ? '?' + next : ''}`
+    if (href !== `/predictions${query ? '?' + query : ''}`)
+      window.history.replaceState(null, '', href)
+  }
+  const setFilter = (value: string) => {
+    clearMemory(`window:predictions:${value}:${search}`)
+    update({ filter: value === 'all' ? null : value, id: null })
+  }
+  const setSearch = (value: string) => {
+    clearMemory(`window:predictions:${filter}:${value}`)
+    update({ q: value || null, id: null })
+  }
+  useWindowReadingPosition(`predictions:${filter}:${search}`)
+  const from = `/predictions${query ? '?' + query : ''}`
   const rows = predictions.filter(
     (p) =>
       (filter === 'all' ||
@@ -29,13 +65,15 @@ export default function Predictions({
         .toLowerCase()
         .includes(search.toLowerCase()),
   )
+  rows.sort(
+    (a, b) =>
+      Number(String(b.id) === targetId) - Number(String(a.id) === targetId),
+  )
   return (
     <>
-      <PageHeading
-        title="预测与复盘"
-        description="保留最初的判断，用后来的证据检验它。"
-      >
-        <RefreshButton />{' '}
+      <PageHeading title="预测与复盘">
+        {origin && <ReturnLink from={origin} className="context-back" />}
+        <RefreshButton />
         <ExportButton
           data={{ predictions: rows, reviews }}
           name="prediction-ledger"
@@ -75,7 +113,14 @@ export default function Predictions({
               <details
                 className="surface prediction-card"
                 key={p.id}
-                open={String(p.id) === initialId ? true : undefined}
+                open={expanded.has(String(p.id))}
+                onToggle={(e) => {
+                  if (!e.currentTarget.isConnected) return
+                  const ids = new Set(expanded)
+                  if (e.currentTarget.open) ids.add(String(p.id))
+                  else ids.delete(String(p.id))
+                  update({ open: [...ids].join(',') || 'none' })
+                }}
               >
                 <summary>
                   <div className="metadata">
@@ -114,7 +159,7 @@ export default function Predictions({
                 {p.signal_cluster_id && (
                   <Link
                     className="text-link"
-                    href={`/topics?id=${p.signal_cluster_id}`}
+                    href={withOrigin(`/topics?id=${p.signal_cluster_id}`, from)}
                   >
                     阅读关联专题 →
                   </Link>

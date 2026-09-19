@@ -1,9 +1,22 @@
 import { Coverage } from '../journal/Numbers'
 import Reader from '../journal/Reader'
 import { PageHeading, DataNotice } from '../journal/Shared'
-import { policyFacets, policyStats } from '../../lib/journal-store'
+import {
+  policyFacets,
+  policyStats,
+  readerSourceName,
+} from '../../lib/journal-store'
 export const dynamic = 'force-dynamic'
-export default async function PoliciesPage() {
+export default async function PoliciesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sourceRef?: string }>
+}) {
+  const { sourceRef } = await searchParams
+  const sourceLabel =
+    typeof sourceRef === 'string'
+      ? await readerSourceName(sourceRef).catch(() => null)
+      : null
   const [facetResult, statsResult] = await Promise.allSettled([
     policyFacets(),
     policyStats(),
@@ -36,7 +49,7 @@ export default async function PoliciesPage() {
       <DataNotice
         issues={facetResult.status === 'rejected' ? ['筛选选项'] : []}
       />
-      <Reader kind="policies" facets={facets} />
+      <Reader kind="policies" facets={facets} sourceLabel={sourceLabel} />
     </>
   )
 }

@@ -20,9 +20,13 @@ import type { Row } from '../types'
 import type { Policy } from '../../lib/journal-types'
 import { dateLabel, excerpt } from '../../lib/journal-utils'
 import { Empty, ExternalLink } from './Shared'
-import { BookmarkButton, ExportButton } from './Actions'
+import { BookmarkButton, ExportButton, getBookmarks } from './Actions'
 import MarkdownRenderer from '../MarkdownRenderer'
 import { ScoreIndicator } from './Numbers'
+import { ReturnLink } from './ReadingNavigation'
+import PolicyApplicability from './PolicyApplicability'
+import { safeReturnPath, withOrigin } from '../../lib/reading-context'
+import { useReadingPosition } from '../../hooks/useReadingPosition'
 
 type Filters = {
   search: string
@@ -32,6 +36,9 @@ type Filters = {
   tag: string
   region: string
   stage: string
+  sourceRef: string
+  saved: string
+  topic: string
   instrument_type: string
 }
 const emptyFilters: Filters = {
@@ -43,13 +50,24 @@ const emptyFilters: Filters = {
   region: '',
   stage: '',
   instrument_type: '',
+  topic: '',
+  sourceRef: '',
+  saved: '',
 }
 type Props = {
   kind: 'signals' | 'policies'
+  topicLabel?: string | null
+  sourceLabel?: string | null
   sources?: string[]
   facets?: { region: string[]; stage: string[]; instrument_type: string[] }
 }
-export default function Reader({ kind, sources = [], facets }: Props) {
+export default function Reader({
+  kind,
+  sources = [],
+  facets,
+  topicLabel,
+  sourceLabel,
+}: Props) {
   const searchParams = useSearchParams()
   const urlQuery = searchParams.toString()
   const filters = Object.fromEntries(
@@ -67,7 +85,25 @@ export default function Reader({ kind, sources = [], facets }: Props) {
   const [rawDetail, setDetail] = useState<Row | Policy | null>(null),
     [detailLoading, setDetailLoading] = useState(false),
     [detailError, setDetailError] = useState('')
-  const [tab, setTab] = useState('summary')
+  const tab = searchParams.get('tab') === 'original' ? 'original' : 'summary'
+  const origin = safeReturnPath(searchParams.get('from'))
+  const [savedIds, setSavedIds] = useState<string[] | null>(null)
+  useEffect(() => {
+    if (filters.saved !== '1') return
+    const update = () =>
+      setSavedIds(
+        getBookmarks()
+          .filter((key) => key.startsWith('article:'))
+          .map((key) => key.slice(8)),
+      )
+    update()
+    window.addEventListener('bookmarks-change', update)
+    window.addEventListener('storage', update)
+    return () => {
+      window.removeEventListener('bookmarks-change', update)
+      window.removeEventListener('storage', update)
+    }
+  }, [filters.saved])
   const listRef = useRef<HTMLElement>(null)
   const encoded = new URLSearchParams({
     ...filters,
@@ -82,7 +118,11 @@ export default function Reader({ kind, sources = [], facets }: Props) {
     cacheKey,
     loadMore,
     refresh,
-  } = useReaderFeed<Row | Policy>(kind, encoded)
+  } = useReaderFeed<Row | Policy>(
+    kind,
+    encoded,
+    filters.saved === '1' ? savedIds : undefined,
+  )
   const sentinelRef = useRef<HTMLDivElement>(null),
     bodyRef = useRef<HTMLDivElement>(null)
   const selectedId =
@@ -100,7 +140,7 @@ export default function Reader({ kind, sources = [], facets }: Props) {
     if (listRef.current?.clientHeight)
       rememberReaderScroll(cacheKey, listRef.current.scrollTop)
     if (!id) setSelection({ query: encoded, id: null })
-    updateUrl({ id }, false, Boolean(id))
+    updateUrl({ id, tab: null }, false, Boolean(id))
   }
   const change = (key: keyof Filters, value: string) =>
     updateUrl({ [key]: value })
@@ -114,9 +154,13 @@ export default function Reader({ kind, sources = [], facets }: Props) {
     if (list?.clientHeight && !searching)
       list.scrollTop = readerScroll(cacheKey)
   }, [cacheKey, searching, selectedId])
-  useLayoutEffect(() => {
-    bodyRef.current?.scrollTo({ top: 0 })
-  }, [selectedId, tab])
+  useReadingPosition(
+    bodyRef,
+    `reader:${kind}:${selectedId}:${tab}`,
+    Boolean(detail) && !detailLoading,
+  )
+  const setTab = (value: string) =>
+    updateUrl({ tab: value === 'summary' ? null : value }, false, false)
   useEffect(() => {
     if (
       searching ||
@@ -161,7 +205,6 @@ export default function Reader({ kind, sources = [], facets }: Props) {
     setDetail(null)
     setDetailLoading(true)
     setDetailError('')
-    setTab('summary')
     fetch(
       `/api/reader/${kind === 'signals' ? 'article' : 'policy'}?id=${encodeURIComponent(selectedId)}`,
       { signal: controller.signal },
@@ -183,13 +226,51 @@ export default function Reader({ kind, sources = [], facets }: Props) {
       })
     return () => controller.abort()
   }, [selectedId, kind, detailVersion])
+  const currentReaderParams = new URLSearchParams(urlQuery)
+  if (selectedId) currentReaderParams.set('id', selectedId)
   const policy = kind === 'policies',
     article = detail as Row | null,
     document = detail as Policy | null
   return (
     <div className="reader-panel">
       <div className="reader-controls">
+        {origin && <ReturnLink from={origin} className="reader-origin" />}
         <div className="toolbar">
+          {!policy && filters.topic && (
+            <div className="reader-topic-filter">
+              <Link
+                href={`/topics?id=${filters.topic}`}
+                title={topicLabel || '返回专题'}
+              >
+                {topicLabel || '专题文章'}
+              </Link>
+              <button
+                className="icon-button"
+                aria-label="取消专题筛选"
+                title="取消专题筛选"
+                onClick={() => change('topic', '')}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+          {filters.sourceRef && (
+            <div className="reader-topic-filter">
+              <span title={sourceLabel || '当前信源'}>
+                {sourceLabel || '当前信源'}
+              </span>
+              <button
+                className="icon-button"
+                aria-label="取消信源范围"
+                onClick={() => change('sourceRef', '')}
+              >
+                <X size={13} />
+              </button>
+            </div>
+          )}
+          {filters.saved === '1' && (
+            <span className="pill olive">我的收藏</span>
+          )}
           {policy ? (
             <>
               {(['region', 'stage', 'instrument_type'] as const).map(
@@ -250,7 +331,12 @@ export default function Reader({ kind, sources = [], facets }: Props) {
               updateUrl(
                 Object.fromEntries(
                   Object.keys(emptyFilters)
-                    .filter((key) => key !== 'search')
+                    .filter(
+                      (key) =>
+                        !['search', 'topic', 'sourceRef', 'saved'].includes(
+                          key,
+                        ),
+                    )
                     .map((key) => [key, null]),
                 ),
               )
@@ -348,6 +434,12 @@ export default function Reader({ kind, sources = [], facets }: Props) {
             </div>
           ) : result?.data.length ? (
             <>
+              {detail && !result.data.some((item) => item.id === detail.id) && (
+                <div className="reader-current-context">
+                  <small>当前阅读 · 不在已加载结果中</small>
+                  <strong>{detail.title}</strong>
+                </div>
+              )}
               {result.data.map((item) => {
                 const p = item as Policy,
                   r = item as Row
@@ -490,6 +582,11 @@ export default function Reader({ kind, sources = [], facets }: Props) {
                 </span>
               </div>
             )}
+            {origin && (
+              <div className="reader-origin-mobile">
+                <ReturnLink from={origin} />
+              </div>
+            )}
             {detail && !policy && (
               <div
                 className="document-tabs"
@@ -539,15 +636,14 @@ export default function Reader({ kind, sources = [], facets }: Props) {
               <>
                 {policy && document ? (
                   <>
-                    <div className="facts">
-                      <span>
-                        阶段 <b>{document.stage || '未明确'}</b>
-                      </span>
-                      <span>
-                        生效日期{' '}
-                        <b>{document.effective_date || '原文未明确'}</b>
-                      </span>
-                    </div>
+                    <PolicyApplicability
+                      policy={document}
+                      evidenceHref={
+                        document.source_quote
+                          ? '#reader-policy-evidence'
+                          : undefined
+                      }
+                    />
                     <div className="document-section">
                       <h3>
                         政策摘要 <span className="ai-label">AI 提炼</span>
@@ -557,14 +653,8 @@ export default function Reader({ kind, sources = [], facets }: Props) {
                           '这份文件还没有完成分析，点击上方标题可阅读原文。'}
                       </p>
                     </div>
-                    {document.affected_parties?.length > 0 && (
-                      <div className="document-section">
-                        <h3>可能适用的主体</h3>
-                        <p>{document.affected_parties.join('、')}</p>
-                      </div>
-                    )}
                     {document.source_quote && (
-                      <div className="quote-box">
+                      <div className="quote-box" id="reader-policy-evidence">
                         <small>提取的原文引句 · 请与原文核对</small>
                         {document.source_quote}
                       </div>
@@ -572,7 +662,10 @@ export default function Reader({ kind, sources = [], facets }: Props) {
                     <div className="document-section">
                       <Link
                         className="primary-button"
-                        href={`/policies/${encodeURIComponent(detail.id)}`}
+                        href={withOrigin(
+                          `/policies/${encodeURIComponent(detail.id)}`,
+                          `/policies?${currentReaderParams}`,
+                        )}
                       >
                         阅读条款与完整解读
                         <ArrowRight size={15} />

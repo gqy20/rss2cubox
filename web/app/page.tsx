@@ -20,11 +20,14 @@ import {
   Empty,
 } from './journal/Shared'
 import { Coverage, CountLabel } from './journal/Numbers'
+import { excludedTopic } from '../lib/topic-utils'
+import { insightFreshness } from '../lib/reading-context'
+import { WindowReadingPosition } from './journal/ReadingNavigation'
 export const dynamic = 'force-dynamic'
 export default async function Page() {
   const data = await getJournal()
   const lead = data.clusters
-    .filter((c) => c.article_count > 0)
+    .filter((c) => !excludedTopic(c))
     .sort((a, b) => b.source_count - a.source_count)[0]
   const trends = insightItems(data.insights?.trends),
     advice = insightItems(data.insights?.daily_advices),
@@ -32,14 +35,10 @@ export default async function Page() {
   const pending = data.predictions.filter((p) => p.status === 'pending').length
   return (
     <>
+      <WindowReadingPosition memoryKey="home" />
       <div className="cover-heading">
         <div>
-          <h1>
-            把重要的信息，
-            <br className="small-only" />
-            读得更深一点<span>。</span>
-          </h1>
-          <p>从一条新信号，到一份文件，再到一个值得追踪的判断。</p>
+          <h1>今日简报</h1>
         </div>
         <div className="cover-stats">
           <Link href="/signals">
@@ -65,6 +64,23 @@ export default async function Page() {
           </Link>
         </div>
       </div>
+      <div className="home-freshness" role="status">
+        <Link
+          href={`/briefing${data.insights?.generated_at ? `?at=${encodeURIComponent(data.insights.generated_at)}` : ''}`}
+        >
+          <span
+            className={`freshness-badge ${insightFreshness(data.insights?.generated_at, data.loadedAt) === '今日生成' ? 'olive' : 'neutral'}`}
+          >
+            {insightFreshness(data.insights?.generated_at, data.loadedAt)}
+          </span>
+          {data.insights?.generated_at && (
+            <time dateTime={data.insights.generated_at}>
+              {dateLabel(data.insights.generated_at, true)}
+            </time>
+          )}
+        </Link>
+        <span>文章最近入库 {dateLabel(data.stats?.latest, true)}</span>
+      </div>
       <DataNotice issues={data.issues} />
       <div className="cover-grid">
         <section className="surface lead-story">
@@ -72,7 +88,6 @@ export default async function Page() {
             <span className="pill clay">
               <Sparkles size={13} /> 本期主议题
             </span>
-            <span className="muted-text">由信号簇提炼</span>
           </div>
           {lead ? (
             <>
@@ -103,7 +118,7 @@ export default async function Page() {
           <div className="briefing-preview">
             <div className="briefing-caption">
               <BookOpen size={17} />
-              <Link href="/briefing">今日趋势</Link>
+              <Link href="/briefing">趋势判断</Link>
               <span className="ai-label">AI 分析</span>
             </div>
             {trends[0] ? (
@@ -147,7 +162,10 @@ export default async function Page() {
               action="进入政策库"
             />
             <p className="panel-intro">最近收录、已分析的高相关文件</p>
-            <PolicyRows rows={data.policies.slice(0, 2)} />
+            <PolicyRows
+              rows={data.policies.slice(0, 2)}
+              context={{ from: '/' }}
+            />
             <div className="panel-bottom">
               <span className="olive-note">先读摘要，再核对原文</span>
               <Link
@@ -164,13 +182,22 @@ export default async function Page() {
               <span className="document-symbol">
                 <Layers3 size={18} />
               </span>
-              <h2>让判断，接受时间的检验</h2>
+              <h2>预测跟踪</h2>
             </div>
-            <p>
-              {data.reviews.length
-                ? `已有 ${data.reviews.length} 条复盘记录，回看支持证据与反证。`
-                : '预测仍待验证。保留判断依据，也留意与它相反的证据。'}
-            </p>
+            <div className="prediction-note-facts">
+              <CountLabel
+                icon={<Hourglass size={15} />}
+                label="待验证"
+                value={data.issues.includes('预测') ? '—' : pending}
+              />
+              <span>
+                {data.issues.includes('复盘')
+                  ? '复盘暂不可用'
+                  : data.reviews.length
+                    ? `${data.reviews.length} 条复盘记录`
+                    : '暂无复盘记录'}
+              </span>
+            </div>
             <Link className="text-link" href="/predictions">
               打开预测账本 <ArrowRight size={15} />
             </Link>
@@ -185,7 +212,10 @@ export default async function Page() {
             action="全部重点文章"
             icon={<BookOpen size={18} />}
           />
-          <ArticleRows rows={data.articles.slice(0, 5)} />
+          <ArticleRows
+            rows={data.articles.slice(0, 5)}
+            context={{ from: '/', filters: { mode: 'high' } }}
+          />
         </section>
         <section className="surface observations">
           <PanelHeading title="阅读之后" icon={<Radio size={18} />} />

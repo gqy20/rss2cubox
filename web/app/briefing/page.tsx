@@ -19,10 +19,7 @@ export default async function BriefingPage({
         <ArrowLeft size={14} />
         返回今日简报
       </Link>
-      <PageHeading
-        title="洞察与行动"
-        description="保留每一期判断，以及形成判断时的来源。"
-      >
+      <PageHeading title="洞察与行动">
         {selected && <ExportButton data={selected} name="insights" />}
       </PageHeading>
       {history.length > 0 && (

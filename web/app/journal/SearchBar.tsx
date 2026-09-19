@@ -7,6 +7,7 @@ import {
   scopeForPath,
   type SearchScope,
 } from '../../lib/reader-search'
+import { safeReturnPath } from '../../lib/reading-context'
 
 export default function SearchBar() {
   const pathname = usePathname(),
@@ -38,7 +39,13 @@ export default function SearchBar() {
       const sameScope = pathname === `/${target}`
       const url = readerUrl(
         target,
-        new URLSearchParams(sameScope ? queryString : ''),
+        new URLSearchParams(
+          sameScope
+            ? queryString
+            : safeReturnPath(params.get('from'))
+              ? { from: safeReturnPath(params.get('from'))! }
+              : {},
+        ),
         { search: keyword },
       )
       if (url === `${pathname}${queryString ? `?${queryString}` : ''}`) return

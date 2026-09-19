@@ -14,7 +14,6 @@ import {
   Bookmark,
   Menu,
   X,
-  ArrowUpRight,
 } from 'lucide-react'
 const links = [
   { href: '/', label: '总览', icon: Home },
@@ -41,7 +40,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   }, [])
   return (
     <div
-      className={`journal-shell ${pathname === '/signals' || pathname === '/policies' ? 'reader-shell' : ''}`}
+      className={`journal-shell ${pathname === '/signals' || pathname === '/policies' || pathname === '/monitor' || pathname === '/topics' ? 'reader-shell' : ''}`}
     >
       <a href="#content" className="skip-link">
         跳到主要内容
@@ -58,9 +57,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           <span className="brand-mark">
             <Rss size={23} />
           </span>
-          <span>
-            RSS2Cubox<small>让重要的信息，被更好地阅读</small>
-          </span>
+          <span>RSS2Cubox</span>
         </Link>
         <nav aria-label="主导航">
           {links.map(({ href, label, icon: Icon }) => (
@@ -87,17 +84,6 @@ export default function Shell({ children }: { children: ReactNode }) {
             我的收藏
           </Link>
         </div>
-        <div className="sidebar-foot">
-          <span className="little-flower">✳</span>
-          <p>
-            在信息的缝隙里，
-            <br />
-            看见变化的回响。
-          </p>
-          <Link href="/monitor">
-            数据与运行状态 <ArrowUpRight size={13} />
-          </Link>
-        </div>
       </aside>
       <div className="journal-workspace">
         <header className="journal-topbar">
@@ -119,13 +105,6 @@ export default function Shell({ children }: { children: ReactNode }) {
           >
             <SearchBar />
           </Suspense>
-          <span className="topbar-note">技术与政策的日常阅读</span>
-          <Link className="icon-button" href="/saved" aria-label="打开我的收藏">
-            <Bookmark size={18} />
-          </Link>
-          <span className="identity-mark" aria-hidden="true">
-            R
-          </span>
         </header>
         <main id="content" className="journal-content" tabIndex={-1}>
           {children}

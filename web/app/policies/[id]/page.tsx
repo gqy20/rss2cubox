@@ -1,27 +1,33 @@
 import { ScoreIndicator } from '../../journal/Numbers'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ArrowLeft, FileText } from 'lucide-react'
+import { FileText } from 'lucide-react'
 import { readPolicy } from '../../../lib/journal-store'
 import { dateLabel } from '../../../lib/journal-utils'
 import { ExternalLink, JsonEvidence } from '../../journal/Shared'
 import { BookmarkButton, ExportButton } from '../../journal/Actions'
 import MarkdownRenderer from '../../MarkdownRenderer'
+import {
+  ReturnLink,
+  WindowReadingPosition,
+} from '../../journal/ReadingNavigation'
+import PolicyApplicability from '../../journal/PolicyApplicability'
+import RememberDisclosure from '../../journal/RememberDisclosure'
 export const dynamic = 'force-dynamic'
 export default async function PolicyPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ from?: string }>
 }) {
   const { id } = await params,
     policy = await readPolicy(id)
   if (!policy) notFound()
+  const { from } = await searchParams
   return (
     <>
-      <Link className="breadcrumb" href="/policies">
-        <ArrowLeft size={14} />
-        政策观察 / 文件解读
-      </Link>
+      <WindowReadingPosition memoryKey={`policy:${id}`} />
+      <ReturnLink from={from} fallback="/policies" />
       <div className="policy-layout">
         <article className="surface policy-document">
           <div className="document-topline">
@@ -45,6 +51,10 @@ export default async function PolicyPage({
             {policy.issuing_authority || policy.site_name}
             <span>发布于 {dateLabel(policy.published_at)}</span>
           </div>
+          <PolicyApplicability
+            policy={policy}
+            evidenceHref={policy.source_quote ? '#policy-evidence' : undefined}
+          />
           <div className="document-section">
             <h3>
               先读摘要 <span className="ai-label">AI 提炼</span>
@@ -65,7 +75,7 @@ export default async function PolicyPage({
           )}
           {policy.source_quote && (
             <div className="document-section">
-              <h3>原文依据</h3>
+              <h3 id="policy-evidence">原文依据</h3>
               <div className="quote-box">
                 <small>提取的原文引句，请与来源文件核对</small>
                 {policy.source_quote}
@@ -80,14 +90,16 @@ export default async function PolicyPage({
               <p>{policy.ai_relevance_reason}</p>
             </div>
           )}
-          <details className="disclosure">
-            <summary>查看已抓取全文</summary>
+          <RememberDisclosure
+            memoryKey={`policy-full:${id}`}
+            summary="查看已抓取全文"
+          >
             <div className="prose">
               <MarkdownRenderer>
                 {policy.full_text || '暂无已抓取全文，点击标题可阅读原文。'}
               </MarkdownRenderer>
             </div>
-          </details>
+          </RememberDisclosure>
         </article>
         <aside className="surface">
           <h2 style={{ marginBottom: 22, fontFamily: 'var(--serif)' }}>
