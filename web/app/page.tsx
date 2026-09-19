@@ -7,6 +7,8 @@ import {
   Activity,
   Radio,
   Layers3,
+  Files,
+  Hourglass,
 } from 'lucide-react'
 import { getJournal } from '../lib/journal-store'
 import { dateLabel, excerpt, insightItems, safeUrl } from '../lib/journal-utils'
@@ -17,7 +19,7 @@ import {
   DataNotice,
   Empty,
 } from './journal/Shared'
-import { ExportButton, RefreshButton } from './journal/Actions'
+import { Coverage, CountLabel } from './journal/Numbers'
 export const dynamic = 'force-dynamic'
 export default async function Page() {
   const data = await getJournal()
@@ -28,26 +30,8 @@ export default async function Page() {
     advice = insightItems(data.insights?.daily_advices),
     weak = insightItems(data.insights?.weak_signals)
   const pending = data.predictions.filter((p) => p.status === 'pending').length
-  const percent = data.policyStats?.total
-    ? Math.round((data.policyStats.analyzed / data.policyStats.total) * 1000) /
-      10
-    : 0
   return (
     <>
-      <div className="edition-line">
-        <span>
-          <span className="edition-dot" /> 技术 · 政策 · 可验证的判断
-        </span>
-        <span>
-          {new Date(data.loadedAt).toLocaleDateString('zh-CN', {
-            timeZone: 'Asia/Shanghai',
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            weekday: 'long',
-          })}
-        </span>
-      </div>
       <div className="cover-heading">
         <div>
           <h1>
@@ -59,16 +43,25 @@ export default async function Page() {
         </div>
         <div className="cover-stats">
           <Link href="/signals">
-            <strong>{data.stats?.total.toLocaleString() ?? '—'}</strong>
-            <span>篇文章</span>
+            <CountLabel
+              icon={<BookOpen size={16} />}
+              label="文章"
+              value={data.stats?.total ?? '—'}
+            />
           </Link>
           <Link href="/policies">
-            <strong>{data.policyStats?.total.toLocaleString() ?? '—'}</strong>
-            <span>份政策</span>
+            <CountLabel
+              icon={<Files size={16} />}
+              label="政策"
+              value={data.policyStats?.total ?? '—'}
+            />
           </Link>
           <Link href="/predictions">
-            <strong>{data.issues.includes('预测') ? '—' : pending}</strong>
-            <span>条待验证</span>
+            <CountLabel
+              icon={<Hourglass size={16} />}
+              label="待验证"
+              value={data.issues.includes('预测') ? '—' : pending}
+            />
           </Link>
         </div>
       </div>
@@ -133,7 +126,6 @@ export default async function Page() {
                           rel="noreferrer"
                         >
                           {trends[0].source_titles?.[i] || `来源 ${i + 1}`}
-                          <ArrowUpRight size={12} />
                         </a>
                       ),
                   )}
@@ -223,7 +215,6 @@ export default async function Page() {
                             rel="noreferrer"
                           >
                             {items[0].source_titles?.[i] || `来源 ${i + 1}`}
-                            <ArrowUpRight size={12} />
                           </a>
                         ),
                     )}
@@ -240,15 +231,14 @@ export default async function Page() {
       <footer className="home-footer">
         <Link href="/monitor">
           <Activity size={15} />
-          政策已分析 {data.policyStats?.analyzed ?? '—'} /{' '}
-          {data.policyStats?.total ?? '—'}
-          {data.policyStats && <span> · {percent}%</span>}
+          <Coverage
+            label="政策已析"
+            value={data.policyStats?.analyzed}
+            total={data.policyStats?.total}
+            compact
+          />
           <ArrowUpRight size={13} />
         </Link>
-        <div className="heading-actions">
-          <RefreshButton />
-          <ExportButton data={data} name="rss-briefing" />
-        </div>
       </footer>
     </>
   )

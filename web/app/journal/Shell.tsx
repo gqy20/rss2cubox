@@ -1,7 +1,8 @@
 'use client'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { usePathname } from 'next/navigation'
+import { Suspense, useEffect, useState, type ReactNode } from 'react'
+import SearchBar from './SearchBar'
 import {
   Home,
   Radio,
@@ -9,7 +10,6 @@ import {
   Layers3,
   ChartNoAxesCombined,
   Activity,
-  Search,
   Rss,
   Bookmark,
   Menu,
@@ -25,36 +25,24 @@ const links = [
   { href: '/monitor', label: '运行监控', icon: Activity },
 ]
 export default function Shell({ children }: { children: ReactNode }) {
-  const pathname = usePathname(),
-    router = useRouter(),
-    search = useRef<HTMLInputElement>(null)
-  const [menu, setMenu] = useState(false),
-    [query, setQuery] = useState('')
+  const pathname = usePathname()
+  const [menu, setMenu] = useState(false)
   useEffect(() => {
     setMenu(false)
   }, [pathname])
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      const editing = (e.target as HTMLElement)?.matches(
-        'input,textarea,[contenteditable="true"]',
-      )
-      if (
-        ((e.metaKey || e.ctrlKey) && e.key === 'k') ||
-        (e.key === '/' && !editing)
-      ) {
-        e.preventDefault()
-        search.current?.focus()
-      }
       if (e.key === 'Escape') {
         setMenu(false)
-        search.current?.blur()
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
   }, [])
   return (
-    <div className="journal-shell">
+    <div
+      className={`journal-shell ${pathname === '/signals' || pathname === '/policies' ? 'reader-shell' : ''}`}
+    >
       <a href="#content" className="skip-link">
         跳到主要内容
       </a>
@@ -121,25 +109,16 @@ export default function Shell({ children }: { children: ReactNode }) {
           >
             {menu ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <form
-            className="global-search"
-            onSubmit={(e) => {
-              e.preventDefault()
-              router.push(
-                `${pathname.startsWith('/policies') ? '/policies' : '/signals'}?search=${encodeURIComponent(query)}`,
-              )
-            }}
+          <Suspense
+            fallback={
+              <div
+                className="global-search search-placeholder"
+                aria-label="搜索加载中"
+              />
+            }
           >
-            <Search size={17} />
-            <input
-              ref={search}
-              aria-label="全局搜索"
-              placeholder="搜索文章、政策或关键词…"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-            />
-            <kbd>⌘ K</kbd>
-          </form>
+            <SearchBar />
+          </Suspense>
           <span className="topbar-note">技术与政策的日常阅读</span>
           <Link className="icon-button" href="/saved" aria-label="打开我的收藏">
             <Bookmark size={18} />

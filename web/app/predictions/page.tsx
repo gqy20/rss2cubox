@@ -1,6 +1,7 @@
+import { Layers3, Hourglass, CircleCheck } from 'lucide-react'
+import { CountLabel, Coverage } from '../journal/Numbers'
 import { getJournal } from '../../lib/journal-store'
-import { PageHeading, DataNotice } from '../journal/Shared'
-import { RefreshButton } from '../journal/Actions'
+import { DataNotice } from '../journal/Shared'
 import Predictions from '../journal/Predictions'
 export const dynamic = 'force-dynamic'
 export default async function PredictionsPage({
@@ -10,52 +11,58 @@ export default async function PredictionsPage({
 }) {
   const { id } = await searchParams,
     data = await getJournal()
+  const pending = data.predictions.filter((p) => p.status === 'pending').length
+  const reviewed = new Set(
+    data.reviews
+      .map((r) => r.prediction_id)
+      .filter((id) => data.predictions.some((p) => p.id === id)),
+  ).size
+  const available =
+    !data.issues.includes('预测') && !data.issues.includes('复盘')
   return (
     <>
-      <PageHeading
-        title="预测与复盘"
-        description="保留最初的判断，用后来的证据检验它。"
-      >
-        <RefreshButton />
-      </PageHeading>
-      <DataNotice
-        issues={data.issues.filter((i) => ['预测', '复盘'].includes(i))}
-      />
-      <dl className="stat-ribbon">
-        <div>
-          <dt>全部预测</dt>
-          <dd>
-            {data.issues.includes('预测') ? '—' : data.predictions.length}
-          </dd>
-        </div>
-        <div>
-          <dt>待验证</dt>
-          <dd>
-            {data.issues.includes('预测')
-              ? '—'
-              : data.predictions.filter((p) => p.status === 'pending').length}
-          </dd>
-        </div>
-        <div>
-          <dt>复盘记录</dt>
-          <dd>{data.issues.includes('复盘') ? '—' : data.reviews.length}</dd>
-        </div>
-        <div>
-          <dt>复盘状态</dt>
-          <dd style={{ fontSize: 17 }}>
-            {data.issues.includes('复盘')
-              ? '暂时不可用'
-              : data.reviews.length
-                ? '已有证据回看'
-                : '等待首条复盘'}
-          </dd>
-          <small>未复盘时不计算命中率</small>
-        </div>
-      </dl>
       <Predictions
         predictions={data.predictions}
         reviews={data.reviews}
         initialId={id}
+        overview={
+          <>
+            {' '}
+            <DataNotice
+              issues={data.issues.filter((i) => ['预测', '复盘'].includes(i))}
+            />
+            <section
+              className="surface prediction-overview"
+              aria-label="预测进度"
+            >
+              <div className="prediction-counts">
+                <CountLabel
+                  icon={<Layers3 size={17} />}
+                  label="预测"
+                  value={
+                    data.issues.includes('预测') ? '—' : data.predictions.length
+                  }
+                />
+                <CountLabel
+                  icon={<Hourglass size={17} />}
+                  label="待验证"
+                  value={data.issues.includes('预测') ? '—' : pending}
+                />
+                <CountLabel
+                  icon={<CircleCheck size={17} />}
+                  label="已复盘"
+                  value={available ? reviewed : '—'}
+                />
+              </div>
+              <Coverage
+                label="复盘进度"
+                value={available ? reviewed : null}
+                total={available ? data.predictions.length : null}
+                compact
+              />
+            </section>
+          </>
+        }
       />
     </>
   )

@@ -1,13 +1,28 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
+import {
+  useReaderFeed,
+  rememberReaderScroll,
+  readerScroll,
+} from '../../hooks/useReaderFeed'
+import { readerUrl, activeFilterCount } from '../../lib/reader-search'
 import Link from 'next/link'
-import { ArrowLeft, ArrowRight, RefreshCw, X } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  RefreshCw,
+  RotateCcw,
+  X,
+  LoaderCircle,
+} from 'lucide-react'
 import type { Row } from '../types'
-import type { Policy, PageResult } from '../../lib/journal-types'
+import type { Policy } from '../../lib/journal-types'
 import { dateLabel, excerpt } from '../../lib/journal-utils'
 import { Empty, ExternalLink } from './Shared'
 import { BookmarkButton, ExportButton } from './Actions'
 import MarkdownRenderer from '../MarkdownRenderer'
+import { ScoreIndicator } from './Numbers'
 
 type Filters = {
   search: string
@@ -31,70 +46,110 @@ const emptyFilters: Filters = {
 }
 type Props = {
   kind: 'signals' | 'policies'
-  initial: Partial<Filters>
-  initialId?: string
   sources?: string[]
   facets?: { region: string[]; stage: string[]; instrument_type: string[] }
 }
-export default function Reader({
-  kind,
-  initial,
-  initialId,
-  sources = [],
-  facets,
-}: Props) {
-  const [filters, setFilters] = useState<Filters>({
-    ...emptyFilters,
-    ...initial,
-  })
-  const [page, setPage] = useState(1),
-    [version, setVersion] = useState(0)
-  const [result, setResult] = useState<PageResult<Row | Policy> | null>(null)
-  const [loading, setLoading] = useState(true),
-    [error, setError] = useState('')
-  const [selectedId, setSelectedId] = useState<string | null>(initialId || null)
-  const [detail, setDetail] = useState<Row | Policy | null>(null),
+export default function Reader({ kind, sources = [], facets }: Props) {
+  const searchParams = useSearchParams()
+  const urlQuery = searchParams.toString()
+  const filters = Object.fromEntries(
+    Object.keys(emptyFilters).map((key) => [
+      key,
+      searchParams.get(key) || emptyFilters[key as keyof Filters],
+    ]),
+  ) as Filters
+  const requestedId = searchParams.get('id')
+  const [detailVersion, setDetailVersion] = useState(0)
+  const [selection, setSelection] = useState<{
+    query: string
+    id: string | null
+  }>({ query: '', id: null })
+  const [rawDetail, setDetail] = useState<Row | Policy | null>(null),
     [detailLoading, setDetailLoading] = useState(false),
     [detailError, setDetailError] = useState('')
   const [tab, setTab] = useState('summary')
+  const listRef = useRef<HTMLElement>(null)
   const encoded = new URLSearchParams({
     ...filters,
-    page: String(page),
   }).toString()
-  const change = (key: keyof Filters, value: string) => {
-    setFilters((f) => ({ ...f, [key]: value }))
-    setPage(1)
-    setSelectedId(null)
+  const {
+    result,
+    loading: searching,
+    error,
+    loadingMore,
+    moreError,
+    newContent,
+    cacheKey,
+    loadMore,
+    refresh,
+  } = useReaderFeed<Row | Policy>(kind, encoded)
+  const sentinelRef = useRef<HTMLDivElement>(null),
+    bodyRef = useRef<HTMLDivElement>(null)
+  const selectedId =
+    requestedId || (selection.query === encoded ? selection.id : null)
+  const detail = rawDetail?.id === selectedId ? rawDetail : null
+  const updateUrl = (
+    changes: Record<string, string | null>,
+    reset = true,
+    push = true,
+  ) => {
+    const url = readerUrl(kind, new URLSearchParams(urlQuery), changes, reset)
+    window.history[push ? 'pushState' : 'replaceState'](null, '', url)
   }
+  const setSelectedId = (id: string | null) => {
+    if (listRef.current?.clientHeight)
+      rememberReaderScroll(cacheKey, listRef.current.scrollTop)
+    if (!id) setSelection({ query: encoded, id: null })
+    updateUrl({ id }, false, Boolean(id))
+  }
+  const change = (key: keyof Filters, value: string) =>
+    updateUrl({ [key]: value })
+  const firstId = result?.data[0]?.id
   useEffect(() => {
-    const controller = new AbortController()
-    setLoading(true)
-    setError('')
-    const timer = setTimeout(async () => {
-      try {
-        const response = await fetch(`/api/reader/${kind}?${encoded}`, {
-          signal: controller.signal,
-        })
-        const payload = await response.json()
-        if (!response.ok) throw new Error(payload.error || '加载失败')
-        if (controller.signal.aborted) return
-        setResult(payload)
-        if (window.matchMedia('(min-width: 901px)').matches)
-          setSelectedId((prev) => prev || payload.data[0]?.id || null)
-      } catch (e) {
-        if (!controller.signal.aborted) {
-          setError(e instanceof Error ? e.message : '加载失败')
-          setResult(null)
-        }
-      } finally {
-        if (!controller.signal.aborted) setLoading(false)
-      }
-    }, 250)
-    return () => {
-      controller.abort()
-      clearTimeout(timer)
-    }
-  }, [kind, encoded, version])
+    if (firstId && window.matchMedia('(min-width:901px)').matches)
+      setSelection({ query: encoded, id: firstId })
+  }, [firstId, encoded])
+  useLayoutEffect(() => {
+    const list = listRef.current
+    if (list?.clientHeight && !searching)
+      list.scrollTop = readerScroll(cacheKey)
+  }, [cacheKey, searching, selectedId])
+  useLayoutEffect(() => {
+    bodyRef.current?.scrollTo({ top: 0 })
+  }, [selectedId, tab])
+  useEffect(() => {
+    if (
+      searching ||
+      moreError ||
+      !result?.hasMore ||
+      typeof IntersectionObserver === 'undefined'
+    )
+      return
+    const root = listRef.current,
+      target = sentinelRef.current
+    if (!root || !target) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && root.clientHeight > 0) void loadMore()
+      },
+      { root, rootMargin: '300px 0px', threshold: 0 },
+    )
+    observer.observe(target)
+    return () => observer.disconnect()
+  }, [
+    searching,
+    moreError,
+    result?.hasMore,
+    result?.data.length,
+    loadingMore,
+    loadMore,
+    selectedId,
+  ])
+  const refreshList = () => {
+    setSelection({ query: encoded, id: null })
+    updateUrl({ id: null, page: null }, false, false)
+    refresh()
+  }
   useEffect(() => {
     if (!selectedId) {
       setDetail(null)
@@ -127,129 +182,158 @@ export default function Reader({
         if (!controller.signal.aborted) setDetailLoading(false)
       })
     return () => controller.abort()
-  }, [selectedId, kind, version])
+  }, [selectedId, kind, detailVersion])
   const policy = kind === 'policies',
     article = detail as Row | null,
     document = detail as Policy | null
   return (
-    <>
-      <div className="toolbar">
-        <input
-          aria-label={policy ? '搜索政策' : '搜索信号'}
-          type="search"
-          placeholder={
-            policy
-              ? '搜索政策、发布机构或适用主体…'
-              : '搜索标题、摘要、标签或正文…'
-          }
-          value={filters.search}
-          onChange={(e) => change('search', e.target.value)}
-        />
-        {policy ? (
-          <>
-            {(['region', 'stage', 'instrument_type'] as const).map((key, i) => (
-              <label key={key}>
-                {['地区', '阶段', '文件类型'][i]}
+    <div className="reader-panel">
+      <div className="reader-controls">
+        <div className="toolbar">
+          {policy ? (
+            <>
+              {(['region', 'stage', 'instrument_type'] as const).map(
+                (key, i) => (
+                  <label key={key}>
+                    {['地区', '阶段', '文件类型'][i]}
+                    <select
+                      value={filters[key]}
+                      onChange={(e) => change(key, e.target.value)}
+                    >
+                      <option value="">全部</option>
+                      {facets?.[key].map((v) => (
+                        <option key={v}>{v}</option>
+                      ))}
+                    </select>
+                  </label>
+                ),
+              )}
+            </>
+          ) : (
+            <>
+              <label>
+                来源
                 <select
-                  value={filters[key]}
-                  onChange={(e) => change(key, e.target.value)}
+                  value={filters.source}
+                  onChange={(e) => change('source', e.target.value)}
                 >
-                  <option value="">全部</option>
-                  {facets?.[key].map((v) => (
-                    <option key={v}>{v}</option>
+                  <option value="">全部来源</option>
+                  {sources.map((source) => (
+                    <option key={source}>{source}</option>
                   ))}
                 </select>
               </label>
-            ))}
-          </>
-        ) : (
-          <>
-            <label>
-              来源
-              <select
-                value={filters.source}
-                onChange={(e) => change('source', e.target.value)}
-              >
-                <option value="">全部来源</option>
-                {sources.map((source) => (
-                  <option key={source}>{source}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              日期
-              <input
-                type="date"
-                value={filters.date}
-                onChange={(e) => change('date', e.target.value)}
-              />
-            </label>
-            {filters.tag && (
-              <button className="soft-button" onClick={() => change('tag', '')}>
-                {filters.tag}
-                <X size={13} />
-              </button>
-            )}
-          </>
-        )}
-        <button
-          className="soft-button"
-          onClick={() => {
-            setFilters(emptyFilters)
-            setPage(1)
-            setSelectedId(null)
-          }}
-        >
-          重置
-        </button>
-      </div>
-      <div className="toolbar">
-        <div className="segments" role="tablist" aria-label="内容筛选">
-          {(policy
-            ? [
-                ['all', '全部文件'],
-                ['relevant', '高相关政策'],
-                ['analyzed', '已分析'],
-              ]
-            : [
-                ['all', '全部信号'],
-                ['high', '重点文章'],
-                ['analyzed', '已有分析'],
-              ]
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              role="tab"
-              aria-selected={filters.mode === value}
-              onClick={() => change('mode', value)}
-            >
-              {label}
-            </button>
-          ))}
+              <label>
+                日期
+                <input
+                  type="date"
+                  value={filters.date}
+                  onChange={(e) => change('date', e.target.value)}
+                />
+              </label>
+              {filters.tag && (
+                <button
+                  className="soft-button"
+                  onClick={() => change('tag', '')}
+                >
+                  {filters.tag}
+                  <X size={13} />
+                </button>
+              )}
+            </>
+          )}
+          <button
+            className="icon-button"
+            aria-label="重置筛选"
+            title="重置筛选"
+            onClick={() => {
+              updateUrl(
+                Object.fromEntries(
+                  Object.keys(emptyFilters)
+                    .filter((key) => key !== 'search')
+                    .map((key) => [key, null]),
+                ),
+              )
+            }}
+          >
+            <RotateCcw size={17} />
+          </button>
         </div>
-        <span className="muted-text" aria-live="polite">
-          {loading
-            ? '正在查找…'
-            : result
-              ? `${result.total.toLocaleString()} ${policy ? '份文件' : '篇文章'}`
-              : ''}
-        </span>
-        <button
-          className="soft-button"
-          disabled={loading}
-          onClick={() => setVersion((v) => v + 1)}
-        >
-          <RefreshCw size={14} />
-          刷新列表
-        </button>
+        <div className="toolbar">
+          <div className="segments" role="tablist" aria-label="内容筛选">
+            {(policy
+              ? [
+                  ['all', '全部文件'],
+                  ['relevant', '高相关政策'],
+                  ['analyzed', '已分析'],
+                ]
+              : [
+                  ['all', '全部信号'],
+                  ['high', '重点文章'],
+                  ['analyzed', '已有分析'],
+                ]
+            ).map(([value, label]) => (
+              <button
+                key={value}
+                role="tab"
+                aria-selected={filters.mode === value}
+                onClick={() => change('mode', value)}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <span className="search-result-summary" role="status">
+            {searching ? (
+              '搜索中…'
+            ) : error ? (
+              '搜索失败'
+            ) : result ? (
+              <>
+                {filters.search && (
+                  <span className="result-keyword">“{filters.search}”</span>
+                )}
+                <b>{result.total.toLocaleString()}</b>{' '}
+                {policy ? '份政策' : '篇文章'}
+                {activeFilterCount(new URLSearchParams(urlQuery)) > 0 && (
+                  <span> · 已筛选</span>
+                )}
+              </>
+            ) : (
+              ''
+            )}
+          </span>
+
+          <button
+            className="icon-button"
+            aria-label="刷新列表"
+            title="刷新列表"
+            disabled={searching}
+            onClick={refreshList}
+          >
+            <RefreshCw size={17} />
+          </button>
+        </div>
+        {newContent && (
+          <button className="new-content-button" onClick={refreshList}>
+            <RefreshCw size={14} />
+            有新内容，点击更新
+          </button>
+        )}
       </div>
       <div className={`reader-grid ${selectedId ? 'has-selection' : ''}`}>
         <section
           className="surface reader-list"
+          ref={listRef}
+          tabIndex={0}
+          onScroll={(e) => {
+            if (e.currentTarget.clientHeight)
+              rememberReaderScroll(cacheKey, e.currentTarget.scrollTop)
+          }}
           aria-label={policy ? '政策列表' : '文章列表'}
-          aria-busy={loading}
+          aria-busy={searching}
         >
-          {loading ? (
+          {searching ? (
             <>
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="loading-skeleton" />
@@ -258,10 +342,7 @@ export default function Reader({
           ) : error ? (
             <div className="empty-state" role="alert">
               <p>{error}</p>
-              <button
-                className="soft-button"
-                onClick={() => setVersion((v) => v + 1)}
-              >
+              <button className="soft-button" onClick={refreshList}>
                 重试
               </button>
             </div>
@@ -283,15 +364,28 @@ export default function Reader({
                         : r.source}
                       <span>{dateLabel(policy ? p.published_at : r.time)}</span>
                     </span>
-                    <h3>{item.title}</h3>
+                    <h3>
+                      <Highlight text={item.title} query={filters.search} />
+                    </h3>
                     <p>
-                      {excerpt(
-                        policy ? p.summary : r.core_event || r.hidden_signal,
-                        90,
-                      ) ||
-                        (policy
-                          ? '尚未生成政策分析，可查看原文。'
-                          : '打开阅读详情。')}
+                      {filters.search &&
+                      item.search_excerpt &&
+                      item.search_field !== '标题' ? (
+                        <>
+                          <span className="match-field">
+                            {item.search_field}命中 ·{' '}
+                          </span>
+                          <Highlight
+                            text={item.search_excerpt}
+                            query={filters.search}
+                          />
+                        </>
+                      ) : (
+                        excerpt(
+                          policy ? p.summary : r.core_event || r.hidden_signal,
+                          90,
+                        ) || (policy ? '尚未生成政策分析。' : '打开阅读详情。')
+                      )}
                     </p>
                     {policy && (
                       <span className="metadata">
@@ -301,36 +395,48 @@ export default function Reader({
                   </button>
                 )
               })}
-              <div className="pagination">
-                <button
-                  className="soft-button"
-                  disabled={page === 1}
-                  onClick={() => {
-                    setPage((p) => p - 1)
-                    setSelectedId(null)
-                  }}
-                >
-                  上一页
-                </button>
-                <span>
-                  {page} / {Math.ceil(result.total / 30) || 1}
-                </span>
-                <button
-                  className="soft-button"
-                  disabled={!result.hasMore}
-                  onClick={() => {
-                    setPage((p) => p + 1)
-                    setSelectedId(null)
-                  }}
-                >
-                  下一页
-                </button>
+              <div className="reader-load-tail" ref={sentinelRef}>
+                {loadingMore ? (
+                  <span role="status">
+                    <LoaderCircle size={15} className="spin" />
+                    正在加载…
+                  </span>
+                ) : moreError ? (
+                  <div role="alert">
+                    <span>{moreError}</span>
+                    <button
+                      className="soft-button"
+                      onClick={() => void loadMore()}
+                    >
+                      重试
+                    </button>
+                  </div>
+                ) : result.hasMore ? (
+                  <button
+                    className="load-more-button"
+                    onClick={() => void loadMore()}
+                  >
+                    继续加载
+                  </button>
+                ) : (
+                  <span>
+                    已到底 · {result.data.length} {policy ? '份政策' : '篇文章'}
+                  </span>
+                )}
               </div>
             </>
           ) : (
             <Empty
-              title="没有匹配的内容"
-              description="尝试减少筛选条件，或换一个关键词。"
+              title={
+                filters.search
+                  ? `没有找到“${filters.search}”`
+                  : '没有匹配的内容'
+              }
+              description={
+                activeFilterCount(new URLSearchParams(urlQuery)) > 0
+                  ? '可重置筛选，保留关键词继续查找。'
+                  : `尝试其他关键词，或切换到${policy ? '文章' : '政策'}搜索。`
+              }
             />
           )}
         </section>
@@ -339,49 +445,39 @@ export default function Reader({
           aria-label="阅读详情"
           aria-busy={detailLoading}
         >
-          <div className="document-topline">
-            <button
-              className="soft-button mobile-back"
-              onClick={() => setSelectedId(null)}
-            >
-              <ArrowLeft size={14} />
-              返回列表
-            </button>
-            {detail && (
-              <>
-                <ExternalLink url={detail.url} />
-                <div>
-                  <BookmarkButton
-                    id={detail.id}
-                    kind={policy ? 'policy' : 'article'}
-                  />
-                  <ExportButton
-                    data={detail}
-                    name={policy ? 'policy' : 'article'}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          {detailLoading ? (
-            <>
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="loading-skeleton" />
-              ))}
-            </>
-          ) : detailError ? (
-            <div role="alert">
-              <Empty title="详情暂时不可用" description={detailError} />
+          <header className="reader-document-header" hidden={!selectedId}>
+            <div className="title-row document-title-row">
               <button
-                className="soft-button"
-                onClick={() => setVersion((v) => v + 1)}
+                className="icon-button mobile-back"
+                aria-label="返回列表"
+                title="返回列表"
+                onClick={() => setSelectedId(null)}
               >
-                重试
+                <ArrowLeft size={16} />
               </button>
+              {detail ? (
+                <>
+                  <h2 title={detail.title}>
+                    <ExternalLink url={detail.url} className="original-title">
+                      {detail.title}
+                    </ExternalLink>
+                  </h2>
+                  <div className="heading-actions">
+                    <BookmarkButton
+                      id={detail.id}
+                      kind={policy ? 'policy' : 'article'}
+                    />
+                    <ExportButton
+                      data={detail}
+                      name={policy ? 'policy' : 'article'}
+                    />
+                  </div>
+                </>
+              ) : (
+                <h2>{detailError ? '详情暂时不可用' : '正在加载…'}</h2>
+              )}
             </div>
-          ) : detail ? (
-            <>
-              <h2>{detail.title}</h2>
+            {detail && (
               <div className="metadata">
                 {policy
                   ? document?.issuing_authority || document?.site_name
@@ -393,158 +489,211 @@ export default function Reader({
                   )}
                 </span>
               </div>
-              {policy && document ? (
-                <>
-                  <div className="facts">
-                    <span>
-                      阶段 <b>{document.stage || '未明确'}</b>
-                    </span>
-                    <span>
-                      生效日期 <b>{document.effective_date || '原文未明确'}</b>
-                    </span>
-                  </div>
-                  <div className="document-section">
-                    <h3>
-                      政策摘要 <span className="ai-label">AI 提炼</span>
-                    </h3>
-                    <p>
-                      {document.summary ||
-                        '这份文件还没有完成分析，请先查看原文。'}
-                    </p>
-                  </div>
-                  {document.affected_parties?.length > 0 && (
-                    <div className="document-section">
-                      <h3>可能适用的主体</h3>
-                      <p>{document.affected_parties.join('、')}</p>
-                    </div>
-                  )}
-                  {document.source_quote && (
-                    <div className="quote-box">
-                      <small>提取的原文引句 · 请与原文核对</small>
-                      {document.source_quote}
-                    </div>
-                  )}
-                  <div className="document-section">
-                    <Link
-                      className="primary-button"
-                      href={`/policies/${encodeURIComponent(detail.id)}`}
-                    >
-                      阅读条款与完整解读
-                      <ArrowRight size={15} />
-                    </Link>
-                  </div>
-                </>
-              ) : (
-                article && (
+            )}
+            {detail && !policy && (
+              <div
+                className="document-tabs"
+                role="tablist"
+                aria-label="阅读内容"
+              >
+                <button
+                  role="tab"
+                  aria-selected={tab === 'summary'}
+                  onClick={() => setTab('summary')}
+                >
+                  概览与分析
+                </button>
+                <button
+                  role="tab"
+                  aria-selected={tab === 'original'}
+                  onClick={() => setTab('original')}
+                >
+                  已抓取正文
+                </button>
+              </div>
+            )}
+          </header>
+          <div
+            className="reader-document-body"
+            ref={bodyRef}
+            tabIndex={0}
+            aria-label="正文"
+          >
+            {detailLoading ? (
+              <>
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="loading-skeleton" />
+                ))}
+              </>
+            ) : detailError ? (
+              <div role="alert">
+                <Empty title="详情暂时不可用" description={detailError} />
+                <button
+                  className="soft-button"
+                  onClick={() => setDetailVersion((v) => v + 1)}
+                >
+                  重试
+                </button>
+              </div>
+            ) : detail ? (
+              <>
+                {policy && document ? (
                   <>
-                    <div
-                      className="document-tabs"
-                      role="tablist"
-                      aria-label="阅读内容"
-                    >
-                      <button
-                        role="tab"
-                        aria-selected={tab === 'summary'}
-                        onClick={() => setTab('summary')}
-                      >
-                        概览与分析
-                      </button>
-                      <button
-                        role="tab"
-                        aria-selected={tab === 'original'}
-                        onClick={() => setTab('original')}
-                      >
-                        已抓取正文
-                      </button>
+                    <div className="facts">
+                      <span>
+                        阶段 <b>{document.stage || '未明确'}</b>
+                      </span>
+                      <span>
+                        生效日期{' '}
+                        <b>{document.effective_date || '原文未明确'}</b>
+                      </span>
                     </div>
-                    {tab === 'original' ? (
-                      article.full_text ? (
-                        <div className="prose">
-                          <MarkdownRenderer>
-                            {article.full_text}
-                          </MarkdownRenderer>
-                        </div>
+                    <div className="document-section">
+                      <h3>
+                        政策摘要 <span className="ai-label">AI 提炼</span>
+                      </h3>
+                      <p>
+                        {document.summary ||
+                          '这份文件还没有完成分析，点击上方标题可阅读原文。'}
+                      </p>
+                    </div>
+                    {document.affected_parties?.length > 0 && (
+                      <div className="document-section">
+                        <h3>可能适用的主体</h3>
+                        <p>{document.affected_parties.join('、')}</p>
+                      </div>
+                    )}
+                    {document.source_quote && (
+                      <div className="quote-box">
+                        <small>提取的原文引句 · 请与原文核对</small>
+                        {document.source_quote}
+                      </div>
+                    )}
+                    <div className="document-section">
+                      <Link
+                        className="primary-button"
+                        href={`/policies/${encodeURIComponent(detail.id)}`}
+                      >
+                        阅读条款与完整解读
+                        <ArrowRight size={15} />
+                      </Link>
+                    </div>
+                  </>
+                ) : (
+                  article && (
+                    <>
+                      {tab === 'original' ? (
+                        article.full_text ? (
+                          <div className="prose">
+                            <MarkdownRenderer>
+                              {article.full_text}
+                            </MarkdownRenderer>
+                          </div>
+                        ) : (
+                          <Empty
+                            title="尚未抓取全文"
+                            description="点击上方标题，阅读来源页面。"
+                          />
+                        )
                       ) : (
-                        <Empty
-                          title="尚未抓取全文"
-                          description="可通过上方“打开原文”阅读来源页面。"
-                        />
-                      )
-                    ) : (
-                      <>
-                        <div className="facts">
+                        <>
+                          <div className="facts">
+                            {[
+                              ['重要性', article.importance_score],
+                              ['证据强度', article.evidence_strength],
+                              ['置信度', article.confidence],
+                            ].map(
+                              ([label, value]) =>
+                                value != null && (
+                                  <ScoreIndicator
+                                    key={String(label)}
+                                    label={String(label)}
+                                    value={
+                                      typeof value === 'number' ? value : null
+                                    }
+                                  />
+                                ),
+                            )}
+                          </div>
                           {[
-                            ['重要性', article.importance_score],
-                            ['证据强度', article.evidence_strength],
-                            ['置信度', article.confidence],
+                            ['内容摘要', article.core_event],
+                            ['隐藏信号', article.hidden_signal],
+                            ['判断依据', article.reason],
+                            ['行动建议', article.actionable],
+                            ['后续预测', article.prediction],
                           ].map(
-                            ([label, value]) =>
-                              value != null && (
-                                <span key={label as string}>
-                                  {label}
-                                  <b>{value}/5</b>
-                                </span>
+                            ([label, text]) =>
+                              text && (
+                                <div className="document-section" key={label}>
+                                  <h3>
+                                    {label}{' '}
+                                    {label !== '内容摘要' && (
+                                      <span className="ai-label">AI 分析</span>
+                                    )}
+                                  </h3>
+                                  <div className="prose">
+                                    <MarkdownRenderer>{text}</MarkdownRenderer>
+                                  </div>
+                                </div>
                               ),
                           )}
-                        </div>
-                        {[
-                          ['内容摘要', article.core_event],
-                          ['隐藏信号', article.hidden_signal],
-                          ['判断依据', article.reason],
-                          ['行动建议', article.actionable],
-                          ['后续预测', article.prediction],
-                        ].map(
-                          ([label, text]) =>
-                            text && (
-                              <div className="document-section" key={label}>
-                                <h3>
-                                  {label}{' '}
-                                  {label !== '内容摘要' && (
-                                    <span className="ai-label">AI 分析</span>
-                                  )}
-                                </h3>
-                                <div className="prose">
-                                  <MarkdownRenderer>{text}</MarkdownRenderer>
-                                </div>
-                              </div>
-                            ),
-                        )}
-                        {!article.core_event &&
-                          !article.hidden_signal &&
-                          !article.reason && (
-                            <Empty
-                              title="这篇文章还没有分析内容"
-                              description="可以先打开原文阅读。"
-                            />
-                          )}
-                        {article.tags?.length ? (
-                          <div className="toolbar">
-                            {article.tags.map((tag) => (
-                              <button
-                                className="pill olive"
-                                style={{ border: 0 }}
-                                key={tag}
-                                onClick={() => change('tag', tag)}
-                              >
-                                {tag}
-                              </button>
-                            ))}
-                          </div>
-                        ) : null}
-                      </>
-                    )}
-                  </>
-                )
-              )}
-            </>
-          ) : (
-            <Empty
-              title="选择一条内容，开始阅读"
-              description="分析、来源和证据会显示在这里。"
-            />
-          )}
+                          {!article.core_event &&
+                            !article.hidden_signal &&
+                            !article.reason && (
+                              <Empty
+                                title="这篇文章还没有分析内容"
+                                description="点击上方标题，先阅读原文。"
+                              />
+                            )}
+                          {article.tags?.length ? (
+                            <div className="toolbar">
+                              {article.tags.map((tag) => (
+                                <button
+                                  className="pill olive"
+                                  style={{ border: 0 }}
+                                  key={tag}
+                                  onClick={() => change('tag', tag)}
+                                >
+                                  {tag}
+                                </button>
+                              ))}
+                            </div>
+                          ) : null}
+                        </>
+                      )}
+                    </>
+                  )
+                )}
+              </>
+            ) : (
+              <Empty
+                title="选择一条内容，开始阅读"
+                description="分析、来源和证据会显示在这里。"
+              />
+            )}
+          </div>
         </section>
       </div>
-    </>
+    </div>
   )
+}
+
+function Highlight({ text, query }: { text: string; query: string }) {
+  const keyword = query.trim()
+  if (!keyword) return <>{text}</>
+  const lower = text.toLocaleLowerCase(),
+    needle = keyword.toLocaleLowerCase()
+  const parts: React.ReactNode[] = []
+  let start = 0,
+    index = lower.indexOf(needle)
+  while (index !== -1) {
+    parts.push(
+      text.slice(start, index),
+      <mark key={index}>{text.slice(index, index + keyword.length)}</mark>,
+    )
+    start = index + keyword.length
+    index = lower.indexOf(needle, start)
+  }
+  parts.push(text.slice(start))
+  return <>{parts}</>
 }

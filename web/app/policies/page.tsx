@@ -1,18 +1,9 @@
+import { Coverage } from '../journal/Numbers'
 import Reader from '../journal/Reader'
 import { PageHeading, DataNotice } from '../journal/Shared'
 import { policyFacets, policyStats } from '../../lib/journal-store'
 export const dynamic = 'force-dynamic'
-export default async function PoliciesPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}) {
-  const params = await searchParams
-  const initial = Object.fromEntries(
-    Object.entries(params).filter(
-      (entry): entry is [string, string] => typeof entry[1] === 'string',
-    ),
-  )
+export default async function PoliciesPage() {
   const [facetResult, statsResult] = await Promise.allSettled([
     policyFacets(),
     policyStats(),
@@ -32,26 +23,20 @@ export default async function PoliciesPage({
   const stats = statsResult.status === 'fulfilled' ? statsResult.value : null
   return (
     <>
-      <PageHeading
-        title="政策观察"
-        description="分清文件性质、适用范围与阶段，再判断它意味着什么。"
-      >
+      <PageHeading title="政策观察">
         {stats && (
-          <span className="muted-text">
-            已收录 {stats.total} 份 · 已分析 {stats.analyzed} 份
-          </span>
+          <Coverage
+            label="政策已析"
+            value={stats.analyzed}
+            total={stats.total}
+            compact
+          />
         )}
       </PageHeading>
       <DataNotice
         issues={facetResult.status === 'rejected' ? ['筛选选项'] : []}
       />
-      <Reader
-        key={JSON.stringify(initial)}
-        kind="policies"
-        initial={initial}
-        initialId={initial.id}
-        facets={facets}
-      />
+      <Reader kind="policies" facets={facets} />
     </>
   )
 }

@@ -1,6 +1,8 @@
 import type { Row, GlobalInsights } from '../app/types'
 
 export type Policy = {
+  search_field?: string
+  search_excerpt?: string
   id: string
   title: string
   url: string
@@ -94,6 +96,8 @@ export type JournalData = {
   loadedAt: string
 }
 export type PageResult<T> = {
+  nextCursor?: string | null
+  snapshot?: string
   data: T[]
   total: number
   page: number

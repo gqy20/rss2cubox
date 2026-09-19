@@ -1,9 +1,13 @@
 import { Pool, type QueryResultRow } from 'pg'
 import { cache } from 'react'
+import { formatLocalArticleRow } from './localArticleRows'
+import { buildContentSearch, type SearchScope } from './reader-search'
 import {
-  formatLocalArticleRow,
-  buildArticleSearchWhere,
-} from './localArticleRows'
+  cursorQuery,
+  decodeCursor,
+  encodeCursor,
+  cursorBoundary,
+} from './reader-cursor'
 import { diverseArticles } from './journal-utils'
 import { loadIcArticles } from './signalStore'
 import type { Row, GlobalInsights } from '../app/types'
@@ -89,8 +93,7 @@ export async function readSignals(
     let rows = (await loadIcArticles()) as Row[]
     rows = rows.filter(
       (r) =>
-        (!search ||
-          JSON.stringify(r).toLowerCase().includes(search.toLowerCase())) &&
+        (!search || Boolean(articleMatch(r, search))) &&
         (!source || r.source === source) &&
         (!tag || r.tags?.includes(tag)) &&
         (!date ||
@@ -101,24 +104,83 @@ export async function readSignals(
         (mode !== 'analyzed' ||
           Boolean(r.hidden_signal || r.actionable || r.reason)),
     )
-    rows.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime())
+    rows = rows.map((row) => ({
+      ...row,
+      ...(search ? articleMatch(row, search) : {}),
+    }))
+    rows.sort(
+      (a, b) =>
+        Number(
+          Boolean(search) &&
+            !a.title.toLowerCase().includes(search.toLowerCase()),
+        ) -
+          Number(
+            Boolean(search) &&
+              !b.title.toLowerCase().includes(search.toLowerCase()),
+          ) || new Date(b.time).getTime() - new Date(a.time).getTime(),
+    )
+    const signature = cursorQuery('signals', params),
+      cursor = decodeCursor(params.get('cursor'), signature),
+      snapshot = cursor?.snapshot || new Date().toISOString()
+    const rank = (row: Row) =>
+      Number(
+        Boolean(search) &&
+          !row.title.toLowerCase().includes(search.toLowerCase()),
+      )
+    const time = (row: Row) =>
+      Number.isFinite(Date.parse(row.time))
+        ? new Date(row.time).toISOString()
+        : '0001-01-01T00:00:00.000Z'
+    rows = rows.filter((row) => time(row) <= snapshot)
+    rows.sort(
+      (a, b) =>
+        rank(a) - rank(b) ||
+        time(b).localeCompare(time(a)) ||
+        (a.id < b.id ? 1 : a.id > b.id ? -1 : 0),
+    )
+    const total = rows.length
+    if (cursor)
+      rows = rows.filter(
+        (row) =>
+          rank(row) > cursor.rank ||
+          (rank(row) === cursor.rank &&
+            (time(row) < cursor.time ||
+              (time(row) === cursor.time && row.id < cursor.id))),
+      )
+    const offset = cursor ? 0 : (page - 1) * 30,
+      data = rows.slice(offset, offset + 30),
+      last = data.at(-1),
+      hasMore = rows.length > offset + 30
     return {
-      data: rows.slice((page - 1) * 30, page * 30),
-      total: rows.length,
+      data,
+      total,
       page,
-      hasMore: page * 30 < rows.length,
+      hasMore,
+      snapshot,
+      nextCursor:
+        hasMore && last
+          ? encodeCursor({
+              v: 1,
+              query: signature,
+              snapshot,
+              rank: rank(last),
+              time: time(last),
+              id: last.id,
+            })
+          : null,
     }
   }
+
   const values: unknown[] = [],
     where: string[] = []
   const add = (clause: string, value: unknown) => {
     values.push(value)
     where.push(clause.replace('?', `$${values.length}`))
   }
-  const searchWhere = buildArticleSearchWhere(search, values.length + 1)
+  const searchWhere = buildContentSearch(search, 'signals')
   if (searchWhere) {
-    values.push(searchWhere.value)
-    where.push(`(${searchWhere.sql} OR full_text ILIKE $${values.length})`)
+    values.push(...searchWhere.values)
+    where.push(searchWhere.where)
   }
   if (source) add('source_feed_name = ?', source)
   if (tag) add('tags @> ?::jsonb', JSON.stringify([tag]))
@@ -132,24 +194,25 @@ export async function readSignals(
     where.push(
       "(COALESCE(hidden_signal,'') <> '' OR COALESCE(actionable,'') <> '' OR COALESCE(reason,'') <> '')",
     )
-  const sql = where.length ? `WHERE ${where.join(' AND ')}` : ''
-  const [counts, rows] = await Promise.all([
-    query<{ total: number }>(
-      `SELECT count(*)::int AS total FROM articles ${sql}`,
-      values,
-    ),
-    query(
-      `SELECT ${articleFields} FROM articles ${sql} ORDER BY COALESCE(publish_time,created_at) DESC NULLS LAST, id DESC LIMIT 30 OFFSET $${values.length + 1}`,
-      [...values, (page - 1) * 30],
-    ),
-  ])
+  const result = await readCursorPage('signals', params, {
+    table: 'articles',
+    fields: articleFields + (searchWhere?.select || ''),
+    where,
+    values,
+    time: "COALESCE(publish_time,created_at,'0001-01-01'::timestamptz)",
+    created: 'created_at',
+    rank: searchWhere ? 'CASE WHEN title ILIKE $1 THEN 0 ELSE 1 END' : '0::int',
+  })
   return {
-    data: rows.map(formatLocalArticleRow),
-    total: counts[0].total,
-    page,
-    hasMore: page * 30 < counts[0].total,
+    ...result,
+    data: result.data.map((row) => ({
+      ...formatLocalArticleRow(row),
+      search_field: row.search_field,
+      search_excerpt: row.search_excerpt,
+    })),
   }
 }
+
 export async function readArticle(id: string): Promise<Row | null> {
   if (process.env.API_SOURCE && process.env.API_SOURCE !== 'local')
     return (await loadIcArticles()).find((row) => row.id === id) || null
@@ -162,15 +225,13 @@ export async function readArticle(id: string): Promise<Row | null> {
 export async function readPolicies(
   params: URLSearchParams,
 ): Promise<PageResult<Policy>> {
-  const page = pageNumber(params)
   const where: string[] = [],
     values: unknown[] = []
-  const search = params.get('search')?.trim().slice(0, 300)
-  if (search) {
-    values.push(`%${search}%`)
-    where.push(
-      `(title ILIKE $1 OR summary ILIKE $1 OR issuing_authority ILIKE $1 OR affected_parties::text ILIKE $1)`,
-    )
+  const search = (params.get('search') || '').trim().slice(0, 300)
+  const searchWhere = buildContentSearch(search, 'policies')
+  if (searchWhere) {
+    values.push(...searchWhere.values)
+    where.push(searchWhere.where)
   }
   for (const key of ['region', 'stage', 'instrument_type'] as const) {
     const value = params.get(key)
@@ -182,24 +243,17 @@ export async function readPolicies(
   if (params.get('mode') === 'analyzed') where.push('enriched_at IS NOT NULL')
   if (params.get('mode') === 'relevant')
     where.push('ai_relevance >= 4 AND enriched_at IS NOT NULL')
-  const sql = where.length ? `WHERE ${where.join(' AND ')}` : ''
-  const [counts, rows] = await Promise.all([
-    query<{ total: number }>(
-      `SELECT count(*)::int AS total FROM policy_documents ${sql}`,
-      values,
-    ),
-    query<Policy>(
-      `SELECT ${policyFields} FROM policy_documents ${sql} ORDER BY published_at DESC NULLS LAST,id DESC LIMIT 30 OFFSET $${values.length + 1}`,
-      [...values, (page - 1) * 30],
-    ),
-  ])
-  return {
-    data: rows,
-    total: counts[0].total,
-    page,
-    hasMore: page * 30 < counts[0].total,
-  }
+  return readCursorPage<Policy>('policies', params, {
+    table: 'policy_documents',
+    fields: policyFields + (searchWhere?.select || ''),
+    where,
+    values,
+    time: "COALESCE(published_at,'0001-01-01'::timestamptz)",
+    created: 'first_seen_at',
+    rank: searchWhere ? 'CASE WHEN title ILIKE $1 THEN 0 ELSE 1 END' : '0::int',
+  })
 }
+
 export async function readPolicy(id: string) {
   const [policy] = await query<Policy>(
     `SELECT ${policyFields},full_text FROM policy_documents WHERE id=$1`,
@@ -379,4 +433,97 @@ export async function collectionTrend() {
   ), a AS (SELECT (created_at AT TIME ZONE 'Asia/Shanghai')::date AS day,count(*)::int AS n FROM articles GROUP BY 1),
   p AS (SELECT (first_seen_at AT TIME ZONE 'Asia/Shanghai')::date AS day,count(*)::int AS n FROM policy_documents GROUP BY 1)
   SELECT to_char(days.day,'MM/DD') AS day,COALESCE(a.n,0) AS articles,COALESCE(p.n,0) AS policies FROM days LEFT JOIN a USING(day) LEFT JOIN p USING(day) ORDER BY days.day`)
+}
+
+function articleMatch(row: Row, search: string) {
+  const fields: [string, string | undefined][] = [
+    ['标题', row.title],
+    ['来源', row.source],
+    ['摘要', row.core_event],
+    ['隐藏信号', row.hidden_signal],
+    ['判断依据', row.reason],
+    ['行动建议', row.actionable],
+    ['预测', row.prediction],
+    ['标签', row.tags?.join(' ')],
+    ['实体', row.entities?.join(' ')],
+    ['正文', row.full_text],
+  ]
+  for (const [label, text] of fields) {
+    const index = text?.toLowerCase().indexOf(search.toLowerCase()) ?? -1
+    if (text && index >= 0) {
+      const start = Math.max(0, index - 50)
+      return {
+        search_field: label,
+        search_excerpt: (start > 0 ? '…' : '') + text.slice(start, start + 240),
+      }
+    }
+  }
+  return null
+}
+
+// Keyset ordering includes relevance, microsecond timestamp and id. New insertions
+// are excluded from the current reading window until the reader chooses refresh.
+async function readCursorPage<T extends QueryResultRow = QueryResultRow>(
+  kind: SearchScope,
+  params: URLSearchParams,
+  options: {
+    table: string
+    fields: string
+    where: string[]
+    values: unknown[]
+    time: string
+    created: string
+    rank: string
+  },
+): Promise<PageResult<T>> {
+  const signature = cursorQuery(kind, params),
+    cursor = decodeCursor(params.get('cursor'), signature)
+  const snapshot = cursor?.snapshot || new Date().toISOString(),
+    page = pageNumber(params)
+  const { table, fields, time, created, rank } = options
+  const values = [...options.values, snapshot],
+    where = [
+      ...options.where,
+      `(${created} IS NULL OR ${created} <= $${options.values.length + 1}::timestamptz)`,
+    ]
+  const countSql = `WHERE ${where.join(' AND ')}`,
+    countValues = [...values]
+  const boundary = cursorBoundary(values, cursor, rank, time)
+  if (boundary) where.push(boundary)
+  const offset = !cursor && page > 1 ? ` OFFSET $${values.length + 1}` : ''
+  if (offset) values.push((page - 1) * 30)
+  const [counts, rows] = await Promise.all([
+    query<{ total: number }>(
+      `SELECT count(*)::int AS total FROM ${table} ${countSql}`,
+      countValues,
+    ),
+    query<T & { cursor_time: string; cursor_rank: number }>(
+      `SELECT ${fields},to_char(${time} AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS cursor_time,(${rank}) AS cursor_rank FROM ${table} WHERE ${where.join(' AND ')} ORDER BY (${rank}) ASC,${time} DESC,id DESC LIMIT 31${offset}`,
+      values,
+    ),
+  ])
+  const visible = rows.slice(0, 30),
+    last = visible.at(-1),
+    hasMore = rows.length > 30
+  return {
+    data: visible.map((row) => {
+      const { cursor_time, cursor_rank, ...item } = row
+      return item as unknown as T
+    }),
+    total: counts[0].total,
+    page,
+    hasMore,
+    snapshot,
+    nextCursor:
+      hasMore && last
+        ? encodeCursor({
+            v: 1,
+            query: signature,
+            snapshot,
+            rank: last.cursor_rank,
+            time: last.cursor_time,
+            id: last.id,
+          })
+        : null,
+  }
 }

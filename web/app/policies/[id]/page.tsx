@@ -1,3 +1,4 @@
+import { ScoreIndicator } from '../../journal/Numbers'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, FileText } from 'lucide-react'
@@ -28,25 +29,29 @@ export default async function PolicyPage({
               <FileText size={13} />
               {policy.instrument_type || '政策文件'}
             </span>
-            <div>
+          </div>
+          <div className="title-row document-title-row">
+            <h1>
+              <ExternalLink url={policy.url} className="original-title">
+                {policy.title}
+              </ExternalLink>
+            </h1>
+            <div className="heading-actions">
               <BookmarkButton id={id} kind="policy" />
               <ExportButton data={policy} name="policy" />
             </div>
           </div>
-          <h1>{policy.title}</h1>
           <div className="metadata" style={{ margin: '18px 0' }}>
             {policy.issuing_authority || policy.site_name}
             <span>发布于 {dateLabel(policy.published_at)}</span>
           </div>
-          <ExternalLink url={policy.url} />
           <div className="document-section">
             <h3>
               先读摘要 <span className="ai-label">AI 提炼</span>
             </h3>
             <div className="prose">
               <MarkdownRenderer>
-                {policy.summary ||
-                  '此文件尚未完成分析。请通过原文了解具体内容。'}
+                {policy.summary || '此文件尚未完成分析。点击标题可阅读原文。'}
               </MarkdownRenderer>
             </div>
           </div>
@@ -79,7 +84,7 @@ export default async function PolicyPage({
             <summary>查看已抓取全文</summary>
             <div className="prose">
               <MarkdownRenderer>
-                {policy.full_text || '暂无已抓取全文，请通过上方原文链接查看。'}
+                {policy.full_text || '暂无已抓取全文，点击标题可阅读原文。'}
               </MarkdownRenderer>
             </div>
           </details>
@@ -98,14 +103,6 @@ export default async function PolicyPage({
               ['征集截止', policy.comment_deadline || '原文未明确'],
               ['适用主体', policy.affected_parties?.join('、')],
               ['义务强度', policy.obligation_level],
-              [
-                'AI相关度',
-                policy.ai_relevance ? `${policy.ai_relevance}/5` : null,
-              ],
-              [
-                '分析置信度',
-                policy.confidence ? `${policy.confidence}/5` : null,
-              ],
               ['分析时间', dateLabel(policy.enriched_at, true)],
             ].map(([label, value]) => (
               <div key={label}>
@@ -114,6 +111,10 @@ export default async function PolicyPage({
               </div>
             ))}
           </dl>
+          <div className="policy-ratings">
+            <ScoreIndicator label="AI相关度" value={policy.ai_relevance} />
+            <ScoreIndicator label="分析置信度" value={policy.confidence} />
+          </div>
           <p className="snapshot-note">
             阶段、主体与日期来自结构化提取。未明确的字段保持为空，不以推断补齐。
           </p>

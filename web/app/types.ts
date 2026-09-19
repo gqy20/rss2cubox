@@ -1,4 +1,6 @@
 export type Row = {
+  search_field?: string
+  search_excerpt?: string
   id: string
   title: string
   url: string
@@ -45,7 +47,12 @@ export type Metrics = {
   sources_today?: number
   sources_yesterday?: number
   // 趋势数据
-  timeline_points?: Array<{ name: string; dayKey?: string; total: number; analyzed: number }>
+  timeline_points?: Array<{
+    name: string
+    dayKey?: string
+    total: number
+    analyzed: number
+  }>
   // 每日数据量（用于右侧分组显示总数）
   daily_totals?: Record<string, number>
 }

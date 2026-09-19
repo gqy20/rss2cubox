@@ -97,8 +97,21 @@ describe('policy and signal query boundaries', () => {
     expect(sql).not.toContain(term)
     expect(sql).toContain('ai_relevance >= 4')
     expect(sql).toContain('enriched_at IS NOT NULL')
-    expect(values).toEqual([`%${term}%`, '北京', '已发布', 30])
-    expect(result).toEqual({ data: [], total: 31, page: 2, hasMore: false })
+    expect(values).toEqual([
+      `%${term}%`,
+      term.toLowerCase(),
+      '北京',
+      '已发布',
+      expect.any(String),
+      30,
+    ])
+    expect(result).toMatchObject({
+      data: [],
+      total: 31,
+      page: 2,
+      hasMore: false,
+      nextCursor: null,
+    })
   })
   it('applies high importance and tag filters before paginating, preserving offset times', async () => {
     dbQuery
@@ -126,7 +139,7 @@ describe('policy and signal query boundaries', () => {
     const [sql, values] = dbQuery.mock.calls[1]
     expect(sql).toContain('importance_score >= 4')
     expect(sql).toContain("AT TIME ZONE 'Asia/Shanghai'")
-    expect(values).toEqual(['["AI"]', '2026-09-19', 0])
+    expect(values).toEqual(['["AI"]', '2026-09-19', expect.any(String)])
     expect(result.data[0].time).toBe('2026-09-18T20:00:00Z')
     expect(result.page).toBe(1)
     expect(result.hasMore).toBe(false)

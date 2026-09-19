@@ -1,18 +1,21 @@
 'use client'
-import { useState } from 'react'
+import { ScoreIndicator } from './Numbers'
+import { useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import type { Prediction, Review } from '../../lib/journal-types'
 import { dateLabel, predictionStatus } from '../../lib/journal-utils'
-import { Empty, JsonEvidence } from './Shared'
-import { ExportButton } from './Actions'
+import { Empty, JsonEvidence, PageHeading } from './Shared'
+import { ExportButton, RefreshButton } from './Actions'
 export default function Predictions({
   predictions,
   reviews,
   initialId,
+  overview,
 }: {
   predictions: Prediction[]
   reviews: Review[]
   initialId?: string
+  overview?: ReactNode
 }) {
   const [filter, setFilter] = useState('all'),
     [search, setSearch] = useState('')
@@ -28,6 +31,17 @@ export default function Predictions({
   )
   return (
     <>
+      <PageHeading
+        title="预测与复盘"
+        description="保留最初的判断，用后来的证据检验它。"
+      >
+        <RefreshButton />{' '}
+        <ExportButton
+          data={{ predictions: rows, reviews }}
+          name="prediction-ledger"
+        />
+      </PageHeading>
+      {overview}
       <div className="toolbar">
         <div className="segments" role="tablist" aria-label="预测状态">
           {[
@@ -52,10 +66,6 @@ export default function Predictions({
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <ExportButton
-          data={{ predictions: rows, reviews }}
-          name="prediction-ledger"
-        />
       </div>
       <div className="prediction-list">
         {rows.length ? (
@@ -74,10 +84,7 @@ export default function Predictions({
                     >
                       {predictionStatus[p.status] || p.status}
                     </span>
-                    <span>
-                      置信度{' '}
-                      {p.confidence == null ? '未记录' : `${p.confidence}/5`}
-                    </span>
+                    <ScoreIndicator label="置信度" value={p.confidence} />
                     <span className="expand-label">展开依据与复盘</span>
                   </div>
                   <h2>{p.prediction_title}</h2>
@@ -117,7 +124,7 @@ export default function Predictions({
                     <section className="review-note" key={review.id}>
                       <div className="metadata">
                         复盘于 {dateLabel(review.reviewed_at, true)}
-                        <span>评分 {review.score}</span>
+                        <ScoreIndicator label="复盘评分" value={review.score} />
                         <span>
                           {(
                             {

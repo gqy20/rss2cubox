@@ -81,7 +81,9 @@ export function ExportButton({
   }, [done])
   return (
     <button
-      className="soft-button"
+      className="icon-button"
+      title={done ? '已导出' : '导出 JSON'}
+      aria-label={done ? '已导出' : '导出 JSON'}
       onClick={() => {
         const url = URL.createObjectURL(
           new Blob([JSON.stringify(data, null, 2)], {
@@ -96,8 +98,10 @@ export function ExportButton({
         setDone(true)
       }}
     >
-      {done ? <Check size={15} /> : <Download size={15} />}
-      {done ? '已导出' : '导出 JSON'}
+      {done ? <Check size={17} /> : <Download size={17} />}
+      <span className="sr-only" role="status">
+        {done ? '已导出' : ''}
+      </span>
     </button>
   )
 }
@@ -106,12 +110,13 @@ export function RefreshButton() {
     [pending, start] = useTransition()
   return (
     <button
-      className="soft-button"
+      className="icon-button"
+      title={pending ? '更新中' : '刷新数据'}
+      aria-label={pending ? '更新中' : '刷新数据'}
       disabled={pending}
       onClick={() => start(() => router.refresh())}
     >
-      <RefreshCw size={15} className={pending ? 'spin' : ''} />
-      {pending ? '更新中…' : '刷新数据'}
+      <RefreshCw size={17} className={pending ? 'spin' : ''} />
     </button>
   )
 }

@@ -1,3 +1,5 @@
+import { BookOpen, Rss, Activity, CircleCheck, CircleAlert } from 'lucide-react'
+import { Coverage, CountLabel } from '../journal/Numbers'
 import {
   getJournal,
   sourceHealth,
@@ -36,33 +38,43 @@ export default async function MonitorPage() {
           ...(trend ? [] : ['采集趋势']),
         ]}
       />
-      <dl className="stat-ribbon">
+      <section className="metric-strip" aria-label="运行概况">
         <div>
-          <dt>已收录文章</dt>
-          <dd>{data.stats?.total.toLocaleString() ?? '—'}</dd>
-          <small>{data.stats?.sources ?? '—'} 个有内容的信源</small>
+          <CountLabel
+            icon={<BookOpen size={17} />}
+            label="文章"
+            value={data.stats?.total ?? '—'}
+          />
+          <span className="metric-secondary">
+            <Rss size={12} aria-hidden="true" />
+            {data.stats?.sources ?? '—'} 来源
+          </span>
         </div>
         <div>
-          <dt>政策分析覆盖</dt>
-          <dd>
-            {data.policyStats?.analyzed ?? '—'}{' '}
-            <span style={{ fontSize: 14, color: 'var(--muted)' }}>
-              / {data.policyStats?.total ?? '—'}
-            </span>
-          </dd>
-          <small>已完成结构化分析 / 已收录</small>
+          <Coverage
+            label="政策已析"
+            value={data.policyStats?.analyzed}
+            total={data.policyStats?.total}
+            compact
+          />
         </div>
         <div>
-          <dt>24小时内有记录的来源</dt>
-          <dd>{health.issues.length ? '—' : recent.length}</dd>
-          <small>按每个来源的最近一次记录</small>
+          <CountLabel
+            icon={<Activity size={17} />}
+            label="24h 采集来源"
+            value={health.issues.length ? '—' : recent.length}
+          />
         </div>
-        <div>
-          <dt>近期失败来源</dt>
-          <dd>{health.issues.length ? '—' : failed}</dd>
-          <small>24小时内超时、失败或解析错误</small>
+        <div className={failed ? 'metric-alert' : ''}>
+          <CountLabel
+            icon={
+              failed ? <CircleAlert size={17} /> : <CircleCheck size={17} />
+            }
+            label="24h 失败来源"
+            value={health.issues.length ? '—' : failed || '无'}
+          />
         </div>
-      </dl>
+      </section>
       <div className="monitor-grid">
         <section className="surface">
           <PanelHeading title="近两周入库变化" />
@@ -74,36 +86,23 @@ export default async function MonitorPage() {
         </section>
         <section className="surface">
           <PanelHeading title="数据准备情况" />
-          <div className="coverage-line">
-            <div>
-              <span>文章已有分析</span>
-              <span>
-                {data.stats?.analyzed ?? '—'} / {data.stats?.total ?? '—'}
-              </span>
-            </div>
-            <progress
-              max={data.stats?.total || 1}
-              value={data.stats?.analyzed || 0}
-              aria-label="文章分析覆盖"
-            />
-          </div>
-          <div className="coverage-line">
-            <div>
-              <span>政策完成分析</span>
-              <span>
-                {data.policyStats?.analyzed ?? '—'} /{' '}
-                {data.policyStats?.total ?? '—'}
-              </span>
-            </div>
-            <progress
-              max={data.policyStats?.total || 1}
-              value={data.policyStats?.analyzed || 0}
-              aria-label="政策分析覆盖"
-            />
-          </div>
-          <p className="snapshot-note">
-            文章分析以隐藏信号、判断依据或行动建议非空为准。政策预筛会跳过低相关文件，未分析数量不等同于待处理队列。
-          </p>
+          <Coverage
+            label="文章已析"
+            value={data.stats?.analyzed}
+            total={data.stats?.total}
+          />
+          <Coverage
+            label="政策已析"
+            value={data.policyStats?.analyzed}
+            total={data.policyStats?.total}
+          />
+          <details className="metric-definition">
+            <summary>统计口径</summary>
+            <p>
+              文章分析以隐藏信号、判断依据或行动建议非空为准。政策预筛会跳过低相关文件，未分析数量不等同于待处理队列。24h
+              来源统计取各来源最近一次采集记录；失败包括超时、采集失败和解析错误。
+            </p>
+          </details>
           <div className="document-section">
             <h3>最近的数据时间</h3>
             <div className="metadata">

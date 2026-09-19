@@ -1,11 +1,6 @@
+import { ScoreIndicator } from './Numbers'
 import Link from 'next/link'
-import {
-  ArrowRight,
-  ArrowUpRight,
-  FileText,
-  Inbox,
-  AlertCircle,
-} from 'lucide-react'
+import { ArrowRight, FileText, Inbox, AlertCircle } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { Row } from '../types'
 import type { Policy } from '../../lib/journal-types'
@@ -22,11 +17,13 @@ export function PageHeading({
 }) {
   return (
     <div className="page-heading">
-      <div>
-        <h1>{title}</h1>
+      <div className="page-heading-main">
+        <div className="title-row">
+          <h1>{title}</h1>
+          {children && <div className="heading-actions">{children}</div>}
+        </div>
         {description && <p>{description}</p>}
       </div>
-      {children && <div className="heading-actions">{children}</div>}
     </div>
   )
 }
@@ -83,19 +80,27 @@ export function DataNotice({ issues }: { issues: string[] }) {
 }
 export function ExternalLink({
   url,
-  children = '打开原文',
+  children,
+  className = 'source-link',
 }: {
   url?: string | null
-  children?: ReactNode
+  children: ReactNode
+  className?: string
 }) {
   const href = safeUrl(url)
   return href ? (
-    <a className="text-link" href={href} target="_blank" rel="noreferrer">
+    <a
+      className={className}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      title="在新标签页阅读原文"
+    >
       {children}
-      <ArrowUpRight size={14} />
+      <span className="sr-only">（新标签页打开原文）</span>
     </a>
   ) : (
-    <span className="muted-text">暂无原文链接</span>
+    <span>{children}</span>
   )
 }
 export function ArticleRows({ rows }: { rows: Row[] }) {
@@ -121,7 +126,7 @@ export function ArticleRows({ rows }: { rows: Row[] }) {
               <span>{row.source}</span>
               <span>{dateLabel(row.time)}</span>
               {row.importance_score != null && (
-                <span>重要性 {row.importance_score}/5</span>
+                <ScoreIndicator label="重要性" value={row.importance_score} />
               )}
             </div>
           </div>
