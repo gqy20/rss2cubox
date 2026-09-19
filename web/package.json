@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "vitest",
-    "test:run": "cd web && vitest run"
+    "test:run": "vitest run"
   },
   "vitest": {
     "config": "./vitest.config.ts"
