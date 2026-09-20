@@ -33,6 +33,30 @@ title_attr    = "title"
 date_selector = "span.date"
 note          = "AI 安全国标的一手源；备案实际审查依据。征求意见稿的预测价值高于正式稿。"
 
+# ── 中科院（机构信源，非行政区划；level 记 national 便于 UI 分组）─────
+
+[[sites]]
+key           = "cas_bic"
+name          = "中科院国际合作局-通知公告"
+level         = "national"
+region        = "中科院"
+list_url      = "https://bic.cas.cn/tzgg/"
+item_selector = "ul.fontlist > li"
+date_selector = "time"
+max_items     = 60
+note          = "CAS 子站群标准 CMS（li > time + a[title]），服务端渲染。国际科技合作项目征集、外籍人员服务。"
+
+[[sites]]
+key           = "cas_sdr"
+name          = "中科院科促局-通知公告"
+level         = "national"
+region        = "中科院"
+list_url      = "https://sdr.cas.cn/tzgg/"
+item_selector = "ul.text_listtime > li"
+date_selector = "span.right"
+max_items     = 60
+note          = "同 CAS 子站群 CMS。成果转化、科技促进发展、奖项推荐公示。院本部 www.cas.cn/tzgg 为空模板死链（2026-09 验证），勿加。"
+
 # ── 省级 / 直辖市 ─────────────────────────────────────────
 
 [[sites]]
