@@ -139,12 +139,19 @@ class TestSchemaContractGuards:
         assert "reason" not in items["required"]
 
     def test_policy_enrich_enums_match_py_constants(self):
-        from rss2cubox.policy.enrich_agent import INSTRUMENT_TYPES, OBLIGATION_LEVELS, STAGES
+        from rss2cubox.policy.enrich_agent import (
+            INSTRUMENT_TYPES,
+            OBLIGATION_LEVELS,
+            POLICY_LINEAGES,
+            STAGES,
+        )
 
         props = pr.get("policy_enrich").output_schema["properties"]
         assert props["instrument_type"]["enum"] == INSTRUMENT_TYPES
         assert props["stage"]["enum"] == STAGES
         assert props["obligation_level"]["enum"] == OBLIGATION_LEVELS
+        # lineage 的 enum 额外含 null（schema 层表达"不属于任何主线"）
+        assert props["policy_lineage"]["enum"] == [*POLICY_LINEAGES, None]
 
     def test_daily_report_anchor_items_share_schema(self):
         schema = pr.get("daily_report").output_schema

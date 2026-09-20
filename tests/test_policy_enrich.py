@@ -273,10 +273,15 @@ class TestTriageBatching:
                 {"id": "d4", "is_policy": True, "ai_relevance": 1, "reason": ""},
             ]
 
-        with patch.object(triage_agent, "_triage_all", new=fake_all):
+        # 阈值显式固定为 3，不随 policy_enrich.yaml 的 min_relevance 配置漂移：
+        # 本测试关注统计逻辑（is_policy 与阈值的与关系），不是当前运营阈值。
+        with (
+            patch.object(triage_agent, "_triage_all", new=fake_all),
+            patch.object(triage_agent, "param", return_value=3),
+        ):
             out = triage_agent.triage_policy_documents(docs, batch_size=10)
         stats = out["stats"]
-        # 默认阈值 3：d0(5) 和 d1(3) 算 relevant；d3 相关度够但 is_policy=False，不算
+        # 阈值 3：d0(5) 和 d1(3) 算 relevant；d3 相关度够但 is_policy=False，不算
         assert stats["policy"] == 4
         assert stats["relevant"] == 2
         assert stats["uncovered"] == 0

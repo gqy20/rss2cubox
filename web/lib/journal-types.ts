@@ -10,6 +10,7 @@ export type Policy = {
   region: string | null
   stage: string | null
   instrument_type: string | null
+  policy_lineage: string | null
   jurisdiction: string | null
   issuing_authority: string | null
   document_number: string | null

@@ -19,6 +19,7 @@ export function cursorQuery(kind: SearchScope, params: URLSearchParams) {
     'region',
     'stage',
     'instrument_type',
+    'policy_lineage',
     'topic',
     'sourceRef',
     'saved',

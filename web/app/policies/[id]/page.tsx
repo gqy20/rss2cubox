@@ -110,6 +110,7 @@ export default async function PolicyPage({
               ['管辖范围', policy.jurisdiction || policy.region],
               ['文件阶段', policy.stage],
               ['文件类型', policy.instrument_type],
+              ['政策主线', policy.policy_lineage],
               ['文件编号', policy.document_number],
               ['生效日期', policy.effective_date || '原文未明确'],
               ['征集截止', policy.comment_deadline || '原文未明确'],

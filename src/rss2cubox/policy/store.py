@@ -63,7 +63,8 @@ ALTER TABLE policy_documents
     ADD COLUMN IF NOT EXISTS comment_deadline  DATE,
     ADD COLUMN IF NOT EXISTS key_provisions    JSONB DEFAULT '[]',
     ADD COLUMN IF NOT EXISTS ai_relevance_reason TEXT,
-    ADD COLUMN IF NOT EXISTS confidence        SMALLINT;
+    ADD COLUMN IF NOT EXISTS confidence        SMALLINT,
+    ADD COLUMN IF NOT EXISTS policy_lineage    VARCHAR(60);
 
 -- 预筛（triage）阶段：用一次 LLM 调用批量给标题打分，只让高相关的进入
 -- 昂贵的逐篇 deep enrich。没有这一层，民生通知（停水/月票/招考）会和白金政策
@@ -370,6 +371,7 @@ _ENRICH_COLUMNS: dict[str, str] = {
     "source_quote": "source_quote",
     "confidence": "confidence",
     "enrich_meta": "enrich_meta",
+    "policy_lineage": "policy_lineage",
 }
 
 

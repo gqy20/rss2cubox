@@ -26,8 +26,9 @@ export default async function PoliciesPage({
     region: [] as string[],
     stage: [] as string[],
     instrument_type: [] as string[],
+    policy_lineage: [] as string[],
   }
-  for (const key of ['region', 'stage', 'instrument_type'] as const)
+  for (const key of ['region', 'stage', 'instrument_type', 'policy_lineage'] as const)
     facets[key] = [
       ...new Set(
         rows.map((r) => r[key]).filter((v): v is string => Boolean(v)),

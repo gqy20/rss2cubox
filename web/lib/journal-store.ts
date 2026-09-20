@@ -50,7 +50,7 @@ const articleFields = `id, title, url, source_feed_name, source_feed_id, pic_url
   tags, importance_score, reason, actionable, hidden_signal, content_source, signal_type,
   evidence_strength, novelty_score, impact_horizon, confidence, entities, watch_keywords, prediction,
   COALESCE(publish_time, created_at) AS display_time`
-const policyFields = `id, title, url, site_name, region, stage, instrument_type, jurisdiction,
+const policyFields = `id, title, url, site_name, region, stage, instrument_type, policy_lineage, jurisdiction,
   issuing_authority, document_number, obligation_level, published_at, effective_date::text,
   comment_deadline::text, summary, source_quote, key_provisions, affected_parties, ai_relevance,
   ai_relevance_reason, confidence, enriched_at`
@@ -283,7 +283,7 @@ export async function readPolicies(
     values.push(sourceRef.slice(7))
     where.push(`md5(site_key)=$${values.length}`)
   }
-  for (const key of ['region', 'stage', 'instrument_type'] as const) {
+  for (const key of ['region', 'stage', 'instrument_type', 'policy_lineage'] as const) {
     const value = params.get(key)
     if (value) {
       values.push(value)
@@ -316,7 +316,9 @@ export async function policyFacets() {
     region: string | null
     stage: string | null
     instrument_type: string | null
-  }>('SELECT DISTINCT region,stage,instrument_type FROM policy_documents WHERE triage_relevance >= 2')
+    policy_lineage: string | null
+  }>(`SELECT DISTINCT region,stage,instrument_type,policy_lineage
+      FROM policy_documents WHERE triage_relevance >= 2`)
 }
 export async function signalSources() {
   return query<{ source: string }>(

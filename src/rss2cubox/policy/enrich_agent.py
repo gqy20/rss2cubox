@@ -48,6 +48,16 @@ STAGES = ["征求意见", "已发布", "已生效", "已修订", "已废止", "�
 
 OBLIGATION_LEVELS = ["强制", "推荐", "自愿", "不适用"]
 
+# 活跃政策主线（受控词表）。判定的是文件属于哪条叙事线，不是文件主题——
+# 一份文件只归入最贴切的一条；不属于任何主线时为 None。
+POLICY_LINEAGES = [
+    "十五五规划体系",
+    "人工智能+行动",
+    "AI安全与监管",
+    "数据要素与流通",
+    "算力与数字基础设施",
+]
+
 # system_prompt / 输出 schema / user 静态指令集中在项目根 prompts/policy_enrich.yaml，
 # enum 与上方三个常量的同步由 tests/test_prompts.py 校验。
 _PROMPT = get("policy_enrich")
@@ -116,6 +126,9 @@ def _coerce_enriched(payload: dict[str, Any]) -> dict[str, Any]:
 
     obligation = _text("obligation_level", 20)
     out["obligation_level"] = obligation if obligation in OBLIGATION_LEVELS else "不适用"
+
+    lineage = _text("policy_lineage", 40)
+    out["policy_lineage"] = lineage if lineage in POLICY_LINEAGES else None
 
     for key in ("ai_relevance", "confidence"):
         value = payload.get(key)

@@ -40,6 +40,7 @@ type Filters = {
   saved: string
   topic: string
   instrument_type: string
+  policy_lineage: string
 }
 const emptyFilters: Filters = {
   search: '',
@@ -50,6 +51,7 @@ const emptyFilters: Filters = {
   region: '',
   stage: '',
   instrument_type: '',
+  policy_lineage: '',
   topic: '',
   sourceRef: '',
   saved: '',
@@ -59,7 +61,12 @@ type Props = {
   topicLabel?: string | null
   sourceLabel?: string | null
   sources?: string[]
-  facets?: { region: string[]; stage: string[]; instrument_type: string[] }
+  facets?: {
+    region: string[]
+    stage: string[]
+    instrument_type: string[]
+    policy_lineage?: string[]
+  }
 }
 export default function Reader({
   kind,
@@ -273,16 +280,16 @@ export default function Reader({
           )}
           {policy ? (
             <>
-              {(['region', 'stage', 'instrument_type'] as const).map(
+              {(['region', 'stage', 'instrument_type', 'policy_lineage'] as const).map(
                 (key, i) => (
                   <label key={key}>
-                    {['地区', '阶段', '文件类型'][i]}
+                    {['地区', '阶段', '文件类型', '主线'][i]}
                     <select
                       value={filters[key]}
                       onChange={(e) => change(key, e.target.value)}
                     >
                       <option value="">全部</option>
-                      {facets?.[key].map((v) => (
+                      {(facets?.[key] ?? []).map((v) => (
                         <option key={v}>{v}</option>
                       ))}
                     </select>
