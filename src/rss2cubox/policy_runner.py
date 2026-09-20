@@ -59,7 +59,14 @@ POLICY_READ_TIMEOUT_SECONDS = float(os.getenv("POLICY_READ_TIMEOUT_SECONDS", "20
 POLICY_STALE_EMPTY_RUNS = max(1, int(os.getenv("POLICY_STALE_EMPTY_RUNS", "2")))
 POLICY_ENRICH_LIMIT = max(1, int(os.getenv("POLICY_ENRICH_LIMIT", "20")))
 POLICY_TRIAGE_LIMIT = max(1, int(os.getenv("POLICY_TRIAGE_LIMIT", "300")))
-POLICY_ENRICH_MIN_RELEVANCE = min(5, max(1, int(os.getenv("POLICY_ENRICH_MIN_RELEVANCE", "3"))))
+# enrich 门槛与 triage_agent 的统计阈值必须同源：env > prompts/policy_enrich.yaml > 代码默认。
+# 此前这里只读 env（默认 3），yaml 降到 2 后 cron 仍按 3 跑，两处口径分叉。
+from rss2cubox.prompt_registry import param as _param
+
+POLICY_ENRICH_MIN_RELEVANCE = min(
+    5,
+    max(1, int(_param("policy_enrich", "min_relevance", 3, env_var="POLICY_ENRICH_MIN_RELEVANCE"))),
+)
 
 
 def _run_triage_stage(

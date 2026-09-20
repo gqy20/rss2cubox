@@ -583,8 +583,11 @@ class TestRealConfigFile:
             else:
                 assert site.item_selector, f"{site.key} 是 HTML 站点却没有 item_selector"
 
+    # 已完成真实抓取验证（dry-run ok 且入库）的 playwright 站，允许默认启用。
+    _VERIFIED_PLAYWRIGHT_SITES = {"cac_sjzl", "miit_zcwj"}
+
     def test_no_playwright_site_is_enabled_by_default(self) -> None:
         """playwright 站点在验证选择器前不应默认启用，否则会拖慢每次运行。"""
         for site in policy_config.load_sources(self.REPO_CONFIG, include_disabled=True):
-            if site.tier == "playwright":
+            if site.tier == "playwright" and site.key not in self._VERIFIED_PLAYWRIGHT_SITES:
                 assert site.enabled is False, f"{site.key} 是 playwright 站点却默认启用"

@@ -33,6 +33,58 @@ title_attr    = "title"
 date_selector = "span.date"
 note          = "AI 安全国标的一手源；备案实际审查依据。征求意见稿的预测价值高于正式稿。"
 
+[[sites]]
+key           = "cac_sjzl"
+name          = "国家网信办-数据治理"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.cac.gov.cn/wxzw/sjzl/A093708index_1.htm"
+item_selector = "div.default li"
+date_selector = "span"
+tier          = "playwright"
+render_wait_ms = 3000
+max_items     = 40
+note          = "网信办政策文件的实质发布栏目（生成式AI/数据出境/个人信息保护等），XHR 注入必须渲染。首页「通知公告」是 JS 菜单无直链；2026-04《人工智能拟人化互动服务管理暂行办法》等经此线发布。"
+
+[[sites]]
+key           = "miit_zcwj"
+name          = "工信部-政策文件"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.miit.gov.cn/zwgk/zcwj/index.html"
+item_selector = "div.jcse-result-box"
+title_selector = "div.search-list-t a"
+title_attr    = ""
+date_selector = ".search-list-b span"
+tier          = "playwright"
+render_wait_ms = 4000
+max_items     = 40
+note          = "政策文件库检索结果页（比通知栏目全）。标题在 search-list-t > a 文本（无 title 属性）；search-list-b 两 span 依次为文号/日期，日期提取靠正则轮询跳过文号。XHR 注入必须渲染。"
+
+[[sites]]
+key           = "ndrc_tzgg"
+name          = "国家发改委-通知公告"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.ndrc.gov.cn/xwdt/tzgg/"
+item_selector = "ul.u-list > li"
+date_selector = "span"
+max_items     = 60
+note          = "服务端渲染直抓。「文件库」页面是 JS tab 不可抓，本栏目覆盖发文主流量。规划/新质生产力/数据要素中枢。"
+
+# 探测后放弃（2026-09-20，避免重复探测）：
+# - 国家数据局 nda.gov.cn：React SPA，栏目列表接口分页无稳定列表页 URL，抓取成本高；
+#   数据要素主线由 cac_sjzl + ndrc_tzgg 覆盖。
+# - 中国人大网 npc.gov.cn：本机网络不可达（连接超时），立法动向暂经由中国政府网 RSS 间接收敛。
+# - 司法部 moj.gov.cn：WAF 302 循环，requests 与 playwright 均只拿到 209 字节跳转壳。
+#   行政法规/法律草案征求意见入口暂无替代抓法。
+# - 深圳 sz.gov.cn / szrd.gov.cn：网络层拒连（SSL error，重试无效），与 npc 同类问题。
+# - 中科院科技战略咨询研究院 casisd.cas.cn：可抓（200/78KB），但其产出是研究报告而非政策文件，
+#   与政策本体 schema（位阶/义务强度/立法阶段）不匹配，不适合本表——如需智库视角应另设源类型。
+# - 杭州 hangzhou_xxgk（下方禁用项维持）：政府信息公开目录里已定位真栏目
+#   /col/col1229444337/（行政规范性文件），但列表由用友 JSONP 接口注入，playwright 渲染后无列表项，
+#   需逆向 dataproxy 接口才可接，成本超预算。
+
 # ── 中科院（机构信源，非行政区划；level 记 national 便于 UI 分组）─────
 
 [[sites]]
@@ -48,14 +100,64 @@ note          = "CAS 子站群标准 CMS（li > time + a[title]），服务端�
 
 [[sites]]
 key           = "cas_sdr"
-name          = "中科院科促局-通知公告"
+name          = "中科院可持续发展科技研究局-通知公告"
 level         = "national"
 region        = "中科院"
 list_url      = "https://sdr.cas.cn/tzgg/"
 item_selector = "ul.text_listtime > li"
 date_selector = "span.right"
 max_items     = 60
-note          = "同 CAS 子站群 CMS。成果转化、科技促进发展、奖项推荐公示。院本部 www.cas.cn/tzgg 为空模板死链（2026-09 验证），勿加。"
+note          = "同 CAS 子站群 CMS。成果转化、奖项推荐公示。2025-12 院机关调整后由「科技促进发展局」更名。"
+
+# 2025-12 院机关大调整后为 15 部门格局（新设科技创新发展/基础科学研究/战略高技术/重大专项研究等局，
+# 长春南京分院撤销）。下列按内容量与 AI/科研政策相关度筛选；未收录子站见 note。
+# bpf(财务局,采购公告为主)、bmrdp(战略高技术局,条目少)、go(办公厅,报表为主)、
+# zdzx/bsc/pe 的 /tzgg/ 无内容、casad 无该栏目。工业人工智能研究所(2025 末新设)暂无独立官网。
+
+[[sites]]
+key           = "cas_bdp"
+name          = "中科院科技创新发展局-通知公告"
+level         = "national"
+region        = "中科院"
+list_url      = "https://bdp.cas.cn/tzgg/"
+item_selector = "ul.text_listtime > li"
+date_selector = "span.right"
+max_items     = 60
+note          = "新设局（2025-12 调整）。抢占科技制高点任务、先导专项相关。"
+
+[[sites]]
+key           = "cas_bfse"
+name          = "中科院基础科学研究局-通知公告"
+level         = "national"
+region        = "中科院"
+list_url      = "https://bfse.cas.cn/tzgg/"
+item_selector = "ul.text_listtime > li"
+date_selector = "span.right"
+max_items     = 60
+note          = "2024 年由前沿科学与教育局调整而来。基础研究项目与学科平台。"
+
+[[sites]]
+key           = "cas_home_tz"
+name          = "中国科学院-通知公告"
+level         = "national"
+region        = "中科院"
+list_url      = "https://www.cas.cn/tz/"
+item_selector = "ul.gl_list2 li"
+date_selector = "span"
+max_items     = 60
+note          = "院级综合通知（声明/公示/预决算）。首页「更多通知公告」真实入口是 /tz/；首页误导链接 /tzgg/ 是空模板死链，勿混淆。"
+
+[[sites]]
+key           = "cas_bgs_zd"
+name          = "中国科学院办公厅-综合性制度文件"
+level         = "national"
+region        = "中科院"
+list_url      = "https://www.cas.cn/xxgkml/zgkxyyb/gzzd/zd/"
+item_selector = "ul.gl_list2 li"
+date_selector = "span"
+max_items     = 60
+title_exclude = ["工作报表"]
+note          = "院规章制度（研究所综合管理条例等），量少位阶高——最接近「院发文件」的公开渠道。"
 
 # ── 省级 / 直辖市 ─────────────────────────────────────────
 

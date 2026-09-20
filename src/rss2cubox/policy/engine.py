@@ -111,6 +111,7 @@ def fetch_html(
     tier: str = "requests",
     session: requests.Session | None = None,
     user_agent: str = DEFAULT_USER_AGENT,
+    render_wait_ms: int = 1500,
 ) -> tuple[str, int, str]:
     """抓取页面 HTML，返回 (html, http_status, error)。"""
     headers = {
@@ -121,7 +122,7 @@ def fetch_html(
     getter = session.get if session is not None else requests.get
     try:
         if tier == "playwright":
-            return _fetch_html_playwright(url, read_timeout=read_timeout)
+            return _fetch_html_playwright(url, read_timeout=read_timeout, wait_ms=render_wait_ms)
         response = getter(url, timeout=(connect_timeout, read_timeout), headers=headers)
     except requests.exceptions.Timeout:
         return "", 0, "timeout"
@@ -135,8 +136,13 @@ def fetch_html(
     return response.text, response.status_code, ""
 
 
-def _fetch_html_playwright(url: str, *, read_timeout: float) -> tuple[str, int, str]:
-    """JS 渲染站点走无头浏览器。playwright 未安装时返回明确错误而非抛异常。"""
+def _fetch_html_playwright(url: str, *, read_timeout: float, wait_ms: int = 1500) -> tuple[str, int, str]:
+    """JS 渲染站点走无头浏览器。playwright 未安装时返回明确错误而非抛异常。
+
+    wait_until 用 networkidle 而非 domcontentloaded：工信部/网信办的列表由
+    页面加载后的 XHR 注入，domcontentloaded 时数据还没回来。wait_ms 是
+    networkidle 之后的额外缓冲，站点可经 SiteSpec.render_wait_ms 调整。
+    """
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -147,8 +153,8 @@ def _fetch_html_playwright(url: str, *, read_timeout: float) -> tuple[str, int, 
             browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
             try:
                 page = browser.new_page(user_agent=DEFAULT_USER_AGENT)
-                page.goto(url, wait_until="domcontentloaded", timeout=read_timeout * 1000)
-                page.wait_for_timeout(1500)
+                page.goto(url, wait_until="networkidle", timeout=read_timeout * 1000)
+                page.wait_for_timeout(wait_ms)
                 content = page.content()
                 status = 200
             finally:
@@ -338,6 +344,7 @@ def scrape_site(
         read_timeout=read_timeout,
         tier=site.tier,
         session=session,
+        render_wait_ms=getattr(site, "render_wait_ms", 1500),
     )
     result.http_status = http_status
     result.duration_ms = int((time.perf_counter() - started) * 1000)
