@@ -320,6 +320,41 @@ export async function policyFacets() {
   }>(`SELECT DISTINCT region,stage,instrument_type,policy_lineage
       FROM policy_documents WHERE triage_relevance >= 2`)
 }
+export type LineageStats = {
+  lineages: { lineage: string; n: number }[]
+  months: { ym: string; n: number }[]
+  stages: { stage: string; n: number }[]
+}
+export async function policyLineageStats(
+  lineage?: string,
+): Promise<LineageStats> {
+  const base = 'FROM policy_documents WHERE triage_relevance >= 2'
+  const picked =
+    lineage && lineage.length <= 60 ? lineage.replace(/[%_\\]/g, '') : ''
+  const [lineages, months, stages] = await Promise.all([
+    query<{ lineage: string; n: number }>(
+      `SELECT policy_lineage AS lineage, count(*)::int AS n ${base}
+        AND policy_lineage IS NOT NULL GROUP BY 1 ORDER BY n DESC`,
+    ),
+    picked
+      ? query<{ ym: string; n: number }>(
+          `SELECT to_char(COALESCE(published_at, first_seen_at) AT TIME ZONE 'Asia/Shanghai', 'YYYY-MM') AS ym,
+            count(*)::int AS n ${base} AND policy_lineage = $1
+            AND COALESCE(published_at, first_seen_at) >= now() - interval '18 months'
+            GROUP BY 1 ORDER BY 1`,
+          [picked],
+        )
+      : Promise.resolve([]),
+    picked
+      ? query<{ stage: string; n: number }>(
+          `SELECT COALESCE(stage,'不明') AS stage, count(*)::int AS n ${base}
+            AND policy_lineage = $1 GROUP BY 1 ORDER BY n DESC`,
+          [picked],
+        )
+      : Promise.resolve([]),
+  ])
+  return { lineages, months, stages }
+}
 export async function signalSources() {
   return query<{ source: string }>(
     "SELECT DISTINCT source_feed_name AS source FROM articles WHERE COALESCE(source_feed_name,'') <> '' ORDER BY source_feed_name",

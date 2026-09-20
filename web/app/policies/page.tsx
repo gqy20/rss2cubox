@@ -1,8 +1,10 @@
 import { Coverage } from '../journal/Numbers'
 import Reader from '../journal/Reader'
 import { PageHeading, DataNotice } from '../journal/Shared'
+import LineageStrip from './LineageStrip'
 import {
   policyFacets,
+  policyLineageStats,
   policyStats,
   readerSourceName,
 } from '../../lib/journal-store'
@@ -10,16 +12,19 @@ export const dynamic = 'force-dynamic'
 export default async function PoliciesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sourceRef?: string }>
+  searchParams: Promise<{ sourceRef?: string; policy_lineage?: string }>
 }) {
-  const { sourceRef } = await searchParams
+  const { sourceRef, policy_lineage: lineage } = await searchParams
+  const selected =
+    typeof lineage === 'string' ? lineage.slice(0, 60) : ''
   const sourceLabel =
     typeof sourceRef === 'string'
       ? await readerSourceName(sourceRef).catch(() => null)
       : null
-  const [facetResult, statsResult] = await Promise.allSettled([
+  const [facetResult, statsResult, lineageResult] = await Promise.allSettled([
     policyFacets(),
     policyStats(),
+    policyLineageStats(selected),
   ])
   const rows = facetResult.status === 'fulfilled' ? facetResult.value : []
   const facets = {
@@ -48,8 +53,16 @@ export default async function PoliciesPage({
         )}
       </PageHeading>
       <DataNotice
-        issues={facetResult.status === 'rejected' ? ['筛选选项'] : []}
+        issues={
+          [
+            facetResult.status === 'rejected' ? '筛选选项' : '',
+            lineageResult.status === 'rejected' ? '主线统计' : '',
+          ].filter(Boolean) as string[]
+        }
       />
+      {lineageResult.status === 'fulfilled' && (
+        <LineageStrip stats={lineageResult.value} selected={selected} />
+      )}
       <Reader kind="policies" facets={facets} sourceLabel={sourceLabel} />
     </>
   )
