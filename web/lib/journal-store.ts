@@ -459,7 +459,7 @@ export async function relatedPolicies(terms: string[]) {
   ].slice(0, 6)
   if (!useful.length) return []
   return query<Policy>(
-    `SELECT ${policyFields} FROM policy_documents WHERE enriched_at IS NOT NULL AND (title ILIKE ANY($1::text[]) OR summary ILIKE ANY($1::text[])) ORDER BY ai_relevance DESC NULLS LAST,published_at DESC NULLS LAST LIMIT 5`,
+    `SELECT ${policyFields} FROM policy_documents WHERE triage_relevance >= 2 AND enriched_at IS NOT NULL AND (title ILIKE ANY($1::text[]) OR summary ILIKE ANY($1::text[])) ORDER BY ai_relevance DESC NULLS LAST,published_at DESC NULLS LAST LIMIT 5`,
     [useful.map((s) => `%${s.replace(/[%_\\]/g, '\\$&')}%`)],
   )
 }
