@@ -72,9 +72,23 @@ date_selector = "span"
 max_items     = 60
 note          = "服务端渲染直抓。「文件库」页面是 JS tab 不可抓，本栏目覆盖发文主流量。规划/新质生产力/数据要素中枢。"
 
+[[sites]]
+key           = "nda_zcfb"
+name          = "国家数据局-政策发布"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.nda.gov.cn/sjj/zwgk/zcfb/list/index_pc_1.html"
+item_selector = "ul.u-list > li"
+title_attr    = "title"
+tier          = "playwright"
+render_wait_ms = 3000
+max_items     = 40
+note          = "数据要素/词元经济主管局。全站 React SPA 但此栏目渲染后出标准 ul.u-list（与发改委同款 CMS）；列表 li 无日期，published_at 留空由 first_seen_at 兜底。栏目 URL 由 ddgs 反查「site:nda.gov.cn 通知」获得——直连探索其首页/导航均无此入口。"
+
 # 探测后放弃（2026-09-20，避免重复探测）：
-# - 国家数据局 nda.gov.cn：React SPA，栏目列表接口分页无稳定列表页 URL，抓取成本高；
-#   数据要素主线由 cac_sjzl + ndrc_tzgg 覆盖。
+# - 国家数据局：已解决（见上方 nda_zcfb）——用 ddgs 搜索「site:nda.gov.cn 通知」反查出
+#   隐藏栏目 /sjj/zwgk/zcfb/ 后接入。经验：SPA 政府站的栏目 URL 可用搜索引擎反查，
+#   不必逆向其接口。
 # - 中国人大网 npc.gov.cn：本机网络不可达（连接超时），立法动向暂经由中国政府网 RSS 间接收敛。
 # - 司法部 moj.gov.cn：WAF 302 循环，requests 与 playwright 均只拿到 209 字节跳转壳。
 #   行政法规/法律草案征求意见入口暂无替代抓法。
