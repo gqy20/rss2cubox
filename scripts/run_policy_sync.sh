@@ -20,8 +20,11 @@ LOG_RETENTION_DAYS="${POLICY_LOG_RETENTION_DAYS:-30}"
 # 是否在 cron 里跑 deep enrich（每篇约 $0.14，CLI 记账值）
 POLICY_CRON_ENRICH="${POLICY_CRON_ENRICH:-true}"
 POLICY_CRON_ENRICH_LIMIT="${POLICY_CRON_ENRICH_LIMIT:-10}"
-POLICY_CRON_MIN_RELEVANCE="${POLICY_CRON_MIN_RELEVANCE:-3}"
 POLICY_CRON_TRIAGE_LIMIT="${POLICY_CRON_TRIAGE_LIMIT:-300}"
+# 注意：enrich 门槛不在这里传。此前默认 --enrich-min-relevance 3 会覆盖
+# prompts/policy_enrich.yaml 的 min_relevance=2，导致 rel=2 文档在 cron 通道永远积压。
+# 统一走 policy_runner 的 param 链（.env > yaml > 默认），临时覆盖在 .env 设
+# POLICY_ENRICH_MIN_RELEVANCE。
 
 mkdir -p "$LOG_DIR"
 
@@ -76,8 +79,7 @@ run_policy() {
   enrich_status=0
   if [ "$POLICY_CRON_ENRICH" = "true" ] && [ "$triage_status" -eq 0 ]; then
     run_policy --enrich-only \
-      --enrich-limit "$POLICY_CRON_ENRICH_LIMIT" \
-      --enrich-min-relevance "$POLICY_CRON_MIN_RELEVANCE"
+      --enrich-limit "$POLICY_CRON_ENRICH_LIMIT"
     enrich_status=$?
   else
     printf '{"ts":"%s","level":"INFO","event":"policy_cron_stage_skipped","stage":"enrich","enabled":"%s","triage_status":%s}\n' \

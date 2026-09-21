@@ -781,7 +781,6 @@ uv run python -m rss2cubox.policy_runner      # 政策链路
 | `POLICY_CRON_SCHEDULE` | `30 7,19 * * *` | 政策线 cron 表达式 |
 | `POLICY_CRON_ENRICH` | `true` | 政策 cron 是否跑 deep enrich（`false` = 只抓取+预筛，不花钱）|
 | `POLICY_CRON_ENRICH_LIMIT` | `10` | 政策 cron 单次最多 enrich 多少篇 |
-| `POLICY_CRON_MIN_RELEVANCE` | `3` | 政策 cron 的 enrich 相关度门槛 |
 | `POLICY_CRON_TRIAGE_LIMIT` | `300` | 政策 cron 单次最多预筛多少篇 |
 | `RSS2CUBOX_LOG_RETENTION_DAYS` | `30` | 主链路日志保留天数 |
 | `POLICY_LOG_RETENTION_DAYS` | `30` | 政策日志保留天数 |
