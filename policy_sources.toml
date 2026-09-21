@@ -92,7 +92,10 @@ note          = "数据要素/词元经济主管局。全站 React SPA 但此栏
 # - 中国人大网 npc.gov.cn：本机网络不可达（连接超时），立法动向暂经由中国政府网 RSS 间接收敛。
 # - 司法部 moj.gov.cn：WAF 302 循环，requests 与 playwright 均只拿到 209 字节跳转壳。
 #   行政法规/法律草案征求意见入口暂无替代抓法。
-# - 深圳 sz.gov.cn / szrd.gov.cn：网络层拒连（SSL error，重试无效），与 npc 同类问题。
+# - 深圳 sz.gov.cn / szrd.gov.cn：主站 szrd 已接入（szrd_szfg）。市政府主站及子站（fgw.sz 等）
+#   curl TLS 拒连，playwright 部分可达但政策文件库页面为区级杂项聚合，价值待定。
+# - 成都经信局 jxj.chengdu.gov.cn / 广东经信厅：连接被重置（playwright 亦不可达），
+#   成都词元券征求意见的一手源暂缺，经新华社/腾讯新闻等二手渠道观察。
 # - 中科院科技战略咨询研究院 casisd.cas.cn：可抓（200/78KB），但其产出是研究报告而非政策文件，
 #   与政策本体 schema（位阶/义务强度/立法阶段）不匹配，不适合本表——如需智库视角应另设源类型。
 # - 杭州 hangzhou_xxgk（下方禁用项维持）：政府信息公开目录里已定位真栏目
@@ -219,6 +222,20 @@ url_selector   = "span.name > a"
 note          = "标题在 span.name > a 里，不是 li 直接子元素。"
 
 # ── 市级 ──────────────────────────────────────────────────
+
+[[sites]]
+key           = "szrd_szfg"
+name          = "深圳人大-深圳经济特区法规"
+level         = "city"
+region        = "深圳"
+list_url      = "https://www.szrd.gov.cn/v2/zx/szfg/index.html"
+item_selector = "tr.ant-table-row"
+title_selector = "a"
+title_attr    = ""
+tier          = "playwright"
+render_wait_ms = 3500
+max_items     = 40
+note          = "Ant Design 表格（React SPA）。地方立法风向标（首部 AI 产业促进条例产地，低空经济条例等）。curl TLS 指纹被拒必须 playwright；栏目 URL 由 ddgs 反查。日期在表格列内由正则回退提取。"
 
 [[sites]]
 key           = "suzhou_zcfg"
