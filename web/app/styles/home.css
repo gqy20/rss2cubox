@@ -223,8 +223,7 @@
   margin-bottom: 22px;
 }
 .toolbar input,
-.toolbar select,
-.local-search {
+.toolbar select {
   border: 1px solid var(--faint);
   border-radius: 9px;
   background: var(--surface);

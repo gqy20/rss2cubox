@@ -80,17 +80,9 @@
 .legend-dot.skipped {
   background: #a7a198;
 }
-.distribution-segment.never,
-.legend-dot.never {
-  background: #c5c9c4;
-}
 .distribution-segment.disabled,
 .legend-dot.disabled {
   background: #dedbd5;
-}
-.distribution-segment.archived,
-.legend-dot.archived {
-  background: #c7c0b6;
 }
 .distribution-segment.unavailable,
 .legend-dot.unavailable {

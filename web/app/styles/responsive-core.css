@@ -391,33 +391,6 @@
 .cover-stats .count-label b {
   color: var(--accent);
 }
-.metric-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 24px;
-}
-.metric-strip > div {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  min-width: 0;
-  padding: 17px 18px;
-  border-radius: 14px;
-  background: var(--surface);
-}
-.metric-secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  color: var(--muted);
-}
-.metric-alert .count-label b,
-.metric-alert .count-label > span:first-child {
-  color: #a24733;
-}
 .coverage-line .coverage-caption {
   justify-content: flex-start;
   gap: 12px;
@@ -516,11 +489,6 @@
 .prediction-overview > .coverage-compact {
   max-width: 220px;
 }
-@media (max-width: 1200px) {
-  .metric-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (max-width: 640px) {
   .cover-stats {
     justify-content: flex-start;
@@ -534,19 +502,6 @@
   }
   .cover-stats .count-label > span:first-child {
     display: none;
-  }
-  .metric-strip {
-    gap: 10px;
-  }
-  .metric-strip > div {
-    padding: 14px 12px;
-  }
-  .metric-strip .count-label {
-    gap: 5px;
-    font-size: 11px;
-  }
-  .metric-strip .count-label b {
-    font-size: 19px;
   }
   .coverage-compact {
     min-width: 0;
@@ -592,10 +547,6 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.document-topline > .document-actions {
-  margin-left: auto;
-}
-
 /* Tools belong to the title they act on. Labels remain available to assistive technology. */
 .page-heading-main {
   width: 100%;

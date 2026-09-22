@@ -256,25 +256,6 @@
   max-width: 300px;
   overflow-wrap: anywhere;
 }
-.health-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  white-space: nowrap;
-}
-.health-status:before {
-  content: '';
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #a38f69;
-}
-.health-status.ok:before {
-  background: var(--olive);
-}
-.health-status.error:before {
-  background: #b15845;
-}
 .snapshot-note {
   font-size: 11px;
   line-height: 1.8;
