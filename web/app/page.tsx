@@ -1,10 +1,8 @@
 import Link from 'next/link'
 import {
   ArrowRight,
-  ArrowUpRight,
   BookOpen,
   Sparkles,
-  Activity,
   Radio,
   Layers3,
   Files,
@@ -19,7 +17,7 @@ import {
   DataNotice,
   Empty,
 } from './journal/Shared'
-import { Coverage, CountLabel } from './journal/Numbers'
+import { CountLabel } from './journal/Numbers'
 import { excludedTopic } from '../lib/topic-utils'
 import { insightFreshness } from '../lib/reading-context'
 import { WindowReadingPosition } from './journal/ReadingNavigation'
@@ -258,18 +256,6 @@ export default async function Page() {
           <span className="timestamp">以上为 AI 提炼，来源可展开核对。</span>
         </section>
       </div>
-      <footer className="home-footer">
-        <Link href="/monitor">
-          <Activity size={15} />
-          <Coverage
-            label="政策已析"
-            value={data.policyStats?.analyzed}
-            total={data.policyStats?.total}
-            compact
-          />
-          <ArrowUpRight size={13} />
-        </Link>
-      </footer>
     </>
   )
 }

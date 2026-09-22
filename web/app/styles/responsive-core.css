@@ -270,10 +270,6 @@
   .observation + .observation {
     border-top: 1px solid var(--faint);
   }
-  .home-footer {
-    align-items: flex-start;
-    flex-direction: column;
-  }
   .page-heading h1 {
     font-size: 28px;
   }
@@ -461,13 +457,6 @@
 }
 .heading-actions > .coverage-compact {
   min-width: 220px;
-}
-.home-footer .coverage-compact {
-  width: 190px;
-  min-width: 0;
-}
-.home-footer .coverage-compact .coverage-caption b {
-  font-size: 13px;
 }
 .metric-definition {
   margin-top: 16px;
