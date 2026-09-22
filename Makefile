@@ -30,7 +30,7 @@ RUN_VIA_SH   ?= 0
 UV   := uv
 NPX  := npx
 
-.PHONY: help up deps db db-init db-wait db-stop db-down db-logs db-psql db-reset \
+.PHONY: help up deps db db-init db-wait db-stop db-down db-logs db-psql db-reset web-deploy \
         run loop web dev doctor test lint logs cron-install cron-uninstall cron-list clean \
         cost cost-pricing cost-refresh config config-help \
         policy policy-dry policy-status policy-init policy-triage policy-enrich \
@@ -159,6 +159,28 @@ policy-status: db-wait ## 查看政策信源健康度与疑似失效站点
 web: db-wait ## 起前端 dev server（http://localhost:3424）
 	@echo "→ http://localhost:$(WEB_PORT)"
 	@cd $(WEB_DIR) && pnpm dev
+
+# ── 部署到服务器（HR2）─────────────────────────────────────────
+# 前提：ssh 配置了 Host 别名；服务器上有 systemd 单元 rss2cubox-web。
+DEPLOY_HOST ?= HR2
+DEPLOY_DIR  ?= /root/project/rss2cubox
+
+web-deploy: ## 同步代码到服务器并重建重启前端（rsync + pnpm build + systemctl）
+	@echo "→ 同步代码到 $(DEPLOY_HOST):$(DEPLOY_DIR)"
+	@rsync -az --delete \
+	  --exclude .venv --exclude node_modules --exclude .next --exclude __pycache__ \
+	  --exclude .pytest_cache --exclude .rss2cubox-prediction-loop \
+	  --filter 'P .env*' --filter 'P web/.env*' --filter 'P logs/' \
+	  ./ $(DEPLOY_HOST):$(DEPLOY_DIR)/
+	@ssh $(DEPLOY_HOST) 'set -e; cd $(DEPLOY_DIR)/web; export PATH="$$HOME/.local/bin:$$PATH" LC_ALL=C; \
+	  pnpm install --registry=https://registry.npmmirror.com --silent; \
+	  pnpm build; \
+	  systemctl stop rss2cubox-web 2>/dev/null || true; \
+	  pid=$$(ss -tlnp | grep :3424 | grep -oP "pid=\K[0-9]+" | head -1); \
+	  [ -n "$$pid" ] && kill -9 $$pid 2>/dev/null || true; \
+	  systemctl start rss2cubox-web; sleep 6; \
+	  systemctl is-active rss2cubox-web; \
+	  curl -s -o /dev/null -w "部署完成：/policies HTTP %{http_code}\n" --max-time 12 http://localhost:3424/policies'
 
 dev: db db-init ## 一次性启动前后端：DB + 后端跑一次 + 前端常驻（Ctrl-C 全部退出）
 	@echo "════════════════════════════════════════════"
