@@ -69,7 +69,7 @@ _TABLE: list[tuple[str, str, Any, str, str]] = [
     ("ANTHROPIC_API_KEY", "str", None, "gateway", "仅 scripts/agent_cost.py 作为 AUTH_TOKEN 的回退读取；主链路不使用"),
 
     # storage
-    ("LOCAL_DB_URL", "str", "", "storage", "本地 PostgreSQL 连接串。make db 起的专用容器默认 postgresql://postgres:postgres@localhost:5434/rss2cubox"),
+    ("DATABASE_URL", "str", "", "storage", "本地 PostgreSQL 连接串。make db 起的专用容器默认 postgresql://postgres:postgres@localhost:5434/rss2cubox"),
     ("NEON_DATABASE_URL", "str", "", "storage", "仅 global_insights 历史链路需要，留空则相关功能跳过"),
     ("NEON_PUSH_ENABLED", "bool", "false", "storage", "是否推送 global_insights 到 Neon"),
 
@@ -186,6 +186,12 @@ _TABLE: list[tuple[str, str, Any, str, str]] = [
     ("POLICY_ENRICH_MAX_BUDGET_USD", "float", "1.0", "policy", "deep enrich 单篇预算"),
     ("POLICY_ENRICH_MAX_TEXT_CHARS", "int", "12000", "policy", "喂给 deep enrich 的正文截断长度"),
     ("POLICY_FULLTEXT_MAX_WORKERS", "int", "6", "policy", "政策详情页全文抓取并发"),
+    ("JEV_BASE_URL", "str", "", "policy", "Jev(TypeSafe) API 地址；与 JEV_API_KEY 同时配置才启用"),
+    ("JEV_API_KEY", "str", "", "policy", "Jev API 密钥（.env）"),
+    ("JEV_MODEL", "str", "jev-latest", "policy", "Jev 模型名"),
+    ("TECH_TRIAGE_ENABLED", "bool", "true", "runtime", "科技链路 Jev 预筛（影子模式：只打分观察，不影响截断）"),
+    ("TECH_TRIAGE_MAX_CANDIDATES", "int", "3000", "runtime", "单轮最多打分的候选数"),
+    ("TECH_TRIAGE_CONCURRENCY", "int", "8", "runtime", "Jev 预筛并发"),
 
     # runtime
     ("RSS2CUBOX_RUN_ID", "str", "", "runtime", "一次运行的稳定 ID，留空则自动生成"),

@@ -58,6 +58,19 @@ POLICY_LINEAGES = [
     "算力与数字基础设施",
 ]
 
+# Jev 交叉校验 policy_lineage 用的 choice 题型 criteria：
+# 前五个 key 必须与 POLICY_LINEAGES 完全一致（tests/test_jev_client.py 校验），
+# 额外提供"不属于任何主线"兜底项 —— Jev 判不属于而 deep 判了主线，是最值得
+# 人工复核的分歧形态。
+LINEAGE_CHOICE_CRITERIA = {
+    "十五五规划体系": "各级十五五规划纲要、专项规划及分解落地方案",
+    "人工智能+行动": "AI赋能产业、应用场景开放、大模型/智能体产业培育、词元经济",
+    "AI安全与监管": "生成式AI、算法备案、深度合成、安全标准与治理框架",
+    "数据要素与流通": "数据产权、交易流通、公共数据授权运营、数据出境",
+    "算力与数字基础设施": "算力布局、数据中心、网络与算力调度",
+    "不属于任何主线": "以上都不贴切",
+}
+
 # system_prompt / 输出 schema / user 静态指令集中在项目根 prompts/policy_enrich.yaml，
 # enum 与上方三个常量的同步由 tests/test_prompts.py 校验。
 _PROMPT = get("policy_enrich")
@@ -195,7 +208,59 @@ async def _enrich_one(
         return None, "missing_source_quote"
 
     enriched = _coerce_enriched({**payload, "_has_full_text": "1" if (full_text or "").strip() else ""})
+    # Jev 交叉校验主线归属：分歧只记录进 enrich_meta（观察期不改数据），
+    # 未配置/失败完全无感。同步 requests 放线程里跑，避免阻塞 anyio 事件循环。
+    await anyio.to_thread.run_sync(
+        lambda: _jev_lineage_check(doc, enriched, log_event)
+    )
     return enriched, "ok"
+
+
+def _jev_lineage_check(
+    doc: dict[str, Any],
+    enriched: dict[str, Any],
+    log_event: Any = None,
+) -> None:
+    """用 Jev choice 题复判 policy_lineage，结果与一致性写入 enrich_meta.jev_lineage。"""
+    from rss2cubox.jev_client import jev_systemone
+
+    doc_id = str(doc.get("id", ""))
+    state = f"标题：{doc.get('title', '')}\n摘要：{enriched.get('summary') or ''}"
+    data = jev_systemone(
+        state,
+        {"lineage": {
+            "type": "choice",
+            "instructions": "该文件最属于哪条政策主线？",
+            "criteria": LINEAGE_CHOICE_CRITERIA,
+        }},
+        log_event=log_event,
+        doc_id=doc_id,
+        stage="policy_enrich_jev",
+    )
+    if not data:
+        return
+    answer = (data.get("answers") or {}).get("lineage") or {}
+    deep = enriched.get("policy_lineage")
+    pick = answer.get("choice")
+    meta = enriched.get("enrich_meta") if isinstance(enriched.get("enrich_meta"), dict) else {}
+    meta["jev_lineage"] = {
+        "choice": pick,
+        "confidence": answer.get("confidence"),
+        # deep 为 None（不属于任何主线）时 Jev 判"不属于任何主线"才算一致
+        "agree": (pick == deep) if deep else pick == "不属于任何主线",
+        "model": data.get("model"),
+    }
+    enriched["enrich_meta"] = meta
+    if log_event:
+        log_event(
+            "INFO",
+            "jev_lineage_checked",
+            stage="policy_enrich_jev",
+            doc_id=doc_id,
+            deep=deep,
+            jev=pick,
+            agree=meta["jev_lineage"]["agree"],
+        )
 
 
 async def _enrich_all(

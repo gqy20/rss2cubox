@@ -193,7 +193,7 @@ def main() -> None:
         ic_push_enabled=IC_PUSH_ENABLED,
     )
 
-    _db_url = os.getenv("LOCAL_DB_URL", "").strip()
+    _db_url = os.getenv("DATABASE_URL", "").strip()
     _stat_recorder = None
     if _db_url:
         def _stat_recorder(**kw):
@@ -243,6 +243,16 @@ def main() -> None:
     candidates, run_deduped = sync_pipeline.dedupe_run_candidates(candidates, stats["per_feed_drop_reasons"])
     stats["run_deduped"] += run_deduped
     stats["candidates"] = len(candidates)
+
+    # ── Jev 预筛（影子模式）：截断前给全量候选打分，只观察不影响选取 ──
+    from rss2cubox import tech_triage
+
+    stats["tech_triaged"] = tech_triage.score_candidates(
+        candidates,
+        run_id=_run_id,
+        db_url=_db_url,
+        log_event=log_event,
+    )
 
     candidates_for_run = feed_sources.cap_candidates_per_source(
         candidates,
