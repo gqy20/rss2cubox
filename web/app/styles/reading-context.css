@@ -1,0 +1,279 @@
+/* ═══════════════════════════════════════════
+   journal / reading-context.css
+   返回上下文、适用性速览与政策主线趋势条
+   ═══════════════════════════════════════════ */
+
+/* Preserve the path into a reading task without adding another global navigation bar. */
+.reader-origin,
+.context-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--accent);
+  white-space: nowrap;
+}
+.reader-origin {
+  padding: 5px 0;
+}
+.reader-origin-mobile {
+  display: none;
+}
+.reader-topic-filter > span {
+  color: var(--olive);
+  font-size: 11px;
+  max-width: 210px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reader-current-context {
+  padding: 12px;
+  margin: 0 0 8px;
+  border-bottom: 1px solid var(--faint);
+}
+.reader-current-context small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+.reader-current-context strong {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent);
+}
+.policy-applicability {
+  margin: 22px 0;
+}
+.policy-applicability-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  margin-bottom: 13px;
+}
+.policy-applicability-heading h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.policy-stage {
+  color: var(--muted);
+  font-size: 11px;
+  margin-left: auto;
+}
+.policy-applicability dl {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+}
+.policy-applicability dl > div {
+  display: grid;
+  grid-template-columns: 65px 1fr;
+  gap: 12px;
+}
+.policy-applicability dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.policy-applicability dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.policy-match-reason {
+  color: var(--olive);
+  font-size: 11px;
+  line-height: 1.7;
+  margin-top: 8px;
+}
+.topic-policy-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+.topic-policy-search label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+.topic-policy-search select {
+  max-width: 210px;
+  border: 1px solid var(--faint);
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.topic-policy-search .icon-button {
+  width: 29px;
+  height: 29px;
+  background: var(--surface);
+}
+.home-freshness {
+  display: flex;
+  gap: 12px 24px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: -14px 0 22px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.home-freshness a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.freshness-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+@media (max-width: 900px) {
+  .reader-origin-mobile {
+    display: block;
+    margin-top: 8px;
+  }
+  .reader-origin-mobile .breadcrumb {
+    margin: 0;
+    font-size: 11px;
+  }
+}
+@media (max-width: 640px) {
+  .home-freshness {
+    font-size: 11px;
+    margin-top: -8px;
+    gap: 8px;
+  }
+  .topic-policy-search {
+    width: 100%;
+    margin-top: 4px;
+  }
+  .topic-policy-search label {
+    flex: 1;
+  }
+  .topic-policy-search select {
+    max-width: 210px;
+    width: 100%;
+  }
+  .policy-applicability dl > div {
+    grid-template-columns: 57px 1fr;
+    gap: 10px;
+  }
+  .reader-origin-mobile .breadcrumb {
+    width: max-content;
+  }
+  .context-back {
+    font-size: 11px;
+    gap: 4px;
+  }
+}
+
+/* ── 政策主线趋势条（policies 页，与主线筛选联动）── */
+.lineage-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  padding: 14px 18px;
+  margin-bottom: 14px;
+  background: var(--surface);
+  border: 1px solid var(--faint);
+  border-radius: var(--radius);
+}
+.lineage-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 210px;
+  flex: 1 1 210px;
+  text-decoration: none;
+  color: var(--ink);
+}
+.lineage-row:hover .lineage-name {
+  color: var(--accent);
+}
+.lineage-name {
+  font-size: 12px;
+  white-space: nowrap;
+}
+.lineage-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--faint);
+  overflow: hidden;
+}
+.lineage-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--accent);
+  opacity: 0.75;
+}
+.lineage-count {
+  font-size: 11px;
+  color: var(--muted);
+  min-width: 2em;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.lineage-strip.selected {
+  flex-direction: column;
+  gap: 12px;
+}
+.lineage-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.lineage-head strong {
+  font-size: 13px;
+}
+.lineage-head a {
+  font-size: 11px;
+  color: var(--muted);
+}
+.lineage-months {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  height: 84px;
+}
+.lineage-month {
+  flex: 1;
+  max-width: 44px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 3px;
+  height: 100%;
+}
+.lineage-month-bar {
+  width: 100%;
+  max-width: 22px;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent);
+  opacity: 0.8;
+}
+.lineage-month-n {
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.lineage-month-label {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.lineage-stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}

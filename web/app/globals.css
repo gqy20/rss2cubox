@@ -1,1 +1,10 @@
-@import './styles/journal.css';
+@import './styles/base.css';
+@import './styles/shell.css';
+@import './styles/home.css';
+@import './styles/reader.css';
+@import './styles/policy.css';
+@import './styles/responsive-core.css';
+@import './styles/reader-document.css';
+@import './styles/monitor.css';
+@import './styles/topics.css';
+@import './styles/reading-context.css';

@@ -1,0 +1,345 @@
+/* ═══════════════════════════════════════════
+   journal / reader-document.css
+   阅读详情头部与正文、读者视口规则
+   ═══════════════════════════════════════════ */
+
+.global-search {
+  gap: 9px;
+}
+.search-scope {
+  appearance: auto;
+  border: 0;
+  border-right: 1px solid var(--faint);
+  border-radius: 0;
+  padding: 0 9px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  background: transparent;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+.search-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 50%;
+  color: var(--muted);
+  background: transparent;
+  padding: 0;
+}
+.search-action:hover {
+  background: var(--clay-tint);
+  color: var(--accent);
+}
+.global-search input[type='search']::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+}
+.search-placeholder {
+  height: 43px;
+}
+.search-result-summary {
+  display: inline-flex;
+  gap: 6px;
+  align-items: baseline;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--muted);
+}
+.search-result-summary b {
+  font-weight: 500;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.result-keyword {
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.reader-item mark {
+  color: var(--accent-hover);
+  background: #f3e1ce;
+  border-radius: 2px;
+}
+.match-field {
+  color: var(--accent);
+  font-size: 11px;
+}
+@media (max-width: 640px) {
+  .global-search {
+    gap: 6px;
+  }
+  .search-scope {
+    width: 52px;
+    padding-right: 3px;
+    font-size: 11px;
+  }
+  .global-search input {
+    font-size: 12px;
+  }
+  .result-keyword {
+    max-width: 150px;
+  }
+}
+
+/* Reader routes own the viewport. The journal/home and standalone documents still scroll normally. */
+.reader-shell {
+  height: 100dvh;
+  overflow: hidden;
+}
+.reader-shell .journal-workspace {
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.reader-shell .journal-topbar {
+  height: 66px;
+  flex: 0 0 66px;
+}
+.reader-shell .journal-content {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  margin: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding-top: 4px;
+  padding-bottom: 20px;
+}
+.reader-shell .page-heading {
+  flex: 0 0 auto;
+  margin: 3px 0 13px;
+}
+.reader-shell .page-heading h1 {
+  font-size: 24px;
+}
+.reader-shell .page-heading .coverage-compact {
+  min-width: 180px;
+}
+.reader-panel {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  flex-direction: column;
+}
+.reader-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 20px;
+  flex: 0 0 auto;
+  margin-bottom: 16px;
+}
+.reader-controls > .toolbar {
+  margin: 0;
+  gap: 8px;
+}
+.reader-controls > .toolbar:has(.segments) {
+  margin-left: auto;
+}
+.reader-controls select {
+  max-width: 210px;
+}
+.reader-shell .reader-grid {
+  flex: 1;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr);
+  align-items: stretch;
+}
+.reader-shell .reader-list {
+  height: 100%;
+  min-height: 0;
+  max-height: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+.reader-shell .reader-document {
+  padding: 0;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.reader-document-header {
+  padding: 23px 26px 15px;
+  flex-shrink: 0;
+  background: var(--surface);
+}
+.reader-document-header[hidden] {
+  display: none;
+}
+.reader-document-header .document-title-row {
+  margin-bottom: 10px;
+}
+.reader-document-header h2 {
+  font-family: var(--serif);
+  font-size: 21px;
+  line-height: 1.55;
+  margin: 0;
+}
+.reader-document-header .original-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.reader-document-header .metadata {
+  line-height: 1.6;
+}
+.reader-document-header .document-tabs {
+  margin: 12px 0 -15px;
+  border: 0;
+  gap: 24px;
+}
+.reader-document-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+  padding: 20px 26px 30px;
+}
+.reader-document-body > .facts:first-child,
+.reader-document-body > .document-section:first-child {
+  margin-top: 0;
+}
+.reader-load-tail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  padding: 18px 10px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.reader-load-tail > span,
+.reader-load-tail > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+.load-more-button {
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: 12px;
+  border-radius: 8px;
+  padding: 7px 16px;
+}
+.load-more-button:hover {
+  background: var(--clay-tint);
+}
+.new-content-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--olive-tint);
+  color: var(--olive);
+  border: 0;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+}
+@media (max-width: 1200px) {
+  .reader-controls > .toolbar:has(.segments) {
+    margin-left: 0;
+  }
+}
+@media (max-width: 900px) {
+  .reader-shell .reader-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .reader-shell .reader-grid.has-selection > .reader-list {
+    display: none;
+  }
+  .reader-shell .reader-grid:not(.has-selection) > .reader-document {
+    display: none;
+  }
+  .reader-shell:has(.reader-grid.has-selection) .page-heading,
+  .reader-panel:has(.reader-grid.has-selection) > .reader-controls {
+    display: none;
+  }
+  .reader-document-header .mobile-back {
+    display: inline-flex;
+  }
+}
+@media (max-width: 640px) {
+  .reader-shell .journal-topbar {
+    height: 60px;
+    flex-basis: 60px;
+  }
+  .reader-shell .journal-content {
+    padding: 4px 12px 12px;
+  }
+  .reader-shell .page-heading {
+    margin: 2px 4px 10px;
+  }
+  .reader-shell .page-heading h1 {
+    font-size: 22px;
+  }
+  .reader-shell .page-heading .coverage-compact {
+    min-width: 0;
+  }
+  .reader-shell .page-heading .coverage-caption {
+    font-size: 11px;
+  }
+  .reader-controls {
+    gap: 9px;
+    margin-bottom: 12px;
+  }
+  .reader-controls > .toolbar {
+    width: 100%;
+    gap: 7px;
+  }
+  .reader-controls > .toolbar label {
+    min-width: 0;
+  }
+  .reader-controls > .toolbar:has(.segments) {
+    gap: 6px;
+  }
+  .reader-controls select {
+    max-width: 145px;
+    padding: 7px;
+  }
+  .reader-controls input[type='date'] {
+    padding: 7px;
+  }
+  .reader-controls .segments button {
+    padding: 5px 9px;
+    font-size: 11px;
+  }
+  .reader-controls .search-result-summary {
+    font-size: 11px;
+  }
+  .reader-shell .reader-list {
+    padding: 10px;
+  }
+  .reader-document-header {
+    padding: 17px 16px 12px;
+  }
+  .reader-document-header .title-row {
+    gap: 9px;
+  }
+  .reader-document-header h2 {
+    font-size: 19px;
+  }
+  .reader-document-header .document-tabs {
+    margin-bottom: -12px;
+  }
+  .reader-document-body {
+    padding: 18px 20px 25px;
+  }
+}
+
