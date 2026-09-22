@@ -116,9 +116,16 @@ export default function Predictions({
                 open={expanded.has(String(p.id))}
                 onToggle={(e) => {
                   if (!e.currentTarget.isConnected) return
+                  const card = e.currentTarget
                   const ids = new Set(expanded)
-                  if (e.currentTarget.open) ids.add(String(p.id))
-                  else ids.delete(String(p.id))
+                  if (card.open) {
+                    ids.add(String(p.id))
+                    requestAnimationFrame(() =>
+                      card.scrollIntoView({ block: 'start', behavior: 'smooth' }),
+                    )
+                  } else {
+                    ids.delete(String(p.id))
+                  }
                   update({ open: [...ids].join(',') || 'none' })
                 }}
               >
