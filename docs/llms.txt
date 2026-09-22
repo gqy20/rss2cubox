@@ -54,8 +54,8 @@ make cron-install / policy-cron-install / cron-list
   （`load_ic_state()` 优先读本地，`ic` 只是本地为空时的回退）
 - **`ic`** —— 正式文章内容库，`IC_PUSH_ENABLED=true` 时才推送
 - **`global_insights`** —— 前端洞察卡片的数据源
-- **前端 API** —— `/api/signals`（文章列表与搜索）、`/api/predictions`、
-  `/api/cubox`、`/api/bili-cover`、`/api/revalidate`；聚合入口 `web/lib/signalStore.ts`
+- **前端 API** —— `/api/signals`（文章列表与搜索）、`/api/reader/<kind>`（阅读面板详情）、
+  `/api/monitor/source`（信源运行）、`/api/bili-cover`（封面代理）
 
 ## 成本
 

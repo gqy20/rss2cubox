@@ -1,6 +1,6 @@
 # 阅读工作台
 
-前端沿用 Next.js App Router，采用已确认的 B 风格：象牙白、陶土色与橄榄色，宋体编辑标题、无衬线阅读列表。全站使用 `app/journal/Shell.tsx` 和 `app/styles/journal.css`。
+前端沿用 Next.js App Router，采用已确认的 B 风格：象牙白、陶土色与橄榄色，宋体编辑标题、无衬线阅读列表。全站使用 `app/journal/Shell.tsx`，样式按区域拆分在 `app/styles/`（由 `app/globals.css` 顺序引入）。
 
 ## 页面
 
