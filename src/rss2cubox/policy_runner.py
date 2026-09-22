@@ -234,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.enrich_only or args.triage:
         if not ensure_policy_schema():
-            print("建表失败：检查 LOCAL_DB_URL（make db）", file=sys.stderr)
+            print("建表失败：检查 DATABASE_URL（make db）", file=sys.stderr)
             return 1
         stats: dict[str, Any] = {"sites": 0, "sites_ok": 0, "sites_failed": 0, "items_total": 0}
         only_keys = {k.strip() for k in args.only.split(",") if k.strip()}
@@ -296,7 +296,7 @@ def main(argv: list[str] | None = None) -> int:
 
     if not args.dry_run and not ensure_policy_schema():
         log_event("ERROR", "policy_schema_failed")
-        print("建表失败：检查 LOCAL_DB_URL 是否正确、PostgreSQL 是否在跑（make db）", file=sys.stderr)
+        print("建表失败：检查 DATABASE_URL 是否正确、PostgreSQL 是否在跑（make db）", file=sys.stderr)
         return 1
 
     log_event(

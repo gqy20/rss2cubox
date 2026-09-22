@@ -218,16 +218,16 @@ class TestPreFetchedText:
         import os
         from rss2cubox.db_client import get_fulltexts_by_eids
 
-        old = os.environ.get("LOCAL_DB_URL")
+        old = os.environ.get("DATABASE_URL")
         try:
-            os.environ["LOCAL_DB_URL"] = ""
+            os.environ["DATABASE_URL"] = ""
             result = get_fulltexts_by_eids(["e1", "e2"])
             assert result == {}
         finally:
             if old is None:
-                os.environ.pop("LOCAL_DB_URL", None)
+                os.environ.pop("DATABASE_URL", None)
             else:
-                os.environ["LOCAL_DB_URL"] = old
+                os.environ["DATABASE_URL"] = old
 
 
 class TestGlobalAgentPreFetchedText:

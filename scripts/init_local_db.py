@@ -7,7 +7,7 @@
     uv run python scripts/init_local_db.py --db-url postgresql://...
     uv run python scripts/init_local_db.py --dry-run        # 只看要执行什么，不连库
 
-连接串优先级: --db-url > LOCAL_DB_URL 环境变量 > 根目录 .env
+连接串优先级: --db-url > DATABASE_URL 环境变量 > 根目录 .env
 所有 DDL 均为 CREATE TABLE IF NOT EXISTS，可重复执行。
 """
 import argparse
@@ -55,7 +55,7 @@ def _list_tables(conn) -> list[str]:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="初始化本地 PostgreSQL schema")
-    parser.add_argument("--db-url", default=None, help="覆盖 LOCAL_DB_URL")
+    parser.add_argument("--db-url", default=None, help="覆盖 DATABASE_URL")
     parser.add_argument("--with-legacy", action="store_true", help="同时建 legacy 表")
     parser.add_argument("--dry-run", action="store_true", help="只打印计划，不连库")
     args = parser.parse_args()
@@ -63,9 +63,9 @@ def main() -> int:
     # 与项目其它模块一致：.env 覆盖已有环境变量
     load_dotenv(ROOT_DIR / ".env", override=True)
 
-    db_url = (args.db_url or os.getenv("LOCAL_DB_URL", "")).strip()
+    db_url = (args.db_url or os.getenv("DATABASE_URL", "")).strip()
     if not db_url:
-        print("✗ 未找到连接串：请用 --db-url 指定，或在 .env 里设置 LOCAL_DB_URL", file=sys.stderr)
+        print("✗ 未找到连接串：请用 --db-url 指定，或在 .env 里设置 DATABASE_URL", file=sys.stderr)
         return 2
 
     # 打印时隐去密码

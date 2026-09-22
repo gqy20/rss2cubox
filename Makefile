@@ -18,7 +18,7 @@ PG_PORT      ?= 5434
 PG_USER      ?= postgres
 PG_PASSWORD  ?= postgres
 PG_DB        ?= rss2cubox
-LOCAL_DB_URL ?= postgresql://$(PG_USER):$(PG_PASSWORD)@localhost:$(PG_PORT)/$(PG_DB)
+DATABASE_URL ?= postgresql://$(PG_USER):$(PG_PASSWORD)@localhost:$(PG_PORT)/$(PG_DB)
 
 WEB_DIR      ?= web
 WEB_PORT     ?= 3424
@@ -100,7 +100,7 @@ db-wait: ## 等待 PostgreSQL 可连接（最多 60 秒）
 	echo; echo "✗ 等待超时，看看日志: make db-logs"; exit 1
 
 db-init: db ## 建表（幂等，CREATE TABLE IF NOT EXISTS）
-	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python scripts/init_local_db.py
+	@DATABASE_URL='$(DATABASE_URL)' $(UV) run python scripts/init_local_db.py
 
 db-stop: ## 停止 DB 容器（保留数据）
 	@docker stop $(PG_CONTAINER) >/dev/null 2>&1 && echo "✓ 已停止 $(PG_CONTAINER)（数据保留）" || echo "· 容器未在运行"
@@ -126,35 +126,35 @@ db-psql: ## 进入 psql 交互终端
 run: db-wait ## 跑一次后端 pipeline（fetch → enrich → push → global_agent）
 	@if [ "$(RUN_VIA_SH)" = "1" ]; then \
 	  echo "→ scripts/run_local_sync.sh（含 flock + prediction loop）"; \
-	  LOCAL_DB_URL='$(LOCAL_DB_URL)' scripts/run_local_sync.sh; \
+	  DATABASE_URL='$(DATABASE_URL)' scripts/run_local_sync.sh; \
 	else \
 	  echo "→ uv run rss2cubox"; \
-	  LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run rss2cubox; \
+	  DATABASE_URL='$(DATABASE_URL)' $(UV) run rss2cubox; \
 	fi
 
 loop: db-wait ## 跑 run_local_sync.sh（含 flock 防重入 + 预测闭环 + JSONL 日志）
-	@LOCAL_DB_URL='$(LOCAL_DB_URL)' scripts/run_local_sync.sh
+	@DATABASE_URL='$(DATABASE_URL)' scripts/run_local_sync.sh
 
 # ── 政策信源（独立于主 RSS 链路）────────────────────────────
 policy-init: db ## 建政策相关的表（policy_documents / policy_source_state）
-	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -c \
+	@DATABASE_URL='$(DATABASE_URL)' $(UV) run python -c \
 	  "from rss2cubox.policy import ensure_policy_schema; import sys; sys.exit(0 if ensure_policy_schema() else 1)" \
 	  && echo "✓ 政策表已就绪"
 
 policy: db-wait policy-init ## 抓取政策信源并入库（配置见 policy_sources.toml）
-	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner $(POLICY_ARGS)
+	@DATABASE_URL='$(DATABASE_URL)' $(UV) run python -m rss2cubox.policy_runner $(POLICY_ARGS)
 
 policy-dry: ## 只抓取和解析，不写数据库（验证选择器用）
-	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --dry-run $(POLICY_ARGS)
+	@DATABASE_URL='$(DATABASE_URL)' $(UV) run python -m rss2cubox.policy_runner --dry-run $(POLICY_ARGS)
 
 policy-triage: db-wait policy-init ## 预筛：标题批量打分，筛出 AI 相关的（便宜）
-	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --triage $(POLICY_ARGS)
+	@DATABASE_URL='$(DATABASE_URL)' $(UV) run python -m rss2cubox.policy_runner --triage $(POLICY_ARGS)
 
 policy-enrich: db-wait policy-init ## 预筛 + 逐篇结构化抽取（会调 LLM，~$0.14/篇）
-	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --enrich-only $(POLICY_ARGS)
+	@DATABASE_URL='$(DATABASE_URL)' $(UV) run python -m rss2cubox.policy_runner --enrich-only $(POLICY_ARGS)
 
 policy-status: db-wait ## 查看政策信源健康度与疑似失效站点
-	@LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run python -m rss2cubox.policy_runner --status
+	@DATABASE_URL='$(DATABASE_URL)' $(UV) run python -m rss2cubox.policy_runner --status
 
 web: db-wait ## 起前端 dev server（http://localhost:3424）
 	@echo "→ http://localhost:$(WEB_PORT)"
@@ -168,7 +168,7 @@ dev: db db-init ## 一次性启动前后端：DB + 后端跑一次 + 前端常�
 	@echo "════════════════════════════════════════════"
 	@trap 'kill 0' INT TERM EXIT; \
 	if [ "$(RUN_ON_DEV)" = "1" ]; then \
-	  ( LOCAL_DB_URL='$(LOCAL_DB_URL)' $(UV) run rss2cubox 2>&1 | sed 's/^/[backend]  /' ) & \
+	  ( DATABASE_URL='$(DATABASE_URL)' $(UV) run rss2cubox 2>&1 | sed 's/^/[backend]  /' ) & \
 	fi; \
 	( cd $(WEB_DIR) && npm run dev 2>&1 | sed 's/^/[web]      /' ) & \
 	wait

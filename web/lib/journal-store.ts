@@ -28,10 +28,10 @@ import type {
 // This module is only imported by server pages and route handlers. Never expose connection strings.
 const globalDb = globalThis as typeof globalThis & { journalPool?: Pool }
 function pool() {
-  if (!process.env.LOCAL_DB_URL) throw new Error('Local database unavailable')
+  if (!process.env.DATABASE_URL) throw new Error('Local database unavailable')
   if (!globalDb.journalPool)
     globalDb.journalPool = new Pool({
-      connectionString: process.env.LOCAL_DB_URL,
+      connectionString: process.env.DATABASE_URL,
       max: 5,
       connectionTimeoutMillis: 4000,
       statement_timeout: 12000,

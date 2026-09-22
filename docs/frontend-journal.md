@@ -16,7 +16,7 @@
 | `/monitor` | 异常优先的信源目录、最近12轮、内容产出与统计 |
 | `/saved` | 当前浏览器收藏，使用 localStorage，不跨设备同步 |
 
-首页与政策、专题、预测、监控在服务端读取 `LOCAL_DB_URL`。`lib/journal-store.ts` 使用共享连接池、连接/语句超时及参数化查询，按模块降级显示不可用状态，不用示例数据补齐。技术信号继续支持 `API_SOURCE` 非 local 时的 IC 读取；政策与监控仍需要本地 PostgreSQL。
+首页与政策、专题、预测、监控在服务端读取 `DATABASE_URL`。`lib/journal-store.ts` 使用共享连接池、连接/语句超时及参数化查询，按模块降级显示不可用状态，不用示例数据补齐。技术信号继续支持 `API_SOURCE` 非 local 时的 IC 读取；政策与监控仍需要本地 PostgreSQL。
 
 列表和详情通过 `/api/reader/[kind]`（signals / article / policies / policy）读取。列表每批30条，通过游标续载；全文只在详情中读取（搜索列表只返回命中片段）。搜索和筛选在数据库截取批次前执行。客户端取消过时请求，避免快速切换时错配文章与标题。旧 `/api/signals` 与 `/api/predictions` 接口保持兼容。
 

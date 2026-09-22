@@ -639,7 +639,7 @@ if not _pre_ft and _db_url:        # 旧：只要本轮抓到了一篇，剩下�
 （全文抓取走真 playwright/trafilatura）并往真的 `articles` 表写假数据，
 只是被 `MAX_ITEMS_PER_SOURCE=60` 意外限制住所以没暴露。关掉限流后 500 篇
 全部真实抓取，直接挂死。用 faulthandler 抓栈确认是 playwright greenlet + SSL read
-后，在 mock 里关掉 `FULLTEXT_ENABLED` 并 `delenv LOCAL_DB_URL`。
+后，在 mock 里关掉 `FULLTEXT_ENABLED` 并 `delenv DATABASE_URL`。
 效果：该文件从挂死变成 12 passed / 0.29s，**全量测试从 250~460s 降到 ~108s**。
 
 ---
@@ -771,7 +771,7 @@ uv run python -m rss2cubox.policy_runner      # 政策链路
 | `PG_PORT` | `5434` | 孿主端口。例：`make db PG_PORT=5435` |
 | `PG_IMAGE` | `postgres:17-alpine` | 镜像 |
 | `PG_USER` / `PG_PASSWORD` / `PG_DB` | `postgres` / `postgres` / `rss2cubox` | 容器初始化凭据 |
-| `LOCAL_DB_URL` | 由上面四项拼成 | make 会把它显式传给子进程，绕过 `.env` 里的值。指向别的库时用这个，不用改 `.env` |
+| `DATABASE_URL` | 由上面四项拼成 | make 会把它显式传给子进程，绕过 `.env` 里的值。指向别的库时用这个，不用改 `.env` |
 | `WEB_PORT` | `3424` | 前端端口（仅展示用，实际由 `web/package.json` 的 `next dev --port` 决定）|
 | `RUN_ON_DEV` | `1` | `make dev` 是否顺带跑一次后端。`make dev RUN_ON_DEV=0` = 只起前端 |
 | `RUN_VIA_SH` | `0` | `make run` 是否走 `run_local_sync.sh`（1 = 含 flock + 预测闭环）|

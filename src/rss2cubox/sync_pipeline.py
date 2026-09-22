@@ -237,7 +237,7 @@ def load_local_state(
     Used for deduplication when IC_API_URL is not configured.
 
     Args:
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
 
     Returns:
         tuple:
@@ -247,7 +247,7 @@ def load_local_state(
     from rss2cubox.db_client import get_all_article_ids, get_feed_cursors
 
     if db_url is None:
-        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+        db_url = os.getenv("DATABASE_URL", "").strip()
 
     if not db_url:
         return {}, {}

@@ -264,12 +264,12 @@ class TestMasking:
         assert cfg_mod._mask("ANTHROPIC_AUTH_TOKEN", "sk-12345") == "***"
 
     def test_local_db_url_is_masked(self) -> None:
-        """变量名是 LOCAL_DB_URL 而不是 *_DATABASE_URL，敏感词表必须覆盖到。
+        """变量名是 DATABASE_URL 而不是 *_DATABASE_URL，敏感词表必须覆盖到。
 
-        回归：最初敏感词表只写了 DATABASE_URL，导致含密码的 LOCAL_DB_URL
+        回归：最初敏感词表只写了 DATABASE_URL，导致含密码的 DATABASE_URL
         在 make config 输出里原样泄露。
         """
-        masked = cfg_mod._mask("LOCAL_DB_URL", "postgresql://postgres:supersecret@localhost:5434/db")
+        masked = cfg_mod._mask("DATABASE_URL", "postgresql://postgres:supersecret@localhost:5434/db")
         assert "supersecret" not in masked
 
     def test_neon_db_url_is_masked(self) -> None:

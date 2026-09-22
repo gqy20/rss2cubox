@@ -94,7 +94,7 @@ def ensure_prediction_loop_schema(db_url: str | None = None) -> bool:
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, skipping prediction loop schema")
+        logging.warning("DATABASE_URL not set, skipping prediction loop schema")
         return False
 
     try:
@@ -504,7 +504,7 @@ def _safe_ts(value: Any) -> Any:
 def save_signal_clusters(cluster_result: dict[str, list[dict[str, Any]]], db_url: str | None = None) -> dict[str, int]:
     db_url = _get_db_url(db_url)
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, skipping signal_clusters save")
+        logging.warning("DATABASE_URL not set, skipping signal_clusters save")
         return {}
 
     cluster_ids: dict[str, int] = {}

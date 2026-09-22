@@ -19,7 +19,7 @@ import {
 } from '../../lib/journal-store'
 beforeEach(() => {
   dbQuery.mockReset()
-  vi.stubEnv('LOCAL_DB_URL', 'postgres://test')
+  vi.stubEnv('DATABASE_URL', 'postgres://test')
   vi.stubEnv('API_SOURCE', 'local')
 })
 describe('reading safety and selection', () => {

@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const localPool = new Pool({
-  connectionString: process.env.LOCAL_DB_URL,
+  connectionString: process.env.DATABASE_URL,
 })
 
 const NO_STORE_HEADERS = {
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const rawLimit = parseInt(url.searchParams.get('limit') || '30', 10)
   const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? Math.min(rawLimit, 100) : 30
 
-  const localDbUrl = process.env.LOCAL_DB_URL
+  const localDbUrl = process.env.DATABASE_URL
   if (localDbUrl) {
     try {
       const client = await localPool.connect()
@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
   const neonDbUrl = process.env.NEON_DATABASE_URL
   if (!neonDbUrl) {
-    return NextResponse.json({ error: 'LOCAL_DB_URL or NEON_DATABASE_URL not configured' }, { status: 500, headers: NO_STORE_HEADERS })
+    return NextResponse.json({ error: 'DATABASE_URL or NEON_DATABASE_URL not configured' }, { status: 500, headers: NO_STORE_HEADERS })
   }
 
   try {

@@ -21,7 +21,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
 from rss2cubox import enrich_agent, sync_pipeline
 from rss2cubox.db_client import get_all_article_ids, save_articles
 
-_DB = os.getenv("LOCAL_DB_URL", "").strip()
+_DB = os.getenv("DATABASE_URL", "").strip()
 
 
 def _reachable(url: str) -> bool:
@@ -36,7 +36,7 @@ def _reachable(url: str) -> bool:
 
 needs_db = pytest.mark.skipif(
     not _reachable(_DB),
-    reason="LOCAL_DB_URL 不可用，跳过 DB 测试（先执行 make db）",
+    reason="DATABASE_URL 不可用，跳过 DB 测试（先执行 make db）",
 )
 
 PREFIX = "pytest_durability_"
@@ -70,7 +70,7 @@ def _article(eid: str, *, enriched: bool) -> dict:
 @pytest.fixture
 def db():
     if not _reachable(_DB):
-        pytest.skip("LOCAL_DB_URL 不可用")
+        pytest.skip("DATABASE_URL 不可用")
 
     def _wipe() -> None:
         with psycopg.connect(_DB) as conn:

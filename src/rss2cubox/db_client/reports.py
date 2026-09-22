@@ -27,7 +27,7 @@ def save_daily_report(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, skipping daily_report save")
+        logging.warning("DATABASE_URL not set, skipping daily_report save")
         return False
 
     try:
@@ -63,7 +63,7 @@ def get_daily_report(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, cannot query daily_reports")
+        logging.warning("DATABASE_URL not set, cannot query daily_reports")
         return None
 
     try:
@@ -92,7 +92,7 @@ def get_recent_reports(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, cannot query daily_reports")
+        logging.warning("DATABASE_URL not set, cannot query daily_reports")
         return []
 
     try:

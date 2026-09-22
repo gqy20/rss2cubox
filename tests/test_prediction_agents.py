@@ -483,7 +483,7 @@ import psycopg as _psycopg
 from dotenv import load_dotenv as _load_dotenv
 
 _load_dotenv(_Path(__file__).resolve().parent.parent / ".env", override=False)
-_DB = _os.getenv("LOCAL_DB_URL", "").strip()
+_DB = _os.getenv("DATABASE_URL", "").strip()
 
 
 def _db_ok() -> bool:
@@ -496,7 +496,7 @@ def _db_ok() -> bool:
         return False
 
 
-@pytest.mark.skipif(not _db_ok(), reason="LOCAL_DB_URL 不可用（先 make db）")
+@pytest.mark.skipif(not _db_ok(), reason="DATABASE_URL 不可用（先 make db）")
 class TestClusterAggregatesFromRealArticles:
     """回归：avg_importance 曾直接采信模型输出。
 

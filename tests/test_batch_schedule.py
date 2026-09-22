@@ -71,7 +71,7 @@ def _mock_runner_main(monkeypatch: pytest.MonkeyPatch, feeds_file: Path, max_ite
     # 关掉全文抓取与本地库写入。不关的话 runner.main() 会对几百条候选发
     # 真实的 playwright/trafilatura 请求（实测直接挂死），并把几百行假数据
     # 写进真的 articles 表。这组测试只关心批次调度语义，不应碰网络与数据库。
-    monkeypatch.delenv("LOCAL_DB_URL", raising=False)
+    monkeypatch.delenv("DATABASE_URL", raising=False)
     monkeypatch.setattr(fulltext_fetcher, "FULLTEXT_ENABLED", False)
     monkeypatch.setattr(runner, "KEYWORDS_INCLUDE", [])
     monkeypatch.setattr(runner, "KEYWORDS_EXCLUDE", [])

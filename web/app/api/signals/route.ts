@@ -15,7 +15,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const pool = new Pool({
-  connectionString: process.env.LOCAL_DB_URL,
+  connectionString: process.env.DATABASE_URL,
 })
 
 const NO_STORE_HEADERS = {
@@ -41,9 +41,9 @@ export async function GET(request: NextRequest) {
 
   if (apiSource === 'local') {
     // Use local PostgreSQL
-    const dbUrl = process.env.LOCAL_DB_URL
+    const dbUrl = process.env.DATABASE_URL
     if (!dbUrl) {
-      return NextResponse.json({ error: 'LOCAL_DB_URL not configured' }, { status: 500, headers: NO_STORE_HEADERS })
+      return NextResponse.json({ error: 'DATABASE_URL not configured' }, { status: 500, headers: NO_STORE_HEADERS })
     }
 
     try {

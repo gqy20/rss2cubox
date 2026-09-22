@@ -4,7 +4,7 @@ import os
 import psycopg
 
 NEON_URL = os.getenv("NEON_DATABASE_URL", "").strip()
-LOCAL_URL = os.getenv("LOCAL_DB_URL", "").strip()
+LOCAL_URL = os.getenv("DATABASE_URL", "").strip()
 
 def migrate():
     if not NEON_URL:
@@ -12,7 +12,7 @@ def migrate():
         return
 
     if not LOCAL_URL:
-        print("LOCAL_DB_URL 未设置")
+        print("DATABASE_URL 未设置")
         return
 
     # 从 Neon 读取所有 global_insights

@@ -10,7 +10,7 @@ import psycopg
 
 def _get_db_url(db_url: str | None = None) -> str:
     if db_url is None:
-        db_url = os.getenv("LOCAL_DB_URL", "").strip()
+        db_url = os.getenv("DATABASE_URL", "").strip()
     return db_url
 
 

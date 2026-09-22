@@ -21,7 +21,7 @@ from rss2cubox.db_client import save_articles, ARTICLES_SCHEMA
 
 
 IC_API_URL = os.getenv("IC_API_URL", "").strip()
-LOCAL_DB_URL = os.getenv("LOCAL_DB_URL", "").strip()
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
 
 def fetch_all_ic_articles(api_url: str, page_size: int = 100) -> list[dict]:
@@ -65,8 +65,8 @@ def fetch_all_ic_articles(api_url: str, page_size: int = 100) -> list[dict]:
 
 
 def main():
-    if not LOCAL_DB_URL:
-        print("错误：LOCAL_DB_URL 未设置")
+    if not DATABASE_URL:
+        print("错误：DATABASE_URL 未设置")
         sys.exit(1)
 
     if not IC_API_URL:
@@ -74,12 +74,12 @@ def main():
         sys.exit(1)
 
     print(f"IC API: {IC_API_URL}")
-    print(f"Local DB: {LOCAL_DB_URL}")
+    print(f"Local DB: {DATABASE_URL}")
     print()
 
     # 先建表/检查表结构
     print("检查并创建 articles 表...")
-    with psycopg.connect(LOCAL_DB_URL) as conn:
+    with psycopg.connect(DATABASE_URL) as conn:
         cur = conn.cursor()
         # 检查 importance_score 列是否存在
         cur.execute("""
@@ -141,7 +141,7 @@ def main():
     for i in range(0, len(articles), batch_size):
         batch = articles[i:i + batch_size]
         article_batch = [to_article(item) for item in batch]
-        count = save_articles(article_batch, db_url=LOCAL_DB_URL)
+        count = save_articles(article_batch, db_url=DATABASE_URL)
         saved += count
         print(f"  已保存 {saved}/{len(articles)}")
 

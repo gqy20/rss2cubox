@@ -307,7 +307,7 @@ class TestSaveDailyReport:
     def test_save_returns_false_when_no_db_url(self):
         """无 DB URL 时返回 False"""
         with patch.dict(os.environ, {}, clear=True):
-            # 清除环境变量确保没有 LOCAL_DB_URL
+            # 清除环境变量确保没有 DATABASE_URL
             pass
         from rss2cubox.db_client import save_daily_report
         result = save_daily_report({"report_date": "2026-05-09"}, db_url="")

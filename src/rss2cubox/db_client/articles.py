@@ -102,7 +102,7 @@ def save_articles(
 
     Args:
         articles: List of article records to save.
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
 
     Returns:
         Number of articles saved, or 0 if error occurs.
@@ -113,7 +113,7 @@ def save_articles(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, skipping local DB save")
+        logging.warning("DATABASE_URL not set, skipping local DB save")
         return 0
 
     try:
@@ -437,7 +437,7 @@ def get_articles(
     Args:
         limit: Maximum number of articles to return.
         offset: Number of articles to skip.
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
 
     Returns:
         List of article dictionaries.
@@ -445,7 +445,7 @@ def get_articles(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        raise ValueError("LOCAL_DB_URL environment variable is not set")
+        raise ValueError("DATABASE_URL environment variable is not set")
 
     with psycopg.connect(db_url) as conn:
         cur = conn.cursor()
@@ -474,7 +474,7 @@ def get_articles_cursor(
         cursor: ISO format timestamp string. Returns articles published before this time.
                 Use the last item's publish_time from previous page as cursor.
         limit: Maximum number of articles to return.
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
 
     Returns:
         List of article dictionaries, ordered by publish_time DESC.
@@ -482,7 +482,7 @@ def get_articles_cursor(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        raise ValueError("LOCAL_DB_URL environment variable is not set")
+        raise ValueError("DATABASE_URL environment variable is not set")
 
     with psycopg.connect(db_url) as conn:
         cur = conn.cursor()
@@ -527,7 +527,7 @@ def get_articles_by_date(
         end_date: End date in YYYY-MM-DD format.
         limit: Maximum number of articles to return.
         offset: Number of articles to skip.
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
 
     Returns:
         List of article dictionaries within the date range.
@@ -535,7 +535,7 @@ def get_articles_by_date(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        raise ValueError("LOCAL_DB_URL environment variable is not set")
+        raise ValueError("DATABASE_URL environment variable is not set")
 
     with psycopg.connect(db_url) as conn:
         cur = conn.cursor()
@@ -558,7 +558,7 @@ def get_all_article_ids(db_url: str | None = None, *, enriched_only: bool = Fals
     """Get article IDs used as the dedup baseline.
 
     Args:
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
         enriched_only: 只算已完成 enrich 的文章。enrich 开启时必须用这个：
             runner 在 enrich **之前**就会把候选写库（phase 1，为了先保住全文），
             而一轮 enrich 要跑几小时。如果中断后这些只有原文、没有分析结果的行
@@ -571,7 +571,7 @@ def get_all_article_ids(db_url: str | None = None, *, enriched_only: bool = Fals
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, returning empty article IDs set")
+        logging.warning("DATABASE_URL not set, returning empty article IDs set")
         return set()
 
     sql = "SELECT id FROM articles WHERE id IS NOT NULL AND id != ''"
@@ -600,7 +600,7 @@ def get_feed_cursors(db_url: str | None = None) -> dict[str, str]:
     Used for feed_cursor-based incremental fetching, matching the IC API behavior.
 
     Args:
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
 
     Returns:
         dict mapping source_feed_id to latest publish_time ISO string.
@@ -608,7 +608,7 @@ def get_feed_cursors(db_url: str | None = None) -> dict[str, str]:
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, returning empty feed cursors")
+        logging.warning("DATABASE_URL not set, returning empty feed cursors")
         return {}
 
     try:

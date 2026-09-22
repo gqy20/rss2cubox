@@ -26,7 +26,7 @@ def save_global_insights(
 
     Args:
         payload: Global insights data from global_agent.
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
 
     Returns:
         True if saved successfully, False otherwise.
@@ -34,7 +34,7 @@ def save_global_insights(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, skipping global_insights save")
+        logging.warning("DATABASE_URL not set, skipping global_insights save")
         return False
 
     try:
@@ -64,7 +64,7 @@ def get_latest_global_insights(
     """Get the latest global insights from local PostgreSQL.
 
     Args:
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
 
     Returns:
         Latest global insights dict, or None if not found.
@@ -72,7 +72,7 @@ def get_latest_global_insights(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, cannot query global_insights")
+        logging.warning("DATABASE_URL not set, cannot query global_insights")
         return None
 
     try:
@@ -105,7 +105,7 @@ def get_all_global_insights(
     """Get all global insights from local PostgreSQL.
 
     Args:
-        db_url: PostgreSQL connection URL. If None, reads from LOCAL_DB_URL env.
+        db_url: PostgreSQL connection URL. If None, reads from DATABASE_URL env.
         limit: Maximum number of insights to return.
 
     Returns:
@@ -114,7 +114,7 @@ def get_all_global_insights(
     db_url = _get_db_url(db_url)
 
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, cannot query global_insights")
+        logging.warning("DATABASE_URL not set, cannot query global_insights")
         return []
 
     try:

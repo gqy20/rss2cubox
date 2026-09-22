@@ -18,14 +18,14 @@ from rss2cubox.policy.engine import PolicyItem, ScrapeResult
 from rss2cubox.policy import store
 
 # pytest 不会自动加载 .env。这里用 override=False（与项目运行时的 override=True 相反），
-# 目的是让外部显式指定的 LOCAL_DB_URL 能指向临时库，方便隔离测试。
+# 目的是让外部显式指定的 DATABASE_URL 能指向临时库，方便隔离测试。
 load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
 
 PREFIX = "_pytest_policy_"
 
 
 def _db_url() -> str:
-    return os.getenv("LOCAL_DB_URL", "").strip()
+    return os.getenv("DATABASE_URL", "").strip()
 
 
 def _reachable(url: str) -> bool:
@@ -41,7 +41,7 @@ def _reachable(url: str) -> bool:
 _DB = _db_url()
 pytestmark = pytest.mark.skipif(
     not _reachable(_DB),
-    reason=f"LOCAL_DB_URL 不可用（{(_DB.split('@')[-1] if _DB else '未设置')}），跳过 store 测试。先执行 make db",
+    reason=f"DATABASE_URL 不可用（{(_DB.split('@')[-1] if _DB else '未设置')}），跳过 store 测试。先执行 make db",
 )
 
 
@@ -90,7 +90,7 @@ class TestSchema:
         assert store.ensure_policy_schema(_DB) is True
 
     def test_returns_false_without_db_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("LOCAL_DB_URL", raising=False)
+        monkeypatch.delenv("DATABASE_URL", raising=False)
         assert store.ensure_policy_schema("") is False
 
 
@@ -160,7 +160,7 @@ class TestSavePolicyDocuments:
         assert store.save_policy_documents([], db_url=_DB) == {"inserted": 0, "updated": 0, "skipped": 0}
 
     def test_without_db_url_reports_skipped(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("LOCAL_DB_URL", raising=False)
+        monkeypatch.delenv("DATABASE_URL", raising=False)
         out = store.save_policy_documents([_item("e", 1)], db_url="")
         assert out["skipped"] == 1 and out["inserted"] == 0
 
@@ -278,7 +278,7 @@ class TestQueryFilters:
         assert [r["title"] for r in rows] == ["新的政策文件标题", "旧的政策文件标题"]
 
     def test_without_db_url_returns_empty(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        monkeypatch.delenv("LOCAL_DB_URL", raising=False)
+        monkeypatch.delenv("DATABASE_URL", raising=False)
         assert store.get_policy_documents(db_url="") == []
         assert store.get_source_states("") == []
         assert store.get_stale_sources(db_url="") == []

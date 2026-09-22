@@ -379,7 +379,7 @@ class TestGetAllArticleIds:
             assert result == set()
 
     def test_get_all_article_ids_returns_empty_set_when_no_url(self):
-        """Should return empty set when LOCAL_DB_URL is not set."""
+        """Should return empty set when DATABASE_URL is not set."""
         with patch.dict("os.environ", {}, clear=True):
             from rss2cubox.db_client import get_all_article_ids
             result = get_all_article_ids(db_url=None)
@@ -430,7 +430,7 @@ class TestGetFeedCursors:
             assert result == {}
 
     def test_get_feed_cursors_returns_empty_dict_when_no_url(self):
-        """Should return empty dict when LOCAL_DB_URL is not set."""
+        """Should return empty dict when DATABASE_URL is not set."""
         with patch.dict("os.environ", {}, clear=True):
             from rss2cubox.db_client import get_feed_cursors
             result = get_feed_cursors(db_url=None)

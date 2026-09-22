@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS policy_source_state (
 def ensure_policy_schema(db_url: str | None = None) -> bool:
     db_url = _get_db_url(db_url)
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, skipping policy schema")
+        logging.warning("DATABASE_URL not set, skipping policy schema")
         return False
     try:
         with psycopg.connect(db_url) as conn:
@@ -129,7 +129,7 @@ def save_policy_documents(
     stats = {"inserted": 0, "updated": 0, "skipped": 0}
     db_url = _get_db_url(db_url)
     if not db_url:
-        logging.warning("LOCAL_DB_URL not set, skipping policy document save")
+        logging.warning("DATABASE_URL not set, skipping policy document save")
         stats["skipped"] = len(items)
         return stats
     if not items:

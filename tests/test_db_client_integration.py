@@ -44,11 +44,11 @@ def sample_article_records():
 
 
 class TestRunnerDbIntegration:
-    """Test that runner calls db_client.save_articles when LOCAL_DB_URL is set."""
+    """Test that runner calls db_client.save_articles when DATABASE_URL is set."""
 
     def test_runner_calls_save_articles_when_local_db_url_set(self, sample_article_records):
-        """Runner should call save_articles when LOCAL_DB_URL environment variable is set."""
-        env = {"LOCAL_DB_URL": "postgresql://localhost/testdb"}
+        """Runner should call save_articles when DATABASE_URL environment variable is set."""
+        env = {"DATABASE_URL": "postgresql://localhost/testdb"}
 
         with patch.dict("os.environ", env, clear=False):
             with patch("rss2cubox.db_client.save_articles") as mock_save:
@@ -74,21 +74,21 @@ class TestRunnerDbIntegration:
                     mock_save.assert_called_once_with(article_records)
 
     def test_runner_does_not_call_save_articles_when_local_db_url_not_set(self, sample_article_records):
-        """Runner should not crash when LOCAL_DB_URL is not set - save_articles returns 0 gracefully."""
-        env = {}  # No LOCAL_DB_URL
+        """Runner should not crash when DATABASE_URL is not set - save_articles returns 0 gracefully."""
+        env = {}  # No DATABASE_URL
 
         with patch.dict("os.environ", env, clear=True):
             with patch("rss2cubox.db_client.save_articles") as mock_save:
                 mock_save.return_value = 0
                 from rss2cubox.db_client import save_articles
 
-                # Should return 0 instead of raising when LOCAL_DB_URL is not set
+                # Should return 0 instead of raising when DATABASE_URL is not set
                 result = save_articles(sample_article_records)
                 assert result == 0
 
     def test_save_articles_is_called_after_post_articles(self, sample_article_records):
         """save_articles should be called after post_articles_in_chunks succeeds."""
-        env = {"LOCAL_DB_URL": "postgresql://localhost/testdb"}
+        env = {"DATABASE_URL": "postgresql://localhost/testdb"}
 
         with patch.dict("os.environ", env, clear=False):
             with patch("rss2cubox.db_client.save_articles") as mock_save:
@@ -118,7 +118,7 @@ class TestRunnerDbIntegration:
         This tests the integration: when runner calls save_articles and it fails,
         runner should catch the exception and continue.
         """
-        env = {"LOCAL_DB_URL": "postgresql://localhost/testdb"}
+        env = {"DATABASE_URL": "postgresql://localhost/testdb"}
 
         with patch.dict("os.environ", env, clear=False):
             with patch("rss2cubox.db_client.save_articles") as mock_save:
@@ -136,14 +136,14 @@ class TestDbClientEnvVar:
     """Test db_client environment variable handling."""
 
     def test_save_articles_uses_local_db_url_from_env(self):
-        """save_articles should read LOCAL_DB_URL from environment variable."""
-        env = {"LOCAL_DB_URL": "postgresql://testuser:testpass@localhost:5432/testdb"}
+        """save_articles should read DATABASE_URL from environment variable."""
+        env = {"DATABASE_URL": "postgresql://testuser:testpass@localhost:5432/testdb"}
 
         with patch.dict("os.environ", env, clear=False):
             with patch("rss2cubox.db_client.articles.psycopg.connect") as mock_connect:
                 from rss2cubox.db_client import save_articles
 
-                # Should not raise ValueError about missing LOCAL_DB_URL
+                # Should not raise ValueError about missing DATABASE_URL
                 mock_connect.return_value.__enter__ = MagicMock(return_value=mock_connect.return_value)
                 mock_connect.return_value.__exit__ = MagicMock(return_value=False)
                 mock_connect.return_value.cursor.return_value.__enter__ = MagicMock(return_value=MagicMock())

@@ -91,13 +91,13 @@ fi
 rm -f /tmp/.doctor_models
 
 # ── 3. PostgreSQL ─────────────────────────────────────────────
-sec "3. PostgreSQL (LOCAL_DB_URL)"
-if [ -z "${LOCAL_DB_URL:-}" ]; then
-  warn "LOCAL_DB_URL 未设置 —— 文章/洞察/报告都不会落库（代码会 warning 后跳过）"
+sec "3. PostgreSQL (DATABASE_URL)"
+if [ -z "${DATABASE_URL:-}" ]; then
+  warn "DATABASE_URL 未设置 —— 文章/洞察/报告都不会落库（代码会 warning 后跳过）"
 else
   # 解析端口与库名
-  hostport=$(printf '%s' "$LOCAL_DB_URL" | sed -E 's#.*@([^/]+)/.*#\1#')
-  dbname=$(printf '%s' "$LOCAL_DB_URL" | sed -E 's#.*/([^?]+).*#\1#')
+  hostport=$(printf '%s' "$DATABASE_URL" | sed -E 's#.*@([^/]+)/.*#\1#')
+  dbname=$(printf '%s' "$DATABASE_URL" | sed -E 's#.*/([^?]+).*#\1#')
   echo "     $hostport / $dbname"
   if docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null | grep -q "rss2cubox-pg"; then
     ok "容器 rss2cubox-pg 在运行"
@@ -106,10 +106,10 @@ else
   fi
   # 真实连接测试
   if [ -x .venv/bin/python ]; then
-    conn=$(LOCAL_DB_URL="$LOCAL_DB_URL" .venv/bin/python - <<'PY' 2>&1
+    conn=$(DATABASE_URL="$DATABASE_URL" .venv/bin/python - <<'PY' 2>&1
 import os, psycopg
 try:
-    with psycopg.connect(os.environ["LOCAL_DB_URL"], connect_timeout=8) as c:
+    with psycopg.connect(os.environ["DATABASE_URL"], connect_timeout=8) as c:
         cur = c.cursor()
         cur.execute("SELECT COUNT(*) FROM pg_tables WHERE schemaname='public'")
         print(f"OK:{cur.fetchone()[0]}")
@@ -177,13 +177,13 @@ if [ -d web ]; then
   if [ -d web/node_modules ]; then ok "web/node_modules 已安装"; else warn "web 依赖未装 —— make deps"; fi
   if [ -f web/.env.local ]; then
     ok "web/.env.local 存在"
-    web_db=$(grep -oP '^LOCAL_DB_URL=\K.*' web/.env.local 2>/dev/null || true)
-    if [ -n "$web_db" ] && [ -n "${LOCAL_DB_URL:-}" ] && [ "$web_db" != "$LOCAL_DB_URL" ]; then
-      bad "web/.env.local 的 LOCAL_DB_URL 与根 .env 不一致"
+    web_db=$(grep -oP '^DATABASE_URL=\K.*' web/.env.local 2>/dev/null || true)
+    if [ -n "$web_db" ] && [ -n "${DATABASE_URL:-}" ] && [ "$web_db" != "$DATABASE_URL" ]; then
+      bad "web/.env.local 的 DATABASE_URL 与根 .env 不一致"
       echo "       web : $web_db"
-      echo "       root: $LOCAL_DB_URL"
+      echo "       root: $DATABASE_URL"
     elif [ -n "$web_db" ]; then
-      ok "web 与 root 的 LOCAL_DB_URL 一致"
+      ok "web 与 root 的 DATABASE_URL 一致"
     fi
   else
     warn "web/.env.local 不存在（可从 web/.env.example 复制）"
@@ -231,7 +231,7 @@ sec "8. 政策信源子系统"
 if [ ! -f policy_sources.toml ]; then
   warn "policy_sources.toml 不存在"
 elif [ -x .venv/bin/python ] || command -v uv >/dev/null 2>&1; then
-  polinfo=$(LOCAL_DB_URL="${LOCAL_DB_URL:-}" uv run python - <<'PY' 2>&1
+  polinfo=$(DATABASE_URL="${DATABASE_URL:-}" uv run python - <<'PY' 2>&1
 from rss2cubox.policy import config as cfg, store
 try:
     all_sites = cfg.load_sources("policy_sources.toml", include_disabled=True)
