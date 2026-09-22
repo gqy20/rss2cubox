@@ -54,15 +54,15 @@ up: db deps db-init ## 一次性准备环境：起 DB + 装依赖 + 建表
 	@echo "    make web    起前端 dev server (http://localhost:$(WEB_PORT))"
 	@echo "    make dev    两者一起"
 
-deps: ## 安装依赖（uv sync + web npm install）
+deps: ## 安装依赖（uv sync + web pnpm install）
 	@echo "→ Python 依赖 (uv sync --extra dev)"
 	@$(UV) sync --extra dev
 	@if [ -d "$(WEB_DIR)" ] && [ -f "$(WEB_DIR)/package.json" ]; then \
 	  if [ -d "$(WEB_DIR)/node_modules" ]; then \
-	    echo "✓ 前端依赖已存在，跳过 npm install"; \
+	    echo "✓ 前端依赖已存在，跳过 pnpm install"; \
 	  else \
-	    echo "→ 前端依赖 (npm install)"; \
-	    (cd $(WEB_DIR) && npm install); \
+	    echo "→ 前端依赖 (pnpm install)"; \
+	    (cd $(WEB_DIR) && pnpm install); \
 	  fi; \
 	fi
 
@@ -158,7 +158,7 @@ policy-status: db-wait ## 查看政策信源健康度与疑似失效站点
 
 web: db-wait ## 起前端 dev server（http://localhost:3424）
 	@echo "→ http://localhost:$(WEB_PORT)"
-	@cd $(WEB_DIR) && npm run dev
+	@cd $(WEB_DIR) && pnpm dev
 
 dev: db db-init ## 一次性启动前后端：DB + 后端跑一次 + 前端常驻（Ctrl-C 全部退出）
 	@echo "════════════════════════════════════════════"
@@ -170,7 +170,7 @@ dev: db db-init ## 一次性启动前后端：DB + 后端跑一次 + 前端常�
 	if [ "$(RUN_ON_DEV)" = "1" ]; then \
 	  ( DATABASE_URL='$(DATABASE_URL)' $(UV) run rss2cubox 2>&1 | sed 's/^/[backend]  /' ) & \
 	fi; \
-	( cd $(WEB_DIR) && npm run dev 2>&1 | sed 's/^/[web]      /' ) & \
+	( cd $(WEB_DIR) && pnpm dev 2>&1 | sed 's/^/[web]      /' ) & \
 	wait
 
 # ── 体检 / 测试 / 日志 ────────────────────────────────────────
