@@ -66,8 +66,7 @@ export function insightFreshness(
   generatedAt: string | null | undefined,
   asOf: string,
 ) {
-  if (!generatedAt || !dayInShanghai(generatedAt)) return '尚未生成'
-  return dayInShanghai(generatedAt) === dayInShanghai(asOf)
-    ? '今日生成'
-    : '历史洞察'
+  const generated = generatedAt ? dayInShanghai(generatedAt) : null
+  if (!generated) return '尚未生成'
+  return generated === dayInShanghai(asOf) ? '今日生成' : '历史洞察'
 }

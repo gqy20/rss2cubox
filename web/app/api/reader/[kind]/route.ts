@@ -4,6 +4,7 @@ import {
   readArticle,
   readPolicies,
   readPolicy,
+  readSaved,
 } from '../../../../lib/journal-store'
 export const dynamic = 'force-dynamic'
 const headers = { 'Cache-Control': 'no-store' }
@@ -57,13 +58,20 @@ export async function GET(
     return failure(error)
   }
 }
-/** Read-only query over this browser's saved article IDs; IDs do not go into the URL. */
+function validIds(value: unknown): value is string[] {
+  return (
+    Array.isArray(value) &&
+    value.length <= 5000 &&
+    value.every((id) => typeof id === 'string' && id && id.length <= 255)
+  )
+}
+/** Read-only queries over this browser's saved IDs; IDs do not go into the URL. */
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ kind: string }> },
 ) {
   const { kind } = await context.params
-  if (kind !== 'signals')
+  if (kind !== 'signals' && kind !== 'saved')
     return NextResponse.json(
       { error: '不支持此查询' },
       { status: 405, headers: { ...headers, Allow: 'GET' } },
@@ -75,13 +83,20 @@ export async function POST(
     } catch {
       throw new Error('Invalid selection')
     }
+    if (kind === 'saved') {
+      const article = (body as { article?: unknown })?.article ?? [],
+        policy = (body as { policy?: unknown })?.policy ?? []
+      if (!validIds(article) || !validIds(policy))
+        throw new Error('Invalid selection')
+      return NextResponse.json(
+        {
+          data: await readSaved([...new Set(article)], [...new Set(policy)]),
+        },
+        { headers },
+      )
+    }
     const ids = (body as { ids?: unknown })?.ids
-    if (
-      !Array.isArray(ids) ||
-      ids.length > 5000 ||
-      ids.some((id) => typeof id !== 'string' || !id || id.length > 255)
-    )
-      throw new Error('Invalid selection')
+    if (!validIds(ids)) throw new Error('Invalid selection')
     const params = new URLSearchParams(request.nextUrl.searchParams)
     params.set('saved', '1')
     return NextResponse.json(await readSignals(params, [...new Set(ids)]), {

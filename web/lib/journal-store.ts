@@ -1,6 +1,7 @@
 import { Pool, type QueryResultRow } from 'pg'
 import { createHash } from 'node:crypto'
 import { cache } from 'react'
+import { memoize, memoizeArg } from './memo'
 import { formatLocalArticleRow } from './localArticleRows'
 import { buildContentSearch, type SearchScope } from './reader-search'
 import {
@@ -253,6 +254,28 @@ export async function readSignals(
   }
 }
 
+// Batch read for the saved page: fetches bookmarked rows by id in one round
+// trip each. Bypasses the policy triage filter because bookmarking via a
+// direct link must stay visible in the saved list.
+export async function readSaved(articleIds: string[], policyIds: string[]) {
+  const [articles, policies] = await Promise.all([
+    articleIds.length
+      ? process.env.API_SOURCE && process.env.API_SOURCE !== 'local'
+        ? (await loadIcArticles()).filter((row) => articleIds.includes(row.id))
+        : query(`SELECT ${articleFields} FROM articles WHERE id = ANY($1::text[])`, [
+            articleIds,
+          ]).then((rows) => rows.map(formatLocalArticleRow))
+      : Promise.resolve([]),
+    policyIds.length
+      ? query<Policy>(
+          `SELECT ${policyFields} FROM policy_documents WHERE id = ANY($1::text[])`,
+          [policyIds],
+        )
+      : Promise.resolve([]),
+  ])
+  return { articles, policies }
+}
+
 export async function readArticle(id: string): Promise<Row | null> {
   if (process.env.API_SOURCE && process.env.API_SOURCE !== 'local')
     return (await loadIcArticles()).find((row) => row.id === id) || null
@@ -311,23 +334,39 @@ export async function readPolicy(id: string) {
   )
   return policy || null
 }
-export async function policyFacets() {
-  return query<{
-    region: string | null
-    stage: string | null
-    instrument_type: string | null
-    policy_lineage: string | null
-  }>(`SELECT DISTINCT region,stage,instrument_type,policy_lineage
-      FROM policy_documents WHERE triage_relevance >= 2`)
+export type PolicyFacets = {
+  region: string[]
+  stage: string[]
+  instrument_type: string[]
+  policy_lineage: string[]
 }
+export const policyFacets = memoize(async (): Promise<PolicyFacets> => {
+  const rows = await query<{ kind: keyof PolicyFacets; value: string | null }>(
+    `SELECT 'region' AS kind, region AS value FROM policy_documents WHERE triage_relevance >= 2 GROUP BY region
+     UNION ALL SELECT 'stage', stage FROM policy_documents WHERE triage_relevance >= 2 GROUP BY stage
+     UNION ALL SELECT 'instrument_type', instrument_type FROM policy_documents WHERE triage_relevance >= 2 GROUP BY instrument_type
+     UNION ALL SELECT 'policy_lineage', policy_lineage FROM policy_documents WHERE triage_relevance >= 2 GROUP BY policy_lineage`,
+  )
+  const facets: PolicyFacets = {
+    region: [],
+    stage: [],
+    instrument_type: [],
+    policy_lineage: [],
+  }
+  for (const row of rows)
+    if (row.value && facets[row.kind]) facets[row.kind].push(row.value)
+  for (const key of Object.keys(facets) as (keyof PolicyFacets)[])
+    facets[key].sort()
+  return facets
+}, 300_000)
 export type LineageStats = {
   lineages: { lineage: string; n: number }[]
   months: { ym: string; n: number }[]
   stages: { stage: string; n: number }[]
 }
-export async function policyLineageStats(
+export const policyLineageStats = memoizeArg(async (
   lineage?: string,
-): Promise<LineageStats> {
+): Promise<LineageStats> => {
   const base = 'FROM policy_documents WHERE triage_relevance >= 2'
   const picked =
     lineage && lineage.length <= 60 ? lineage.replace(/[%_\\]/g, '') : ''
@@ -354,12 +393,14 @@ export async function policyLineageStats(
       : Promise.resolve([]),
   ])
   return { lineages, months, stages }
-}
-export async function signalSources() {
-  return query<{ source: string }>(
-    "SELECT DISTINCT source_feed_name AS source FROM articles WHERE COALESCE(source_feed_name,'') <> '' ORDER BY source_feed_name",
-  )
-}
+}, 300_000)
+export const signalSources = memoize(
+  () =>
+    query<{ source: string }>(
+      "SELECT DISTINCT source_feed_name AS source FROM articles WHERE COALESCE(source_feed_name,'') <> '' ORDER BY source_feed_name",
+    ),
+  300_000,
+)
 export async function readClusters() {
   return query<Cluster>(
     `SELECT sc.id,sc.label,sc.summary,sc.status,COALESCE(linked.article_count,0)::int AS article_count,
@@ -481,6 +522,12 @@ export const getJournal = cache(async (): Promise<JournalData> => {
     loadedAt: new Date().toISOString(),
   }
 })
+export async function topicPendingPredictions(id: number) {
+  return query<Prediction>(
+    `SELECT tp.*,sc.label AS cluster_label FROM trend_predictions tp LEFT JOIN signal_clusters sc ON sc.id=tp.signal_cluster_id WHERE tp.signal_cluster_id=$1 AND tp.status='pending' ORDER BY tp.created_at DESC,tp.id DESC`,
+    [id],
+  )
+}
 export async function topicArticles(id: number) {
   const rows = await query(
     `SELECT a.*,COALESCE(a.publish_time,a.created_at) AS display_time FROM articles a JOIN signal_cluster_articles ca ON ca.article_id=a.id WHERE ca.cluster_id=$1 ORDER BY COALESCE(a.publish_time,a.created_at) DESC NULLS LAST,a.id DESC LIMIT 30`,
@@ -517,17 +564,19 @@ export async function sourceHealth() {
   })
   return { sources, issues }
 }
-export async function collectionTrend() {
-  return query<{
-    day: string
-    articles: number
-    policies: number
-  }>(`WITH days AS (
+export const collectionTrend = memoize(
+  () =>
+    query<{
+      day: string
+      articles: number
+      policies: number
+    }>(`WITH days AS (
     SELECT generate_series((now() AT TIME ZONE 'Asia/Shanghai')::date-13,(now() AT TIME ZONE 'Asia/Shanghai')::date,'1 day')::date AS day
   ), a AS (SELECT (created_at AT TIME ZONE 'Asia/Shanghai')::date AS day,count(*)::int AS n FROM articles GROUP BY 1),
   p AS (SELECT (first_seen_at AT TIME ZONE 'Asia/Shanghai')::date AS day,count(*)::int AS n FROM policy_documents GROUP BY 1)
-  SELECT to_char(days.day,'MM/DD') AS day,COALESCE(a.n,0) AS articles,COALESCE(p.n,0) AS policies FROM days LEFT JOIN a USING(day) LEFT JOIN p USING(day) ORDER BY days.day`)
-}
+  SELECT to_char(days.day,'MM/DD') AS day,COALESCE(a.n,0) AS articles,COALESCE(p.n,0) AS policies FROM days LEFT JOIN a USING(day) LEFT JOIN p USING(day) ORDER BY days.day`),
+  300_000,
+)
 
 function articleMatch(row: Row, search: string) {
   const fields: [string, string | undefined][] = [

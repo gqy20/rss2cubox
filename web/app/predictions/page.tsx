@@ -12,10 +12,9 @@ export default async function PredictionsPage({
   const { id } = await searchParams,
     data = await getJournal()
   const pending = data.predictions.filter((p) => p.status === 'pending').length
+  const predictionIds = new Set(data.predictions.map((p) => p.id))
   const reviewed = new Set(
-    data.reviews
-      .map((r) => r.prediction_id)
-      .filter((id) => data.predictions.some((p) => p.id === id)),
+    data.reviews.map((r) => r.prediction_id).filter((id) => predictionIds.has(id)),
   ).size
   const available =
     !data.issues.includes('预测') && !data.issues.includes('复盘')

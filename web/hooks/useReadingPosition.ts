@@ -1,6 +1,8 @@
 'use client'
 import { useLayoutEffect, type RefObject } from 'react'
 import { readMemory, writeMemory } from '../lib/reading-memory'
+// Scroll fires at display refresh rate; storage writes are rAF-throttled so a
+// long read costs at most one JSON.stringify + setItem per frame, not per event.
 export function useReadingPosition(
   ref: RefObject<HTMLElement | null>,
   key: string,
@@ -11,7 +13,8 @@ export function useReadingPosition(
     if (!element || !ready) return
     const memoryKey = `scroll:${key}`,
       target = readMemory<number>(memoryKey, 0)
-    let restoring = true
+    let restoring = true,
+      saveFrame = 0
     const apply = () => {
       if (restoring && element.clientHeight)
         element.scrollTop = Math.max(0, target)
@@ -22,8 +25,11 @@ export function useReadingPosition(
       restoring = false
     })
     const save = () => {
-      if (!restoring && element.clientHeight)
+      if (restoring || !element.clientHeight || saveFrame) return
+      saveFrame = requestAnimationFrame(() => {
+        saveFrame = 0
         writeMemory(memoryKey, element.scrollTop)
+      })
     }
     const interact = () => {
       restoring = false
@@ -34,6 +40,9 @@ export function useReadingPosition(
     element.addEventListener('keydown', interact)
     return () => {
       cancelAnimationFrame(frame)
+      cancelAnimationFrame(saveFrame)
+      if (!restoring && element.clientHeight)
+        writeMemory(memoryKey, element.scrollTop)
       element.removeEventListener('scroll', save)
       element.removeEventListener('wheel', interact)
       element.removeEventListener('touchstart', interact)
@@ -47,18 +56,25 @@ export function useWindowReadingPosition(key: string, ready = true) {
     const memoryKey = `window:${key}`,
       route = location.pathname,
       target = readMemory<number>(memoryKey, 0)
-    let restoring = true
+    let restoring = true,
+      saveFrame = 0
     const frame = requestAnimationFrame(() => {
       window.scrollTo({ top: target })
       restoring = false
     })
     const save = () => {
-      if (!restoring && location.pathname === route)
+      if (restoring || location.pathname !== route || saveFrame) return
+      saveFrame = requestAnimationFrame(() => {
+        saveFrame = 0
         writeMemory(memoryKey, window.scrollY)
+      })
     }
     window.addEventListener('scroll', save, { passive: true })
     return () => {
       cancelAnimationFrame(frame)
+      cancelAnimationFrame(saveFrame)
+      if (!restoring && location.pathname === route)
+        writeMemory(memoryKey, window.scrollY)
       window.removeEventListener('scroll', save)
     }
   }, [key, ready])

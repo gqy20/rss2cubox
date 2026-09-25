@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
 import { queryJournal } from './journal-store'
+import { memoize } from './memo'
 import { formatLocalArticleRow } from './localArticleRows'
 import {
   parseFeedRegistry,
@@ -35,7 +36,9 @@ async function optionalFile(file: string) {
     return null
   }
 }
-async function registry(): Promise<Registry> {
+// Registry parses .env + feeds.txt + policy_sources.toml from disk; the files
+// change at deploy time, so a minute of staleness is harmless.
+const registry = memoize(async (): Promise<Registry> => {
   let root = path.resolve(process.cwd(), '..')
   if ((await optionalFile(path.resolve(process.cwd(), 'feeds.txt'))) !== null)
     root = process.cwd()
@@ -72,7 +75,7 @@ async function registry(): Promise<Registry> {
     techAvailable: feedText !== null,
     policyAvailable,
   }
-}
+}, 60_000)
 export const techRunsSql = `WITH rounds AS (
  SELECT feed_url,COALESCE(NULLIF(run_id,''),'record-'||id::text) AS run_key,max(ran_at) AS at,
  CASE WHEN bool_or(status='ok') THEN 'ok' WHEN bool_or(status='empty') THEN 'empty'
@@ -113,13 +116,8 @@ type PolicyState = {
   last_error: string | null
   consecutive_empty_runs: number
 }
-async function snapshotWithKeys() {
-  const issues: string[] = []
-  const attempt = async <T>(
-    label: string,
-    fn: () => Promise<T>,
-    fallback: T,
-  ) => {
+function makeAttempt(issues: string[]) {
+  return async <T>(label: string, fn: () => Promise<T>, fallback: T) => {
     try {
       return await fn()
     } catch {
@@ -127,6 +125,41 @@ async function snapshotWithKeys() {
       return fallback
     }
   }
+}
+// md5 source ids are not reversible, so details need a known-key lookup.
+// Cheap DISTINCT scans + the registry, cached briefly — the full snapshot
+// aggregation is far too heavy to rebuild for every detail request.
+let keyCache: {
+  at: number
+  map: Map<string, { kind: SourceKind; key: string }>
+} | null = null
+const KEY_CACHE_MS = 60_000
+async function sourceKeys() {
+  if (keyCache && Date.now() - keyCache.at < KEY_CACHE_MS) return keyCache.map
+  const config = await registry()
+  const [tech, policy] = await Promise.all([
+    queryJournal<{ key: string }>(
+      `SELECT DISTINCT feed_url AS key FROM feed_stats
+       UNION SELECT DISTINCT source_feed_id AS key FROM articles WHERE COALESCE(source_feed_id,'')<>''`,
+    ).catch(() => []),
+    queryJournal<{ key: string }>(
+      `SELECT site_key AS key FROM policy_source_state
+       UNION SELECT DISTINCT site_key AS key FROM policy_documents`,
+    ).catch(() => []),
+  ])
+  const map = new Map<string, { kind: SourceKind; key: string }>()
+  const add = (kind: SourceKind, key: string) => {
+    if (key) map.set(sourceId(kind, key), { kind, key })
+  }
+  config.specs.forEach((s) => add(s.kind, s.key))
+  tech.forEach((r) => add('tech', r.key))
+  policy.forEach((r) => add('policy', r.key))
+  keyCache = { at: Date.now(), map }
+  return map
+}
+async function snapshotWithKeys() {
+  const issues: string[] = []
+  const attempt = makeAttempt(issues)
   const [config, tech, articleStats, policyStates, policyStats] =
     await Promise.all([
       registry(),
@@ -175,7 +208,6 @@ async function snapshotWithKeys() {
   articleStats.forEach((s) => add('tech', s.key))
   policyStates.forEach((s) => add('policy', s.site_key))
   policyStats.forEach((s) => add('policy', s.key))
-  const privateKeys = new Map<string, { kind: SourceKind; key: string }>()
   const sources = [...keys.entries()].map(
     ([mapKey, { kind, key }]): MonitorSource => {
       const spec = specs.get(mapKey),
@@ -228,7 +260,6 @@ async function snapshotWithKeys() {
               : runs[0]?.status || 'never'
       const address = redactAddress(spec?.url || (kind === 'tech' ? key : '')),
         id = sourceId(kind, key)
-      privateKeys.set(id, { kind, key })
       return {
         id,
         kind,
@@ -266,33 +297,22 @@ async function snapshotWithKeys() {
       }
     },
   )
-  return { sources, issues, loadedAt: new Date().toISOString(), privateKeys }
+  return { sources, issues, loadedAt: new Date().toISOString() }
 }
-export async function readMonitorSnapshot(): Promise<MonitorSnapshot> {
-  const { privateKeys, ...publicData } = await snapshotWithKeys()
-  return publicData
-}
+// The ops view tolerates a short snapshot lag; the page renders loadedAt.
+export const readMonitorSnapshot = memoize(
+  (): Promise<MonitorSnapshot> => snapshotWithKeys(),
+  30_000,
+)
 export async function readMonitorDetail(
   id: string,
 ): Promise<MonitorDetail | null> {
   if (!/^(tech|policy):[a-f0-9]{32}$/.test(id)) return null
-  const registryData = await snapshotWithKeys(),
-    reference = registryData.privateKeys.get(id)
+  const reference = (await sourceKeys()).get(id)
   if (!reference) return null
   const { kind, key } = reference,
     issues: string[] = []
-  const attempt = async <T>(
-    label: string,
-    fn: () => Promise<T>,
-    fallback: T,
-  ) => {
-    try {
-      return await fn()
-    } catch {
-      issues.push(label)
-      return fallback
-    }
-  }
+  const attempt = makeAttempt(issues)
   if (kind === 'policy') {
     const rows = await attempt<Policy[]>(
       '政策内容',

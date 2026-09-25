@@ -9,17 +9,26 @@ export function safeUrl(value: string | null | undefined): string | undefined {
     return undefined
   }
 }
+// Intl formatters are expensive to construct; share module-level instances.
+const dayFormatter = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+const timeFormatter = new Intl.DateTimeFormat('zh-CN', {
+  timeZone: 'Asia/Shanghai',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+})
 export function dateLabel(value?: string | null, withTime = false): string {
   if (!value) return '未记录'
   const date = new Date(value)
   if (!Number.isFinite(date.getTime())) return '未记录'
-  return date.toLocaleString('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    ...(withTime ? ({ hour: '2-digit', minute: '2-digit' } as const) : {}),
-  })
+  return (withTime ? timeFormatter : dayFormatter).format(date)
 }
 export function plainText(value?: string | null): string {
   return (value || '')

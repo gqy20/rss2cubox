@@ -1,5 +1,5 @@
-'use client'
-
+// No hooks or browser APIs: safe as a server component. Client components can
+// still import it — the module then ships with that client's bundle.
 import type { ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -41,6 +41,18 @@ const sharedComponents: Components = {
   th: ({ children }) => <th className="md-th">{children}</th>,
   td: ({ children }) => <td className="md-td">{children}</td>,
   del: ({ children }) => <del className="md-del">{children}</del>,
+  // External images: no referrer leak, no layout shift, no eager fetch.
+  img: ({ src, alt }) => (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={alt || ''}
+      loading="lazy"
+      decoding="async"
+      referrerPolicy="no-referrer"
+      className="md-img"
+    />
+  ),
 }
 
 /** 块级模式：保留 h1-h3 / p 等块级标签 */

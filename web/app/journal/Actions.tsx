@@ -1,16 +1,55 @@
 'use client'
-import { useEffect, useState, useTransition } from 'react'
+import { useEffect, useState, useSyncExternalStore, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bookmark, Download, RefreshCw, Check } from 'lucide-react'
 const KEY = 'rss-brief-bookmarks'
+const EMPTY: string[] = []
+// One cached parse + one pair of window listeners, shared by every
+// BookmarkButton on the page instead of one per row.
+let cached: string[] | null = null
 export function getBookmarks(): string[] {
+  if (cached) return cached
   try {
     const value: unknown = JSON.parse(localStorage.getItem(KEY) || '[]')
-    return Array.isArray(value)
+    cached = Array.isArray(value)
       ? value.filter((s): s is string => typeof s === 'string')
-      : []
+      : EMPTY
   } catch {
-    return []
+    cached = EMPTY
+  }
+  return cached
+}
+const listeners = new Set<() => void>()
+const notify = () => listeners.forEach((listener) => listener())
+const onExternalChange = () => {
+  cached = null
+  notify()
+}
+let listening = 0
+function subscribeBookmarks(onStoreChange: () => void) {
+  if (listening++ === 0) {
+    window.addEventListener('bookmarks-change', notify)
+    window.addEventListener('storage', onExternalChange)
+  }
+  listeners.add(onStoreChange)
+  return () => {
+    listeners.delete(onStoreChange)
+    if (--listening === 0) {
+      window.removeEventListener('bookmarks-change', notify)
+      window.removeEventListener('storage', onExternalChange)
+    }
+  }
+}
+function toggleBookmark(key: string): boolean {
+  try {
+    const all = getBookmarks(),
+      next = all.includes(key) ? all.filter((s) => s !== key) : [...all, key]
+    localStorage.setItem(KEY, JSON.stringify(next))
+    cached = next
+    window.dispatchEvent(new Event('bookmarks-change'))
+    return true
+  } catch {
+    return false
   }
 }
 export function BookmarkButton({
@@ -21,18 +60,9 @@ export function BookmarkButton({
   kind?: 'article' | 'policy'
 }) {
   const key = `${kind}:${id}`,
-    [saved, setSaved] = useState(false),
+    all = useSyncExternalStore(subscribeBookmarks, getBookmarks, () => EMPTY),
+    saved = all.includes(key),
     [error, setError] = useState(false)
-  useEffect(() => {
-    const update = () => setSaved(getBookmarks().includes(key))
-    update()
-    window.addEventListener('bookmarks-change', update)
-    window.addEventListener('storage', update)
-    return () => {
-      window.removeEventListener('bookmarks-change', update)
-      window.removeEventListener('storage', update)
-    }
-  }, [key])
   return (
     <button
       className={`icon-button bookmark-button ${saved ? 'is-saved' : ''}`}
@@ -41,21 +71,7 @@ export function BookmarkButton({
       }
       aria-label={saved ? '取消收藏' : '收藏'}
       aria-pressed={saved}
-      onClick={() => {
-        try {
-          const all = getBookmarks()
-          localStorage.setItem(
-            KEY,
-            JSON.stringify(
-              saved ? all.filter((s) => s !== key) : [...all, key],
-            ),
-          )
-          window.dispatchEvent(new Event('bookmarks-change'))
-          setError(false)
-        } catch {
-          setError(true)
-        }
-      }}
+      onClick={() => setError(!toggleBookmark(key))}
     >
       <Bookmark size={17} fill={saved ? 'currentColor' : 'none'} />
       {error && (
@@ -94,7 +110,8 @@ export function ExportButton({
         a.href = url
         a.download = `${name}.json`
         a.click()
-        URL.revokeObjectURL(url)
+        // Revoking synchronously can cancel the download before it starts.
+        setTimeout(() => URL.revokeObjectURL(url), 1000)
         setDone(true)
       }}
     >
