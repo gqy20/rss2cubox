@@ -2,16 +2,18 @@
 import { ScoreIndicator } from './Numbers'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { safeReturnPath, withOrigin } from '../../lib/reading-context'
+import { safeReturnPath } from '../../lib/reading-context'
 import { ReturnLink } from './ReadingNavigation'
 import { useWindowReadingPosition } from '../../hooks/useReadingPosition'
 import { clearMemory } from '../../lib/reading-memory'
-import Link from 'next/link'
+import { ChevronRight } from 'lucide-react'
 import type { Prediction, Review } from '../../lib/journal-types'
 import { dateLabel, predictionStatus } from '../../lib/journal-utils'
-import { Empty, JsonEvidence, PageHeading } from './Shared'
+import { Empty, PageHeading } from './Shared'
 import { ExportButton, RefreshButton } from './Actions'
 import { SearchTrigger } from './SearchPalette'
+import Drawer from './Drawer'
+import PredictionDetail from './PredictionDetail'
 export default function Predictions({
   predictions,
   reviews,
@@ -31,11 +33,13 @@ export default function Predictions({
       : 'all',
     search = params.get('q') || ''
   const origin = safeReturnPath(params.get('from'))
-  const expanded = new Set(
-    (params.has('open') ? params.get('open') || '' : targetId)
+  // Legacy multi-open links (?open=1,2) map onto the single-selection drawer.
+  const openId =
+    targetId ||
+    (params.get('open') || '')
       .split(',')
-      .filter((id) => /^\d+$/.test(id)),
-  )
+      .find((id) => /^\d+$/.test(id)) ||
+    ''
   const update = (changes: Record<string, string | null>) => {
     const next = new URLSearchParams(query)
     for (const [key, value] of Object.entries(changes)) {
@@ -120,112 +124,50 @@ export default function Predictions({
       <div className="prediction-list">
         {rows.length ? (
           rows.map((p) => {
-            const related = reviews.filter((r) => r.prediction_id === p.id)
+            const id = String(p.id),
+              isOpen = openId === id
             return (
-              <details
-                className="surface prediction-card"
+              <article
+                className={`surface prediction-card${isOpen ? ' is-open' : ''}`}
                 key={p.id}
-                open={expanded.has(String(p.id))}
-                onToggle={(e) => {
-                  if (!e.currentTarget.isConnected) return
-                  const card = e.currentTarget
-                  const ids = new Set(expanded)
-                  if (card.open) {
-                    ids.add(String(p.id))
-                    requestAnimationFrame(() =>
-                      card.scrollIntoView({ block: 'start', behavior: 'smooth' }),
-                    )
-                  } else {
-                    ids.delete(String(p.id))
-                  }
-                  update({ open: [...ids].join(',') || 'none' })
-                }}
+                onClick={() => update({ id })}
               >
-                <summary>
-                  <div className="metadata">
-                    <span
-                      className={`pill ${p.status === 'pending' ? 'clay' : 'olive'}`}
-                    >
-                      {predictionStatus[p.status] || p.status}
-                    </span>
-                    <ScoreIndicator label="置信度" value={p.confidence} />
-                    <span className="expand-label">展开依据与复盘</span>
-                  </div>
-                  <h2>{p.prediction_title}</h2>
-                  <p className="summary-body">
-                    {p.prediction_body.length > 180
-                      ? `${p.prediction_body.slice(0, 180)}…`
-                      : p.prediction_body}
-                  </p>
-                  <div className="metadata prediction-window">
-                    验证窗口 {dateLabel(p.target_start_at)} 至{' '}
-                    {dateLabel(p.target_end_at)}
-                    <span>{p.cluster_label}</span>
-                  </div>
-                </summary>
-                <div className="document-section">
-                  <h3>原始判断</h3>
-                  <p>{p.prediction_body}</p>
-                </div>
-                <div className="document-section">
-                  <h3>预期验证证据</h3>
-                  <JsonEvidence value={p.expected_evidence} />
-                </div>
-                <div className="document-section">
-                  <h3>什么会推翻这个判断</h3>
-                  <p>{p.disconfirming_evidence || '未记录反证条件'}</p>
-                </div>
-                {p.signal_cluster_id && (
-                  <Link
-                    className="text-link"
-                    href={withOrigin(`/topics?id=${p.signal_cluster_id}`, from)}
+                <div className="metadata">
+                  <span
+                    className={`pill ${p.status === 'pending' ? 'clay' : 'olive'}`}
                   >
-                    阅读关联专题 →
-                  </Link>
-                )}
-                {related.length ? (
-                  related.map((review) => (
-                    <section className="review-note" key={review.id}>
-                      <div className="metadata">
-                        复盘于 {dateLabel(review.reviewed_at, true)}
-                        <ScoreIndicator label="复盘评分" value={review.score} />
-                        <span>
-                          {(
-                            {
-                              exact: '精确命中',
-                              strong: '强验证',
-                              partial: '部分命中',
-                              weak: '弱验证',
-                              miss: '未命中',
-                            } as Record<string, string>
-                          )[review.hit_level] || review.hit_level}
-                        </span>
-                      </div>
-                      <p>{review.actual_observation}</p>
-                      <p>{review.why_score}</p>
-                      {review.improvement_advice && (
-                        <p>
-                          <strong>改进建议：</strong>
-                          {review.improvement_advice}
-                        </p>
-                      )}
-                      <details className="disclosure">
-                        <summary>支持与反对材料</summary>
-                        <div>
-                          <h3>支持材料</h3>
-                          <JsonEvidence value={review.supporting_articles} />
-                          <h3>反对材料</h3>
-                          <JsonEvidence value={review.contradicting_articles} />
-                        </div>
-                      </details>
-                    </section>
-                  ))
-                ) : (
-                  <p className="snapshot-note">
-                    这条判断尚无复盘记录。待验证不代表已经发生或已经命中。
-                  </p>
-                )}
-              </details>
+                    {predictionStatus[p.status] || p.status}
+                  </span>
+                  <ScoreIndicator label="置信度" value={p.confidence} />
+                  <ChevronRight
+                    size={15}
+                    className="prediction-open-hint"
+                    aria-hidden="true"
+                  />
+                </div>
+                <h2 className="prediction-title">
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      update({ id })
+                    }}
+                  >
+                    {p.prediction_title}
+                  </button>
+                </h2>
+                <p className="summary-body">
+                  {p.prediction_body.length > 180
+                    ? `${p.prediction_body.slice(0, 180)}…`
+                    : p.prediction_body}
+                </p>
+                <div className="metadata prediction-window">
+                  验证窗口 {dateLabel(p.target_start_at)} 至{' '}
+                  {dateLabel(p.target_end_at)}
+                  <span>{p.cluster_label}</span>
+                </div>
+              </article>
             )
           })
         ) : (
@@ -237,6 +179,46 @@ export default function Predictions({
           </section>
         )}
       </div>
+      {(() => {
+        const selected = predictions.find((p) => String(p.id) === openId)
+        return (
+          <Drawer
+            open={Boolean(selected)}
+            onClose={() => update({ id: null, open: null })}
+            label={selected ? `预测详情：${selected.prediction_title}` : '预测详情'}
+            header={
+              selected && (
+                <div className="drawer-heading">
+                  <span
+                    className={`pill ${selected.status === 'pending' ? 'clay' : 'olive'}`}
+                  >
+                    {predictionStatus[selected.status] || selected.status}
+                  </span>
+                  <ScoreIndicator label="置信度" value={selected.confidence} />
+                </div>
+              )
+            }
+          >
+            {selected && (
+              <>
+                <h2 className="drawer-title">{selected.prediction_title}</h2>
+                <div className="metadata prediction-window">
+                  验证窗口 {dateLabel(selected.target_start_at)} 至{' '}
+                  {dateLabel(selected.target_end_at)}
+                  <span>{selected.cluster_label}</span>
+                </div>
+                <PredictionDetail
+                  prediction={selected}
+                  reviews={reviews.filter(
+                    (r) => r.prediction_id === selected.id,
+                  )}
+                  from={from}
+                />
+              </>
+            )}
+          </Drawer>
+        )
+      })()}
     </>
   )
 }

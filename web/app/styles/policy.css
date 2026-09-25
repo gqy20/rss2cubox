@@ -144,42 +144,48 @@
   gap: var(--space-md);
 }
 .prediction-card {
-  padding: 23px 28px;
-  scroll-margin-top: 14px;
-}
-.prediction-card summary {
+  padding: 20px 24px;
   cursor: pointer;
-  list-style: none;
 }
-.prediction-card summary::-webkit-details-marker {
-  display: none;
+.prediction-card:hover {
+  border-color: #d8c6ba;
 }
-.prediction-card[open] > summary {
-  position: sticky;
-  top: 0;
-  z-index: 4;
-  margin: -23px -28px 0;
-  padding: 14px 28px 12px;
-  background: var(--surface);
-  border-bottom: 1px solid var(--faint);
+.prediction-card.is-open {
+  border-color: var(--accent);
+}
+.prediction-card .prediction-open-hint {
+  margin-left: auto;
+  color: var(--muted);
+}
+.prediction-card.is-open .prediction-open-hint {
+  color: var(--accent);
 }
 .prediction-card h2 {
   font-family: var(--serif);
   font-size: 21px;
-  margin: 12px 0;
+  margin: 10px 0;
+}
+.prediction-title button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+.prediction-title button:hover {
+  color: var(--accent);
+}
+.prediction-title button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 .prediction-card .summary-body {
   color: var(--muted);
   font-size: 13px;
   line-height: 1.85;
-}
-.prediction-card[open] .summary-body {
-  display: none;
-}
-.prediction-card .expand-label {
-  margin-left: auto;
-  color: var(--accent);
-  font-size: 11px;
 }
 .review-note {
   background: var(--olive-tint);

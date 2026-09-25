@@ -568,3 +568,68 @@ input::placeholder {
   color: var(--muted);
   text-align: center;
 }
+
+/* ── 右侧阅读抽屉 ── */
+.drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: #302a2244;
+  z-index: 65;
+  display: flex;
+  justify-content: flex-end;
+}
+.drawer {
+  width: min(560px, 100vw);
+  height: 100%;
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  box-shadow: -18px 0 50px #302a2233;
+  outline: none;
+  animation: drawer-in 180ms ease-out;
+}
+@keyframes drawer-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer {
+    animation: none;
+  }
+}
+.drawer-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--faint);
+  flex-shrink: 0;
+}
+.drawer-head .drawer-close {
+  margin-left: auto;
+}
+.drawer-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.drawer-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 20px 24px 32px;
+}
+.drawer-title {
+  font-family: var(--serif);
+  font-size: 20px;
+  line-height: 1.6;
+  margin: 0 0 10px;
+}
