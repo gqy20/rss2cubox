@@ -3,13 +3,9 @@ import {
   buildApiUrl,
   normalizeSource,
   normalizeTime,
-  matchesSearch,
-  matchesDate,
-  sortArticles,
   normalizeArticle,
   fetchAllArticles,
   type IcArticle,
-  type EventRow,
 } from '@/lib/icApi'
 
 // Mock fetch globally
@@ -39,6 +35,11 @@ describe('buildApiUrl', () => {
   it('should return empty string when base URL is empty', () => {
     const url = buildApiUrl(50, 0, '', 'gqy')
     expect(url).toBe('')
+  })
+
+  it('should preserve a path prefix on the base URL', () => {
+    const url = buildApiUrl(50, 0, 'https://api.example.com/base', 'gqy')
+    expect(url).toBe('https://api.example.com/base/api/v1/articles?limit=50&offset=0&source_type=gqy')
   })
 })
 
@@ -83,94 +84,6 @@ describe('normalizeTime', () => {
   it('should return empty string when both missing', () => {
     const article = {} as IcArticle
     expect(normalizeTime(article)).toBe('')
-  })
-})
-
-describe('matchesSearch', () => {
-  const article: IcArticle = {
-    title: 'GPT-5 Released',
-    source_feed_name: 'OpenAI Blog',
-    hidden_signal: 'AI breakthrough',
-    description: 'New model capabilities',
-    reason: 'Major impact',
-    actionable: 'Try it out',
-    url: 'https://openai.com/gpt-5',
-    tags: ['ai', 'llm'],
-    content_source: 'full_text',
-    entities: ['OpenAI'],
-    watch_keywords: ['agentic search'],
-    prediction: 'Search will become broader',
-    cluster_hint: 'agent workflow',
-    disconfirming_evidence: 'limited rollout',
-    enrich_meta: { provider: 'test-runner' },
-  }
-
-  it('should match by title (case insensitive)', () => {
-    expect(matchesSearch(article, 'gpt-5')).toBe(true)
-  })
-
-  it('should match by tags', () => {
-    expect(matchesSearch(article, 'LLM')).toBe(true)
-  })
-
-  it('should match by description', () => {
-    expect(matchesSearch(article, 'capabilities')).toBe(true)
-  })
-
-  it('should match by reason', () => {
-    expect(matchesSearch(article, 'impact')).toBe(true)
-  })
-
-  it('should match by enrichment fields', () => {
-    expect(matchesSearch(article, 'agentic search')).toBe(true)
-    expect(matchesSearch(article, 'broader')).toBe(true)
-    expect(matchesSearch(article, 'agent workflow')).toBe(true)
-    expect(matchesSearch(article, 'limited rollout')).toBe(true)
-    expect(matchesSearch(article, 'test-runner')).toBe(true)
-  })
-
-  it('should return true for empty search', () => {
-    expect(matchesSearch(article, '')).toBe(true)
-  })
-
-  it('should not match unrelated term', () => {
-    expect(matchesSearch(article, 'quantum computing')).toBe(false)
-  })
-})
-
-describe('matchesDate', () => {
-  it('should match articles on the given date', () => {
-    const article = { publish_time: '2025-03-15T10:00:00' } as IcArticle
-    expect(matchesDate(article, '2025-03-15')).toBe(true)
-  })
-
-  it('should not match articles on different date', () => {
-    const article = { publish_time: '2025-03-14T10:00:00' } as IcArticle
-    expect(matchesDate(article, '2025-03-15')).toBe(false)
-  })
-
-  it('should return true for empty date filter', () => {
-    const article = { publish_time: '2025-03-15T10:00:00' } as IcArticle
-    expect(matchesDate(article, '')).toBe(true)
-  })
-})
-
-describe('sortArticles', () => {
-  it('should sort articles by time descending', () => {
-    const articles: IcArticle[] = [
-      { publish_time: '2025-01-01' },
-      { publish_time: '2025-03-15' },
-      { publish_time: '2025-02-10' },
-    ] as IcArticle[]
-
-    const sorted = sortArticles(articles)
-    expect(sorted[0].publish_time).toBe('2025-03-15')
-    expect(sorted[1].publish_time).toBe('2025-02-10')
-    expect(sorted[2].publish_time).toBe('2025-01-01')
-  })
-
-  it('should handle empty array', () => {
-    expect(sortArticles([])).toEqual([])
   })
 })
 

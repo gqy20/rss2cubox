@@ -8,18 +8,12 @@ importers:
 
   .:
     dependencies:
-      '@neondatabase/serverless':
-        specifier: ^1.0.2
-        version: 1.1.0
       '@radix-ui/react-popover':
         specifier: ^1.1.15
         version: 1.1.23(@types/react-dom@19.0.4(@types/react@19.0.10))(@types/react@19.0.10)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@types/pg':
         specifier: ^8.20.0
         version: 8.23.1
-      gsap:
-        specifier: ^3.15.0
-        version: 3.15.0
       lucide-react:
         specifier: ^0.576.0
         version: 0.576.0(react@19.2.4)
@@ -327,10 +321,6 @@ packages:
 
   '@jridgewell/sourcemap-codec@1.6.0':
     resolution: {integrity: sha512-T7jf+5zgsZHwNJ4lvQ7/aezbyk0nNX+zJVWpmHA7VYsEx7a7qr5Rg5IbtJFqkgze5Y2sruq1RUY8Q837Od7iFw==}
-
-  '@neondatabase/serverless@1.1.0':
-    resolution: {integrity: sha512-r3ZZhRjEcfEdKIZnoB1RusNgvHuaBRqfCzV4Gi+5A9yUX0S4HTws/ASWqt13wL4y4I+0rqsWGdA2w7EQXHi3+Q==}
-    engines: {node: '>=19.0.0'}
 
   '@next/env@16.1.6':
     resolution: {integrity: sha512-N1ySLuZjnAtN3kFnwhAwPvZah8RJxKasD7x1f8shFqhncnWZn4JMfg37diLNuoHsLAlrDfM3g4mawVdtAG8XLQ==}
@@ -1080,9 +1070,6 @@ packages:
   get-nonce@1.0.1:
     resolution: {integrity: sha512-FJhYRoDaiatfEkUK8HKlicmu/3SGFD51q3itKDGoSTysQJBnfOcxU5GxnhE1E6soB76MbT0MBtnKJuXyAx+96Q==}
     engines: {node: '>=6'}
-
-  gsap@3.15.0:
-    resolution: {integrity: sha512-dMW4CWBTUK1AEEDeZc1g4xpPGIrSf9fJF960qbTZmN/QwZIWY5wgliS6JWl9/25fpTGJrMRtSjGtOmPnfjZB+A==}
 
   hast-util-to-jsx-runtime@2.3.6:
     resolution: {integrity: sha512-zl6s8LwNyo1P9uw+XJGvZtdFF1GdAkOg8ujOw+4Pyb76874fLps4ueHXDhXWdk6YHQ6OgUtinliG7RsYvCbbBg==}
@@ -2074,8 +2061,6 @@ snapshots:
 
   '@jridgewell/sourcemap-codec@1.6.0': {}
 
-  '@neondatabase/serverless@1.1.0': {}
-
   '@next/env@16.1.6': {}
 
   '@next/swc-darwin-arm64@16.1.6':
@@ -2661,8 +2646,6 @@ snapshots:
     optional: true
 
   get-nonce@1.0.1: {}
-
-  gsap@3.15.0: {}
 
   hast-util-to-jsx-runtime@2.3.6:
     dependencies:

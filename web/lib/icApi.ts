@@ -1,5 +1,5 @@
 // ── Shared types & data layer for IC article API ──────────────────
-// Unifies the duplicated logic between signalStore.ts and api/signals/route.ts
+// Used by signalStore.ts when API_SOURCE points at the remote IC service.
 
 export type IcArticle = {
   id?: number | string
@@ -74,14 +74,6 @@ export type EventRow = {
   exported_at?: string
 }
 
-export type GlobalInsights = {
-  generated_at?: string
-  source_count?: number
-  trends?: string[]
-  weak_signals?: string[]
-  daily_advices?: string[]
-}
-
 const BATCH_SIZE = 100
 const MAX_PAGES = 1000
 
@@ -93,7 +85,9 @@ export function buildApiUrl(
 ): string {
   if (!baseUrl) return ''
   const clean = baseUrl.replace(/\/api\/v1\/articles\/batch\/?$/, '')
-  const url = new URL('/api/v1/articles', clean)
+  // Keep any path prefix on the configured base URL (e.g. https://host/base).
+  const root = clean.endsWith('/') ? clean : `${clean}/`
+  const url = new URL('api/v1/articles', root)
   url.searchParams.set('limit', String(limit))
   url.searchParams.set('offset', String(offset))
   if (sourceType) url.searchParams.set('source_type', sourceType)
@@ -112,61 +106,6 @@ export function normalizeSource(article: IcArticle): string {
 
 export function normalizeTime(article: IcArticle): string {
   return String(article.publish_time || article.created_at || '')
-}
-
-export function matchesSearch(article: IcArticle, search: string): boolean {
-  if (!search) return true
-  const needle = search.toLowerCase()
-  const fields = [
-    article.title,
-    article.id,
-    article.source_type,
-    article.source_feed_name,
-    article.source_feed_id,
-    article.source_article_id,
-    article.content_source,
-    article.hidden_signal,
-    article.description,
-    article.reason,
-    article.actionable,
-    article.prediction,
-    article.disconfirming_evidence,
-    article.cluster_hint,
-    article.url,
-    article.pic_url,
-    article.publish_time,
-    article.created_at,
-    article.updated_at,
-    article.importance_score,
-    article.signal_type,
-    article.evidence_type,
-    article.evidence_strength,
-    article.novelty_score,
-    article.impact_horizon,
-    article.market_stage,
-    article.confidence,
-    Array.isArray(article.audience) ? article.audience.join(' ') : '',
-    Array.isArray(article.entities) ? article.entities.join(' ') : '',
-    Array.isArray(article.watch_keywords) ? article.watch_keywords.join(' ') : '',
-    article.enrich_meta ? JSON.stringify(article.enrich_meta) : '',
-  ]
-  if (fields.some((v) => String(v || '').toLowerCase().includes(needle))) return true
-  return Array.isArray(article.tags) && article.tags.some((tag) => String(tag).toLowerCase().includes(needle))
-}
-
-export function matchesDate(article: IcArticle, date: string): boolean {
-  if (!date) return true
-  // Use a simple date key extraction (YYYY-MM-DD portion)
-  const time = normalizeTime(article)
-  return time.startsWith(date)
-}
-
-export function sortArticles(articles: IcArticle[]): IcArticle[] {
-  return [...articles].sort((a, b) => {
-    const ta = new Date(normalizeTime(a) || 0).getTime() || 0
-    const tb = new Date(normalizeTime(b) || 0).getTime() || 0
-    return tb - ta
-  })
 }
 
 export function normalizeArticle(data: IcArticle): EventRow {
