@@ -46,12 +46,14 @@ export default function Predictions({
     if (href !== `/predictions${query ? '?' + query : ''}`)
       window.history.replaceState(null, '', href)
   }
+  // Scroll memory keys stay per-filter only: embedding the search term would
+  // mint a new entry per keyword and evict other pages' memories.
   const setFilter = (value: string) => {
-    clearMemory(`window:predictions:${value}:${search}`)
+    clearMemory(`window:predictions:${value}`)
     update({ filter: value === 'all' ? null : value, id: null })
   }
   const setSearch = (value: string) => {
-    clearMemory(`window:predictions:${filter}:${value}`)
+    clearMemory(`window:predictions:${filter}`)
     update({ q: value || null, id: null })
   }
   // Draft + debounce: typing must not write history and re-filter on every key.
@@ -62,7 +64,7 @@ export default function Predictions({
     const timer = setTimeout(() => setSearch(draft), 300)
     return () => clearTimeout(timer)
   }, [draft, search]) // eslint-disable-line react-hooks/exhaustive-deps
-  useWindowReadingPosition(`predictions:${filter}:${search}`)
+  useWindowReadingPosition(`predictions:${filter}`)
   const from = `/predictions${query ? '?' + query : ''}`
   const rows = predictions.filter(
     (p) =>
@@ -155,7 +157,7 @@ export default function Predictions({
                       ? `${p.prediction_body.slice(0, 180)}…`
                       : p.prediction_body}
                   </p>
-                  <div className="metadata" style={{ marginTop: 15 }}>
+                  <div className="metadata prediction-window">
                     验证窗口 {dateLabel(p.target_start_at)} 至{' '}
                     {dateLabel(p.target_end_at)}
                     <span>{p.cluster_label}</span>

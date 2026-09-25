@@ -302,3 +302,12 @@
 .spin {
   animation: spin 1s linear infinite;
 }
+
+/* 政策详情:文档头元信息与侧栏标题节奏 */
+.policy-document > .document-metadata {
+  margin: var(--space-lg) 0;
+}
+.policy-layout aside h2 {
+  font-family: var(--serif);
+  margin-bottom: var(--space-lg);
+}

@@ -806,3 +806,10 @@
   align-items: center;
   gap: 8px;
 }
+
+.chart-legend-accent {
+  color: var(--accent);
+}
+.chart-legend-olive {
+  color: var(--olive);
+}

@@ -2,11 +2,9 @@
 import { useEffect, useState } from 'react'
 import type { Row } from '../types'
 import type { Policy } from '../../lib/journal-types'
-import { getBookmarks, BookmarkButton } from '../journal/Actions'
+import { getBookmarks } from '../journal/Actions'
 import { SearchTrigger } from '../journal/SearchPalette'
-import { PageHeading, Empty, ArticleRows } from '../journal/Shared'
-import Link from 'next/link'
-import { policyDestination } from '../../lib/reading-context'
+import { PageHeading, Empty, ArticleRows, PolicyRows } from '../journal/Shared'
 import { useWindowReadingPosition } from '../../hooks/useReadingPosition'
 export default function SavedPage() {
   const [rows, setRows] = useState<Row[]>([]),
@@ -106,18 +104,13 @@ export default function SavedPage() {
                 context={{ from: '/saved', filters: { saved: '1' } }}
               />
             )}
-            {policies.map((p) => (
-              <div className="reading-row" key={p.id}>
-                <Link
-                  className="reading-copy reading-title"
-                  href={policyDestination(p.id, { from: '/saved' })}
-                >
-                  {p.title}
-                  <span className="metadata">政策 · {p.region}</span>
-                </Link>
-                <BookmarkButton id={p.id} kind="policy" />
-              </div>
-            ))}
+            {policies.length > 0 && (
+              <PolicyRows
+                rows={policies}
+                context={{ from: '/saved' }}
+                withBookmark
+              />
+            )}
           </>
         ) : (
           <Empty

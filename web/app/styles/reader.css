@@ -192,9 +192,3 @@
   font-weight: 500;
   color: var(--ink);
 }
-
-.source-filter-tag {
-  border: 0;
-  cursor: pointer;
-  font-family: inherit;
-}

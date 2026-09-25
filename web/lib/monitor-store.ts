@@ -36,6 +36,29 @@ async function optionalFile(file: string) {
     return null
   }
 }
+// Minimal .env reader: quoted values keep their content (including ' # '),
+// unquoted values drop a trailing comment. Multi-line values stay unsupported.
+function parseEnv(text: string): Map<string, string> {
+  const out = new Map<string, string>()
+  for (const line of text.split('\n')) {
+    const m = /^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$/.exec(line)
+    if (!m) continue
+    let value = m[2].trim()
+    const first = value[0]
+    if (
+      value.length >= 2 &&
+      (first === '"' || first === "'") &&
+      value.endsWith(first)
+    ) {
+      value = value.slice(1, -1)
+    } else {
+      const comment = value.indexOf(' #')
+      if (comment >= 0) value = value.slice(0, comment).trim()
+    }
+    out.set(m[1], value)
+  }
+  return out
+}
 // Registry parses .env + feeds.txt + policy_sources.toml from disk; the files
 // change at deploy time, so a minute of staleness is harmless.
 const registry = memoize(async (): Promise<Registry> => {
@@ -43,17 +66,8 @@ const registry = memoize(async (): Promise<Registry> => {
   if ((await optionalFile(path.resolve(process.cwd(), 'feeds.txt'))) !== null)
     root = process.cwd()
   const config = await optionalFile(path.join(root, '.env'))
-  const setting = (key: string) => {
-    const raw = config
-      ?.match(new RegExp(`^\\s*(?:export\\s+)?${key}\\s*=\\s*(.*)$`, 'm'))?.[1]
-      ?.trim()
-    return raw === undefined
-      ? process.env[key]
-      : raw
-          .split(' # ')[0]
-          .trim()
-          .replace(/^(['"])(.*)\1$/, '$2')
-  }
+  const env = config ? parseEnv(config) : null
+  const setting = (key: string) => env?.get(key) ?? process.env[key]
   const [feedText, policyText] = await Promise.all([
     optionalFile(path.resolve(root, setting('FEEDS_FILE') || 'feeds.txt')),
     optionalFile(path.join(root, 'policy_sources.toml')),

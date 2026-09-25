@@ -1,19 +1,20 @@
 'use client'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
-import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import {
   Search,
   X,
   ArrowLeft,
-  Clock3,
   TriangleAlert,
-  Rss,
-  Files,
   ChevronRight,
   Check,
 } from 'lucide-react'
+import { elapsed, historyLabel, Heartbeat, Status } from './monitor/helpers'
+import SourceDistributions, {
+  type Distribution,
+} from './monitor/SourceDistributions'
+import StatsView from './monitor/StatsView'
 import type {
   MonitorSnapshot,
   MonitorSource,
@@ -26,27 +27,15 @@ import {
   monitorLabels,
   monitorOrder,
   needsAttention,
-  isStale,
   attentionOrder,
   errorCategory,
   successShare,
   compareSourceNames,
 } from '../../lib/monitor-utils'
 import { dateLabel } from '../../lib/journal-utils'
-import {
-  Empty,
-  ArticleRows,
-  PolicyRows,
-  DataNotice,
-  PanelHeading,
-} from './Shared'
-import { Coverage } from './Numbers'
+import { Empty, ArticleRows, PolicyRows, DataNotice } from './Shared'
 import { useReadingPosition } from '../../hooks/useReadingPosition'
 import { withOrigin } from '../../lib/reading-context'
-const TrendChart = dynamic(() => import('./TrendChart'), {
-  ssr: false,
-  loading: () => <div className="loading-skeleton" />,
-})
 const scrollPositions = new Map<string, number>()
 type Props = {
   snapshot: MonitorSnapshot
@@ -55,95 +44,6 @@ type Props = {
   trend: { day: string; articles: number; policies: number }[] | null
   /** Page-level actions rendered at the right end of the controls row. */
   actions?: React.ReactNode
-}
-function elapsed(value: string | null, now: number) {
-  if (!value) return '从未记录'
-  const hours = Math.max(0, (now - Date.parse(value)) / 3600000)
-  return hours < 1
-    ? `${Math.floor(hours * 60)}分钟前`
-    : hours < 24
-      ? `${Math.floor(hours)}小时前`
-      : `${Math.floor(hours / 24)}天前`
-}
-function historyLabel(run: SourceRun) {
-  return `${dateLabel(run.at, true)} · ${monitorLabels[run.status]} · ${run.fetched}条 · ${run.attempts}次请求`
-}
-function Heartbeat({ source }: { source: MonitorSource }) {
-  const runs = [
-    ...Array(Math.max(0, 12 - source.runs.length)).fill(null),
-    ...source.runs.slice(0, 12).reverse(),
-  ] as (SourceRun | null)[]
-  return (
-    <span
-      className="heartbeat"
-      role="img"
-      aria-label={`最近${source.runs.length}轮：${
-        source.runs
-          .slice()
-          .reverse()
-          .map((r) => monitorLabels[r.status])
-          .join('、') || '暂无记录'
-      }`}
-    >
-      {runs.map((run, i) => (
-        <i
-          key={run?.id || i}
-          className={`heartbeat-cell ${run?.status || 'missing'}`}
-          aria-hidden="true"
-          title={run ? historyLabel(run) : '无历史记录'}
-        >
-          {run?.status === 'failed'
-            ? '!'
-            : run?.status === 'empty'
-              ? '−'
-              : run?.status === 'skipped'
-                ? '·'
-                : ''}
-        </i>
-      ))}
-    </span>
-  )
-}
-function Status({
-  source,
-  now,
-  hours,
-}: {
-  source: MonitorSource
-  now: number
-  hours: number
-}) {
-  return (
-    <div className="source-condition">
-      <span className={`source-status ${source.status}`}>
-        {source.status === 'failed'
-          ? errorCategory(source.runs[0]?.error)
-          : monitorLabels[source.status]}
-      </span>
-      {source.failureStreak > 1 && source.status === 'failed' && (
-        <small>
-          连续{source.failureStreak === 12 ? '≥12' : source.failureStreak}轮失败
-        </small>
-      )}
-      {source.emptyStreak >= 3 && (
-        <small>
-          连续
-          {source.emptyStreak >= 12 && source.kind === 'tech'
-            ? '≥12'
-            : source.emptyStreak}
-          轮空结果
-        </small>
-      )}
-      {source.recovered && source.status === 'ok' && (
-        <small className="recovered-note">最近一轮已恢复</small>
-      )}
-      {isStale(source, now, hours) && (
-        <small className="stale-note">
-          <Clock3 size={11} />超{hours}h未采集
-        </small>
-      )}
-    </div>
-  )
 }
 export default function SourceMonitor({
   snapshot,
@@ -203,6 +103,13 @@ export default function SourceMonitor({
     )
   }
   useEffect(() => setDraft(q), [q])
+  // Debounced instant filtering; the form's submit applies immediately.
+  useEffect(() => {
+    const value = draft.trim()
+    if (value === q) return
+    const timer = setTimeout(() => update({ q: value || null }), 300)
+    return () => clearTimeout(timer)
+  }, [draft, q]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const media = window.matchMedia('(max-width:1100px)')
     const sync = () => setSmall(media.matches)
@@ -321,7 +228,7 @@ export default function SourceMonitor({
       ).sort((a, b) => b[1] - a[1]),
     [snapshot.sources, kind],
   )
-  const distributions = useMemo(
+  const distributions = useMemo<Distribution[]>(
     () =>
       (['tech', 'policy'] as const).map((type) => {
         const sources = snapshot.sources.filter((s) => s.kind === type)
@@ -345,65 +252,7 @@ export default function SourceMonitor({
   }
   return (
     <div className={`monitor-panel ${selected ? 'has-source' : ''}`}>
-      <section
-        className="source-distributions"
-        aria-label="信源最近一轮状态分布"
-      >
-        {distributions.map(({ type, total, counts }) => {
-          return (
-            <div className="source-distribution" key={type}>
-              <button
-                className="distribution-name"
-                onClick={() =>
-                  update({ kind: type, status: null, error: null, view: 'all' })
-                }
-              >
-                {type === 'tech' ? <Rss size={15} /> : <Files size={15} />}
-                <span>{type === 'tech' ? '科技源' : '政策源'}</span>
-                <b>{total}</b>
-              </button>
-              <div className="distribution-bar">
-                {counts.map(({ key, count }) => (
-                  <button
-                    key={key}
-                    style={{ flex: count }}
-                    className={`distribution-segment ${key}`}
-                    aria-label={`${type === 'tech' ? '科技' : '政策'}${monitorLabels[key]} ${count}个信源`}
-                    title={`${monitorLabels[key]} ${count}`}
-                    onClick={() =>
-                      update({
-                        kind: type,
-                        status: key,
-                        error: null,
-                        view: 'all',
-                      })
-                    }
-                  />
-                ))}
-              </div>
-              <div className="distribution-legend">
-                {counts.map(({ key, count }) => (
-                  <button
-                    key={key}
-                    onClick={() =>
-                      update({
-                        kind: type,
-                        status: key,
-                        error: null,
-                        view: 'all',
-                      })
-                    }
-                  >
-                    <i className={`legend-dot ${key}`} />
-                    {monitorLabels[key]}
-                    <b>{count}</b>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )
-        })}
-      </section>
+      <SourceDistributions distributions={distributions} update={update} />
       <div className="source-controls">
         <div className="segments" role="group" aria-label="监控视图">
           {[
@@ -429,7 +278,7 @@ export default function SourceMonitor({
               role="search"
               onSubmit={(e) => {
                 e.preventDefault()
-                update({ q: draft.trim() })
+                update({ q: draft.trim() || null })
               }}
             >
               <Search size={15} />
@@ -451,9 +300,6 @@ export default function SourceMonitor({
                   <X size={14} />
                 </button>
               )}
-              <button type="submit" aria-label="查找信源">
-                <ChevronRight size={16} />
-              </button>
             </form>
             <label className="source-filter">
               <span className="sr-only">信源类型</span>
@@ -538,57 +384,12 @@ export default function SourceMonitor({
         </div>
       )}
       {view === 'stats' ? (
-        <div className="monitor-statistics">
-          <div className="monitor-grid">
-            <section className="surface">
-              <PanelHeading title="近两周入库变化" />
-              {trend ? (
-                <TrendChart data={trend} />
-              ) : (
-                <Empty title="暂无入库趋势" />
-              )}
-            </section>
-            <section className="surface">
-              <PanelHeading title="分析覆盖" />
-              <Coverage
-                label="文章已分析"
-                value={stats?.analyzed}
-                total={stats?.total}
-              />
-              <Coverage
-                label="政策已分析"
-                value={policyStats?.analyzed}
-                total={policyStats?.total}
-              />
-              <p className="snapshot-note">
-                未分析数量不等于待处理队列。政策预筛会跳过低相关内容。
-              </p>
-            </section>
-          </div>
-          <section className="surface">
-            <h2>统计口径</h2>
-            <ul className="evidence-list">
-              <li>
-                同一信源、同一运行编号的请求合并为一轮。备用地址成功则整轮成功；条数取成功请求的最大值，不重复累加。
-              </li>
-              <li>
-                最近12轮按采集次数排列，不是固定时间轴。空结果表示本轮没有内容；跳过不代表停用。
-              </li>
-              <li>
-                久未采集按上方可选时间阈值判断，与文章发布频率分开。状态是历史记录，不代表此刻在线。
-              </li>
-              <li>
-                内容产出统计为累计值。重点占比以已评分内容为分母，至少20条评分才显示比例；不合成信源质量总分。
-              </li>
-              <li>
-                政策仅存最近一次运行，历史不足处留空。信源配置不可用时，只展示数据库中的记录。
-              </li>
-            </ul>
-            <p className="snapshot-note">
-              快照时间 {dateLabel(snapshot.loadedAt, true)}。刷新不会触发采集。
-            </p>
-          </section>
-        </div>
+        <StatsView
+          trend={trend}
+          stats={stats}
+          policyStats={policyStats}
+          loadedAt={snapshot.loadedAt}
+        />
       ) : (
         <div className={`source-workbench ${selected ? 'has-selection' : ''}`}>
           <section className="surface source-directory" aria-label="信源目录">

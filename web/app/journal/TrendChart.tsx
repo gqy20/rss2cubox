@@ -70,8 +70,8 @@ export default function TrendChart({ data }: { data: Point[] }) {
         </ResponsiveContainer>
       </div>
       <div className="metadata">
-        <span style={{ color: 'var(--accent)' }}>● 文章</span>
-        <span style={{ color: 'var(--olive)' }}>● 政策</span>
+        <span className="chart-legend-accent">● 文章</span>
+        <span className="chart-legend-olive">● 政策</span>
         <span>按北京时间首次入库日期统计</span>
       </div>
       <details className="disclosure">

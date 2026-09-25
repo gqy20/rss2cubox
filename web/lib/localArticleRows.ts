@@ -1,4 +1,5 @@
 import { normalizeSource } from './icApi'
+import type { Row } from '../app/types'
 
 function asStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return []
@@ -10,7 +11,7 @@ function asNumber(value: unknown): number | undefined {
   return undefined
 }
 
-export function formatLocalArticleRow(row: any) {
+export function formatLocalArticleRow(row: any): Row {
   return {
     id: row.id,
     title: row.title || '',

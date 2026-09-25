@@ -1,5 +1,7 @@
 /** Shared URL rules keep the top search, filters and browser history in sync. */
 export type SearchScope = 'signals' | 'policies'
+/** Canonical filter key list. reader-cursor derives its signing keys from this
+ *  list — keep the order stable, cursor hashes depend on it. */
 export const filterKeys = [
   'mode',
   'date',
@@ -8,6 +10,7 @@ export const filterKeys = [
   'region',
   'stage',
   'instrument_type',
+  'policy_lineage',
   'topic',
   'sourceRef',
   'saved',

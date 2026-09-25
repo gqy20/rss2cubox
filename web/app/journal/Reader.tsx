@@ -612,7 +612,7 @@ export default function Reader({
                 {sourceFilterable ? (
                   <button
                     type="button"
-                    className={`pill source-filter-tag ${
+                    className={`pill pill-button ${
                       filters.source === sourceName ? 'olive' : 'neutral'
                     }`}
                     aria-pressed={filters.source === sourceName}
@@ -799,8 +799,7 @@ export default function Reader({
                             <div className="toolbar">
                               {article.tags.map((tag) => (
                                 <button
-                                  className="pill olive"
-                                  style={{ border: 0 }}
+                                  className="pill olive pill-button"
                                   key={tag}
                                   onClick={() => change('tag', tag)}
                                 >

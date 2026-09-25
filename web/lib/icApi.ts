@@ -1,5 +1,6 @@
 // ── Shared types & data layer for IC article API ──────────────────
 // Used by signalStore.ts when API_SOURCE points at the remote IC service.
+import type { Row } from '../app/types'
 
 export type IcArticle = {
   id?: number | string
@@ -45,35 +46,6 @@ export type IcListResponse = {
   }
 }
 
-export type EventRow = {
-  id: string
-  time: string
-  source_feed: string
-  source_label: string
-  source: string
-  cover_url: string
-  url: string
-  title: string
-  status: string
-  exported: boolean
-  tags: string[]
-  core_event: string
-  hidden_signal: string
-  importance_score?: number
-  content_source?: string
-  signal_type?: number
-  evidence_strength?: number
-  novelty_score?: number
-  impact_horizon?: number
-  confidence?: number
-  entities?: string[]
-  watch_keywords?: string[]
-  prediction?: string
-  actionable: string
-  reason: string
-  exported_at?: string
-}
-
 const BATCH_SIZE = 100
 const MAX_PAGES = 1000
 
@@ -108,7 +80,7 @@ export function normalizeTime(article: IcArticle): string {
   return String(article.publish_time || article.created_at || '')
 }
 
-export function normalizeArticle(data: IcArticle): EventRow {
+export function normalizeArticle(data: IcArticle): Row {
   return {
     id: String(data.id || ''),
     time: normalizeTime(data),
@@ -135,7 +107,6 @@ export function normalizeArticle(data: IcArticle): EventRow {
     prediction: String(data.prediction || ''),
     actionable: String(data.actionable || ''),
     reason: String(data.reason || ''),
-    exported_at: '',
   }
 }
 

@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import type { SearchScope } from './reader-search'
+import { filterKeys, type SearchScope } from './reader-search'
 
 export type ReaderCursor = {
   v: 1
@@ -10,21 +10,8 @@ export type ReaderCursor = {
   id: string
 }
 export function cursorQuery(kind: SearchScope, params: URLSearchParams) {
-  const keys = [
-    'search',
-    'mode',
-    'date',
-    'source',
-    'tag',
-    'region',
-    'stage',
-    'instrument_type',
-    'policy_lineage',
-    'topic',
-    'sourceRef',
-    'saved',
-    'selection',
-  ]
+  // Order is part of the signature; derived from the canonical filterKeys.
+  const keys = ['search', ...filterKeys, 'selection']
   const filters = keys.map((key) => [key, (params.get(key) || '').trim()])
   return createHash('sha256')
     .update(JSON.stringify([kind, filters]))

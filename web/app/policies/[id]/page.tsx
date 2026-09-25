@@ -47,7 +47,7 @@ export default async function PolicyPage({
               <ExportButton data={policy} name="policy" />
             </div>
           </div>
-          <div className="metadata" style={{ margin: '18px 0' }}>
+          <div className="metadata document-metadata">
             {policy.issuing_authority || policy.site_name}
             <span>发布于 {dateLabel(policy.published_at)}</span>
           </div>
@@ -102,7 +102,7 @@ export default async function PolicyPage({
           </RememberDisclosure>
         </article>
         <aside className="surface">
-          <h2 style={{ marginBottom: 22, fontFamily: 'var(--serif)' }}>
+          <h2>
             文件信息
           </h2>
           <dl className="policy-facts">

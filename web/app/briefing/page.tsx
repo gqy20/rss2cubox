@@ -38,8 +38,8 @@ export default async function BriefingPage({
       {history.length > 0 && (
         <form className="toolbar" action="/briefing" method="get">
           <label>
-            历史简报
-            <select name="at" defaultValue={selected.generated_at}>
+            <span className="sr-only">历史简报</span>
+            <select name="at" aria-label="历史简报" defaultValue={selected.generated_at}>
               {history.map((h) => (
                 <option key={h.generated_at} value={h.generated_at}>
                   {dateLabel(h.generated_at, true)}
@@ -50,7 +50,7 @@ export default async function BriefingPage({
           <button className="soft-button" type="submit">
             查看这一期
           </button>
-          <span className="snapshot-note" style={{ margin: 0 }}>
+          <span className="snapshot-note briefing-form-note">
             最近30期 · 全部内容由 AI 提炼
           </span>
         </form>
@@ -59,8 +59,8 @@ export default async function BriefingPage({
         (['trends', 'weak_signals', 'daily_advices'] as const).map((key, i) => {
           const items = insightItems(selected.data[key])
           return (
-          <section className="surface" key={key} style={{ marginBottom: 22 }}>
-            <h2 style={{ fontFamily: 'var(--serif)', marginBottom: 20 }}>
+          <section className="surface briefing-section" key={key}>
+            <h2>
               {['宏观技术趋势', '暗流弱信号', '行动建议'][i]}
             </h2>
             {items.map((item, index) => (

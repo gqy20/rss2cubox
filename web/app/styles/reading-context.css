@@ -275,3 +275,15 @@
   flex-wrap: wrap;
   gap: 8px;
 }
+
+/* briefing 页区块节奏(token 化,替代内联样式) */
+.briefing-section {
+  margin-bottom: var(--section-gap);
+}
+.briefing-section > h2 {
+  font-family: var(--serif);
+  margin-bottom: var(--space-lg);
+}
+.briefing-form-note {
+  margin: 0;
+}

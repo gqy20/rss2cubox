@@ -127,6 +127,12 @@ svg {
 ::selection {
   background: var(--clay-tint);
 }
+/* 可点击的 pill 按钮(筛选 tag 等),重置 button 原生样式 */
+.pill-button {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
+}
 .sr-only,
 .skip-link:not(:focus) {
   position: absolute;

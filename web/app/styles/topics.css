@@ -286,6 +286,11 @@
   }
   .topic-heading-row h2 {
     font-size: 23px;
+    /* 标题独占一行,状态与操作组折到下一行,避免 flex 挤压逐字竖排 */
+    flex-basis: 100%;
+  }
+  .topic-heading-actions {
+    margin-left: auto;
   }
   .topic-heading-row > .pill {
     margin: 0;
@@ -304,4 +309,8 @@
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+}
+
+.prediction-window {
+  margin-top: var(--space-md);
 }
