@@ -8,6 +8,7 @@ import {
   type SearchScope,
 } from '../../lib/reader-search'
 import { safeReturnPath } from '../../lib/reading-context'
+import Select from './Select'
 
 export default function SearchBar({
   autoFocus = false,
@@ -99,20 +100,21 @@ export default function SearchBar({
       }}
     >
       <Search size={17} aria-hidden="true" />
-      <select
+      <Select
         className="search-scope"
-        aria-label="搜索范围"
+        ariaLabel="搜索范围"
         value={scope}
-        onChange={(e) => {
-          const target = e.target.value as SearchScope
+        onChange={(target) => {
+          const next = target as SearchScope
           cancelTimer()
-          setScope(target)
-          if (inReader) commit(draft, target, true)
+          setScope(next)
+          if (inReader) commit(draft, next, true)
         }}
-      >
-        <option value="signals">文章</option>
-        <option value="policies">政策</option>
-      </select>
+        options={[
+          { value: 'signals', label: '文章' },
+          { value: 'policies', label: '政策' },
+        ]}
+      />
       <input
         ref={input}
         type="search"

@@ -60,12 +60,14 @@ describe('single search entry', () => {
       '/signals?search=%E6%94%BF%E7%AD%96',
     )
   })
-  it('waits for explicit submit from the homepage and uses the selected scope', () => {
+  it('waits for explicit submit from the homepage and uses the selected scope', async () => {
     navigation.path = '/'
     render(<SearchBar />)
-    fireEvent.change(screen.getByRole('combobox', { name: '搜索范围' }), {
-      target: { value: 'policies' },
-    })
+    // Radix popover needs real timers for its open sequence.
+    vi.useRealTimers()
+    fireEvent.click(screen.getByRole('button', { name: '搜索范围' }))
+    fireEvent.click(await screen.findByRole('option', { name: '政策' }))
+    vi.useFakeTimers()
     fireEvent.change(screen.getByRole('searchbox'), {
       target: { value: '人工智能' },
     })

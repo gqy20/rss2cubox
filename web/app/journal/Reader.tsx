@@ -22,6 +22,7 @@ import { dateLabel, excerpt } from '../../lib/journal-utils'
 import { Empty, ExternalLink } from './Shared'
 import { BookmarkButton, ExportButton, getBookmarks } from './Actions'
 import { SearchTrigger } from './SearchPalette'
+import Select from './Select'
 import MarkdownRenderer from '../MarkdownRenderer'
 import { ScoreIndicator } from './Numbers'
 import { ReturnLink } from './ReadingNavigation'
@@ -303,43 +304,37 @@ export default function Reader({
           {policy ? (
             <>
               {(['region', 'stage', 'instrument_type', 'policy_lineage'] as const).map(
-                (key, i) => {
-                  const label = ['地区', '阶段', '文件类型', '主线'][i]
-                  return (
-                    <label key={key}>
-                      <span className="sr-only">{label}</span>
-                      <select
-                        aria-label={label}
-                        value={filters[key]}
-                        onChange={(e) => change(key, e.target.value)}
-                      >
-                        <option value="">
-                          {['全部地区', '全部阶段', '全部类型', '全部主线'][i]}
-                        </option>
-                        {(facets?.[key] ?? []).map((v) => (
-                          <option key={v}>{v}</option>
-                        ))}
-                      </select>
-                    </label>
-                  )
-                },
+                (key, i) => (
+                  <Select
+                    key={key}
+                    ariaLabel={['地区', '阶段', '文件类型', '主线'][i]}
+                    value={filters[key]}
+                    onChange={(v) => change(key, v)}
+                    options={[
+                      {
+                        value: '',
+                        label: ['全部地区', '全部阶段', '全部类型', '全部主线'][i],
+                      },
+                      ...(facets?.[key] ?? []).map((v) => ({
+                        value: v,
+                        label: v,
+                      })),
+                    ]}
+                  />
+                ),
               )}
             </>
           ) : (
             <>
-              <label>
-                <span className="sr-only">来源</span>
-                <select
-                  aria-label="来源"
-                  value={filters.source}
-                  onChange={(e) => change('source', e.target.value)}
-                >
-                  <option value="">全部来源</option>
-                  {sources.map((source) => (
-                    <option key={source}>{source}</option>
-                  ))}
-                </select>
-              </label>
+              <Select
+                ariaLabel="来源"
+                value={filters.source}
+                onChange={(v) => change('source', v)}
+                options={[
+                  { value: '', label: '全部来源' },
+                  ...sources.map((s) => ({ value: s, label: s })),
+                ]}
+              />
               <label>
                 <span className="sr-only">日期</span>
                 <input

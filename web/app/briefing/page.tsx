@@ -5,6 +5,7 @@ import { dateLabel, insightItems, excerpt } from '../../lib/journal-utils'
 import { PageHeading, ExternalLink, Empty } from '../journal/Shared'
 import { ExportButton } from '../journal/Actions'
 import { SearchTrigger } from '../journal/SearchPalette'
+import Select from '../journal/Select'
 export const dynamic = 'force-dynamic'
 export default async function BriefingPage({
   searchParams,
@@ -37,16 +38,16 @@ export default async function BriefingPage({
       )}
       {history.length > 0 && (
         <form className="toolbar" action="/briefing" method="get">
-          <label>
-            <span className="sr-only">历史简报</span>
-            <select name="at" aria-label="历史简报" defaultValue={selected.generated_at}>
-              {history.map((h) => (
-                <option key={h.generated_at} value={h.generated_at}>
-                  {dateLabel(h.generated_at, true)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            key={selected.generated_at}
+            ariaLabel="历史简报"
+            name="at"
+            defaultValue={selected.generated_at}
+            options={history.map((h) => ({
+              value: h.generated_at,
+              label: dateLabel(h.generated_at, true),
+            }))}
+          />
           <button className="soft-button" type="submit">
             查看这一期
           </button>

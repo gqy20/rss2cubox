@@ -15,6 +15,7 @@ import SourceDistributions, {
   type Distribution,
 } from './monitor/SourceDistributions'
 import StatsView from './monitor/StatsView'
+import Select from './Select'
 import type {
   MonitorSnapshot,
   MonitorSource,
@@ -301,49 +302,41 @@ export default function SourceMonitor({
                 </button>
               )}
             </form>
-            <label className="source-filter">
-              <span className="sr-only">信源类型</span>
-              <select
-                aria-label="信源类型"
-                value={kind}
-                onChange={(e) =>
-                  update({ kind: e.target.value, status: null, error: null })
-                }
-              >
-                <option value="all">全部类型</option>
-                <option value="tech">科技</option>
-                <option value="policy">政策</option>
-              </select>
-            </label>
-            <label className="source-filter">
-              <span className="sr-only">采集状态</span>
-              <select
-                aria-label="采集状态"
-                value={status}
-                onChange={(e) =>
-                  update({ status: e.target.value, view: 'all', error: null })
-                }
-              >
-                <option value="all">全部状态</option>
-                {monitorOrder.map((key) => (
-                  <option value={key} key={key}>
-                    {monitorLabels[key]}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="source-filter">
+            <Select
+              ariaLabel="信源类型"
+              value={kind}
+              onChange={(v) => update({ kind: v, status: null, error: null })}
+              options={[
+                { value: 'all', label: '全部类型' },
+                { value: 'tech', label: '科技' },
+                { value: 'policy', label: '政策' },
+              ]}
+            />
+            <Select
+              ariaLabel="采集状态"
+              value={status}
+              onChange={(v) => update({ status: v, view: 'all', error: null })}
+              options={[
+                { value: 'all', label: '全部状态' },
+                ...monitorOrder.map((key) => ({
+                  value: key,
+                  label: monitorLabels[key],
+                })),
+              ]}
+            />
+            <span className="source-filter">
               未采集阈值
-              <select
-                aria-label="未采集阈值"
-                value={hours}
-                onChange={(e) => update({ hours: e.target.value })}
-              >
-                <option value="24">24h</option>
-                <option value="48">48h</option>
-                <option value="168">7天</option>
-              </select>
-            </label>
+              <Select
+                ariaLabel="未采集阈值"
+                value={String(hours)}
+                onChange={(v) => update({ hours: v })}
+                options={[
+                  { value: '24', label: '24h' },
+                  { value: '48', label: '48h' },
+                  { value: '168', label: '7天' },
+                ]}
+              />
+            </span>
           </>
         )}
         {actions && <div className="source-controls-actions">{actions}</div>}

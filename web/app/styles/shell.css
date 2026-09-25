@@ -199,6 +199,8 @@ input::placeholder {
   padding: 28px 32px;
   display: flex;
   flex-direction: column;
+  /* 卡片比内容高时,富余高度均摊到各段之间,而不是堆在某一处 */
+  justify-content: space-between;
 }
 .lead-kicker {
   display: flex;
@@ -280,19 +282,17 @@ input::placeholder {
 }
 .story-divider {
   height: 1px;
-  /* auto 顶距吸收卡片空余高度,把趋势判断区钉在卡片底部;
-     padding 提供没有空余时的最小间距 */
-  margin: auto 0 21px;
-  padding-top: 27px;
   background: var(--faint);
-  background-clip: content-box;
+  margin: var(--space-lg) 0;
 }
 .briefing-caption {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 12px;
-  margin-bottom: 10px;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--ink);
+  margin-bottom: var(--space-sm);
 }
 .briefing-caption svg {
   color: var(--accent);
@@ -461,4 +461,110 @@ input::placeholder {
   line-height: 1.9;
   color: var(--muted);
   margin: 0;
+}
+
+/* ── 统一选择器:原生 select 的下拉是系统主题,与设计不搭 ── */
+.select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--faint);
+  border-radius: 9px;
+  background: var(--surface);
+  padding: 9px 11px;
+  color: var(--ink);
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+  min-width: 0;
+}
+.select-trigger:hover {
+  border-color: #d8c6ba;
+}
+.select-trigger[data-state='open'] {
+  border-color: #bd9884;
+}
+.select-trigger-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-trigger > svg {
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.select-popover {
+  background: var(--surface);
+  border: 1px solid var(--faint);
+  border-radius: 12px;
+  box-shadow: 0 12px 34px #302a2226;
+  padding: 6px;
+  z-index: 70;
+  min-width: var(--radix-popover-trigger-width);
+  max-width: min(420px, calc(100vw - 24px));
+}
+.select-options {
+  max-height: 320px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  outline: none;
+}
+.select-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.select-option > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.select-option[data-active='true'] {
+  background: var(--clay-tint);
+}
+.select-option[aria-selected='true'] {
+  color: var(--accent);
+  font-weight: 550;
+}
+.select-option[aria-selected='true'] > svg {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+.select-search {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 8px 9px;
+  border-bottom: 1px solid var(--faint);
+  margin-bottom: 5px;
+  color: var(--muted);
+}
+.select-search input {
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--ink);
+  width: 100%;
+}
+.select-empty {
+  padding: 14px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
 }
