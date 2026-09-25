@@ -1,8 +1,8 @@
 'use client'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Suspense, useEffect, useState, type ReactNode } from 'react'
-import SearchBar from './SearchBar'
+import { useEffect, useState, type ReactNode } from 'react'
+import SearchPalette, { SearchTrigger } from './SearchPalette'
 import {
   Home,
   Radio,
@@ -95,21 +95,13 @@ export default function Shell({ children }: { children: ReactNode }) {
           >
             {menu ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <Suspense
-            fallback={
-              <div
-                className="global-search search-placeholder"
-                aria-label="搜索加载中"
-              />
-            }
-          >
-            <SearchBar />
-          </Suspense>
+          <SearchTrigger className="topbar-search" />
         </header>
         <main id="content" className="journal-content" tabIndex={-1}>
           {children}
         </main>
       </div>
+      <SearchPalette />
     </div>
   )
 }

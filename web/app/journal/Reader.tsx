@@ -21,6 +21,7 @@ import type { Policy } from '../../lib/journal-types'
 import { dateLabel, excerpt } from '../../lib/journal-utils'
 import { Empty, ExternalLink } from './Shared'
 import { BookmarkButton, ExportButton, getBookmarks } from './Actions'
+import { SearchTrigger } from './SearchPalette'
 import MarkdownRenderer from '../MarkdownRenderer'
 import { ScoreIndicator } from './Numbers'
 import { ReturnLink } from './ReadingNavigation'
@@ -67,6 +68,8 @@ type Props = {
     instrument_type: string[]
     policy_lineage?: string[]
   }
+  /** Page-level stat rendered inside the controls row, next to the result summary. */
+  toolbarAside?: React.ReactNode
 }
 export default function Reader({
   kind,
@@ -74,6 +77,7 @@ export default function Reader({
   facets,
   topicLabel,
   sourceLabel,
+  toolbarAside,
 }: Props) {
   const searchParams = useSearchParams()
   const urlQuery = searchParams.toString()
@@ -134,6 +138,17 @@ export default function Reader({
     bodyRef = useRef<HTMLDivElement>(null)
   const selectedId =
     requestedId || (selection.query === encoded ? selection.id : null)
+  const activeFilters = activeFilterCount(new URLSearchParams(urlQuery))
+  const resetCount = [
+    filters.mode !== 'all' ? filters.mode : '',
+    filters.date,
+    filters.source,
+    filters.tag,
+    filters.region,
+    filters.stage,
+    filters.instrument_type,
+    filters.policy_lineage,
+  ].filter(Boolean).length
   const detail = rawDetail?.id === selectedId ? rawDetail : null
   const updateUrl = (
     changes: Record<string, string | null>,
@@ -238,6 +253,13 @@ export default function Reader({
   const policy = kind === 'policies',
     article = detail as Row | null,
     document = detail as Policy | null
+  const sourceName = policy
+    ? document?.issuing_authority || document?.site_name
+    : article?.source
+  // The source tag doubles as a list filter, but only when the value is a
+  // real feed name that the source filter can match.
+  const sourceFilterable =
+    !policy && !!sourceName && sources.includes(sourceName)
   return (
     <div className="reader-panel">
       <div className="reader-controls">
@@ -281,27 +303,34 @@ export default function Reader({
           {policy ? (
             <>
               {(['region', 'stage', 'instrument_type', 'policy_lineage'] as const).map(
-                (key, i) => (
-                  <label key={key}>
-                    {['地区', '阶段', '文件类型', '主线'][i]}
-                    <select
-                      value={filters[key]}
-                      onChange={(e) => change(key, e.target.value)}
-                    >
-                      <option value="">全部</option>
-                      {(facets?.[key] ?? []).map((v) => (
-                        <option key={v}>{v}</option>
-                      ))}
-                    </select>
-                  </label>
-                ),
+                (key, i) => {
+                  const label = ['地区', '阶段', '文件类型', '主线'][i]
+                  return (
+                    <label key={key}>
+                      <span className="sr-only">{label}</span>
+                      <select
+                        aria-label={label}
+                        value={filters[key]}
+                        onChange={(e) => change(key, e.target.value)}
+                      >
+                        <option value="">
+                          {['全部地区', '全部阶段', '全部类型', '全部主线'][i]}
+                        </option>
+                        {(facets?.[key] ?? []).map((v) => (
+                          <option key={v}>{v}</option>
+                        ))}
+                      </select>
+                    </label>
+                  )
+                },
               )}
             </>
           ) : (
             <>
               <label>
-                来源
+                <span className="sr-only">来源</span>
                 <select
+                  aria-label="来源"
                   value={filters.source}
                   onChange={(e) => change('source', e.target.value)}
                 >
@@ -312,9 +341,10 @@ export default function Reader({
                 </select>
               </label>
               <label>
-                日期
+                <span className="sr-only">日期</span>
                 <input
                   type="date"
+                  aria-label="日期"
                   value={filters.date}
                   onChange={(e) => change('date', e.target.value)}
                 />
@@ -331,9 +361,10 @@ export default function Reader({
             </>
           )}
           <button
-            className="icon-button"
-            aria-label="重置筛选"
-            title="重置筛选"
+            className={`icon-button ${resetCount ? 'has-active' : ''}`}
+            aria-label={resetCount ? `重置 ${resetCount} 项筛选` : '重置筛选'}
+            title={resetCount ? `重置 ${resetCount} 项筛选` : '重置筛选'}
+            disabled={!resetCount}
             onClick={() => {
               updateUrl(
                 Object.fromEntries(
@@ -353,7 +384,7 @@ export default function Reader({
           </button>
         </div>
         <div className="toolbar">
-          <div className="segments" role="tablist" aria-label="内容筛选">
+          <div className="segments" role="group" aria-label="内容筛选">
             {(policy
               ? [
                   ['all', '全部政策'],
@@ -368,8 +399,7 @@ export default function Reader({
             ).map(([value, label]) => (
               <button
                 key={value}
-                role="tab"
-                aria-selected={filters.mode === value}
+                aria-pressed={filters.mode === value}
                 onClick={() => change('mode', value)}
               >
                 {label}
@@ -388,15 +418,16 @@ export default function Reader({
                 )}
                 <b>{result.total.toLocaleString()}</b>{' '}
                 {policy ? '份政策' : '篇文章'}
-                {activeFilterCount(new URLSearchParams(urlQuery)) > 0 && (
-                  <span> · 已筛选</span>
+                {activeFilters > 0 && (
+                  <span> · 已筛选 {activeFilters} 项</span>
                 )}
               </>
             ) : (
               ''
             )}
           </span>
-
+          {toolbarAside}
+          <SearchTrigger />
           <button
             className="icon-button"
             aria-label="刷新列表"
@@ -532,7 +563,7 @@ export default function Reader({
                   : '没有匹配的内容'
               }
               description={
-                activeFilterCount(new URLSearchParams(urlQuery)) > 0
+                activeFilters > 0
                   ? '可重置筛选，保留关键词继续查找。'
                   : `尝试其他关键词，或切换到${policy ? '文章' : '政策'}搜索。`
               }
@@ -578,9 +609,30 @@ export default function Reader({
             </div>
             {detail && (
               <div className="metadata">
-                {policy
-                  ? document?.issuing_authority || document?.site_name
-                  : article?.source}
+                {sourceFilterable ? (
+                  <button
+                    type="button"
+                    className={`pill source-filter-tag ${
+                      filters.source === sourceName ? 'olive' : 'neutral'
+                    }`}
+                    aria-pressed={filters.source === sourceName}
+                    title={
+                      filters.source === sourceName
+                        ? '取消来源筛选'
+                        : `只看「${sourceName}」的信号`
+                    }
+                    onClick={() =>
+                      change(
+                        'source',
+                        filters.source === sourceName ? '' : sourceName!,
+                      )
+                    }
+                  >
+                    {sourceName}
+                  </button>
+                ) : (
+                  sourceName
+                )}
                 <span>
                   {dateLabel(
                     policy ? document?.published_at : article?.time,
@@ -597,19 +649,17 @@ export default function Reader({
             {detail && !policy && (
               <div
                 className="document-tabs"
-                role="tablist"
+                role="group"
                 aria-label="阅读内容"
               >
                 <button
-                  role="tab"
-                  aria-selected={tab === 'summary'}
+                  aria-pressed={tab === 'summary'}
                   onClick={() => setTab('summary')}
                 >
                   概览与分析
                 </button>
                 <button
-                  role="tab"
-                  aria-selected={tab === 'original'}
+                  aria-pressed={tab === 'original'}
                   onClick={() => setTab('original')}
                 >
                   已抓取正文

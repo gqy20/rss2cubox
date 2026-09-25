@@ -38,16 +38,7 @@ export default async function PoliciesPage({
   const stats = statsResult.status === 'fulfilled' ? statsResult.value : null
   return (
     <>
-      <PageHeading title="政策观察">
-        {stats && (
-          <Coverage
-            label="政策已析"
-            value={stats.analyzed}
-            total={stats.total}
-            compact
-          />
-        )}
-      </PageHeading>
+      <PageHeading title="政策观察" />
       <DataNotice
         issues={
           [
@@ -59,7 +50,21 @@ export default async function PoliciesPage({
       {lineageResult.status === 'fulfilled' && (
         <LineageStrip stats={lineageResult.value} selected={selected} />
       )}
-      <Reader kind="policies" facets={facets} sourceLabel={sourceLabel} />
+      <Reader
+        kind="policies"
+        facets={facets}
+        sourceLabel={sourceLabel}
+        toolbarAside={
+          stats && (
+            <Coverage
+              label="政策已析"
+              value={stats.analyzed}
+              total={stats.total}
+              compact
+            />
+          )
+        }
+      />
     </>
   )
 }

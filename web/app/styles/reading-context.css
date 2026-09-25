@@ -45,7 +45,7 @@
   color: var(--accent);
 }
 .policy-applicability {
-  margin: 22px 0;
+  margin: 14px 0;
 }
 .policy-applicability-heading {
   display: flex;
@@ -120,7 +120,6 @@
   gap: 12px 24px;
   align-items: center;
   flex-wrap: wrap;
-  margin: -14px 0 22px;
   color: var(--muted);
   font-size: 11px;
 }
@@ -148,7 +147,6 @@
 @media (max-width: 640px) {
   .home-freshness {
     font-size: 11px;
-    margin-top: -8px;
     gap: 8px;
   }
   .topic-policy-search {
@@ -180,8 +178,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px 18px;
-  padding: 14px 18px;
-  margin-bottom: 14px;
+  padding: var(--space-md) 18px;
+  margin-bottom: var(--space-md);
   background: var(--surface);
   border: 1px solid var(--faint);
   border-radius: var(--radius);

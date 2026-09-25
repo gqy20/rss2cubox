@@ -1,6 +1,6 @@
 'use client'
 import { ScoreIndicator } from './Numbers'
-import { type ReactNode } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { safeReturnPath, withOrigin } from '../../lib/reading-context'
 import { ReturnLink } from './ReadingNavigation'
@@ -11,6 +11,7 @@ import type { Prediction, Review } from '../../lib/journal-types'
 import { dateLabel, predictionStatus } from '../../lib/journal-utils'
 import { Empty, JsonEvidence, PageHeading } from './Shared'
 import { ExportButton, RefreshButton } from './Actions'
+import { SearchTrigger } from './SearchPalette'
 export default function Predictions({
   predictions,
   reviews,
@@ -53,6 +54,14 @@ export default function Predictions({
     clearMemory(`window:predictions:${filter}:${value}`)
     update({ q: value || null, id: null })
   }
+  // Draft + debounce: typing must not write history and re-filter on every key.
+  const [draft, setDraft] = useState(search)
+  useEffect(() => setDraft(search), [search])
+  useEffect(() => {
+    if (draft === search) return
+    const timer = setTimeout(() => setSearch(draft), 300)
+    return () => clearTimeout(timer)
+  }, [draft, search]) // eslint-disable-line react-hooks/exhaustive-deps
   useWindowReadingPosition(`predictions:${filter}:${search}`)
   const from = `/predictions${query ? '?' + query : ''}`
   const rows = predictions.filter(
@@ -71,17 +80,11 @@ export default function Predictions({
   )
   return (
     <>
-      <PageHeading title="预测与复盘">
-        {origin && <ReturnLink from={origin} className="context-back" />}
-        <RefreshButton />
-        <ExportButton
-          data={{ predictions: rows, reviews }}
-          name="prediction-ledger"
-        />
-      </PageHeading>
+      <PageHeading title="预测与复盘" />
       {overview}
       <div className="toolbar">
-        <div className="segments" role="tablist" aria-label="预测状态">
+        {origin && <ReturnLink from={origin} className="context-back" />}
+        <div className="segments" role="group" aria-label="预测状态">
           {[
             ['all', '全部判断'],
             ['pending', '待验证'],
@@ -89,8 +92,7 @@ export default function Predictions({
           ].map(([key, label]) => (
             <button
               key={key}
-              role="tab"
-              aria-selected={filter === key}
+              aria-pressed={filter === key}
               onClick={() => setFilter(key)}
             >
               {label}
@@ -101,9 +103,17 @@ export default function Predictions({
           type="search"
           aria-label="搜索预测"
           placeholder="搜索判断或专题…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
         />
+        <div className="toolbar-actions">
+          <SearchTrigger />
+          <RefreshButton />
+          <ExportButton
+            data={{ predictions: rows, reviews }}
+            name="prediction-ledger"
+          />
+        </div>
       </div>
       <div className="prediction-list">
         {rows.length ? (

@@ -1,5 +1,4 @@
 'use client'
-import { useState, useEffect } from 'react'
 import {
   ResponsiveContainer,
   LineChart,
@@ -10,13 +9,8 @@ import {
   CartesianGrid,
 } from 'recharts'
 type Point = { day: string; articles: number; policies: number }
+// Loaded via next/dynamic ssr:false — no extra mount gate needed here.
 export default function TrendChart({ data }: { data: Point[] }) {
-  const [ready, setReady] = useState(false)
-  useEffect(() => setReady(true), [])
-  if (!ready)
-    return (
-      <div className="chart-wrap loading-skeleton" aria-label="图表加载中" />
-    )
   return (
     <>
       <div
@@ -58,7 +52,7 @@ export default function TrendChart({ data }: { data: Point[] }) {
               type="monotone"
               name="文章"
               dataKey="articles"
-              stroke="#aa735c"
+              stroke="var(--accent)"
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}
@@ -67,7 +61,7 @@ export default function TrendChart({ data }: { data: Point[] }) {
               type="monotone"
               name="政策"
               dataKey="policies"
-              stroke="#76835b"
+              stroke="var(--olive)"
               strokeWidth={2}
               dot={false}
               isAnimationActive={false}

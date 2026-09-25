@@ -141,7 +141,7 @@
 }
 .prediction-list {
   display: grid;
-  gap: 16px;
+  gap: var(--space-md);
 }
 .prediction-card {
   padding: 23px 28px;
@@ -194,8 +194,8 @@
 .monitor-grid {
   display: grid;
   grid-template-columns: 1.6fr 1fr;
-  gap: 22px;
-  margin-bottom: 23px;
+  gap: var(--section-gap);
+  margin-bottom: var(--section-gap);
 }
 .coverage-line {
   margin-top: 25px;
@@ -278,7 +278,7 @@
   padding: 50px;
   text-align: center;
 }
-.error-panel h2 {
+.error-panel h1 {
   font-family: var(--serif);
   margin-bottom: 14px;
 }

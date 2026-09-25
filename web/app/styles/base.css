@@ -20,6 +20,16 @@
     Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC',
     'Noto Sans CJK SC', 'Microsoft YaHei', sans-serif;
   --radius: 20px;
+  /* ── 骨架间距刻度:页面级规则与章节节奏引用这些值;
+     组件内部的私有间距(工具栏、卡片内)不强制使用 ── */
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 14px;
+  --space-lg: 22px;
+  --space-xl: 32px;
+  --page-top: var(--space-lg);
+  --page-top-reader: var(--space-md);
+  --section-gap: var(--space-lg);
   color-scheme: light;
 }
 * {

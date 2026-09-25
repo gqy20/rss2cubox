@@ -53,6 +53,8 @@ type Props = {
   stats: ArticleStats | null
   policyStats: PolicyStats | null
   trend: { day: string; articles: number; policies: number }[] | null
+  /** Page-level actions rendered at the right end of the controls row. */
+  actions?: React.ReactNode
 }
 function elapsed(value: string | null, now: number) {
   if (!value) return '从未记录'
@@ -148,6 +150,7 @@ export default function SourceMonitor({
   stats,
   policyStats,
   trend,
+  actions,
 }: Props) {
   const searchParams = useSearchParams(),
     params = new URLSearchParams(searchParams.toString())
@@ -237,6 +240,10 @@ export default function SourceMonitor({
   const selected =
     filtered.find((s) => s.id === params.get('source')) ||
     (!small ? filtered[0] : null)
+  const attentionCount = useMemo(
+    () => snapshot.sources.filter((s) => needsAttention(s, now, hours)).length,
+    [snapshot.sources, now, hours],
+  )
   const scrollKey = JSON.stringify([view, kind, status, category, q, hours])
   useLayoutEffect(() => {
     if (listRef.current?.clientHeight)
@@ -299,17 +306,38 @@ export default function SourceMonitor({
         },
       }
     : undefined
-  const errorGroups = Object.entries(
-    snapshot.sources
-      .filter(
-        (s) => s.status === 'failed' && (kind === 'all' || s.kind === kind),
-      )
-      .reduce<Record<string, number>>((acc, s) => {
-        const key = errorCategory(s.runs[0]?.error)
-        acc[key] = (acc[key] || 0) + 1
-        return acc
-      }, {}),
-  ).sort((a, b) => b[1] - a[1])
+  const errorGroups = useMemo(
+    () =>
+      Object.entries(
+        snapshot.sources
+          .filter(
+            (s) => s.status === 'failed' && (kind === 'all' || s.kind === kind),
+          )
+          .reduce<Record<string, number>>((acc, s) => {
+            const key = errorCategory(s.runs[0]?.error)
+            acc[key] = (acc[key] || 0) + 1
+            return acc
+          }, {}),
+      ).sort((a, b) => b[1] - a[1]),
+    [snapshot.sources, kind],
+  )
+  const distributions = useMemo(
+    () =>
+      (['tech', 'policy'] as const).map((type) => {
+        const sources = snapshot.sources.filter((s) => s.kind === type)
+        return {
+          type,
+          total: sources.length,
+          counts: monitorOrder
+            .map((key) => ({
+              key,
+              count: sources.filter((s) => s.status === key).length,
+            }))
+            .filter((s) => s.count),
+        }
+      }),
+    [snapshot.sources],
+  )
   const selectSource = (id: string) => {
     if (listRef.current)
       scrollPositions.set(scrollKey, listRef.current.scrollTop)
@@ -321,14 +349,7 @@ export default function SourceMonitor({
         className="source-distributions"
         aria-label="信源最近一轮状态分布"
       >
-        {(['tech', 'policy'] as const).map((type) => {
-          const sources = snapshot.sources.filter((s) => s.kind === type),
-            counts = monitorOrder
-              .map((key) => ({
-                key,
-                count: sources.filter((s) => s.status === key).length,
-              }))
-              .filter((s) => s.count)
+        {distributions.map(({ type, total, counts }) => {
           return (
             <div className="source-distribution" key={type}>
               <button
@@ -339,7 +360,7 @@ export default function SourceMonitor({
               >
                 {type === 'tech' ? <Rss size={15} /> : <Files size={15} />}
                 <span>{type === 'tech' ? '科技源' : '政策源'}</span>
-                <b>{sources.length}</b>
+                <b>{total}</b>
               </button>
               <div className="distribution-bar">
                 {counts.map(({ key, count }) => (
@@ -384,7 +405,7 @@ export default function SourceMonitor({
         })}
       </section>
       <div className="source-controls">
-        <div className="segments" role="tablist" aria-label="监控视图">
+        <div className="segments" role="group" aria-label="监控视图">
           {[
             ['attention', '需要关注'],
             ['all', '全部信源'],
@@ -393,20 +414,11 @@ export default function SourceMonitor({
           ].map(([key, label]) => (
             <button
               key={key}
-              role="tab"
-              aria-selected={view === key}
+              aria-pressed={view === key}
               onClick={() => update({ view: key, status: null, error: null })}
             >
               {label}
-              {key === 'attention' && (
-                <small>
-                  {
-                    snapshot.sources.filter((s) =>
-                      needsAttention(s, now, hours),
-                    ).length
-                  }
-                </small>
-              )}
+              {key === 'attention' && <small>{attentionCount}</small>}
             </button>
           ))}
         </div>
@@ -488,6 +500,7 @@ export default function SourceMonitor({
             </label>
           </>
         )}
+        {actions && <div className="source-controls-actions">{actions}</div>}
       </div>
       {view !== 'stats' && (
         <div className="source-result-line">
@@ -743,7 +756,7 @@ export default function SourceMonitor({
                   </div>
                   <div
                     className="document-tabs"
-                    role="tablist"
+                    role="group"
                     aria-label="信源详情视图"
                   >
                     {[
@@ -753,8 +766,7 @@ export default function SourceMonitor({
                     ].map(([key, label]) => (
                       <button
                         key={key}
-                        role="tab"
-                        aria-selected={detailTab === key}
+                        aria-pressed={detailTab === key}
                         onClick={() => {
                           update({ detail: key }, true)
                         }}
@@ -953,19 +965,17 @@ export default function SourceMonitor({
                       </div>
                       <div
                         className="segments"
-                        role="tablist"
+                        role="group"
                         aria-label="信源内容筛选"
                       >
                         <button
-                          role="tab"
-                          aria-selected={signalMode === 'latest'}
+                          aria-pressed={signalMode === 'latest'}
                           onClick={() => update({ content: 'latest' }, true)}
                         >
                           最新
                         </button>
                         <button
-                          role="tab"
-                          aria-selected={signalMode === 'high'}
+                          aria-pressed={signalMode === 'high'}
                           onClick={() => update({ content: 'high' }, true)}
                         >
                           {selected.kind === 'tech' ? '重点' : '高相关'}

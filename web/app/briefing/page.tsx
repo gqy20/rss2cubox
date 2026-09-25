@@ -4,6 +4,7 @@ import { readInsightHistory } from '../../lib/journal-store'
 import { dateLabel, insightItems, excerpt } from '../../lib/journal-utils'
 import { PageHeading, ExternalLink, Empty } from '../journal/Shared'
 import { ExportButton } from '../journal/Actions'
+import { SearchTrigger } from '../journal/SearchPalette'
 export const dynamic = 'force-dynamic'
 export default async function BriefingPage({
   searchParams,
@@ -12,16 +13,28 @@ export default async function BriefingPage({
 }) {
   const { at } = await searchParams,
     history = await readInsightHistory()
-  const selected = history.find((h) => h.generated_at === at) || history[0]
+  const selected = history.find((h) => h.generated_at === at) || history[0],
+    // The requested issue is outside the 30-issue window — say so instead of
+    // silently showing the latest one.
+    missed = Boolean(at && history.length && !history.find((h) => h.generated_at === at))
   return (
     <>
-      <Link className="breadcrumb" href="/">
-        <ArrowLeft size={14} />
-        返回今日简报
-      </Link>
-      <PageHeading title="洞察与行动">
-        {selected && <ExportButton data={selected} name="insights" />}
-      </PageHeading>
+      <div className="briefing-topline">
+        <Link className="breadcrumb" href="/">
+          <ArrowLeft size={14} />
+          返回今日简报
+        </Link>
+        <div className="heading-actions">
+          <SearchTrigger />
+          {selected && <ExportButton data={selected} name="insights" />}
+        </div>
+      </div>
+      <PageHeading title="洞察与行动" />
+      {missed && (
+        <div className="data-notice" role="status">
+          要找的那期不在最近30期内，已展示最新一期。
+        </div>
+      )}
       {history.length > 0 && (
         <form className="toolbar" action="/briefing" method="get">
           <label>
@@ -43,12 +56,14 @@ export default async function BriefingPage({
         </form>
       )}
       {selected ? (
-        (['trends', 'weak_signals', 'daily_advices'] as const).map((key, i) => (
+        (['trends', 'weak_signals', 'daily_advices'] as const).map((key, i) => {
+          const items = insightItems(selected.data[key])
+          return (
           <section className="surface" key={key} style={{ marginBottom: 22 }}>
             <h2 style={{ fontFamily: 'var(--serif)', marginBottom: 20 }}>
               {['宏观技术趋势', '暗流弱信号', '行动建议'][i]}
             </h2>
-            {insightItems(selected.data[key]).map((item, index) => (
+            {items.map((item, index) => (
               <details className="disclosure" key={index} open={index === 0}>
                 <summary>{excerpt(item.text, 100)}</summary>
                 <div className="prose">
@@ -63,11 +78,12 @@ export default async function BriefingPage({
                 </div>
               </details>
             ))}
-            {insightItems(selected.data[key]).length === 0 && (
+            {items.length === 0 && (
               <Empty title="这一期暂无此类洞察" />
             )}
           </section>
-        ))
+          )
+        })
       ) : (
         <section className="surface">
           <Empty

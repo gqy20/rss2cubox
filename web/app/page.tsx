@@ -18,6 +18,7 @@ import {
   Empty,
 } from './journal/Shared'
 import { CountLabel } from './journal/Numbers'
+import { SearchTrigger } from './journal/SearchPalette'
 import { excludedTopic } from '../lib/topic-utils'
 import { insightFreshness } from '../lib/reading-context'
 import { WindowReadingPosition } from './journal/ReadingNavigation'
@@ -35,8 +36,25 @@ export default async function Page() {
     <>
       <WindowReadingPosition memoryKey="home" />
       <div className="cover-heading">
-        <div>
+        <div className="cover-title">
           <h1>今日简报</h1>
+          <div className="home-freshness" role="status">
+            <Link
+              href={`/briefing${data.insights?.generated_at ? `?at=${encodeURIComponent(data.insights.generated_at)}` : ''}`}
+            >
+              <span
+                className={`freshness-badge ${insightFreshness(data.insights?.generated_at, data.loadedAt) === '今日生成' ? 'olive' : 'neutral'}`}
+              >
+                {insightFreshness(data.insights?.generated_at, data.loadedAt)}
+              </span>
+              {data.insights?.generated_at && (
+                <time dateTime={data.insights.generated_at}>
+                  {dateLabel(data.insights.generated_at, true)}
+                </time>
+              )}
+            </Link>
+            <span>文章最近入库 {dateLabel(data.stats?.latest, true)}</span>
+          </div>
         </div>
         <div className="cover-stats">
           <Link href="/signals">
@@ -60,24 +78,8 @@ export default async function Page() {
               value={data.issues.includes('预测') ? '—' : pending}
             />
           </Link>
+          <SearchTrigger />
         </div>
-      </div>
-      <div className="home-freshness" role="status">
-        <Link
-          href={`/briefing${data.insights?.generated_at ? `?at=${encodeURIComponent(data.insights.generated_at)}` : ''}`}
-        >
-          <span
-            className={`freshness-badge ${insightFreshness(data.insights?.generated_at, data.loadedAt) === '今日生成' ? 'olive' : 'neutral'}`}
-          >
-            {insightFreshness(data.insights?.generated_at, data.loadedAt)}
-          </span>
-          {data.insights?.generated_at && (
-            <time dateTime={data.insights.generated_at}>
-              {dateLabel(data.insights.generated_at, true)}
-            </time>
-          )}
-        </Link>
-        <span>文章最近入库 {dateLabel(data.stats?.latest, true)}</span>
       </div>
       <DataNotice issues={data.issues} />
       <div className="cover-grid">
@@ -154,12 +156,9 @@ export default async function Page() {
         </section>
         <div className="cover-aside">
           <section className="surface policy-panel">
-            <PanelHeading
-              title="政策阅读"
-              href="/policies"
-              action="进入政策库"
-            />
-            <p className="panel-intro">最近收录、已分析的高相关文件</p>
+            <PanelHeading title="政策阅读">
+              <span className="panel-intro">最近收录、已分析的高相关文件</span>
+            </PanelHeading>
             <PolicyRows
               rows={data.policies.slice(0, 2)}
               context={{ from: '/' }}

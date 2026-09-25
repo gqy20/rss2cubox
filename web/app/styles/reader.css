@@ -76,7 +76,7 @@
   font-size: 13px;
   color: var(--muted);
 }
-.document-tabs [aria-selected='true'] {
+.document-tabs [aria-pressed='true'] {
   border-color: var(--accent);
   color: var(--accent);
 }
@@ -136,6 +136,13 @@
 .md-table-wrap {
   overflow: auto;
 }
+.md-img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 10px;
+  display: block;
+  margin: 12px 0;
+}
 .md-code {
   background: #f3eee8;
   border-radius: 4px;
@@ -184,4 +191,10 @@
 .facts b {
   font-weight: 500;
   color: var(--ink);
+}
+
+.source-filter-tag {
+  border: 0;
+  cursor: pointer;
+  font-family: inherit;
 }

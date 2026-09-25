@@ -9,7 +9,13 @@ import {
 } from '../../lib/reader-search'
 import { safeReturnPath } from '../../lib/reading-context'
 
-export default function SearchBar() {
+export default function SearchBar({
+  autoFocus = false,
+  onSubmitted,
+}: {
+  autoFocus?: boolean
+  onSubmitted?: () => void
+} = {}) {
   const pathname = usePathname(),
     params = useSearchParams(),
     router = useRouter()
@@ -27,6 +33,12 @@ export default function SearchBar() {
     timer.current = null
   }, [])
   useEffect(() => {
+    if (autoFocus) {
+      input.current?.focus()
+      input.current?.select()
+    }
+  }, [autoFocus])
+  useEffect(() => {
     cancelTimer()
     setDraft(committed)
     setScope(scopeForPath(pathname))
@@ -36,16 +48,11 @@ export default function SearchBar() {
       cancelTimer()
       const keyword = value.trim().slice(0, 300)
       if (!inReader && !keyword) return
-      const sameScope = pathname === `/${target}`
+      const sameScope = pathname === `/${target}`,
+        from = safeReturnPath(params.get('from'))
       const url = readerUrl(
         target,
-        new URLSearchParams(
-          sameScope
-            ? queryString
-            : safeReturnPath(params.get('from'))
-              ? { from: safeReturnPath(params.get('from'))! }
-              : {},
-        ),
+        new URLSearchParams(sameScope ? queryString : from ? { from } : {}),
         { search: keyword },
       )
       if (url === `${pathname}${queryString ? `?${queryString}` : ''}`) return
@@ -88,6 +95,7 @@ export default function SearchBar() {
         e.preventDefault()
         if (ime.current) return
         commit(draft, scope, true)
+        if (draft.trim() || inReader) onSubmitted?.()
       }}
     >
       <Search size={17} aria-hidden="true" />

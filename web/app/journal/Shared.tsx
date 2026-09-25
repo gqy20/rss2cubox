@@ -23,7 +23,9 @@ export function PageHeading({
     <div className="page-heading">
       <div className="page-heading-main">
         <div className="title-row">
-          <h1>{title}</h1>
+          {/* Visually hidden on desktop, where the sidebar already names the
+              current page; stays visible on mobile and in the a11y tree. */}
+          <h1 className="page-title">{title}</h1>
           {children && <div className="heading-actions">{children}</div>}
         </div>
       </div>
@@ -35,11 +37,13 @@ export function PanelHeading({
   href,
   action = '查看全部',
   icon,
+  children,
 }: {
   title: string
   href?: string
   action?: string
   icon?: ReactNode
+  children?: ReactNode
 }) {
   return (
     <div className="panel-heading">
@@ -47,6 +51,7 @@ export function PanelHeading({
         {icon && <span className="section-icon">{icon}</span>}
         {title}
       </h2>
+      {children}
       {href && (
         <Link className="text-link" href={href}>
           {action}
@@ -115,7 +120,9 @@ export function ArticleRows({
 }) {
   return rows.length ? (
     <div className="reading-list">
-      {rows.map((row) => (
+      {rows.map((row) => {
+        const teaser = articleTeaser(row.title, row.core_event || row.hidden_signal)
+        return (
         <article className="reading-row" key={row.id}>
           <span className="document-symbol">
             <FileText size={18} strokeWidth={1.5} />
@@ -127,9 +134,9 @@ export function ArticleRows({
             >
               {row.title || '未命名文章'}
             </Link>
-            {articleTeaser(row.title, row.core_event || row.hidden_signal) && (
+            {teaser && (
               <p>
-                {articleTeaser(row.title, row.core_event || row.hidden_signal)}
+                {teaser}
               </p>
             )}
             <div className="metadata">
@@ -142,7 +149,8 @@ export function ArticleRows({
           </div>
           <BookmarkButton id={row.id} />
         </article>
-      ))}
+        )
+      })}
     </div>
   ) : (
     <Empty
@@ -198,6 +206,18 @@ export function PolicyRows({
     />
   )
 }
+const evidenceLabels: Record<string, string> = {
+  description: '说明',
+  metric: '指标',
+  threshold: '阈值',
+  evidence: '证据',
+  conditions: '条件',
+  sources: '来源',
+  required: '要求',
+  title: '标题',
+  text: '内容',
+  type: '类型',
+}
 export function JsonEvidence({ value }: { value: unknown }) {
   if (value == null || value === '') return <p className="muted-text">未记录</p>
   if (Array.isArray(value))
@@ -214,23 +234,11 @@ export function JsonEvidence({ value }: { value: unknown }) {
     )
   if (typeof value === 'object') {
     const entries = Object.entries(value)
-    const labels: Record<string, string> = {
-      description: '说明',
-      metric: '指标',
-      threshold: '阈值',
-      evidence: '证据',
-      conditions: '条件',
-      sources: '来源',
-      required: '要求',
-      title: '标题',
-      text: '内容',
-      type: '类型',
-    }
     return entries.length ? (
       <dl className="evidence-fields">
         {entries.map(([k, v]) => (
           <div key={k}>
-            <dt>{labels[k] || k}</dt>
+            <dt>{evidenceLabels[k] || k}</dt>
             <dd>
               <JsonEvidence value={v} />
             </dd>

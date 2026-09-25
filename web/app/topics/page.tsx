@@ -2,9 +2,10 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { BookOpen, Files, ArrowRight, Clock3 } from 'lucide-react'
 import {
-  getJournal,
+  readClusters,
   topicArticles,
   relatedPolicies,
+  topicPendingPredictions,
 } from '../../lib/journal-store'
 import { clusterStatus, dateLabel } from '../../lib/journal-utils'
 import {
@@ -20,6 +21,7 @@ import {
   PolicyRows,
 } from '../journal/Shared'
 import TopicSelector from '../journal/TopicSelector'
+import { SearchTrigger } from '../journal/SearchPalette'
 import ExpandableText from '../journal/ExpandableText'
 import { ReadingRegion, ReturnLink } from '../journal/ReadingNavigation'
 import { safeReturnPath, withOrigin } from '../../lib/reading-context'
@@ -30,13 +32,18 @@ export default async function TopicsPage({
 }: {
   searchParams: Promise<{ id?: string; from?: string }>
 }) {
-  const { id, from } = await searchParams,
-    data = await getJournal(),
-    topics = orderedTopics(data.clusters)
+  const { id, from } = await searchParams
+  const issues: string[] = []
+  const topics = orderedTopics(
+    await readClusters().catch(() => {
+      issues.push('专题')
+      return []
+    }),
+  )
   const selected = id
     ? topics.find((c) => String(c.id) === id)
     : topics.find((c) => !excludedTopic(c))
-  if (id && !selected && !data.issues.includes('专题')) notFound()
+  if (id && !selected && !issues.includes('专题')) notFound()
   const origin = safeReturnPath(from)
   const topicPath = withOrigin(
     `/topics${selected ? `?id=${selected.id}` : ''}`,
@@ -46,20 +53,17 @@ export default async function TopicsPage({
     from: topicPath,
     filters: { topic: String(selected?.id || '') },
   }
-  const header = (
-    <PageHeading title="专题对读">
-      <TopicSelector
-        topics={topics}
-        selectedId={selected?.id}
-        returnTo={origin}
-      />
-    </PageHeading>
+  const selector = (
+    <TopicSelector topics={topics} selectedId={selected?.id} returnTo={origin} />
   )
   if (!selected)
     return (
       <>
-        {header}
-        <DataNotice issues={data.issues.filter((i) => i === '专题')} />
+        <PageHeading title="专题对读">
+          <SearchTrigger />
+          {selector}
+        </PageHeading>
+        <DataNotice issues={issues.filter((i) => i === '专题')} />
         <section className="surface">
           <Empty
             title="暂无可阅读的专题"
@@ -69,19 +73,20 @@ export default async function TopicsPage({
       </>
     )
   const terms = topicPolicyTerms(selected)
-  const [articleResult, policyResult] = await Promise.allSettled([
-    topicArticles(selected.id),
-    relatedPolicies(terms),
-  ])
+  const [articleResult, policyResult, predictionResult] =
+    await Promise.allSettled([
+      topicArticles(selected.id),
+      relatedPolicies(terms),
+      topicPendingPredictions(selected.id),
+    ])
   const articles =
       articleResult.status === 'fulfilled' ? articleResult.value : [],
-    policies = policyResult.status === 'fulfilled' ? policyResult.value : []
-  const pending = data.predictions.filter(
-    (p) => p.signal_cluster_id === selected.id && p.status === 'pending',
-  )
+    policies = policyResult.status === 'fulfilled' ? policyResult.value : [],
+    pending =
+      predictionResult.status === 'fulfilled' ? predictionResult.value : []
   return (
     <>
-      {header}
+      <PageHeading title="专题对读" />
       <DataNotice
         issues={[
           ...(articleResult.status === 'rejected' ? ['专题文章'] : []),
@@ -103,6 +108,10 @@ export default async function TopicsPage({
             >
               {clusterStatus[selected.status] || '待确认'}
             </span>
+            <div className="topic-heading-actions">
+              <SearchTrigger />
+              {selector}
+            </div>
           </div>
           <div className="metadata">
             <span>AI 聚类</span>

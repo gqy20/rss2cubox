@@ -84,8 +84,8 @@
 .reading-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(300px, 1fr);
-  gap: 22px;
-  margin-top: 22px;
+  gap: var(--section-gap);
+  margin-top: var(--section-gap);
   align-items: start;
 }
 .section-icon {
@@ -260,7 +260,7 @@
   color: var(--muted);
   font-size: 12px;
 }
-.segments [aria-selected='true'],
+.segments [aria-pressed='true'],
 .segments [aria-current='page'] {
   background: var(--surface);
   color: var(--accent);
@@ -274,4 +274,56 @@
   grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.7fr);
   gap: 20px;
   align-items: start;
+}
+
+/* Desktop: sidebar already highlights the current page, so the in-page h1 is
+   kept only for the a11y tree; the actions row right-aligns and collapses
+   entirely when it carries nothing. Mobile keeps the visible title. */
+@media (min-width: 901px) {
+  .page-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+  }
+  .page-heading:not(:has(.heading-actions)) {
+    margin: 0;
+  }
+  .page-heading:has(.heading-actions) {
+    margin-top: 0;
+    margin-bottom: 14px;
+  }
+  .page-heading .heading-actions {
+    margin-left: auto;
+    justify-content: flex-end;
+  }
+  .page-heading .heading-actions .context-back {
+    margin-right: auto;
+  }
+}
+
+.toolbar-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.saved-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-sm);
+}
+.briefing-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 13px 0 var(--space-md);
+}
+.briefing-topline .breadcrumb {
+  margin-bottom: 0;
 }
