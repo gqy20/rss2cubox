@@ -31,7 +31,7 @@
   width: 32px;
   height: 34px;
   border-radius: 10px;
-  background: #aa735c;
+  background: var(--clay);
   color: white;
 }
 .journal-sidebar nav {

@@ -6,7 +6,14 @@ import Shell from './journal/Shell'
 export const metadata: Metadata = {
   title: 'RSS2Cubox · 技术与政策简报',
   description: '在技术进展与政策变化之间，阅读证据、追踪判断。',
-  icons: { icon: '/logo.svg', shortcut: '/logo.svg' },
+  icons: {
+    icon: [
+      { url: '/logo.svg', type: 'image/svg+xml', sizes: 'any' },
+      { url: '/logo-192.png', type: 'image/png', sizes: '192x192' },
+    ],
+    shortcut: '/logo.svg',
+    apple: [{ url: '/logo-180.png', sizes: '180x180' }],
+  },
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {
