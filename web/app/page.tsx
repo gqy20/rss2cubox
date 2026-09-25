@@ -32,6 +32,7 @@ export default async function Page() {
     advice = insightItems(data.insights?.daily_advices),
     weak = insightItems(data.insights?.weak_signals)
   const pending = data.predictions.filter((p) => p.status === 'pending').length
+  const briefingHref = `/briefing${data.insights?.generated_at ? `?at=${encodeURIComponent(data.insights.generated_at)}` : ''}`
   return (
     <>
       <WindowReadingPosition memoryKey="home" />
@@ -39,9 +40,7 @@ export default async function Page() {
         <div className="cover-title">
           <h1>今日简报</h1>
           <div className="home-freshness" role="status">
-            <Link
-              href={`/briefing${data.insights?.generated_at ? `?at=${encodeURIComponent(data.insights.generated_at)}` : ''}`}
-            >
+            <Link href={briefingHref}>
               <span
                 className={`freshness-badge ${insightFreshness(data.insights?.generated_at, data.loadedAt) === '今日生成' ? 'olive' : 'neutral'}`}
               >
@@ -84,16 +83,16 @@ export default async function Page() {
       <DataNotice issues={data.issues} />
       <div className="cover-grid">
         <section className="surface lead-story">
-          <div className="lead-kicker">
-            <span className="pill clay">
-              <Sparkles size={13} /> 本期主议题
-            </span>
-          </div>
           {lead ? (
             <>
-              <h2>
-                <Link href={`/topics?id=${lead.id}`}>{lead.label}</Link>
-              </h2>
+              <div className="lead-title-row">
+                <h2>
+                  <Link href={`/topics?id=${lead.id}`}>{lead.label}</Link>
+                </h2>
+                <span className="pill clay">
+                  <Sparkles size={13} /> 本期主议题
+                </span>
+              </div>
               <p className="lead-summary">
                 {excerpt(lead.summary, 190) ||
                   '查看关联文章，从多个来源追踪同一主题的变化。'}
@@ -109,43 +108,30 @@ export default async function Page() {
               </div>
             </>
           ) : (
-            <Empty
-              title="等待新的主议题"
-              description="信号聚类完成后，会在这里展示跨文章的主题线索。"
-            />
+            <>
+              <div className="lead-kicker">
+                <span className="pill clay">
+                  <Sparkles size={13} /> 本期主议题
+                </span>
+              </div>
+              <Empty
+                title="等待新的主议题"
+                description="信号聚类完成后，会在这里展示跨文章的主题线索。"
+              />
+            </>
           )}
           <div className="story-divider" />
           <div className="briefing-preview">
             <div className="briefing-caption">
               <BookOpen size={17} />
-              <Link href="/briefing">趋势判断</Link>
+              <Link className="panel-heading-title" href={briefingHref}>
+                趋势判断
+                <ArrowRight size={14} />
+              </Link>
               <span className="ai-label">AI 分析</span>
             </div>
             {trends[0] ? (
-              <details className="insight-detail">
-                <summary>
-                  {excerpt(trends[0].text, 110)}
-                  <span className="text-link">
-                    阅读完整判断 <ArrowRight size={14} />
-                  </span>
-                </summary>
-                <p>{trends[0].text}</p>
-                <div className="source-links">
-                  {trends[0].source_urls?.map(
-                    (url, i) =>
-                      safeUrl(url) && (
-                        <a
-                          key={url}
-                          href={url}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          {trends[0].source_titles?.[i] || `来源 ${i + 1}`}
-                        </a>
-                      ),
-                  )}
-                </div>
-              </details>
+              <p className="insight-excerpt">{excerpt(trends[0].text, 150)}</p>
             ) : (
               <p className="muted-text">最新洞察尚未生成。</p>
             )}
@@ -156,23 +142,13 @@ export default async function Page() {
         </section>
         <div className="cover-aside">
           <section className="surface policy-panel">
-            <PanelHeading title="政策阅读">
+            <PanelHeading title="政策阅读" titleHref="/policies">
               <span className="panel-intro">最近收录、已分析的高相关文件</span>
             </PanelHeading>
             <PolicyRows
               rows={data.policies.slice(0, 2)}
               context={{ from: '/' }}
             />
-            <div className="panel-bottom">
-              <span className="olive-note">先读摘要，再核对原文</span>
-              <Link
-                href="/policies"
-                className="round-link"
-                aria-label="浏览政策库"
-              >
-                <ArrowRight size={17} />
-              </Link>
-            </div>
           </section>
           <section className="prediction-note">
             <div className="prediction-note-title">
@@ -202,13 +178,12 @@ export default async function Page() {
         </div>
       </div>
       <div className="reading-grid">
-        <section className="surface">
-          <PanelHeading
-            title="值得继续读"
-            href="/signals?mode=high"
-            action="全部重点文章"
-            icon={<BookOpen size={18} />}
-          />
+          <section className="surface">
+            <PanelHeading
+              title="值得继续读"
+              titleHref="/signals?mode=high"
+              icon={<BookOpen size={18} />}
+            />
           <ArticleRows
             rows={data.articles.slice(0, 5)}
             context={{ from: '/', filters: { mode: 'high' } }}

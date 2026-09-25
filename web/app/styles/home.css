@@ -33,28 +33,6 @@
 .policy-teaser .metadata {
   margin-top: 7px;
 }
-.panel-bottom {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 12px;
-  padding-top: 15px;
-  border-top: 1px solid var(--faint);
-}
-.olive-note {
-  font-size: 11px;
-  color: var(--olive);
-}
-.round-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--olive-tint);
-  color: var(--olive);
-}
 .prediction-note {
   border-radius: var(--radius);
   padding: 22px 26px;

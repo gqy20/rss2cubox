@@ -37,19 +37,29 @@ export function PanelHeading({
   href,
   action = '查看全部',
   icon,
+  titleHref,
   children,
 }: {
   title: string
   href?: string
   action?: string
   icon?: ReactNode
+  /** Makes the panel title itself a link, carrying the arrow affordance. */
+  titleHref?: string
   children?: ReactNode
 }) {
   return (
     <div className="panel-heading">
       <h2>
         {icon && <span className="section-icon">{icon}</span>}
-        {title}
+        {titleHref ? (
+          <Link className="panel-heading-title" href={titleHref}>
+            {title}
+            <ArrowRight size={15} />
+          </Link>
+        ) : (
+          title
+        )}
       </h2>
       {children}
       {href && (
@@ -163,10 +173,12 @@ export function PolicyRows({
   rows,
   context,
   matchTerms,
+  withBookmark = false,
 }: {
   rows: Policy[]
   context?: ReadingContext
   matchTerms?: string[]
+  withBookmark?: boolean
 }) {
   return rows.length ? (
     <div className="policy-teasers">
@@ -196,6 +208,7 @@ export function PolicyRows({
               <span>{dateLabel(policy.published_at)}</span>
             </div>
           </div>
+          {withBookmark && <BookmarkButton id={policy.id} kind="policy" />}
         </article>
       ))}
     </div>

@@ -17,7 +17,7 @@
   .cover-heading h1 {
     font-size: 38px;
   }
-  .lead-story > h2 {
+  .lead-story h2 {
     font-size: 31px;
   }
   .lead-summary {
@@ -75,7 +75,7 @@
   .surface {
     padding: 23px;
   }
-  .lead-story > h2 {
+  .lead-story h2 {
     font-size: 24px;
   }
   .cover-grid,
@@ -244,7 +244,7 @@
     border-radius: 17px;
     padding: 23px 20px;
   }
-  .lead-story > h2 {
+  .lead-story h2 {
     font-size: 25px;
     margin-top: 20px;
   }
