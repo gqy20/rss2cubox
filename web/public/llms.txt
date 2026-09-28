@@ -1,184 +1,94 @@
-# RSS Signals 站点访问指南
+# rss2cubox — AI 政策与科技情报站点
 
-## 站点概述
+> 中国 AI/智能体方向的政策追踪与科技信号系统。16 个政策信源（网信办/工信部/发改委/国家数据局/TC260/中科院院机关/北京/上海/浙江/广东/深圳人大）+ 270 个科技 RSS 源，经 LLM 结构化抽取：政策本体字段、立法阶段、政策主线标签、重要性评分。本文件面向智能体与大模型，请优先使用结构化接口，不要只抓页面文本。
 
-RSS Signals 是一个技术情报站点，聚合 RSS 文章并提供结构化分析结果。内容主要覆盖 AI、Agent、模型、工具链、研究与工程动态。
+## 通用约定
 
-如果你是一个大模型，想从这个网站获取信息，请优先使用结构化接口，而不是只抓首页文本。
+- 所有时间戳为 ISO 8601 UTC；展示给人类时转北京时间。
+- 列表接口统一**游标分页**（不是 page/limit）：每页 30 条，响应形如 `{"data": [...], "nextCursor": "...", "hasMore": true}`，把 `nextCursor` 原样作为下一页的 `?cursor=` 参数。
+- 错误响应 `{"error": "..."}`；参数非法 400，数据源故障 503，编号不存在 404。
+- 全部接口只读、无需认证。
 
 ## 推荐访问顺序
 
-### 1. 获取最新文章列表
+### 1. 最新科技信号
 
-优先访问：
+**`/api/reader/signals`**
 
-- `/api/signals?page=1&limit=50`
+按 `hasMore`/`nextCursor` 翻页。适合问答、摘要、聚类、检索。
 
-用途：
+### 2. 政策情报（本站特色）
 
-- 获取最新一页文章
-- 适合做问答、摘要、聚类、检索
+- 全部政策：`/api/reader/policies`
+- 某条主线：`/api/reader/policies?policy_lineage=人工智能+行动`
+- 高相关政策：`/api/reader/policies?mode=relevant`
+- 征求意见中的（预测价值最高）：`/api/reader/policies?stage=征求意见`
 
-### 2. 按日期获取文章
+### 3. 关键词搜索（两个列表都支持 `search` 参数）
 
-如果你要分析某一天的内容，使用：
+- `/api/reader/signals?search=MCP`
+- `/api/reader/policies?search=词元`
 
-- `/api/signals?page=1&limit=50&date=YYYY-MM-DD`
+### 4. 单篇详情（含全文）
 
-示例：
+- 文章：`/api/reader/article?id=<hash>`
+- 政策：`/api/reader/policy?id=<hash>`（含原文引句、关键条款、双模型主线校验）
 
-- `/api/signals?page=1&limit=50&date=2026-03-20`
+## 端点详解
 
-### 3. 按关键词搜索
+### GET /api/reader/policies — 政策列表
 
-如果你要查找某个主题、模型、项目或公司，使用：
+| 参数 | 说明 |
+|---|---|
+| `search` | 关键词（≤300 字符，匹配标题/摘要） |
+| `policy_lineage` | 主线枚举：`十五五规划体系` / `人工智能+行动` / `AI安全与监管` / `数据要素与流通` / `算力与数字基础设施` |
+| `mode` | `all`（默认）/ `analyzed`（已深度抽取）/ `relevant`（ai_relevance≥4） |
+| `region` / `stage` / `instrument_type` | 地区（北京/全国/中科院…）、阶段（征求意见/已发布/已生效）、文件类型（部门规章/规范性文件/规划…） |
+| `sourceRef` | 信源过滤，`policy:<md5>`（信源编号从监控页获取） |
+| `cursor` | 分页游标 |
 
-- `/api/signals?page=1&limit=50&search=关键词`
+预筛相关度 <2 的民生噪音（停水通知、月票办理等）不出现在任何模式。
 
-示例：
+### GET /api/reader/signals — 科技信号列表
 
-- `/api/signals?page=1&limit=50&search=Agent`
-- `/api/signals?page=1&limit=50&search=MCP`
-- `/api/signals?page=1&limit=50&search=OpenAI`
+| 参数 | 说明 |
+|---|---|
+| `search` / `source` / `tag` | 关键词、信源名、标签 |
+| `date` | `YYYY-MM-DD` |
+| `mode` | `all` / `high`（importance≥4）/ `analyzed` |
+| `topic` | 信号聚类编号（正整数） |
+| `sourceRef` | `tech:<md5>` |
+| `cursor` | 分页游标 |
 
-### 4. 查看站点首页
+### GET /api/reader/policy?id= 与 /api/reader/article?id=
 
-首页：
+单条详情。政策返回：发布机构、文号、管辖、位阶（instrument_type）、立法阶段、生效日期、征求意见截止（comment_deadline）、适用主体、义务强度、ai_relevance（1-5）、summary、key_provisions、source_quote（原文逐字引句）、confidence、`enrich_meta.jev_lineage`（双模型主线一致性）、`full_text`。文章返回：importance_score、signal_type、entities、watch_keywords、prediction、`full_text`。
 
-- `/`
+### GET /api/monitor/source?id=<ref>
 
-用途：
+信源运行详情，`id` 格式 `tech:<md5>` 或 `policy:<md5>`：最近 12 轮采集（状态/条数/耗时/错误）、最新 12 条与重点 12 条内容。错误信息已去除嵌入凭据。
 
-- 查看趋势概览
-- 查看日期分组
-- 查看已分析信号统计
-- 查看全局洞察卡片
+### POST /api/reader/saved 与 POST /api/reader/signals
 
-说明：
+收藏内容批量查询（只读）。Body 分别为 `{"article": [...], "policy": [...]}` 与 `{"ids": [...]}`，各 ≤5000 个 ID；ID 经 body 传递不进 URL。
 
-- 首页适合概览
-- API 更适合程序化读取
+## 字段速查
 
-## 主要接口
+**政策位阶** instrument_type：法律 > 行政法规 > 部门规章/地方性法规 > 地方政府规章 > 规范性文件 > 指导意见；另有 征求意见稿/技术标准/规划/通知公告。
 
-### `/api/signals`
+**立法阶段** stage：征求意见 → 已发布 → 已生效（或 已修订/已废止）。
 
-这是最重要的结构化数据入口。
+**义务强度** obligation_level：强制 / 推荐 / 自愿 / 不适用。
 
-查询参数：
+**相关性** ai_relevance：与 AI/智能体产业相关度 1-5。
 
-- `page`: 页码，从 `1` 开始
-- `limit`: 每页条数，建议不超过 `50`
-- `date`: 日期筛选，格式为 `YYYY-MM-DD`
-- `search`: 关键词搜索
+## 未通过 API 暴露的数据
 
-返回格式：
-
-```json
-{
-  "data": [],
-  "total": 12359,
-  "page": 1,
-  "hasMore": true
-}
-```
-
-`data` 中每条记录通常包含：
-
-- `id`: 站内记录 ID
-- `title`: 文章标题
-- `url`: 原文链接
-- `source`: 来源名称
-- `time`: 文章时间
-- `exported`: 是否已完成正式入库
-- `status`: 当前状态，当前正常值通常为 `exported`
-- `tags`: 标签数组
-- `core_event`: 核心事件摘要
-- `hidden_signal`: 隐含信号
-- `actionable`: 行动建议
-- `reason`: 判断依据
-- `cover_url`: 封面图
-- `source_feed`: 原始 feed 标识
-- `source_label`: 原始 feed 展示名
-
-## 字段理解
-
-- `title`
-  - 文章标题
-- `url`
-  - 原文链接；需要原始上下文时优先访问这里
-- `source`
-  - 来源名称，例如 `arXiv cs.CV`、`MarkTechPost`
-- `time`
-  - 文章时间轴字段；用于排序、日期分组和按天筛选
-- `tags`
-  - 主题标签
-- `exported`
-  - 该记录是否已经作为正式文章从 `ic` 返回
-- `status`
-  - 当前前端状态字段；当前主流程下通常是 `exported`
-- `core_event`
-  - 对文章事实层内容的一句话概括
-- `hidden_signal`
-  - 对趋势或深层含义的提炼
-- `actionable`
-  - 面向工程师或研究者的行动建议
-- `reason`
-  - 为什么这条内容重要
-
-## 建议使用方式
-
-### 如果你想获取最新情报
-
-从这里开始：
-
-- `/api/signals?page=1&limit=50`
-
-如果 `hasMore = true`，继续读取后续页。
-
-### 如果你想获取某一天的全部情报
-
-从这里开始：
-
-- `/api/signals?page=1&limit=50&date=YYYY-MM-DD`
-
-然后根据 `hasMore` 翻页直到结束。
-
-### 如果你想研究某个主题
-
-使用关键词搜索：
-
-- `/api/signals?page=1&limit=50&search=关键词`
-
-搜索会匹配：
-
-- 标题
-- 来源
-- 标签
-- 摘要字段
-
-### 如果你想理解整体趋势
-
-先看：
-
-- `/`
-
-再结合：
-
-- `/api/signals?page=1&limit=50`
-
-首页适合看概览，API 适合拿结构化数据。
-
-## 站点范围说明
-
-- 站点展示的是经过筛选和结构化分析后的 RSS 技术情报
-- 文章列表数据来自 `ic`
-- 全局洞察卡片来自 `global_insights`
-- 正文不直接托管在本站，原文请访问每条记录的 `url`
-- 站内重点是“文章元数据 + 分析结果”，不是全文镜像
+趋势预测（trend_predictions）、全局洞察（global_insights）、专题聚类明细、Jev 词元打分（tech_triage_scores）目前仅页面消费。需要时可直接查询 PostgreSQL（端口 5434，库 rss2cubox），或联系维护者补充端点。
 
 ## 站点信息
 
-- 站点：`https://info.gqy20.top`
-- 当前文档：`/llms.txt`
-- 主页：`/`
+- 本文件：`/llms.txt`；服务端口 3424
+- 政策信源每天 07:30 / 19:30（北京时间）抓取；科技信源每 6 小时一轮
+- 深度抽取异步完成，`mode=analyzed` 的最新文件可能滞后数小时
+- 原文不在本站托管，完整上下文请访问每条记录的 `url`
