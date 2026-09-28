@@ -72,6 +72,22 @@
 
 收藏内容批量查询（只读）。Body 分别为 `{"article": [...], "policy": [...]}` 与 `{"ids": [...]}`，各 ≤5000 个 ID；ID 经 body 传递不进 URL。
 
+### GET /api/sources — 信源清单
+
+全部信源的编号（`id` 即 monitor/source 的入参）、名称、类型（tech/policy）、配置状态（enabled/disabled/historical）、健康状态、最近成功时间、累计产出（articles/analyzed/high）。**智能体发现信源的入口**：先取此清单，再用 `id` 查运行详情。
+
+### GET /api/insights — 全局洞察
+
+最近 30 期全局分析（generated_at + data）：趋势、弱信号、行动建议。
+
+### GET /api/clusters — 信号聚类清单
+
+聚类标签、摘要、实体、关联文章数/信源数。`id` 即 `/api/reader/signals?topic=` 的取值。
+
+### GET /api/predictions — 趋势预测与复核
+
+`data.predictions`（预测，含关联聚类标签与状态）与 `data.reviews`（事后复核记录）。
+
 ## 字段速查
 
 **政策位阶** instrument_type：法律 > 行政法规 > 部门规章/地方性法规 > 地方政府规章 > 规范性文件 > 指导意见；另有 征求意见稿/技术标准/规划/通知公告。
@@ -84,7 +100,7 @@
 
 ## 未通过 API 暴露的数据
 
-趋势预测（trend_predictions）、全局洞察（global_insights）、专题聚类明细、Jev 词元打分（tech_triage_scores）目前仅页面消费。需要时可直接查询 PostgreSQL（端口 5434，库 rss2cubox），或联系维护者补充端点。
+Jev 词元打分明细（tech_triage_scores）与日报归档（daily_reports）目前仅库表可查（PostgreSQL 端口 5434，库 rss2cubox），需要可联系维护者补充端点。
 
 ## 站点信息
 
