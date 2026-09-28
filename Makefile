@@ -170,6 +170,7 @@ web-deploy: ## 同步代码到服务器并重建重启前端（rsync + pnpm buil
 	@rsync -az --delete \
 	  --exclude .venv --exclude node_modules --exclude .next --exclude __pycache__ \
 	  --exclude .pytest_cache --exclude .rss2cubox-prediction-loop \
+	  --exclude .env --exclude .env.example --exclude 'web/.env*' \
 	  --filter 'P .env*' --filter 'P web/.env*' --filter 'P logs/' \
 	  ./ $(DEPLOY_HOST):$(DEPLOY_DIR)/
 	@ssh $(DEPLOY_HOST) 'set -e; cd $(DEPLOY_DIR)/web; export PATH="$$HOME/.local/bin:$$PATH" LC_ALL=C; \
