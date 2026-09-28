@@ -40,7 +40,8 @@ export async function POST(request: NextRequest) {
       submitted_by: typeof body.submitted_by === 'string' ? body.submitted_by : '',
     })
     return NextResponse.json({ data: row }, { headers })
-  } catch {
+  } catch (error) {
+    console.error('suggest-source failed', error)
     return NextResponse.json(
       { error: '提交失败，请稍后重试' },
       { status: 503, headers },

@@ -45,7 +45,8 @@ async function query<T extends QueryResultRow>(
   params: unknown[] = [],
 ): Promise<T[]> {
   const result = await pool().query<T>(sql, params)
-  return JSON.parse(JSON.stringify(result.rows)) as T[]
+  // DDL（CREATE TABLE 等）没有 rows，兜底空数组
+  return JSON.parse(JSON.stringify(result.rows || [])) as T[]
 }
 const articleFields = `id, title, url, source_feed_name, source_feed_id, pic_url, description,
   tags, importance_score, reason, actionable, hidden_signal, content_source, signal_type,
