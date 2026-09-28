@@ -88,6 +88,10 @@
 
 `data.predictions`（预测，含关联聚类标签与状态）与 `data.reviews`（事后复核记录）。
 
+### GET /api/daily-reports — 日报归档
+
+每天一份的综合分析：`summary`、`key_topics`、`trends`、`top_articles`、`weak_signals`（早期弱信号）、`daily_advices`、`cluster_evolution`、`prediction_status`、`confidence_level`。不带参数返回全部（按日期倒序）；`?date=YYYY-MM-DD` 取单份。
+
 ## 字段速查
 
 **政策位阶** instrument_type：法律 > 行政法规 > 部门规章/地方性法规 > 地方政府规章 > 规范性文件 > 指导意见；另有 征求意见稿/技术标准/规划/通知公告。
@@ -100,7 +104,7 @@
 
 ## 未通过 API 暴露的数据
 
-Jev 词元打分明细（tech_triage_scores）与日报归档（daily_reports）目前仅库表可查（PostgreSQL 端口 5434，库 rss2cubox），需要可联系维护者补充端点。
+Jev 词元打分明细（tech_triage_scores）目前仅库表可查（PostgreSQL 端口 5434，库 rss2cubox），需要可联系维护者补充端点。
 
 ## 站点信息
 

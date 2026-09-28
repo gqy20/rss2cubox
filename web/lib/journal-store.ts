@@ -428,6 +428,18 @@ export async function readInsightHistory() {
     'SELECT generated_at,data FROM global_insights ORDER BY generated_at DESC LIMIT 30',
   )
 }
+export async function readDailyReports(date?: string) {
+  // 量级为每天一条，直接全量按日期倒序；date 命中时只取该份。
+  if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return query<{ report_date: string; generated_at: string; data: unknown }>(
+      'SELECT report_date,generated_at,data FROM daily_reports WHERE report_date=$1',
+      [date],
+    )
+  }
+  return query<{ report_date: string; generated_at: string; data: unknown }>(
+    'SELECT report_date,generated_at,data FROM daily_reports ORDER BY report_date DESC',
+  )
+}
 export const getJournal = cache(async (): Promise<JournalData> => {
   const issues: string[] = []
   async function attempt<T>(
