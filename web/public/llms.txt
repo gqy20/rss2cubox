@@ -92,6 +92,10 @@
 
 每天一份的综合分析：`summary`、`key_topics`、`trends`、`top_articles`、`weak_signals`（早期弱信号）、`daily_advices`、`cluster_evolution`、`prediction_status`、`confidence_level`。不带参数返回全部（按日期倒序）；`?date=YYYY-MM-DD` 取单份。
 
+### POST /api/suggest-source — 推荐新信源
+
+Body：`{"url": "...", "name": "...", "kind": "tech|policy", "note": "推荐理由", "submitted_by": "..."}`。提交后自动体检并返回 `health`：`rss_ok`（RSS 可直接接入）/ `html_candidate`（需人工适配 CSS 选择器）/ `js_shell`（JS 空壳站）/ `unreachable`；RSS 源附最近条目的 AI 关键词密度（`ai_keyword_ratio`）作为即时信噪比预估。GET 同路径列出全部建议供维护者审核，是否接入由人工决定。
+
 ## 字段速查
 
 **政策位阶** instrument_type：法律 > 行政法规 > 部门规章/地方性法规 > 地方政府规章 > 规范性文件 > 指导意见；另有 征求意见稿/技术标准/规划/通知公告。
