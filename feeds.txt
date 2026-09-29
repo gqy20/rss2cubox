@@ -198,7 +198,7 @@
 
 [direct]
 5	https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
-1	https://feeds.arstechnica.com/arstechnica/index # Ars Technica
+1	https://arstechnica.com/ai/feed/ # Ars Technica AI（频道版替换全站，2026-09-29 提纯非 AI 噪音）
 1	https://www.wired.com/feed/rss # WIRED
 1	https://feeds.feedblitz.com/marginalrevolution # Marginal Revolution
 1	https://www.youtube.com/feeds/videos.xml?channel_id=UCLXo7UDZvByw2ixzpQCufnA # YouTube Vox
@@ -310,7 +310,7 @@
 # 新增：从橘鸦早报提取的信源
 2	https://openclaw.ai/rss.xml # OpenClaw Blog（AI Agent）
 2	https://zed.dev/blog.rss # Zed Editor Blog
-1	https://techcrunch.com/feed/ # TechCrunch
+1	https://techcrunch.com/category/artificial-intelligence/feed/ # TechCrunch AI（频道版替换全站）
 2	https://research.ibm.com/rss # IBM Research
 2	https://qwenlm.github.io/blog/index.xml # Qwen Blog（通义千问）
 2	https://github.com/NousResearch/hermes-agent/releases.atom # Hermes Agent Releases（Nous Research）
@@ -379,7 +379,7 @@
 # — VC / 投资人博客
 # — 政策 / 监管 / 权威科技媒体
 1	https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss # IEEE Spectrum — AI 专题
-1	https://www.technologyreview.com/feed # MIT Technology Review（权威科技深度报道）
+1	https://www.technologyreview.com/topic/artificial-intelligence/feed # MIT Technology Review AI（频道版替换全站）
 1	https://www.nist.gov/news-events/news/rss.xml # NIST News（含 AI 标准/安全/评估政策）
 # — 论文（社区维护）
 0	https://papers.takara.ai/api/feed # Hugging Face Daily Papers（社区维护，每日论文更新）
@@ -389,7 +389,7 @@
 2	https://blog.bytebytego.com/feed # ByteByteGo（系统设计 + AI 架构，图文并茂）
 2	https://www.fast.ai/index.xml # Fast.AI（Jeremy Howard，实用深度学习教程）
 # — 综合科技媒体（补充覆盖面）
-1	https://www.theverge.com/rss/full.xml # The Verge（消费科技 + AI）
+1	https://www.theverge.com/rss/ai-artificial-intelligence/index.xml # The Verge AI（频道版替换全站）
 1	https://futurism.com/feed # Futurism（未来科技 + AI 聚焦）
 1	https://api.quantamagazine.org/feed/ # Quanta Magazine（数学/CS/理论科学，纯数学驱动的 AI 洞察）
 1	https://www.lesswrong.com/feed.xml?view=curated-rss # LessWrong（理性社区，AI 对齐/安全讨论）
@@ -427,3 +427,5 @@
 2	https://www.ifanr.com/feed # 爱范儿
 2	https://www.36kr.com/feed # 36氪官网
 2	https://baoyu.io/feed.xml # 宝玉博客
+5	https://research.google/blog/rss/ # Google Research Blog（研究向一手，AIHOT 甄选 2026-09-29）
+4	https://mistral.ai/rss.xml # Mistral 官方博客（重定向 /news/rss；一手模型发布）
