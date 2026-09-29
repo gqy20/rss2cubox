@@ -434,3 +434,4 @@
 2	https://elsewhere.news/feed.xml # elsewhere（中文 AI 深度观点/创投视角，AIHOT 甄选）
 3	https://garymarcus.substack.com/feed # Gary Marcus：The Road to AI We Can Trust（AI 批评/治理视角，aihot 生产源甄选 2026-09-29）
 3	https://news.google.com/rss/search?q=site:openrouter.ai&hl=en-US&gl=US&ceid=US:en # OpenRouter 动态（Google News 站点间接源；模型上线/价格，token 经济主线）
+2	https://aihot.news/feed/all.xml # AIHOT 全量动态（间接获得其 X 账号通道的策展内容：Rohan Paul/Testing Catalog/CEO 发言等，带原文直链）
