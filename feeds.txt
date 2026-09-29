@@ -429,3 +429,6 @@
 2	https://baoyu.io/feed.xml # 宝玉博客
 5	https://research.google/blog/rss/ # Google Research Blog（研究向一手，AIHOT 甄选 2026-09-29）
 4	https://mistral.ai/rss.xml # Mistral 官方博客（重定向 /news/rss；一手模型发布）
+1	https://www.ithome.com/rss/ # IT之家（中文科技快讯，AIHOT 生产源甄选 2026-09-29；混有数码噪音靠 triage 过滤）
+2	https://hn.buzzing.cc/rss.xml # Hacker News 热门中文镜像（HN 共识信号维度，AIHOT 甄选）
+2	https://elsewhere.news/feed.xml # elsewhere（中文 AI 深度观点/创投视角，AIHOT 甄选）
