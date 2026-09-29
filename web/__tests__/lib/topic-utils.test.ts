@@ -3,6 +3,7 @@ import {
   articleTeaser,
   excludedTopic,
   orderedTopics,
+  isResonant,
   matchingTopics,
   topicPolicyTerms,
 } from '../../lib/topic-utils'
@@ -28,6 +29,16 @@ describe('topic reading defaults', () => {
     ]
     expect(orderedTopics(list).map((t) => t.id)).toEqual([3, 2, 1])
     expect(excludedTopic(topic(4, { article_count: 0 }))).toBe(true)
+  })
+  it('resonant clusters (source>=3) outrank fresher single-source ones', () => {
+    expect(isResonant(topic(9, { source_count: 3 }))).toBe(true)
+    expect(isResonant(topic(9, { source_count: 2 }))).toBe(false)
+    const list = [
+      topic(1, { source_count: 1, updated_at: '2026-09-28T00:00:00Z' }),
+      topic(2, { source_count: 5, updated_at: '2026-09-20T00:00:00Z' }),
+      topic(3, { source_count: 6, updated_at: '2026-09-19T00:00:00Z' }),
+    ]
+    expect(orderedTopics(list).map((t) => t.id)).toEqual([3, 2, 1])
   })
   it('searches topic names, entities and keywords, hiding excluded topics by default', () => {
     const list = [

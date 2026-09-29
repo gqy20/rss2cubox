@@ -314,3 +314,18 @@
 .prediction-window {
   margin-top: var(--space-md);
 }
+
+/* ── 多源共振标识（独立来源数 ≥3 的热点簇）── */
+.resonance-badge {
+  font-variant-numeric: tabular-nums;
+}
+.topic-select-option .resonance-mark {
+  font-style: normal;
+  color: var(--olive);
+  background: var(--olive-tint);
+  border-radius: 999px;
+  padding: 0 7px;
+  margin-left: 6px;
+  font-size: 10px;
+  white-space: nowrap;
+}

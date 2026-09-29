@@ -5,10 +5,18 @@ export function excludedTopic(topic: Cluster) {
     ['invalid', 'archived'].includes(topic.status) || topic.article_count === 0
   )
 }
+// 多源共振（借鉴 AIHOT 的"独立来源数 = 热度"）：同一事件被 ≥3 个独立
+// 信源报道即是热点，排序优先于单纯新鲜的簇。
+export const RESONANCE_MIN = 3
+export function isResonant(topic: Cluster) {
+  return topic.source_count >= RESONANCE_MIN
+}
 export function orderedTopics(topics: Cluster[]) {
   return [...topics].sort(
     (a, b) =>
       Number(excludedTopic(a)) - Number(excludedTopic(b)) ||
+      Number(isResonant(b)) - Number(isResonant(a)) ||
+      (isResonant(a) && isResonant(b) ? b.source_count - a.source_count : 0) ||
       (Date.parse(b.updated_at) || 0) - (Date.parse(a.updated_at) || 0) ||
       b.source_count - a.source_count ||
       b.article_count - a.article_count ||

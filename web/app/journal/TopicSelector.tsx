@@ -158,6 +158,9 @@ export default function TopicSelector({
                   <strong>{topic.label}</strong>
                   <small>
                     {topic.article_count} 篇文章 · {topic.source_count} 个来源
+                    {topic.source_count >= 3 && (
+                      <em className="resonance-mark">×{topic.source_count} 源共振</em>
+                    )}
                     <span>{clusterStatus[topic.status] || '待确认'}</span>
                   </small>
                 </span>

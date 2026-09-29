@@ -92,6 +92,11 @@ export default async function Page() {
                 <span className="pill clay">
                   <Sparkles size={13} /> 本期主议题
                 </span>
+                {lead.source_count >= 3 && (
+                  <span className="pill olive resonance-badge">
+                    ×{lead.source_count} 源共振
+                  </span>
+                )}
               </div>
               <p className="lead-summary">
                 {excerpt(lead.summary, 190) ||

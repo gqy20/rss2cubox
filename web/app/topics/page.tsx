@@ -11,6 +11,7 @@ import { clusterStatus, dateLabel } from '../../lib/journal-utils'
 import {
   orderedTopics,
   excludedTopic,
+  isResonant,
   topicPolicyTerms,
 } from '../../lib/topic-utils'
 import {
@@ -118,6 +119,11 @@ export default async function TopicsPage({
             <span>
               {selected.article_count} 篇文章 · {selected.source_count} 个来源
             </span>
+            {isResonant(selected) && (
+              <span className="pill olive resonance-badge">
+                ×{selected.source_count} 源共振
+              </span>
+            )}
             <span>更新于 {dateLabel(selected.updated_at, true)}</span>
           </div>
           {excludedTopic(selected) && (
