@@ -289,3 +289,58 @@ item_selector = "ul > li"
 tier          = "playwright"
 enabled       = false
 note          = "36KB 但列表 JS 渲染。同站的「全部文件」栏目是服务端渲染，已启用（gd_qbwj）。"
+
+# ── 美国政策线（2026-10-01 接入，政策管线统一本体化）─────
+# RSS tier 走 feedparser；标题为英文，triage/enrich prompt 已国际化（v2）。
+
+[[sites]]
+key           = "us_fr_ai"
+name          = "美国联邦公报-AI规章"
+level         = "national"
+region        = "美国"
+list_url      = "https://www.federalregister.gov/api/v1/documents.rss?conditions%5Bterm%5D=artificial%20intelligence&per_page=20&order=newest"
+tier          = "rss"
+max_items     = 40
+note          = "全部联邦机构规章统一公报。Proposed Rule≈征求意见、Final Rule≈已生效（enrich v2 语义映射）。term 过滤 AI 关键词。"
+
+[[sites]]
+key           = "us_wh_actions"
+name          = "美国白宫-行政令与总统文件"
+level         = "national"
+region        = "美国"
+list_url      = "https://www.whitehouse.gov/presidential-actions/feed/"
+tier          = "rss"
+max_items     = 30
+note          = "Executive Order/备忘录/公告。国家超级智能政策框架这条线。"
+
+[[sites]]
+key           = "us_ca_gov"
+name          = "美国加州州长办公室"
+level         = "national"
+region        = "美国"
+list_url      = "https://www.gov.ca.gov/feed/"
+tier          = "rss"
+max_items     = 20
+note          = "州级代表（AI 立法最活跃州）。level 暂记 national 避免新增 UI 分组。"
+
+[[sites]]
+key           = "us_nist_news"
+name          = "美国NIST-新闻"
+level         = "national"
+region        = "美国"
+list_url      = "https://www.nist.gov/news-events/news/rss.xml"
+tier          = "rss"
+max_items     = 20
+note          = "AI RMF 等标准动态。内容杂，靠 triage 过滤（这正是统一管线的价值）。"
+
+# Congress 立法由 API 适配器写入（policy/congress_fetcher.py），engine 不抓取；
+# 此声明条目让信源目录与产出统计能看到它。CONGRESS_API_KEY 未配时静默跳过。
+[[sites]]
+key           = "us_congress"
+name          = "US Congress 国会立法"
+level         = "national"
+region        = "美国"
+list_url      = "https://www.congress.gov/"
+tier          = "rss"
+enabled       = false
+note          = "congress.gov API 适配器（python -m rss2cubox.policy.congress_fetcher），随政策 cron 运行。enabled=false 仅表示不经 engine 抓取。"

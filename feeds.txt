@@ -436,8 +436,3 @@
 3	https://news.google.com/rss/search?q=site:openrouter.ai&hl=en-US&gl=US&ceid=US:en # OpenRouter 动态（Google News 站点间接源；模型上线/价格，token 经济主线）
 2	https://aihot.news/feed/all.xml # AIHOT 全量动态（间接获得其 X 账号通道的策展内容：Rohan Paul/Testing Catalog/CEO 发言等，带原文直链）
 
-# ── 美国政策线（2026-10-01 接入，中美 AI 监管对比维度）─────
-1	https://www.federalregister.gov/api/v1/documents.rss?conditions%5Bterm%5D=artificial%20intelligence&per_page=20&order=newest # Federal Register·AI 关键词（全部联邦机构规章：拟议规则≈征求意见/最终规则≈生效）
-1	https://www.whitehouse.gov/presidential-actions/feed/ # 白宫行政令与总统文件（含国家超级智能政策框架这条线）
-1	https://www.gov.ca.gov/feed/ # 加州州长办公室（州级 AI 立法最活跃州）
-2	https://www.nist.gov/news-events/news/rss.xml # NIST 新闻（AI RMF 等标准动态，内容杂靠 triage）

@@ -65,9 +65,16 @@ run_policy() {
   run_policy
   fetch_status=$?
 
+  # 阶段 1.5：Congress 立法适配器（API→policy_documents，供后续 triage/enrich）
+  congress_status=0
+  if [ "$fetch_status" -eq 0 ]; then
+    run_python_module rss2cubox.policy.congress_fetcher
+    congress_status=$?
+  fi
+
   # 阶段 2：预筛（N 个标题一次调用，便宜）
   triage_status=0
-  if [ "$fetch_status" -eq 0 ]; then
+  if [ "$fetch_status" -eq 0 ] && [ "$congress_status" -eq 0 ]; then
     run_policy --triage --triage-limit "$POLICY_CRON_TRIAGE_LIMIT"
     triage_status=$?
   else
@@ -90,6 +97,7 @@ run_policy() {
 
   # 任一阶段失败即整体失败，但三个状态都记下来便于定位
   status=$fetch_status
+  [ "$status" -eq 0 ] && status=$congress_status
   [ "$status" -eq 0 ] && status=$triage_status
   [ "$status" -eq 0 ] && status=$enrich_status
 
