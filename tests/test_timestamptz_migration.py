@@ -139,14 +139,15 @@ class TestDateFilterWithBeijingTimezone:
         /api/signals?date=2026-05-07 的 SQL WHERE 子句
         必须包含 AT TIME ZONE 转换，而非直接比较裸日期。
         """
+        # 原 /api/signals 路由已合并进 reader/[kind]，实现在 journal-store。
         project_root = os.path.dirname(os.path.dirname(__file__))
-        full_path = os.path.join(project_root, "web", "app", "api", "signals", "route.ts")
+        full_path = os.path.join(project_root, "web", "lib", "journal-store.ts")
         with open(full_path, encoding="utf-8") as f:
             source = f.read()
 
         # 日期过滤必须先把 UTC 时间戳转到北京时区再取日期
-        assert re.search(r"AT TIME ZONE 'Asia/Shanghai'\)::date = \$", source), \
-            "signals/route.ts must convert to Beijing timezone before date comparison"
+        assert re.search(r"AT TIME ZONE 'Asia/Shanghai'\)::date = ", source), \
+            "journal-store 的 date 过滤必须先转北京时区再比较"
 
     def test_beijing_date_matches_utc_previous_day(self):
         """

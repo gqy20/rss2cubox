@@ -53,12 +53,23 @@ run_python_module() {
   run_python_module rss2cubox.runner
   sync_status=$?
 
+  # 美国立法适配器：与科技链路同节奏（6h），失败不阻断主管线。
+  # 未配 CONGRESS_API_KEY 时 fetcher 静默跳过。
+  congress_status=0
+  if [ "$sync_status" -eq 0 ]; then
+    run_python_module rss2cubox.congress_fetcher
+    congress_status=$?
+  fi
+
   prediction_status=0
   if [ "$sync_status" -eq 0 ]; then
     run_python_module rss2cubox.prediction_loop_runner
     prediction_status=$?
   fi
   status=$sync_status
+  if [ "$status" -eq 0 ] && [ "$congress_status" -ne 0 ]; then
+    status=$congress_status
+  fi
   if [ "$status" -eq 0 ] && [ "$prediction_status" -ne 0 ]; then
     status=$prediction_status
   fi
