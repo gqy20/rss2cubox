@@ -98,9 +98,8 @@ note          = "数据要素/词元经济主管局。全站 React SPA 但此栏
 #   成都词元券征求意见的一手源暂缺，经新华社/腾讯新闻等二手渠道观察。
 # - 中科院科技战略咨询研究院 casisd.cas.cn：可抓（200/78KB），但其产出是研究报告而非政策文件，
 #   与政策本体 schema（位阶/义务强度/立法阶段）不匹配，不适合本表——如需智库视角应另设源类型。
-# - 杭州 hangzhou_xxgk（下方禁用项维持）：政府信息公开目录里已定位真栏目
-#   /col/col1229444337/（行政规范性文件），但列表由用友 JSONP 接口注入，playwright 渲染后无列表项，
-#   需逆向 dataproxy 接口才可接，成本超预算。
+# - 杭州 hangzhou_xxgk（维持禁用；2026-10-01 复验）：原配置页渲染后仅导航锚；
+#   真栏目 /col/col1229444337/ 直接 TimeoutError。用友 JSONP 注入问题依旧，维持放弃。
 
 # ── 中科院（机构信源，非行政区划；level 记 national 便于 UI 分组）─────
 
@@ -263,10 +262,12 @@ name          = "江苏省-政策解读"
 level         = "province"
 region        = "江苏"
 list_url      = "https://www.js.gov.cn/col/col84725/index.html"
-item_selector = "div.Second_box_item > li"
+item_selector = "ul.RcontUl li"
+title_attr    = "title"
 tier          = "playwright"
-enabled       = false
-note          = "requests 只拿到 1KB 空壳，列表由 JS 注入。选择器参照同 CMS 的浙江站，待渲染后验证。"
+render_wait_ms = 3000
+max_items     = 40
+note          = "2026-10-01 验证启用：真实列表容器是 ul.RcontUl（class）（渲染后 10 条带 title 的解读文章，/art/2026/ 路径）；原配置的 div.Second_box_item 是浙江同款 CMS 但江苏未用该结构。"
 
 [[sites]]
 key           = "hangzhou_xxgk"
@@ -287,8 +288,9 @@ region        = "广东"
 list_url      = "https://www.gd.gov.cn/zwgk/zcjd/index.html"
 item_selector = "ul > li"
 tier          = "playwright"
-enabled       = false
-note          = "36KB 但列表 JS 渲染。同站的「全部文件」栏目是服务端渲染，已启用（gd_qbwj）。"
+render_wait_ms = 3000
+max_items     = 40
+note          = "2026-10-01 验证启用：networkidle+3s 渲染后 ul>li 41 命中（32 条真实文章，post_49xxxx 路径）。与 gd_qbwj 互补：文件本体+解读。"
 
 # ── 美国政策线（2026-10-01 接入，政策管线统一本体化）─────
 # RSS tier 走 feedparser；标题为英文，triage/enrich prompt 已国际化（v2）。
