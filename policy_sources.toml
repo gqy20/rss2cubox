@@ -323,7 +323,9 @@ region        = "美国"
 list_url      = "https://www.gov.ca.gov/feed/"
 tier          = "rss"
 max_items     = 20
-note          = "州级代表（AI 立法最活跃州）。level 暂记 national 避免新增 UI 分组。"
+enabled       = false
+note          = "州级代表（AI 立法最活跃州）。2026-10-02 禁用：HR2（生产）出网 IP 被该站 403 屏蔽
+（完整 Chrome UA 亦拒），仅本机网络可达而本机 cron 已停——暂无采集通道。加州动态经 AIHOT/科技源间接收敛。"
 
 [[sites]]
 key           = "us_nist_news"

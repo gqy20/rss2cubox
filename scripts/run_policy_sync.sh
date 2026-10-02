@@ -68,7 +68,7 @@ run_policy() {
   # 阶段 1.5：Congress 立法适配器（API→policy_documents，供后续 triage/enrich）
   congress_status=0
   if [ "$fetch_status" -eq 0 ]; then
-    run_python_module rss2cubox.policy.congress_fetcher
+    run_policy rss2cubox.policy.congress_fetcher
     congress_status=$?
   fi
 
