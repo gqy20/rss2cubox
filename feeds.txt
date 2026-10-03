@@ -436,3 +436,4 @@
 3	https://news.google.com/rss/search?q=site:openrouter.ai&hl=en-US&gl=US&ceid=US:en # OpenRouter 动态（Google News 站点间接源；模型上线/价格，token 经济主线）
 2	https://aihot.news/feed/all.xml # AIHOT 全量动态（间接获得其 X 账号通道的策展内容：Rohan Paul/Testing Catalog/CEO 发言等，带原文直链）
 
+2	https://home.gqy20.top/feed/rss/all.xml # Trail Feed（用户自建 X 聚合：宝玉/归藏/amasad 等 AI 圈 KOL，中文 AI 社区信号；2026-10-03 接入，实测 150 条字段完整、AI 密度 39%、分钟级更新）
