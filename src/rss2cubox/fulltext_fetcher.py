@@ -68,6 +68,13 @@ def _is_wechat_url(url: str) -> bool:
     return "mp.weixin.qq.com" in host or "weixin.qq.com" in host
 
 
+def _is_social_url(url: str) -> bool:
+    """社交媒体域名：正文就在 feed 的 description 里（推文/笔记即全文），
+    抓原站必被反爬拦且毫无必要——直接用 feed 内容，跳过三级抓取。"""
+    host = (url or "").strip().split("/")[2] if "//" in url else ""
+    return any(h in host for h in ("x.com", "twitter.com", "t.co", "weibo.com", "xiaohongshu.com"))
+
+
 def _fetch_with_timeout(fetch_fn: Callable, url: str, timeout_s: float) -> FetchResult | None:
     """在子线程中执行 fetch_fn(url)，不阻塞调用线程。
 
@@ -398,8 +405,17 @@ def fetch_fulltext_batch(
         if log_event:
             log_event("INFO", "fulltext_start", eid=eid, url=url[:120])
 
-        result = fetch_full_text(url)
-        result.elapsed_s = time.perf_counter() - started
+        if _is_social_url(url):
+            # feed 即全文：不抓原站（反爬必败 + 浪费超时预算）
+            import re as _re
+
+            desc = _re.sub(r"<[^>]+>", " ", str(item.get("description") or ""))
+            desc = _re.sub(r"\s+", " ", desc).strip()
+            result = FetchResult(text=desc[:30000], source="feed_content", level=0)
+            result.elapsed_s = time.perf_counter() - started
+        else:
+            result = fetch_full_text(url)
+            result.elapsed_s = time.perf_counter() - started
 
         if result.text:
             results[eid] = result

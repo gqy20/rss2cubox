@@ -48,3 +48,13 @@ class TestFetchAttachment:
             get.return_value.content = b"PK\x03\x04 whatever"
             get.return_value.raise_for_status.return_value = None
             assert attachments.fetch_attachment_text("https://a.gov.cn/x.docx") == ""
+
+
+class TestSocialFeedContent:
+    def test_social_domains_detected(self):
+        from rss2cubox.fulltext_fetcher import _is_social_url
+
+        assert _is_social_url("https://x.com/dotey/status/2106")
+        assert _is_social_url("https://twitter.com/elonmusk/status/1")
+        assert not _is_social_url("https://openai.com/news/rss.xml")
+        assert not _is_social_url("")
