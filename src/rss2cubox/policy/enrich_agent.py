@@ -303,12 +303,24 @@ def _fetch_full_texts(
     docs: list[dict[str, Any]],
     *,
     max_workers: int,
-    log_event: Any | None = None,
+    log_event: Any = None,
 ) -> dict[str, str]:
-    """并发抓详情页正文。复用主链路的三级降级 trafilatura → playwright → 微信。"""
+    """并发抓详情页正文。复用主链路的三级降级 trafilatura → playwright → 微信。
+
+    附件两条路径（2026-10-04）：
+    - URL 本身是附件直链（中科院制度文件等）→ 直接下载解析 PDF
+    - 详情页正文抓到后 → 再抓一次原始 HTML 发现附件链接（北京政策的
+      "附件：实施细则.pdf"）→ 下载前 2 个拼进 full_text。多一次轻量请求，
+      换条款级 enrich 质量。
+    """
     from concurrent.futures import ThreadPoolExecutor, as_completed
 
     from rss2cubox.fulltext_fetcher import fetch_full_text
+    from rss2cubox.policy.attachments import (
+        fetch_attachment_text,
+        find_attachment_links,
+        is_attachment_url,
+    )
 
     out: dict[str, str] = {}
     todo = [d for d in docs if str(d.get("id")) and not (d.get("full_text") or "").strip()]
@@ -320,17 +332,43 @@ def _fetch_full_texts(
     if not todo:
         return out
 
+    def _one(doc: dict[str, Any]) -> tuple[str, str, str]:
+        """返回 (text, source, attachment_chars)。"""
+        url = str(doc.get("url", ""))
+        if is_attachment_url(url):
+            text = fetch_attachment_text(url)
+            return text, "attachment_pdf" if text else "attachment_failed", str(len(text))
+        result = fetch_full_text(url)
+        text = (getattr(result, "text", "") or "").strip()
+        source = getattr(result, "source", "") or ""
+        # 附件发现：抓原始 HTML（trafilatura 剥掉了 href，拿不到链接）
+        att_chars = 0
+        try:
+            from rss2cubox.policy.engine import fetch_html
+
+            html, _code, _err = fetch_html(url, read_timeout=15.0)
+            links = find_attachment_links(html or "", url)
+            for link in links:
+                att = fetch_attachment_text(link)
+                if att:
+                    text = f"{text}\n\n[附件 {link.rsplit('/', 1)[-1]}]\n{att[:8000]}"
+                    att_chars += len(att)
+                if att_chars > 12000:
+                    break
+        except Exception:  # noqa: BLE001  # 附件发现失败不影响正文
+            pass
+        return text, source, str(att_chars)
+
     with ThreadPoolExecutor(max_workers=max(1, max_workers)) as executor:
-        futures = {executor.submit(fetch_full_text, str(d.get("url", ""))): d for d in todo}
+        futures = {executor.submit(_one, d): d for d in todo}
         for future in as_completed(futures):
             doc = futures[future]
             doc_id = str(doc.get("id"))
             text = ""
             source = ""
+            att_chars = "0"
             try:
-                result = future.result()
-                text = (getattr(result, "text", "") or "").strip()
-                source = getattr(result, "source", "") or ""
+                text, source, att_chars = future.result()
             except Exception as exc:  # noqa: BLE001
                 if log_event:
                     log_event("WARN", "policy_fulltext_failed", stage="policy_enrich",
@@ -339,7 +377,7 @@ def _fetch_full_texts(
                 out[doc_id] = text
             if log_event:
                 log_event("INFO" if text else "WARN", "policy_fulltext_fetched", stage="policy_enrich",
-                          doc_id=doc_id, chars=len(text), source=source)
+                          doc_id=doc_id, chars=len(text), source=source, attachment_chars=att_chars)
     return out
 
 
