@@ -98,12 +98,9 @@ note          = "数据要素/词元经济主管局。全站 React SPA 但此栏
 #   成都词元券征求意见的一手源暂缺，经新华社/腾讯新闻等二手渠道观察。
 # - 中科院科技战略咨询研究院 casisd.cas.cn：可抓（200/78KB），但其产出是研究报告而非政策文件，
 #   与政策本体 schema（位阶/义务强度/立法阶段）不匹配，不适合本表——如需智库视角应另设源类型。
-# - 国新办 scio.gov.cn（2026-10-04 探测，可攻但有成本，未接入）：内容高价值
-#   （"十五五"系列发布会、月度国民经济实录），但三重障碍——加速乐 JS 挑战
-#   （__jsl_clearance，playwright 可过但每次需过挑战）、证书链不完整（要
-#   ignore_https_errors）、/xwfb/ 列表渲染后无条目（真实内容在 /live/2026/ 下，
-#   发现机制未明，实录页正文为异步注入）。接入需专门一轮适配（复用 context 过挑战 +
-#   找对列表入口）。在此之前经中国政府网 RSS/AIHOT 间接收敛发布会要点。
+# - 国新办 scio.gov.cn：已接入（scio_xwfb，2026-10-04）。此前判"三重障碍难攻"是误判——
+#   根因只是 playwright 缺反无头检测配置（sec-ch-ua 暴露 HeadlessChrome），补齐请求头
+#   与 webdriver 覆盖后挑战秒过、列表与实录全文皆出。教训：反爬诊断先查指纹配置再谈放弃。
 # - 杭州 hangzhou_xxgk（维持禁用；2026-10-01 复验）：原配置页渲染后仅导航锚；
 #   真栏目 /col/col1229444337/ 直接 TimeoutError。用友 JSONP 注入问题依旧，维持放弃。
 
@@ -365,3 +362,16 @@ title_attr    = "title"
 date_selector = "span"
 max_items     = 40
 note          = "社会经济阶段数据（PMI/CPI/GDP/工业利润/数字经济等月度季度发布），2026-10-04 接入。服务端渲染直抓；li 内三个重复 a（PC/移动端适配）会被 URL 去重合并为一条。instrument_type 预期多为「通知公告」——价值在 enrich 的 summary 与时间序列（每月固定发布形成节拍）。"
+
+[[sites]]
+key           = "scio_xwfb"
+name          = "国务院新闻办-新闻发布会"
+level         = "national"
+region        = "全国"
+list_url      = "http://www.scio.gov.cn/xwfb/"
+item_selector = "div.top_list li"
+title_attr    = ""
+tier          = "playwright"
+render_wait_ms = 8000
+max_items     = 30
+note          = "发布会/政策例行吹风会列表（含十五五系列、四中全会解读）。三层加速乐挑战站——2026-10-04 破解：engine 全套反无头检测（sec-ch-ua/webdriver/Accept-Language）后 2s 出正文；实录详情页 17k 字符问答全文由 fulltext 层 playwright 抓取。li 无日期，first_seen 兜底。"

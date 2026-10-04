@@ -148,11 +148,33 @@ def _fetch_html_playwright(url: str, *, read_timeout: float, wait_ms: int = 1500
     except ImportError:
         return "", 0, "playwright_not_installed"
 
+    # 反无头检测全套（2026-10-04 国新办实测）：sec-ch-ua 会暴露 HeadlessChrome、
+    # navigator.webdriver 恒真、缺 Accept-Language——补齐后三层 JS 挑战站（加速乐）
+    # 也能过。对普通 playwright 站无副作用，只更稳。
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True, args=["--no-sandbox"])
+            browser = p.chromium.launch(
+                headless=True,
+                args=["--no-sandbox", "--disable-blink-features=AutomationControlled"],
+            )
             try:
-                page = browser.new_page(user_agent=DEFAULT_USER_AGENT)
+                ctx = browser.new_context(
+                    user_agent=DEFAULT_USER_AGENT,
+                    ignore_https_errors=True,
+                    locale="zh-CN",
+                    extra_http_headers={
+                        "Accept-Language": "zh-CN,zh;q=0.9,en;q=0.8",
+                        "sec-ch-ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+                        "sec-ch-ua-mobile": "?0",
+                        "sec-ch-ua-platform": '"Windows"',
+                        "Upgrade-Insecure-Requests": "1",
+                    },
+                )
+                ctx.add_init_script(
+                    "Object.defineProperty(navigator,'webdriver',{get:()=>undefined});"
+                    "window.chrome = window.chrome || {runtime: {}};"
+                )
+                page = ctx.new_page()
                 page.goto(url, wait_until="networkidle", timeout=read_timeout * 1000)
                 page.wait_for_timeout(wait_ms)
                 content = page.content()
