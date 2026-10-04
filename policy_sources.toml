@@ -375,3 +375,38 @@ tier          = "playwright"
 render_wait_ms = 8000
 max_items     = 30
 note          = "发布会/政策例行吹风会列表（含十五五系列、四中全会解读）。三层加速乐挑战站——2026-10-04 破解：engine 全套反无头检测（sec-ch-ua/webdriver/Accept-Language）后 2s 出正文；实录详情页 17k 字符问答全文由 fulltext 层 playwright 抓取。li 无日期，first_seen 兜底。"
+
+[[sites]]
+key           = "moe_zcjd"
+name          = "教育部-政策解读"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.moe.gov.cn/jyb_xwfb/s271/"
+item_selector = "ul#list > li"
+title_attr    = "title"
+date_selector = "span"
+max_items     = 30
+note          = "答记者问式政策解读（十五五教育行动计划等，AI+教育动向）。服务端渲染直抓。2026-10-04 接入。"
+
+[[sites]]
+key           = "most_tztg"
+name          = "科技部-通知通告"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.most.gov.cn/tztg/"
+item_selector = "ul.info_list2 > li"
+title_attr    = "title"
+date_selector = ".date"
+max_items     = 40
+note          = "科技部主栏目（ddgs 反查所得）。事务性偏多（招聘/决算），AI 专项/科技政策通知在此发布，靠 triage 过滤。2026-10-04 接入。"
+
+[[sites]]
+key           = "sheitc_zxxx"
+name          = "上海经信委-最新消息"
+level         = "province"
+region        = "上海"
+list_url      = "https://sheitc.sh.gov.cn/zxxx/index.html"
+item_selector = "ul.j-list-ul > li"
+title_attr    = "title"
+max_items     = 30
+note          = "上海 AI 产业一手（模速空间/全球开发者先锋大会/大模型政策）。li 无日期，first_seen 兜底；列表含各区动态，靠 triage 过滤。2026-10-04 接入。"
