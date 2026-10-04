@@ -16,8 +16,8 @@ import requests
 
 from rss2cubox.policy.engine import DEFAULT_USER_AGENT
 
-ATTACH_EXTS = (".pdf",)
-TODO_EXTS = (".doc", ".docx", ".xls", ".xlsx")  # 识别但暂不解析
+ATTACH_EXTS = (".pdf", ".xlsx")
+TODO_EXTS = (".doc", ".docx", ".xls")  # 识别但暂不解析（.xls 老格式低频）
 MAX_ATTACHMENTS_PER_DOC = 2
 _MAX_BYTES = 20 * 1024 * 1024  # 20MB 上限，政府大公报 PDF 也够
 
@@ -47,6 +47,40 @@ def extract_pdf_text(data: bytes) -> str:
         return ""
 
 
+def extract_excel_text(data: bytes) -> str:
+    """xlsx 提取为文本：每 sheet 输出表名 + CSV 风格行（前 40 行）。
+
+    政府统计表的语义在"指标名 + 数值"的行列结构里，CSV 化保结构喂 enrich。
+    """
+    import io
+
+    from openpyxl import load_workbook
+    from openpyxl.utils import get_column_letter
+
+    try:
+        wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
+    except Exception:  # noqa: BLE001
+        return ""
+    parts: list[str] = []
+    for ws in wb.worksheets[:6]:  # 最多 6 个 sheet
+        rows: list[str] = []
+        for r, row in enumerate(ws.iter_rows(values_only=True)):
+            if r >= 40:
+                rows.append(f"…（共 {ws.max_row or '?'} 行，截断）")
+                break
+            cells = []
+            for c in row[:20]:  # 最多 20 列
+                v = "" if c is None else (f"{c:.4f}".rstrip("0").rstrip(".") if isinstance(c, float) else str(c))
+                cells.append(v.replace("\n", " ").strip())
+            line = ",".join(cells).strip(",").rstrip(",")
+            if line:
+                rows.append(line)
+        if rows:
+            parts.append(f"[工作表: {ws.title}]\n" + "\n".join(rows))
+    wb.close()
+    return "\n\n".join(parts).strip()
+
+
 def fetch_attachment_text(url: str, *, timeout: float = 30.0) -> str:
     """下载附件并提取文本。失败/扫描版返回空串。"""
     try:
@@ -56,9 +90,12 @@ def fetch_attachment_text(url: str, *, timeout: float = 30.0) -> str:
         resp.raise_for_status()
         if len(resp.content or b"") > _MAX_BYTES:
             return ""
-        if not (urlparse(url).path or "").lower().endswith(ATTACH_EXTS):
-            return ""  # docx/xlsx 暂不解析
-        return extract_pdf_text(resp.content)
+        path = (urlparse(url).path or "").lower()
+        if path.endswith(".pdf"):
+            return extract_pdf_text(resp.content)
+        if path.endswith(".xlsx"):
+            return extract_excel_text(resp.content)
+        return ""  # doc/docx/xls 暂不解析
     except requests.exceptions.RequestException:
         return ""
 

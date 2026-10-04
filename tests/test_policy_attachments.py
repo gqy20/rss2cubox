@@ -58,3 +58,35 @@ class TestSocialFeedContent:
         assert _is_social_url("https://twitter.com/elonmusk/status/1")
         assert not _is_social_url("https://openai.com/news/rss.xml")
         assert not _is_social_url("")
+
+
+class TestExcelExtraction:
+    def test_xlsx_roundtrip(self):
+        import io
+
+        from openpyxl import Workbook
+
+        wb = Workbook()
+        ws = wb.active
+        ws.title = "PMI"
+        ws.append(["指标", "本月", "上月"])
+        ws.append(["制造业PMI", 50.1, 49.8])
+        ws.append(["非制造业商务活动指数", 50.2, 49.9])
+        buf = io.BytesIO()
+        wb.save(buf)
+        text = attachments.extract_excel_text(buf.getvalue())
+        assert "[工作表: PMI]" in text
+        assert "制造业PMI,50.1,49.8" in text
+        assert "50.2" in text
+
+    def test_corrupt_xlsx_returns_empty(self):
+        assert attachments.extract_excel_text(b"not excel") == ""
+
+    def test_fetch_routes_by_ext(self):
+        with patch.object(attachments.requests, "get") as get:
+            get.return_value.status_code = 200
+            get.return_value.content = b"PK\x05\x06"  # zip 魔数但坏内容
+            get.return_value.raise_for_status.return_value = None
+            assert attachments.fetch_attachment_text("https://g.cn/x.xlsx") == ""
+            # docx 仍不解析
+            assert attachments.fetch_attachment_text("https://g.cn/x.docx") == ""
