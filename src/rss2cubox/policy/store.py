@@ -395,8 +395,18 @@ def get_documents_for_enrichment(
     clauses = ["enriched_at IS NULL", "CHAR_LENGTH(title) >= %s"]
     params: list[Any] = [max(1, int(min_title_length))]
     if min_triage_relevance is not None:
-        clauses.append("triage_relevance IS NOT NULL AND triage_relevance >= %s")
-        params.append(int(min_triage_relevance))
+        # 站点白名单绕过 AI 相关度门槛：社会经济背景数据（统计局 PMI/CPI 等）
+        # 与 AI 无直接关联但仍需结构化摘要——按站点放行而非污染通用评分标尺。
+        always = [s.strip() for s in os.getenv("POLICY_ENRICH_ALWAYS_SITES", "").split(",") if s.strip()]
+        if always and not site_key:
+            clauses.append(
+                "(triage_relevance IS NOT NULL AND triage_relevance >= %s OR site_key = ANY(%s))"
+            )
+            params.append(int(min_triage_relevance))
+            params.append(always)
+        else:
+            clauses.append("triage_relevance IS NOT NULL AND triage_relevance >= %s")
+            params.append(int(min_triage_relevance))
     if site_key:
         clauses.append("site_key = %s")
         params.append(site_key)

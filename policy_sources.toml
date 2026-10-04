@@ -324,8 +324,7 @@ list_url      = "https://www.gov.ca.gov/feed/"
 tier          = "rss"
 max_items     = 20
 enabled       = false
-note          = "州级代表（AI 立法最活跃州）。2026-10-02 禁用：HR2（生产）出网 IP 被该站 403 屏蔽
-（完整 Chrome UA 亦拒），仅本机网络可达而本机 cron 已停——暂无采集通道。加州动态经 AIHOT/科技源间接收敛。"
+note          = "州级代表（AI 立法最活跃州）。2026-10-02 禁用：HR2（生产）出网 IP 被该站 403 屏蔽（完整 Chrome UA 亦拒），仅本机网络可达而本机 cron 已停——暂无采集通道。加州动态经 AIHOT/科技源间接收敛。"
 
 [[sites]]
 key           = "us_nist_news"
@@ -348,3 +347,15 @@ list_url      = "https://www.congress.gov/"
 tier          = "rss"
 enabled       = false
 note          = "congress.gov API 适配器（python -m rss2cubox.policy.congress_fetcher），随政策 cron 运行。enabled=false 仅表示不经 engine 抓取。"
+
+[[sites]]
+key           = "stats_zxfb"
+name          = "国家统计局-数据发布"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.stats.gov.cn/sj/zxfb/"
+item_selector = "div.list-content > ul > li"
+title_attr    = "title"
+date_selector = "span"
+max_items     = 40
+note          = "社会经济阶段数据（PMI/CPI/GDP/工业利润/数字经济等月度季度发布），2026-10-04 接入。服务端渲染直抓；li 内三个重复 a（PC/移动端适配）会被 URL 去重合并为一条。instrument_type 预期多为「通知公告」——价值在 enrich 的 summary 与时间序列（每月固定发布形成节拍）。"

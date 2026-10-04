@@ -191,6 +191,7 @@ _TABLE: list[tuple[str, str, Any, str, str]] = [
     ("JEV_MODEL", "str", "jev-latest", "policy", "Jev 模型名"),
     ("CONGRESS_API_KEY", "str", "", "policy", "congress.gov API key（api.congress.gov 免费申请）；留空则立法适配器跳过"),
     ("CONGRESS_CONGRESS", "int", "119", "policy", "美国国会届数（119 届 = 2025-2026），换届时改此值"),
+    ("POLICY_ENRICH_ALWAYS_SITES", "csv", "", "policy", "绕过 AI 相关度门槛必 enrich 的站点 key（社会经济背景数据，如 stats_zxfb）"),
     ("TECH_TRIAGE_ENABLED", "bool", "true", "runtime", "科技链路 Jev 预筛（影子模式：只打分观察，不影响截断）"),
     ("TECH_TRIAGE_MAX_CANDIDATES", "int", "3000", "runtime", "单轮最多打分的候选数"),
     ("TECH_TRIAGE_CONCURRENCY", "int", "8", "runtime", "Jev 预筛并发"),
