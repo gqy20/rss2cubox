@@ -410,3 +410,16 @@ item_selector = "ul.j-list-ul > li"
 title_attr    = "title"
 max_items     = 30
 note          = "上海 AI 产业一手（模速空间/全球开发者先锋大会/大模型政策）。li 无日期，first_seen 兜底；列表含各区动态，靠 triage 过滤。2026-10-04 接入。"
+
+[[sites]]
+key           = "samr_xwfbt"
+name          = "市场监管总局-发布台"
+level         = "national"
+region        = "全国"
+list_url      = "https://www.samr.gov.cn/xw/xwfbt/"
+item_selector = "div.Three_zhnlist_02 > ul > li"
+title_attr    = ""
+tier          = "playwright"
+render_wait_ms = 8000
+max_items     = 30
+note          = "新闻发布会实录（智能体互联标准化/AI 国标专题等——AI 标准主线落地口径）。2026-10-04 反检测复验后接入（此前裸配置下是壳）。li 无日期。司法部同日终审：209B 与指纹无关，IP 级 WAF 永久放弃。"
