@@ -6,6 +6,9 @@
 set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+for _shadow in inspect.py json.py os.py sys.py logging.py typing.py; do
+  [ -f "$ROOT_DIR/$_shadow" ] && echo "FATAL: $ROOT_DIR/$_shadow 遮蔽标准库（2026-10 inspect.py 事件曾致 8 天断流），已中止" >&2 && exit 78
+done
 cd "$ROOT_DIR"
 
 export PATH="$HOME/.local/bin:$HOME/.cargo/bin:/usr/local/bin:/usr/bin:/bin:${PATH:-}"
