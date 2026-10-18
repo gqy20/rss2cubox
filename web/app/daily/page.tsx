@@ -14,6 +14,7 @@ import {
 import { queryJournal, readDailyReports, type DailyReport } from '../../lib/journal-store'
 import { PageHeading, Empty, DataNotice } from '../journal/Shared'
 import { safeReturnPath, withOrigin } from '../../lib/reading-context'
+import { AnalyzeLink, ArticleTitleAnalyze } from '../journal/DailyLinks'
 
 export const dynamic = 'force-dynamic'
 
@@ -242,7 +243,7 @@ function ArticleItem({ item, index, linkMap }: { item: Item; index: number; link
       <span className="daily-item-no">{index}</span>
       <h3 className="daily-article-title">
         {internal ? (
-          <Link href={`/signals?id=${internal}`}>{item.title}</Link>
+          <ArticleTitleAnalyze articleId={internal}>{item.title}</ArticleTitleAnalyze>
         ) : (
           <a href={item.url} target="_blank" rel="noreferrer">
             {item.title}
@@ -301,11 +302,7 @@ function Sources({
           <a href={s.url} target="_blank" rel="noreferrer">
             {trimSourceName(s.title)} <ExternalLink size={11} />
           </a>
-          {s.internal && (
-            <Link href={`/signals?id=${s.internal}`} className="daily-source-internal">
-              分析
-            </Link>
-          )}
+          {s.internal && <AnalyzeLink articleId={s.internal} />}
         </span>
       ))}
     </div>
