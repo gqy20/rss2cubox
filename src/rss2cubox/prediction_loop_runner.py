@@ -165,13 +165,18 @@ def main() -> None:
         log_event("INFO", "prediction_stage_skipped", stage="generate", interval_hours=PREDICTION_GENERATE_INTERVAL_HOURS)
 
     if _stage_due("daily_report", DAILY_REPORT_INTERVAL_HOURS):
+        # 只有真正入库成功才写 marker：agent 返回 None 或保存失败时不标记，
+        # 留给下一轮（6h 后）重试——此前无条件标记导致失败日被静默跳过且
+        # 24h 内锁死，日报随机缺天（2026-10-16/18 实证）。
         try:
             report = run_daily_report(log_event=log_event)
             if report and save_daily_report(report):
                 log_event("INFO", "daily_report_saved", report_date=report.get("report_date"))
+                _mark_stage_done("daily_report")
             elif report:
                 log_event("WARN", "daily_report_save_failed")
-            _mark_stage_done("daily_report")
+            else:
+                log_event("WARN", "daily_report_empty_agent_returned_none")
         except Exception as e:
             log_event("WARN", "daily_report_failed", error=str(e))
     else:
