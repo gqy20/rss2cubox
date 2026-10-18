@@ -151,29 +151,26 @@
 }
 
 /* 条目：事实 → 评注 → 证据链 三层 */
+/* 条目：竖线 + 序号在竖线内侧（容器内），正文缩进让位 */
 .daily-item {
   margin-bottom: 18px;
-  padding-left: 16px;
+  padding-left: 34px;
   border-left: 3px solid var(--faint);
-}
-.daily-item {
   position: relative;
 }
 .daily-item-no {
   position: absolute;
-  left: -34px;
-  top: 1px;
+  left: 8px;
+  top: 0;
   font-family: var(--serif);
-  font-size: 20px;
-  font-weight: 300;
-  color: var(--faint);
-  font-style: italic;
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--muted);
 }
 .daily-item-text {
   font-size: 15.5px;
   line-height: 1.9;
   margin: 0 0 8px;
-  padding-left: 22px;
   font-family: var(--serif);
 }
 .daily-item-comment {
