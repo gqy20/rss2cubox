@@ -151,12 +151,12 @@ export default async function DailyPage({
             ) : (
               <span className="daily-nav-end">最新一期</span>
             )}
+            {d.confidence_level && (
+              <span className={`pill daily-conf ${confClass(d.confidence_level)}`}>
+                <Gauge size={13} /> {d.confidence_level}
+              </span>
+            )}
           </div>
-          {d.confidence_level && (
-            <span className={`pill ${confClass(d.confidence_level)}`}>
-              <Gauge size={13} /> 置信度 {d.confidence_level}
-            </span>
-          )}
           {d.key_topics?.length ? (
             <div className="daily-topics">
               {d.key_topics.map((t) => (
@@ -253,7 +253,20 @@ function ArticleItem({ item, index, linkMap }: { item: Item; index: number; link
         ) : null}
       </h3>
       {item.source_feed_name && (
-        <span className="daily-article-source">来源：{item.source_feed_name}</span>
+        <span className="daily-article-source">
+          来源：
+          {item.url ? (
+            internal ? (
+              <Link href={`/signals?id=${internal}`}>{item.source_feed_name}</Link>
+            ) : (
+              <a href={item.url} target="_blank" rel="noreferrer">
+                {item.source_feed_name}
+              </a>
+            )
+          ) : (
+            item.source_feed_name
+          )}
+        </span>
       )}
       {item.comment && (
         <blockquote className="daily-item-comment">{item.comment}</blockquote>

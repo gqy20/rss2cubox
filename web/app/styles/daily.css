@@ -54,6 +54,16 @@
   align-items: center;
   font-family: var(--sans);
   font-size: 13px;
+  position: relative;
+}
+.daily-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.daily-conf {
+  font-size: 11px;
+  transform: translateY(1px);
 }
 .daily-nav a {
   display: inline-flex;
@@ -82,6 +92,7 @@
   gap: 5px;
   margin-top: 12px;
   font-family: var(--sans);
+  justify-content: center;
 }
 .daily-topics .pill {
   font-size: 10.5px;
