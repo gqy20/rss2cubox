@@ -258,7 +258,7 @@ function ArticleItem({ item, index, linkMap }: { item: Item; index: number; link
           来源：
           {item.url ? (
             <a href={item.url} target="_blank" rel="noreferrer">
-              {item.source_feed_name} <ExternalLink size={10} />
+              {trimSourceName(item.source_feed_name)} <ExternalLink size={10} />
             </a>
           ) : (
             item.source_feed_name
@@ -280,27 +280,47 @@ function ArticleItem({ item, index, linkMap }: { item: Item; index: number; link
 function Sources({
   urls,
   titles,
+  linkMap,
 }: {
   urls?: string[]
   titles?: string[]
-  linkMap?: Map<string, string>
+  linkMap: Map<string, string>
 }) {
-  // 来源行 = 溯源路径：无条件外链原始出处（the-decoder/aihot/微信原文）。
-  // 站内深读由重点文章标题承担，来源不再分流内链——2026-10-18 用户实测
-  // 弱信号来源被内链劫持后纠正。
-  const list = (urls || []).map((u, i) => ({ url: u, title: titles?.[i] || u }))
+  // 来源行双路径：来源名 = 外链原始出处（溯源）；站内命中时附「ↁ 分析」内链
+  // （进我们的解析页）。两个语义都有出口，互不劫持。
+  const list = (urls || []).map((u, i) => ({
+    url: u,
+    title: titles?.[i] || u,
+    internal: linkMap.get(u),
+  }))
   if (!list.length) return null
   return (
     <div className="daily-sources">
       {list.map((s, i) => (
-        <span key={i}>
+        <span key={i} className="daily-source-pair">
           <a href={s.url} target="_blank" rel="noreferrer">
-            {trimTitle(s.title)} <ExternalLink size={11} />
+            {trimSourceName(s.title)} <ExternalLink size={11} />
           </a>
+          {s.internal && (
+            <Link href={`/signals?id=${s.internal}`} className="daily-source-internal">
+              分析
+            </Link>
+          )}
         </span>
       ))}
     </div>
   )
+}
+
+/** 来源名清理：AIHOT 转载等长名截短，微信域名还原为可读名 */
+function trimSourceName(t: string) {
+  let name = t
+  if (name.includes('AIHOT')) name = 'AIHOT'
+  if (name.includes('Hacker News 热门')) name = 'HN中文镜像'
+  if (name.includes('Hacker News 热门中文镜像')) name = 'HN中文镜像'
+  if (name.startsWith('https://mp.weixin.qq.com')) name = '微信原文'
+  if (name.startsWith('https://aihot.news')) name = 'AIHOT'
+  return name.length > 26 ? name.slice(0, 26) + '…' : name
 }
 
 // ── 工具 ──

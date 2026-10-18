@@ -199,6 +199,23 @@
   align-items: center;
   gap: 3px;
 }
+.daily-source-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.daily-source-internal {
+  font-size: 10px;
+  padding: 0 6px;
+  border: 1px solid var(--olive);
+  border-radius: 999px;
+  color: var(--olive);
+  line-height: 1.6;
+  text-decoration: none;
+}
+.daily-source-internal:hover {
+  background: var(--olive-tint);
+}
 .daily-sources a:hover {
   color: var(--accent);
 }
