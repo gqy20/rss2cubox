@@ -370,10 +370,10 @@
   margin-bottom: 18px;
 }
 .drawer-body h3 {
-  font-size: 12px;
-  letter-spacing: 0.5px;
+  font-size: 14px;
+  letter-spacing: 0.3px;
   color: var(--accent);
-  margin: 0 0 6px;
+  margin: 0 0 7px;
   font-family: var(--sans);
   font-weight: 600;
 }
