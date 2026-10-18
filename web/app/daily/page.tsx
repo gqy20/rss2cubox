@@ -254,15 +254,12 @@ function ArticleItem({ item, index, linkMap }: { item: Item; index: number; link
       </h3>
       {item.source_feed_name && (
         <span className="daily-article-source">
+          {/* 来源名始终指向外部原文（溯源）；标题才走站内解析页 */}
           来源：
           {item.url ? (
-            internal ? (
-              <Link href={`/signals?id=${internal}`}>{item.source_feed_name}</Link>
-            ) : (
-              <a href={item.url} target="_blank" rel="noreferrer">
-                {item.source_feed_name}
-              </a>
-            )
+            <a href={item.url} target="_blank" rel="noreferrer">
+              {item.source_feed_name} <ExternalLink size={10} />
+            </a>
           ) : (
             item.source_feed_name
           )}
