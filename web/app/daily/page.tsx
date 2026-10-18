@@ -280,29 +280,23 @@ function ArticleItem({ item, index, linkMap }: { item: Item; index: number; link
 function Sources({
   urls,
   titles,
-  linkMap,
 }: {
   urls?: string[]
   titles?: string[]
-  linkMap: Map<string, string>
+  linkMap?: Map<string, string>
 }) {
-  const list = (urls || []).map((u, i) => ({
-    url: u,
-    title: titles?.[i] || u,
-    internal: linkMap.get(u),
-  }))
+  // 来源行 = 溯源路径：无条件外链原始出处（the-decoder/aihot/微信原文）。
+  // 站内深读由重点文章标题承担，来源不再分流内链——2026-10-18 用户实测
+  // 弱信号来源被内链劫持后纠正。
+  const list = (urls || []).map((u, i) => ({ url: u, title: titles?.[i] || u }))
   if (!list.length) return null
   return (
     <div className="daily-sources">
       {list.map((s, i) => (
         <span key={i}>
-          {s.internal ? (
-            <Link href={`/signals?id=${s.internal}`}>{trimTitle(s.title)}</Link>
-          ) : (
-            <a href={s.url} target="_blank" rel="noreferrer">
-              {trimTitle(s.title)} <ExternalLink size={11} />
-            </a>
-          )}
+          <a href={s.url} target="_blank" rel="noreferrer">
+            {trimTitle(s.title)} <ExternalLink size={11} />
+          </a>
         </span>
       ))}
     </div>
