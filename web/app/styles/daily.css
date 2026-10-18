@@ -173,6 +173,7 @@
   font-size: 15.5px;
   line-height: 1.9;
   margin: 0 0 8px;
+  padding-left: 22px;
   font-family: var(--serif);
 }
 .daily-item-comment {
