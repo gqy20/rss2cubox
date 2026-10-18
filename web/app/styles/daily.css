@@ -307,7 +307,6 @@
   z-index: 91;
   width: min(max(560px, 40vw), 94vw);
   background: var(--surface);
-  border-left: 1px solid var(--faint);
   box-shadow: -12px 0 40px rgba(30, 26, 22, 0.18);
   display: flex;
   flex-direction: column;
@@ -328,10 +327,10 @@
 }
 .drawer-head h2 {
   font-family: var(--serif);
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 600;
-  margin: 0 0 4px;
-  line-height: 1.5;
+  margin: 0 0 5px;
+  line-height: 1.55;
 }
 .drawer-source {
   font-size: 12.5px;
@@ -368,17 +367,19 @@
   padding: 18px 24px 26px;
 }
 .drawer-body section {
-  margin-bottom: 14px;
+  margin-bottom: 18px;
 }
 .drawer-body h3 {
-  font-size: 13px;
+  font-size: 12px;
+  letter-spacing: 0.5px;
   color: var(--accent);
-  margin: 0 0 5px;
+  margin: 0 0 6px;
   font-family: var(--sans);
+  font-weight: 600;
 }
 .drawer-body p {
   font-size: 15px;
-  line-height: 1.9;
+  line-height: 1.85;
   margin: 0;
   font-family: var(--serif);
 }
@@ -397,9 +398,24 @@
 }
 .drawer-fulltext {
   font-size: 15px;
-  line-height: 1.95;
-  white-space: pre-wrap;
-  font-family: var(--serif);
+  line-height: 1.9;
+}
+.drawer-fulltext h1,
+.drawer-fulltext h2,
+.drawer-fulltext h3 {
+  font-family: var(--sans);
+  font-size: 15.5px;
+  margin: 1.2em 0 0.5em;
+}
+.drawer-fulltext pre {
+  background: var(--canvas);
+  padding: 10px 14px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 12.5px;
+}
+.drawer-fulltext code {
+  font-size: 12.5px;
 }
 .drawer-error {
   color: var(--accent);

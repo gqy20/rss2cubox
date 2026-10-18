@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import {
-  Newspaper,
   ChevronLeft,
   ChevronRight,
   Sparkles,
@@ -52,9 +51,7 @@ export default async function DailyPage({
   if (!all) {
     return (
       <>
-        <PageHeading title="AI 日报">
-          <Newspaper size={18} />
-        </PageHeading>
+        <PageHeading title="AI 日报" />
         <section className="surface">
           <Empty title="日报暂不可用" description="数据库连接异常，请稍后重试。" />
         </section>
@@ -131,9 +128,7 @@ export default async function DailyPage({
 
   return (
     <>
-      <PageHeading title="AI 日报">
-        <Newspaper size={18} />
-      </PageHeading>
+      <PageHeading title="AI 日报" />
       <article className="surface daily-report">
         <header className="daily-head">
           <div className="daily-nav">

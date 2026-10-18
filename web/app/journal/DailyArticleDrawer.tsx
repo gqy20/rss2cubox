@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, ExternalLink, Maximize2 } from 'lucide-react'
 import Link from 'next/link'
+import MarkdownRenderer from '../MarkdownRenderer'
 
 type Article = {
   id: string
@@ -183,12 +184,14 @@ export default function DailyArticleDrawer({
               )}
             </>
           ) : (
-            <article className="drawer-fulltext">
-              {(data.full_text || data.description || '暂无已抓取正文。').slice(
-                0,
-                12000,
-              )}
-            </article>
+            <div className="prose drawer-fulltext">
+              <MarkdownRenderer>
+                {(data.full_text || data.description || '暂无已抓取正文。').slice(
+                  0,
+                  12000,
+                )}
+              </MarkdownRenderer>
+            </div>
           )}
         </div>
       </aside>
