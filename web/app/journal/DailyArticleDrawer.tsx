@@ -144,16 +144,23 @@ export default function DailyArticleDrawer({
             </>
           ) : tab === 'summary' ? (
             <>
-              {typeof data.importance_score === 'number' && (
+              {data.reason && (
+                <section>
+                  <h3>
+                    为何重要
+                    {typeof data.importance_score === 'number' && (
+                      <span className="drawer-meta-inline">
+                        重要性 <b>{data.importance_score}</b> / 5
+                      </span>
+                    )}
+                  </h3>
+                  <p>{data.reason}</p>
+                </section>
+              )}
+              {typeof data.importance_score === 'number' && !data.reason && (
                 <p className="drawer-meta">
                   重要性 <b>{data.importance_score}</b> / 5
                 </p>
-              )}
-              {data.reason && (
-                <section>
-                  <h3>为何重要</h3>
-                  <p>{data.reason}</p>
-                </section>
               )}
               {data.hidden_signal && (
                 <section>
