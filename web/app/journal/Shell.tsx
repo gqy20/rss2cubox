@@ -13,6 +13,7 @@ import {
   Rss,
   Bookmark,
   Menu,
+  Newspaper,
   X,
 } from 'lucide-react'
 const links = [
@@ -20,6 +21,7 @@ const links = [
   { href: '/signals', label: '技术信号', icon: Radio },
   { href: '/policies', label: '政策观察', icon: Files },
   { href: '/topics', label: '专题对读', icon: Layers3 },
+  { href: '/daily', label: 'AI 日报', icon: Newspaper },
   { href: '/predictions', label: '预测与复盘', icon: ChartNoAxesCombined },
   { href: '/monitor', label: '运行监控', icon: Activity },
 ]
@@ -40,7 +42,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   }, [])
   return (
     <div
-      className={`journal-shell ${pathname === '/signals' || pathname === '/policies' || pathname === '/monitor' || pathname === '/topics' ? 'reader-shell' : ''}`}
+      className={`journal-shell ${pathname === '/signals' || pathname === '/policies' || pathname === '/monitor' || pathname === '/topics' || pathname === '/daily' ? 'reader-shell' : ''}`}
     >
       <a href="#content" className="skip-link">
         跳到主要内容

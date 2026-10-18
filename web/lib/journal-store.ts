@@ -429,15 +429,30 @@ export async function readInsightHistory() {
     'SELECT generated_at,data FROM global_insights ORDER BY generated_at DESC LIMIT 30',
   )
 }
+export type DailyReport = {
+  report_date: string
+  generated_at: string
+  data: {
+    summary?: string
+    key_topics?: string[]
+    top_articles?: unknown[]
+    trends?: unknown[]
+    weak_signals?: unknown[]
+    daily_advices?: unknown[]
+    cluster_evolution?: unknown[]
+    prediction_status?: unknown[]
+    confidence_level?: string
+  }
+}
 export async function readDailyReports(date?: string) {
   // 量级为每天一条，直接全量按日期倒序；date 命中时只取该份。
   if (date && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    return query<{ report_date: string; generated_at: string; data: unknown }>(
+    return query<DailyReport>(
       'SELECT report_date,generated_at,data FROM daily_reports WHERE report_date=$1',
       [date],
     )
   }
-  return query<{ report_date: string; generated_at: string; data: unknown }>(
+  return query<DailyReport>(
     'SELECT report_date,generated_at,data FROM daily_reports ORDER BY report_date DESC',
   )
 }
