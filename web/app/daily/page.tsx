@@ -60,6 +60,9 @@ export default async function DailyPage({
       </>
     )
   }
+  // report_date 可能是 timestamptz 全量（HR2 历史数据），归一化为 YYYY-MM-DD
+  const norm = (d: unknown) => String(d || '').slice(0, 10)
+  all.forEach((r) => (r.report_date = norm(r.report_date)))
   const dates = all.map((r) => r.report_date).slice(0, 30)
 
   if (!date) {
@@ -90,7 +93,7 @@ export default async function DailyPage({
                   </span>
                 )}
                 <span className="daily-archive-summary">
-                  {(r.data?.summary || '').slice(0, 90)}
+                  {summaryText(r.data?.summary).slice(0, 90)}
                 </span>
                 <span className="daily-archive-meta">
                   重点 {r.data?.top_articles?.length ?? 0} · 趋势{' '}
@@ -165,7 +168,7 @@ export default async function DailyPage({
           ) : null}
         </header>
 
-        {d.summary && <p className="daily-summary">{d.summary}</p>}
+        {summaryText(d.summary) && <p className="daily-summary">{summaryText(d.summary)}</p>}
 
         {sections.length > 0 && (
           <nav className="daily-index" aria-label="今日概览">
@@ -298,6 +301,26 @@ function Sources({
 }
 
 // ── 工具 ──
+
+/** summary 兼容：新版是文本，旧版日报产出过统计对象（top_feeds 等）——
+ *  对象时降级为要素摘要而非崩溃。 */
+function summaryText(v: unknown): string {
+  if (typeof v === 'string') return v
+  if (v && typeof v === 'object') {
+    const o = v as Record<string, unknown>
+    const feeds = o.top_feeds as Record<string, number> | undefined
+    if (feeds) {
+      const top = Object.entries(feeds)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3)
+        .map(([k, n]) => `${k} ${n} 篇`)
+        .join('、')
+      return `当日收录 ${o.total_articles ?? '?'} 篇 · 主要来源：${top}`
+    }
+    return ''
+  }
+  return ''
+}
 
 function trimTitle(t: string) {
   return t.length > 42 ? t.slice(0, 42) + '…' : t
