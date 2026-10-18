@@ -278,7 +278,7 @@
 
 [direct]
 5	https://imjuya.github.io/juya-ai-daily/rss.xml # 橘鸦 AI 早报
-1	https://arstechnica.com/ai/feed/ # Ars Technica AI（频道版替换全站，2026-09-29 提纯非 AI 噪音）
+1	https://arstechnica.com/ai/feed/ # Ars Technica AI
 1	https://www.wired.com/feed/rss # WIRED
 1	https://feeds.feedblitz.com/marginalrevolution # Marginal Revolution
 1	https://www.youtube.com/feeds/videos.xml?channel_id=UCLXo7UDZvByw2ixzpQCufnA # YouTube Vox
@@ -417,7 +417,7 @@
 2	https://github.com/anomalyco/opencode/releases.atom # OpenCode（开源 AI IDE）
 2	https://github.com/exa-labs/exa-js/releases.atom # Exa JS（AI 搜索 API）
 # — 从 Ben's Bites 引用链提取的博客
-2	https://blog.usv.com/feed # USV Blog（Union Square Ventures，AI/科技投资洞察）
+2	https://blog.usv.com/feed # USV Blog
 1	https://www.aboutamazon.com/news/rss # Amazon News（AWS AI、芯片、零售动态）
 # 新增：调研发现的 AI 聚合信源
 4	https://the-decoder.com/feed/ # The Decoder（AI 新闻，德/英双语，活跃 2026）
@@ -425,7 +425,7 @@
 4	https://aiweekly.co/feed # AI Weekly（AI 周报，44K+ 订阅者）
 # 新增：从 3 个新聚合源反向挖掘的源头
 # — 从 AI Weekly 引用链提取
-2	https://sherwood.news/rss.xml # Sherwood News（科技/市场/加密新闻，Robinhood 旗下）
+2	https://sherwood.news/rss.xml # Sherwood News
 # — 从 The Decoder & AI Weekly 共同引用
 # ======== 全渠道信源发现：OPML 挖矿 + 公司博客矩阵 + 学术/播客/VC/政策 ========
 # — AI 公司官方博客（新发现）
@@ -451,11 +451,11 @@
 2	https://www.semianalysis.com/feed/ # SemiAnalysis（AI 芯片/半导体行业深度分析）
 4	https://lastweekin.ai/feed # Last Week in AI（AI 周报摘要）
 4	https://importai.substack.com/feed # Import AI（Jack Clark，AI 行业内部视角）
-4	https://www.interconnects.ai/feed # Interconnects（Nathan Lambert，AI 开源生态分析）
+4	https://www.interconnects.ai/feed # Interconnects
 2	https://www.404media.co/rss/ # 404 Media（AI 科技快讯，独立媒体）
 # — AI 播客
-2	https://changelog.com/practicalai/feed # Practical AI Podcast（Changelog，ML/DL/NLP 全领域）
-2	https://twimlai.com/feed # TWIML AI Podcast（Sam Charrington，765+ 期产业+学术）
+2	https://changelog.com/practicalai/feed # Practical AI
+2	https://twimlai.com/feed # TWIML AI
 # — VC / 投资人博客
 # — 政策 / 监管 / 权威科技媒体
 1	https://spectrum.ieee.org/feeds/topic/artificial-intelligence.rss # IEEE Spectrum — AI 专题
@@ -464,14 +464,14 @@
 # — 论文（社区维护）
 0	https://papers.takara.ai/api/feed # Hugging Face Daily Papers（社区维护，每日论文更新）
 # — 高价值个人博客（AI 商业/教育/实践）
-2	https://www.oneusefulthing.org/feed # One Useful Thing（Ethan Mollick，沃顿教授 AI 商业实验）
-1	https://scottaaronson.blog/?feed=rss2 # Shtetl-Optimized（Scott Aaronson，量子计算/AI 理论）
+2	https://www.oneusefulthing.org/feed # One Useful Thing
+1	https://scottaaronson.blog/?feed=rss2 # Shtetl-Optimized
 2	https://blog.bytebytego.com/feed # ByteByteGo（系统设计 + AI 架构，图文并茂）
 2	https://www.fast.ai/index.xml # Fast.AI（Jeremy Howard，实用深度学习教程）
 # — 综合科技媒体（补充覆盖面）
 1	https://www.theverge.com/rss/ai-artificial-intelligence/index.xml # The Verge AI（频道版替换全站）
 1	https://futurism.com/feed # Futurism（未来科技 + AI 聚焦）
-1	https://api.quantamagazine.org/feed/ # Quanta Magazine（数学/CS/理论科学，纯数学驱动的 AI 洞察）
+1	https://api.quantamagazine.org/feed/ # Quanta Magazine
 1	https://www.lesswrong.com/feed.xml?view=curated-rss # LessWrong（理性社区，AI 对齐/安全讨论）
 4	https://duanyytop.github.io/agents-radar/feed.xml # agents-radar AI CLI/Agents 生态日报
 4	https://chrbailey.github.io/deeptrend/feed.xml # deeptrend AI 趋势情报
@@ -507,13 +507,13 @@
 2	https://www.ifanr.com/feed # 爱范儿
 2	https://www.36kr.com/feed # 36氪官网
 2	https://baoyu.io/feed.xml # 宝玉博客
-5	https://research.google/blog/rss/ # Google Research Blog（研究向一手，AIHOT 甄选 2026-09-29）
+5	https://research.google/blog/rss/ # Google Research
 4	https://mistral.ai/rss.xml # Mistral 官方博客（重定向 /news/rss；一手模型发布）
-1	https://www.ithome.com/rss/ # IT之家（中文科技快讯，AIHOT 生产源甄选 2026-09-29；混有数码噪音靠 triage 过滤）
-2	https://hn.buzzing.cc/rss.xml # Hacker News 热门中文镜像（HN 共识信号维度，AIHOT 甄选）
+1	https://www.ithome.com/rss/ # IT之家
+2	https://hn.buzzing.cc/rss.xml # HN中文镜像
 2	https://elsewhere.news/feed.xml # elsewhere（中文 AI 深度观点/创投视角，AIHOT 甄选）
-3	https://garymarcus.substack.com/feed # Gary Marcus：The Road to AI We Can Trust（AI 批评/治理视角，aihot 生产源甄选 2026-09-29）
-3	https://news.google.com/rss/search?q=site:openrouter.ai&hl=en-US&gl=US&ceid=US:en # OpenRouter 动态（Google News 站点间接源；模型上线/价格，token 经济主线）
-2	https://aihot.news/feed/all.xml # AIHOT 全量动态（间接获得其 X 账号通道的策展内容：Rohan Paul/Testing Catalog/CEO 发言等，带原文直链）
+3	https://garymarcus.substack.com/feed # Gary Marcus
+3	https://news.google.com/rss/search?q=site:openrouter.ai&hl=en-US&gl=US&ceid=US:en # OpenRouter
+2	https://aihot.news/feed/all.xml # AIHOT
 
-2	https://home.gqy20.top/feed/rss/all.xml # Trail Feed（用户自建 X 聚合：宝玉/归藏/amasad 等 AI 圈 KOL，中文 AI 社区信号；2026-10-03 接入，实测 150 条字段完整、AI 密度 39%、分钟级更新）
+2	https://home.gqy20.top/feed/rss/all.xml # Trail Feed
