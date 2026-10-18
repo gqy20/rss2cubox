@@ -42,7 +42,7 @@ export default function Shell({ children }: { children: ReactNode }) {
   }, [])
   return (
     <div
-      className={`journal-shell ${pathname === '/signals' || pathname === '/policies' || pathname === '/monitor' || pathname === '/topics' || pathname === '/daily' ? 'reader-shell' : ''}`}
+      className={`journal-shell ${pathname === '/signals' || pathname === '/policies' || pathname === '/monitor' || pathname === '/topics' ? 'reader-shell' : ''}`}
     >
       <a href="#content" className="skip-link">
         跳到主要内容

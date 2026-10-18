@@ -172,14 +172,11 @@ export default async function DailyPage({
 
         {sections.length > 0 && (
           <nav className="daily-index" aria-label="今日概览">
-            <h2>今日概览 · {sections.reduce((n, s) => n + s.items.length, 0)} 条</h2>
+            <span className="daily-index-label">概览</span>
             {sections.map((s) => (
-              <div key={s.id}>
-                <a href={`#${s.id}`}>
-                  {s.icon} {s.title}
-                </a>
-                <span>{s.items.length} 条</span>
-              </div>
+              <a key={s.id} href={`#${s.id}`}>
+                {s.title} {s.items.length}
+              </a>
             ))}
           </nav>
         )}
@@ -191,10 +188,10 @@ export default async function DailyPage({
             </h2>
             {s.id === 'articles'
               ? s.items.map((it, i) => (
-                  <ArticleItem key={i} item={it} linkMap={linkMap} />
+                  <ArticleItem key={i} index={i + 1} item={it} linkMap={linkMap} />
                 ))
               : s.items.map((it, i) => (
-                  <TextItem key={i} item={it} linkMap={linkMap} />
+                  <TextItem key={i} index={i + 1} item={it} linkMap={linkMap} />
                 ))}
           </section>
         ))}
@@ -225,9 +222,10 @@ export default async function DailyPage({
 
 // ── 条目渲染 ──
 
-function TextItem({ item, linkMap }: { item: Item; linkMap: Map<string, string> }) {
+function TextItem({ item, index, linkMap }: { item: Item; index: number; linkMap: Map<string, string> }) {
   return (
     <div className="daily-item">
+      <span className="daily-item-no">{index}</span>
       {item.text && <p className="daily-item-text">{item.text}</p>}
       {item.comment && (
         <blockquote className="daily-item-comment">{item.comment}</blockquote>
@@ -237,10 +235,11 @@ function TextItem({ item, linkMap }: { item: Item; linkMap: Map<string, string> 
   )
 }
 
-function ArticleItem({ item, linkMap }: { item: Item; linkMap: Map<string, string> }) {
+function ArticleItem({ item, index, linkMap }: { item: Item; index: number; linkMap: Map<string, string> }) {
   const internal = item.url ? linkMap.get(item.url) : undefined
   return (
     <div className="daily-item">
+      <span className="daily-item-no">{index}</span>
       <h3 className="daily-article-title">
         {internal ? (
           <Link href={`/signals?id=${internal}`}>{item.title}</Link>

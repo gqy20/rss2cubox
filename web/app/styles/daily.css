@@ -71,55 +71,54 @@
 }
 .daily-date {
   font-family: var(--serif);
-  font-size: 30px;
+  font-size: 26px;
   font-weight: 600;
   letter-spacing: 1px;
 }
 .daily-topics {
   display: flex;
-  flex-wrap: wrap;
-  gap: 7px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  gap: 5px;
   margin-top: 12px;
   font-family: var(--sans);
 }
+.daily-topics .pill {
+  font-size: 10.5px;
+  padding: 2px 9px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
 .daily-summary {
-  font-size: 16px;
-  line-height: 1.9;
+  font-size: 17.5px;
+  line-height: 1.95;
   margin: 0 0 20px;
 }
 
 /* 今日概览（锚点索引） */
 .daily-index {
-  background: var(--canvas);
-  border-radius: 12px;
-  padding: 14px 20px;
-  margin-bottom: 24px;
-  font-family: var(--sans);
-}
-.daily-index h2 {
-  font-size: 13px;
-  margin: 0 0 8px;
-  font-family: var(--sans);
-}
-.daily-index > div {
   display: flex;
-  justify-content: space-between;
-  padding: 4px 0;
-  font-size: 13px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  background: var(--canvas);
+  border-radius: 10px;
+  padding: 10px 18px;
+  margin-bottom: 26px;
+  font-family: var(--sans);
+}
+.daily-index-label {
+  font-size: 14px;
+  font-weight: 600;
 }
 .daily-index a {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
+  font-size: 13px;
   color: var(--ink);
   text-decoration: none;
+  white-space: nowrap;
 }
 .daily-index a:hover {
   color: var(--accent);
-}
-.daily-index span {
-  color: var(--muted);
-  font-size: 12px;
 }
 
 /* 区块 */
@@ -130,7 +129,7 @@
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 600;
   margin: 0 0 14px;
   padding-bottom: 8px;
@@ -143,22 +142,35 @@
 /* 条目：事实 → 评注 → 证据链 三层 */
 .daily-item {
   margin-bottom: 18px;
-  padding-left: 14px;
+  padding-left: 16px;
   border-left: 3px solid var(--faint);
 }
+.daily-item {
+  position: relative;
+}
+.daily-item-no {
+  position: absolute;
+  left: -34px;
+  top: 1px;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 300;
+  color: var(--faint);
+  font-style: italic;
+}
 .daily-item-text {
-  font-size: 14.5px;
-  line-height: 1.85;
+  font-size: 15.5px;
+  line-height: 1.9;
   margin: 0 0 8px;
   font-family: var(--serif);
 }
 .daily-item-comment {
   margin: 8px 0;
-  padding: 8px 14px;
+  padding: 9px 15px;
   background: var(--olive-tint);
   border-radius: 8px;
-  font-size: 13px;
-  line-height: 1.75;
+  font-size: 13.5px;
+  line-height: 1.8;
   color: var(--ink);
   font-family: var(--sans);
 }
@@ -182,7 +194,7 @@
 
 /* 重点文章变体 */
 .daily-article-title {
-  font-size: 15.5px;
+  font-size: 16.5px;
   font-weight: 600;
   margin: 0 0 3px;
   font-family: var(--serif);
@@ -223,6 +235,12 @@
 }
 
 @media (max-width: 720px) {
+  .daily-item-no {
+    position: static;
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 15px;
+  }
   .daily-report {
     padding: 20px 18px;
   }
