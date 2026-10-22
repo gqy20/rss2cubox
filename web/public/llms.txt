@@ -7,7 +7,7 @@
 - 时间戳为 ISO 8601 UTC；展示给人类时转北京时间。TED 的 `edition_date`、`start_date`、`end_date` 是北京时间自然日（`YYYY-MM-DD`）。
 - 科技信号和政策列表使用**游标分页**（不是 page/limit）：每页 30 条，响应形如 `{"data": [...], "nextCursor": "...", "hasMore": true}`，把 `nextCursor` 原样作为下一页的 `?cursor=` 参数。
 - 错误响应 `{"error": "..."}`；参数非法 400，数据源故障 503，编号不存在 404。
-- 阅读接口无需认证。TED 报告生成和写入接口仅供后台使用，不属于 Agent 阅读流程。
+- 情报阅读接口无需认证。信源建议的提交与审核需要维护者授权；TED 报告生成和写入接口仅供后台使用。
 
 ## 推荐访问顺序
 
@@ -132,7 +132,11 @@
 
 ### POST /api/suggest-source — 推荐新信源
 
-Body：`{"url": "...", "name": "...", "kind": "tech|policy", "note": "推荐理由", "submitted_by": "..."}`。提交后自动体检并返回 `health`：`rss_ok`（RSS 可直接接入）/ `html_candidate`（需人工适配 CSS 选择器）/ `js_shell`（JS 空壳站）/ `unreachable`；RSS 源附最近条目的 AI 关键词密度（`ai_keyword_ratio`）作为即时信噪比预估。GET 同路径列出全部建议供维护者审核，是否接入由人工决定。
+此接口及同路径 GET 审核清单均仅供维护者使用，需要 `Authorization: Bearer <维护者凭据>`。未授权返回401，未配置服务端凭据时拒绝访问。普通 Agent 阅读情报无需调用此接口；凭据不得写入公开页面、URL 或提交内容。
+
+Body：`{"url": "...", "name": "...", "kind": "tech|policy", "note": "推荐理由", "submitted_by": "..."}`，请求体最多8 KiB。仅接受不含登录凭据、使用标准端口的公网 HTTP(S) 地址；目标及每次跳转都检查解析地址，禁止内网、保留地址及不安全跳转。地址违反规则返回400且不保存；请求体超限返回413。
+
+授权提交后自动体检并返回 `health`：`rss_ok`（RSS 可直接接入）/ `html_candidate`（需人工适配 CSS 选择器）/ `js_shell`（JS 空壳站）/ `unreachable`；RSS 源附最近条目的 AI 关键词密度（`ai_keyword_ratio`）。抓取总超时10秒，最多3次跳转，响应最多400000字节且不接受压缩内容。是否正式接入仍由维护者决定。
 
 ## 字段速查
 

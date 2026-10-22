@@ -7,6 +7,7 @@
  * - 政策 HTML：返回内容量级 + 列表锚密度（JS 壳站会暴露出来）
  */
 import { queryJournal } from './journal-store'
+import { fetchPublicSource, publicSourceUrl, UnsafeSourceUrl } from './public-source-fetch'
 
 const DDL = `
 CREATE TABLE IF NOT EXISTS source_suggestions (
@@ -48,9 +49,14 @@ export async function ensureSuggestionTable() {
 }
 
 export async function listSuggestions(): Promise<Suggestion[]> {
-  return queryJournal<Suggestion>(
-    'SELECT id,url,name,kind,note,submitted_by,status,health,created_at FROM source_suggestions ORDER BY created_at DESC',
-  )
+  try {
+    return await queryJournal<Suggestion>(
+      'SELECT id,url,name,kind,note,submitted_by,status,health,created_at FROM source_suggestions ORDER BY created_at DESC',
+    )
+  } catch (error) {
+    if ((error as { code?: string })?.code === '42P01') return []
+    throw error
+  }
 }
 
 export async function createSuggestion(input: {
@@ -60,9 +66,10 @@ export async function createSuggestion(input: {
   note?: string
   submitted_by?: string
 }): Promise<Suggestion> {
-  await ensureSuggestionTable()
   const kind = input.kind === 'policy' ? 'policy' : 'tech'
-  const health = await inspectSource(input.url, kind)
+  const url = publicSourceUrl(input.url).href
+  const health = await inspectSource(url, kind)
+  await ensureSuggestionTable()
   const [row] = await queryJournal<Suggestion>(
     `INSERT INTO source_suggestions (url,name,kind,note,submitted_by,health)
      VALUES ($1,$2,$3,$4,$5,$6)
@@ -72,7 +79,7 @@ export async function createSuggestion(input: {
        updated_at = now()
      RETURNING id,url,name,kind,note,submitted_by,status,health,created_at`,
     [
-      input.url,
+      url,
       (input.name || '').slice(0, 100),
       kind,
       (input.note || '').slice(0, 500),
@@ -91,36 +98,23 @@ const AI_KEYWORDS = [
 ]
 const POLICY_KEYWORDS = ['通知', '办法', '意见', '规划', '条例', '公告', '政策', '方案']
 
-async function fetchWithTimeout(url: string, ms = 10_000) {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), ms)
-  try {
-    return await fetch(url, {
-      signal: controller.signal,
-      headers: { 'user-agent': 'Mozilla/5.0 (compatible; rss2cubox-suggest/1.0)' },
-      redirect: 'follow',
-    })
-  } finally {
-    clearTimeout(timer)
-  }
-}
-
 export async function inspectSource(url: string, kind: 'tech' | 'policy') {
   let body: string
   try {
-    const res = await fetchWithTimeout(url)
-    if (!res.ok) return { verdict: 'unreachable', detail: `HTTP ${res.status}` } as const
-    body = (await res.text()).slice(0, 400_000)
+    const res = await fetchPublicSource(url)
+    if (res.status < 200 || res.status >= 300) return { verdict: 'unreachable', detail: `HTTP ${res.status}` } as const
+    body = res.body
   } catch (e) {
+    if (e instanceof UnsafeSourceUrl) throw e
     return {
       verdict: 'unreachable',
       detail: e instanceof Error ? e.name : 'fetch_failed',
     } as const
   }
 
-  const looksRss = /<(rss|feed)[\s>]/i.test(body) || /<\?xml[^>]*\?>\s*<rss/i.test(body)
+  const looksRss = /<(rss|feed)[\s>]/i.test(body)
   if (looksRss) {
-    const titles = [...body.matchAll(/<title[^>]*>([\s\S]{4,200}?)<\/title>/gi)]
+    const titles = [...body.matchAll(/<title\b[^>]{0,512}>([\s\S]{4,200}?)<\/title>/gi)]
       .map((m) => m[1].replace(/<!\[CDATA\[|\]\]>/g, '').replace(/\s+/g, ' ').trim())
       // 第一条 <title> 是频道名，跳过
       .slice(1, 11)
@@ -141,7 +135,7 @@ export async function inspectSource(url: string, kind: 'tech' | 'policy') {
   }
 
   // HTML：判断是服务端渲染的列表页还是 JS 空壳
-  const anchors = (body.match(/<a\s[^>]*href=/gi) || []).length
+  const anchors = (body.match(/<a\s[^>]{0,2048}href=/gi) || []).length
   const chinese = (body.match(/[一-龥]/g) || []).length
   if (body.length < 2_000 || anchors < 10) {
     return {

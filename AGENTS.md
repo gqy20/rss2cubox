@@ -164,3 +164,11 @@ ssh HR2 'curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3424/<route>'
 - SDK 的 `ResultMessage.errors` 为空，不代表没有具体错误。网关的 403/额度不足等详情可能在 `result` 或错误 AssistantMessage 内；CLI 随后抛退出码1时必须保留已收到的错误正文，并脱敏记录。不要只按退出码猜原因。
 - 每条补齐任务最多3次、失败后间隔15分钟，中断任务30分钟后可重新领取；遇到额度或鉴权错误停止本批。报告的引用说明不能充当逐篇分析，实际结果须通过 enrich JSON Schema 校验。
 - 部署使用 `make web-deploy`；依赖同步、构建、重启与检查保留在统一入口。服务器已有无关未提交文件时，用 `DEPLOY_RSYNC_ARGS` 明确排除并核对内容未变，示例见 `docs/operations.md`。
+
+
+## 12. 信源建议入口的 SSRF 防护
+
+- `/api/suggest-source` 提交及审核须通过独立的 `SOURCE_SUGGEST_TOKEN` 维护者 Bearer 校验，未配置时拒绝访问；只在服务端配置，不能加入 `NEXT_PUBLIC_` 或前端密钥界面。
+- 外部传入的 URL 使用 `web/lib/public-source-fetch.ts`：校验规范化 URL、全部 DNS 答案和每个跳转，再把连接固定到已验证 IP。只检查域名字符串或“先解析检查、随后普通 fetch 再解析”仍有绕过风险。
+- 计时必须覆盖响应体读取，大小限制必须在流式读取时执行，不能在 `res.text()` 完整下载后再 slice。抓取不转发调用者的 Cookie/Authorization。
+- 用模拟 DNS/HTTP 测试内网、云元数据地址、编码 IP、重绑定与跳转阻断，不通过生产漏洞发起真实内网探测。部署仍走 `make web-deploy`，更新 llms.txt 中对应的鉴权与调用约定。

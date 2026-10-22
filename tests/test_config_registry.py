@@ -67,6 +67,16 @@ def _scan() -> dict[str, list[tuple[str, str]]]:
                         default_src = ""
                     line = text[: m.start()].count("\n") + 1
                     found.setdefault(name, []).append((default_src, f"{path.name}:{line}"))
+    # Server-side Next.js configuration shares the same registry as Python.
+    web = SRC.parents[1] / 'web'
+    for folder in ('app', 'lib'):
+        for path in sorted((web / folder).rglob('*')):
+            if path.suffix not in ('.ts', '.tsx'):
+                continue
+            text = path.read_text(encoding='utf-8')
+            for match in re.finditer(r'\bprocess\.env\.([A-Z][A-Z0-9_]*)', text):
+                line = text[:match.start()].count('\n') + 1
+                found.setdefault(match.group(1), []).append(('', f'{path.name}:{line}'))
     return found
 
 

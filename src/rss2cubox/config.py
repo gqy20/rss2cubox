@@ -74,6 +74,8 @@ _TABLE: list[tuple[str, str, Any, str, str]] = [
     ("NEON_PUSH_ENABLED", "bool", "false", "storage", "是否推送 global_insights 到 Neon"),
 
     ("TED_WRITE_TOKEN", "str", "", "runtime", "TED 后台生成写入凭据，至少32字符；仅服务端使用，不向观众提供密钥界面"),
+    ("SOURCE_SUGGEST_TOKEN", "str", "", "runtime", "信源建议提交/审核接口的维护者 Bearer 凭据，至少32字符；未配置时拒绝访问，仅服务端使用"),
+    ("API_SOURCE", "str", "", "runtime", "前端文章数据源；未设置时使用本地 PostgreSQL，设置为非 local 值时读取 IC"),
 
     # ic
     ("IC_API_URL", "str", "", "ic", "IC 批量导入端点，也是本地库为空时的去重基线回退来源"),
