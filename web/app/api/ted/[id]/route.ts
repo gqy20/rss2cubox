@@ -1,9 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { readTedIssue, saveTedIssue } from '../../../../lib/ted-store'
+import { readTedAudienceIssue, readTedIssue, saveTedIssue } from '../../../../lib/ted-store'
+import { tedReadingDetail } from '../../../../lib/ted-reader'
 import { canWriteTed } from '../../../../lib/ted-request'
 import { tedBody, tedError, tedHeaders } from '../../../../lib/ted-api'
 import { isTedId, TedValidationError } from '../../../../lib/ted'
 export const dynamic = 'force-dynamic'
+export async function GET(
+  _request: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) {
+  try {
+    const { id } = await context.params
+    const issue = await readTedAudienceIssue(id)
+    return NextResponse.json(
+      issue ? { data: tedReadingDetail(issue) } : { error: '这份报告不存在。' },
+      { status: issue ? 200 : 404, headers: tedHeaders },
+    )
+  } catch (error) {
+    return tedError(error)
+  }
+}
+
 export async function PATCH(
   request: NextRequest,
   context: { params: Promise<{ id: string }> },

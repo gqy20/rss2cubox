@@ -32,6 +32,18 @@ RSS Signals 是一个 AI/科技信号情报系统。它自动采集数百个信�
 - 与主链路分开是因为打分标尺不同：主链路 prompt 围绕「AI 与智能体领域」硬编码，
   `signal_type` / `market_stage` 是科技产品视角，量法规文件会失真
 
+## 他山青年 TED 灵感共创队
+
+每周直播报告综合指定自然日范围内的科技信号、政策与核对过的一手资料，提供本期判断、正文、判断边界和原始引用。前端为观众阅读界面，不提供选题编辑或密钥登录。
+
+Agent 读取顺序：
+
+1. `GET /api/ted`：最新整理完成的报告在前，返回期号、标题、导读和 `api_url`，最多最近200期，无游标。
+2. 读取 `api_url`（`GET /api/ted/{id}`）：获取 Markdown 正文、议题及每个议题的 `sources[]`。引用 `[n]` 对应该议题第 n 条来源。
+3. 读取来源的 `analysis_url`（`GET /api/ted/{id}/source?id={source_id}`）：获取已有文章/政策 AI 分析。`source.reason` 是引用说明，`analysis.reason` 才是逐篇分析；`analysis=null` 表示暂缺，不能编造。
+
+阅读接口无需认证，仅返回观众可见内容，不返回主持人内部备注。期号按 `edition_label`（如 `10.23 期`）展示；素材覆盖量与报告引用数是不同口径。人类阅读入口 `/ted`、`/ted/{id}`。接口详细约定见站点 `/llms.txt`（源码 `web/public/llms.txt`），栏目流程见 `docs/ted.md`。
+
 ## 运行
 
 统一入口是 Makefile（`make help` 列全部）：
@@ -55,7 +67,8 @@ make cron-install / policy-cron-install / cron-list
 - **`ic`** —— 正式文章内容库，`IC_PUSH_ENABLED=true` 时才推送
 - **`global_insights`** —— 前端洞察卡片的数据源
 - **前端 API** —— `/api/signals`（文章列表与搜索）、`/api/reader/<kind>`（阅读面板详情）、
-  `/api/monitor/source`（信源运行）、`/api/bili-cover`（封面代理）
+  `/api/monitor/source`（信源运行）、`/api/bili-cover`（封面代理）、
+  `/api/ted`（周度报告列表与单期阅读）
 
 ## 成本
 
@@ -74,6 +87,7 @@ make cron-install / policy-cron-install / cron-list
   政策流水线细节、失效监测、成本核算、日志字段、部署、排查手册
 - `docs/prediction-loop.md` —— 预测闭环设计：实体模型、三个 Agent、可证伪性约束
 - `docs/database.md` —— 数据库设计与表职责
+- `docs/ted.md` —— 他山青年 TED：观众阅读、引用分析、后台生成与数据口径
 - `.env.example` —— 带注释的完整配置模板
 
 ## 部署状态

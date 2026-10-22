@@ -1,9 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createTedIssue } from '../../../lib/ted-store'
+import { createTedIssue, listTedAudienceIssues } from '../../../lib/ted-store'
+import { tedReadingSummary } from '../../../lib/ted-reader'
 import { canWriteTed } from '../../../lib/ted-request'
 import { tedBody, tedError, tedHeaders } from '../../../lib/ted-api'
 import { TedValidationError } from '../../../lib/ted'
 export const dynamic = 'force-dynamic'
+export async function GET() {
+  try {
+    const issues = await listTedAudienceIssues()
+    return NextResponse.json(
+      { data: issues.map(tedReadingSummary) },
+      { headers: tedHeaders },
+    )
+  } catch (error) {
+    return tedError(error)
+  }
+}
+
 export async function POST(request: NextRequest) {
   if (!canWriteTed(request))
     return NextResponse.json(

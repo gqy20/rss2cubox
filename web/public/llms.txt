@@ -1,13 +1,13 @@
 # rss2cubox — AI 政策与科技情报站点
 
-> 中国 AI/智能体方向的政策追踪与科技信号系统。政策信源覆盖中美：中国（网信办/工信部/发改委/国家数据局/TC260/中科院/地方政府/深圳人大）与美国（联邦公报/白宫行政令/国会立法/加州/NIST），统一政策本体（位阶/立法阶段/义务强度），`region=美国` 可筛美国文件+ 270 个科技 RSS 源，经 LLM 结构化抽取：政策本体字段、立法阶段、政策主线标签、重要性评分。本文件面向智能体与大模型，请优先使用结构化接口，不要只抓页面文本。
+> 中国 AI/智能体方向的政策追踪与科技信号系统。政策信源覆盖中美：中国（网信办/工信部/发改委/国家数据局/TC260/中科院/地方政府/深圳人大）与美国（联邦公报/白宫行政令/国会立法/加州/NIST），统一政策本体（位阶/立法阶段/义务强度），`region=美国` 可筛美国文件+ 270 个科技 RSS 源，经 LLM 结构化抽取：政策本体字段、立法阶段、政策主线标签、重要性评分。另提供「他山青年 TED 灵感共创队」每周直播报告，综合科技信号与政策并附原始引用。本文件面向智能体与大模型，请优先使用结构化接口，不要只抓页面文本。
 
 ## 通用约定
 
-- 所有时间戳为 ISO 8601 UTC；展示给人类时转北京时间。
-- 列表接口统一**游标分页**（不是 page/limit）：每页 30 条，响应形如 `{"data": [...], "nextCursor": "...", "hasMore": true}`，把 `nextCursor` 原样作为下一页的 `?cursor=` 参数。
+- 时间戳为 ISO 8601 UTC；展示给人类时转北京时间。TED 的 `edition_date`、`start_date`、`end_date` 是北京时间自然日（`YYYY-MM-DD`）。
+- 科技信号和政策列表使用**游标分页**（不是 page/limit）：每页 30 条，响应形如 `{"data": [...], "nextCursor": "...", "hasMore": true}`，把 `nextCursor` 原样作为下一页的 `?cursor=` 参数。
 - 错误响应 `{"error": "..."}`；参数非法 400，数据源故障 503，编号不存在 404。
-- 全部接口只读、无需认证。
+- 阅读接口无需认证。TED 报告生成和写入接口仅供后台使用，不属于 Agent 阅读流程。
 
 ## 推荐访问顺序
 
@@ -33,6 +33,12 @@
 
 - 文章：`/api/reader/article?id=<hash>`
 - 政策：`/api/reader/policy?id=<hash>`（含原文引句、关键条款、双模型主线校验）
+
+### 5. 每周 TED 报告
+
+- [TED 报告列表](/api/ted)：按期刊顺序倒序，第一条是当前最新整理完成的报告。
+- 取列表中的 `api_url` 读取单期正文，再按每条来源的 `analysis_url` 查看已有逐篇 AI 分析。
+- [观众阅读页面](/ted)：供人阅读，同一份报告内容。
 
 ## 端点详解
 
@@ -91,6 +97,38 @@
 ### GET /api/daily-reports — 日报归档
 
 每天一份的综合分析：`summary`、`key_topics`、`trends`、`top_articles`、`weak_signals`（早期弱信号）、`daily_advices`、`cluster_evolution`、`prediction_status`、`confidence_level`。不带参数返回全部（按日期倒序）；`?date=YYYY-MM-DD` 取单份。
+
+### GET /api/ted — 他山青年 TED 灵感共创队
+
+返回 `{"data": [...]}`，最多最近 200 期，不使用游标。仅包含已经整理完成、可在观众页面阅读的报告；初始空白素材草稿不返回。尚无报告时 `data` 为 `[]`。
+
+每项含 `id`（UUID）、`title`、`intro`、`tags`、`edition_date`、`edition_label`（如 `10.23 期`）、`start_date`、`end_date`、`updated_at`、`url`（阅读页）、`api_url`（单期 JSON）。使用 `edition_label` 称呼期号。
+
+### GET /api/ted/{id} — 单期报告正文与引用
+
+`{id}` 使用报告列表返回的 UUID，成功返回 `{"data": {...}}`；报告不存在或仍是空白素材草稿时返回 404。
+
+`data` 包含列表中的元数据，以及完整 `report`：
+
+- `title` / `intro` / `tags`：本期标题、综合导读、主题。
+- `topics[]`：每个议题的 `title`、`claim`（本期判断）、`body`（Markdown 正文）、`uncertainty`（判断边界）、`watch`（该议题的验证方法）、`image`、`sources[]`。
+- `sources[]`：来源 `id`、`kind`、`title`、`url`、`publisher`、`published_at`、`date_basis`、`reason`（本期引用说明）、`analysis_url`。正文中的 `[1]`、`[2]` 按**当前议题**的来源数组顺序对应，从 1 开始编号，不是全篇统一编号。
+- `start_date` / `end_date` / `cutoff_at` / `coverage`：素材范围、数据截止时间和当时的收录统计。`coverage` 统计整期素材库，不能当成报告实际引用数量。
+- `cover` / `live_at` / `live_url` / `replay_url` / `generation`：配图、直播、回放与 AI 辅助生成时间；未提供时可能为 null 或空字符串。
+
+报告不返回主持人内部备注、编辑状态或已经删除的额外跟进章节。若需逐篇 AI 分析，读取来源的 `analysis_url`，以获取当前文章或政策记录的分析。
+
+### GET /api/ted/{id}/source?id={source_id} — 引用的逐篇 AI 分析
+
+只查询指定报告实际引用的来源，`source_id` 取自该议题的 `sources[].id`，不是文章库 ID。直接使用 `analysis_url` 可避免自行拼接和编码参数。
+
+返回 `{"data": {"source": {...}, "analysis": {...}, "record_id": "..."}}`：
+
+- `source.reason` 是报告引用这条资料的理由，不能当成逐篇 AI 分析。
+- `analysis.kind` 为 `article` 或 `policy`，含 `reason`、`hidden_signal`、`actionable`、`prediction`、`summary`、`source_quote`、`tags` 等适用字段；`importance_score` / `ai_relevance` 为 1–5 级评分，不是概率。
+- 优先读取现有记录，无法取得实时记录时可回退到报告保存的真实分析快照；`analysis` 为 null 表示目前没有可用的逐篇分析，不能据此编造分析。
+- `record_id` 为匹配到的文章/政策库 ID，未匹配到时为 null。已匹配记录也可能尚未完成分析。`analysis.kind` 已知时，可分别通过 `/api/reader/article?id=` 或 `/api/reader/policy?id=` 读取全文。
+- `source.url` 为原文链接。`date_basis=collected` 时，报告来源的日期是收录时间；`unknown` 时不要推断发布日期。
 
 ### POST /api/suggest-source — 推荐新信源
 
