@@ -84,10 +84,10 @@ SYSTEM_PROMPT = _PROMPT.system_prompt
 POLICY_ENRICH_SCHEMA: dict[str, Any] = _PROMPT.output_schema
 
 
-def _resource_quote_options(doc: dict[str, Any], full_text: str | None) -> list[str]:
+def _snapshot_quote_options(doc: dict[str, Any], full_text: str | None) -> list[str]:
     from rss2cubox.policy.data_channels import RESOURCE_KINDS
 
-    if doc.get("content_kind") not in RESOURCE_KINDS:
+    if doc.get("content_kind") not in RESOURCE_KINDS | {"政策文件"}:
         return []
     max_chars = param("policy_enrich", "max_text_chars", 12000, env_var="POLICY_ENRICH_MAX_TEXT_CHARS")
     body = (full_text or "").strip()[:max_chars]
@@ -96,8 +96,8 @@ def _resource_quote_options(doc: dict[str, Any], full_text: str | None) -> list[
         quote = match.group(0).strip()[:120]
         if len(quote) >= 4 and quote not in options:
             options.append(quote)
-        if len(options) >= 24:
-            break
+    if len(options) > 24:
+        options = [options[i * (len(options) - 1) // 23] for i in range(24)]
     return options
 
 
@@ -117,7 +117,7 @@ def _build_prompt(doc: dict[str, Any], full_text: str | None) -> str:
             "site_name": doc.get("site_name", ""),
             "published_at": str(doc.get("published_at") or ""),
             "content_kind": doc.get("content_kind"),
-            "source_quote_options": _resource_quote_options(doc, full_text),
+            "source_quote_options": _snapshot_quote_options(doc, full_text),
             "has_full_text": bool(body),
             "text_truncated": truncated,
             "full_text": body,
@@ -194,7 +194,7 @@ async def _enrich_one(
     log_event: Any | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
     schema = POLICY_ENRICH_SCHEMA
-    quote_options = _resource_quote_options(doc, full_text)
+    quote_options = _snapshot_quote_options(doc, full_text)
     if quote_options:
         schema = deepcopy(POLICY_ENRICH_SCHEMA)
         schema["properties"]["source_quote"]["enum"] = quote_options
@@ -244,8 +244,8 @@ async def _enrich_one(
         enriched.update(instrument_type=doc["content_kind"], obligation_level="不适用", stage="已发布",
                         document_number=None, effective_date=None, comment_deadline=None,
                         issuing_authority=None)
-        if str(enriched.get("source_quote") or "") not in (full_text or ""):
-            return None, "source_quote_not_in_snapshot"
+    if doc.get("content_kind") and str(enriched.get("source_quote") or "") not in (full_text or ""):
+        return None, "source_quote_not_in_snapshot"
     # Jev 交叉校验主线归属：分歧只记录进 enrich_meta（观察期不改数据），
     # 未配置/失败完全无感。同步 requests 放线程里跑，避免阻塞 anyio 事件循环。
     await anyio.to_thread.run_sync(

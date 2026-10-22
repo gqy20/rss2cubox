@@ -188,11 +188,27 @@ async def test_resource_quotes_constrained_to_actual_snapshot_without_mutating_g
 
     body = "骨密度相关数据\n需求说明：依托科研项目从事人工智能应用研究。数据用于模型评测。"
     doc = {"id": "one", "content_kind": "用数需求"}
-    options = enrich_agent._resource_quote_options(doc, body)
+    options = enrich_agent._snapshot_quote_options(doc, body)
     assert options and all(q in body and 4 <= len(q) <= 120 for q in options)
     with patch.object(enrich_agent, "run_with_fallback", AsyncMock(return_value={})) as run:
         await enrich_agent._enrich_one(doc, body)
     schema = run.call_args.args[0].keywords["schema"]
     assert schema["properties"]["source_quote"]["enum"] == options
     assert "enum" not in enrich_agent.POLICY_ENRICH_SCHEMA["properties"]["source_quote"]
-    assert enrich_agent._resource_quote_options({"content_kind": "政策文件"}, body) == []
+    assert enrich_agent._snapshot_quote_options({"content_kind": "政策文件"}, body)
+    assert enrich_agent._snapshot_quote_options({}, body) == []
+
+
+@pytest.mark.asyncio
+async def test_api_policy_quote_validation_and_candidates_cover_the_end_of_body():
+    from unittest.mock import AsyncMock
+    from rss2cubox.policy import enrich_agent
+
+    body = "\n".join("第" + str(i) + "条 数据共享管理要求。" for i in range(100))
+    doc = {"id": "policy", "content_kind": "政策文件"}
+    options = enrich_agent._snapshot_quote_options(doc, body)
+    assert len(options) == 24 and "第0条" in options[0] and "第99条" in options[-1]
+    with patch.object(enrich_agent, "run_with_fallback", AsyncMock(return_value={
+        "summary": "政策摘要", "source_quote": "模型改写了不存在的条文"})):
+        out, reason = await enrich_agent._enrich_one(doc, body)
+    assert out is None and reason == "source_quote_not_in_snapshot"
