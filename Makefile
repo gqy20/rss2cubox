@@ -29,12 +29,14 @@ RUN_VIA_SH   ?= 0
 
 UV   := uv
 NPX  := npx
+TED_PYTHON ?= $(UV) run python
+TED_SOURCE_ARGS ?=
 
 .PHONY: help up deps db db-init db-wait db-stop db-down db-logs db-psql db-reset web-deploy \
         run loop web dev doctor test lint logs cron-install cron-uninstall cron-list clean \
         cost cost-pricing cost-refresh config config-help \
         policy policy-dry policy-status policy-init policy-triage policy-enrich \
-        policy-cron-install policy-cron-uninstall
+        policy-cron-install policy-cron-uninstall ted-sources
 
 # ── 帮助 ──────────────────────────────────────────────────────
 help: ## 显示所有可用命令
@@ -164,16 +166,22 @@ web: db-wait ## 起前端 dev server（http://localhost:3424）
 # 前提：ssh 配置了 Host 别名；服务器上有 systemd 单元 rss2cubox-web。
 DEPLOY_HOST ?= HR2
 DEPLOY_DIR  ?= /root/project/rss2cubox
+# Additional rsync exclusions for known, unrelated server work. Record them in the deployment log.
+DEPLOY_RSYNC_ARGS ?=
 
 web-deploy: ## 同步代码到服务器并重建重启前端（rsync + pnpm build + systemctl）
 	@echo "→ 同步代码到 $(DEPLOY_HOST):$(DEPLOY_DIR)"
 	@rsync -az --delete \
 	  --exclude .venv --exclude node_modules --exclude .next --exclude __pycache__ \
 	  --exclude .pytest_cache --exclude .rss2cubox-prediction-loop \
+	  --exclude logs --exclude .tashan --exclude '.rss2cubox-*.lock' --exclude .git/config \
+	  --exclude .playwright-cli --exclude playwright-report --exclude test-results \
 	  --exclude .env --exclude .env.example --exclude 'web/.env*' \
 	  --filter 'P .env*' --filter 'P web/.env*' --filter 'P logs/' \
+	  $(DEPLOY_RSYNC_ARGS) \
 	  ./ $(DEPLOY_HOST):$(DEPLOY_DIR)/
-	@ssh $(DEPLOY_HOST) 'set -e; cd $(DEPLOY_DIR)/web; export PATH="$$HOME/.local/bin:$$PATH" LC_ALL=C; \
+	@ssh $(DEPLOY_HOST) 'set -e; cd $(DEPLOY_DIR); export PATH="$$HOME/.local/bin:$$PATH" LC_ALL=C; \
+	  uv sync --no-progress; cd web; \
 	  pnpm install --registry=https://registry.npmmirror.com --silent; \
 	  pnpm build; \
 	  systemctl stop rss2cubox-web 2>/dev/null || true; \
@@ -182,6 +190,9 @@ web-deploy: ## 同步代码到服务器并重建重启前端（rsync + pnpm buil
 	  systemctl start rss2cubox-web; sleep 6; \
 	  systemctl is-active rss2cubox-web; \
 	  curl -s -o /dev/null -w "部署完成：/policies HTTP %{http_code}\n" --max-time 12 http://localhost:3424/policies'
+
+ted-sources: ## TED 引用检查并入队；加 TED_SOURCE_ARGS="--issue UUID --repair" 定向补齐
+	@$(TED_PYTHON) -m rss2cubox.ted_source_repair $(TED_SOURCE_ARGS)
 
 dev: db db-init ## 一次性启动前后端：DB + 后端跑一次 + 前端常驻（Ctrl-C 全部退出）
 	@echo "════════════════════════════════════════════"

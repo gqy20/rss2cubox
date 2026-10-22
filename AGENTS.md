@@ -156,3 +156,11 @@ ssh HR2 'curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3424/<route>'
 - `.env.example` 与 `config.py` 注册表必须保持**严格同步**（`tests/test_config_registry.py` 强制校验）。
 - docs/ 目录：用户视角用 README.md，技术视角用 docs/operations.md、docs/frontend-journal.md、DESIGN.md。
 
+
+
+## 11. TED 引用补齐与 SDK 错误诊断
+
+- TED 报告生成后自动核对引用的入库记录、正文和逐篇分析，缺失项存入 `ted_source_jobs`。手动检查/补齐统一用 `make ted-sources TED_SOURCE_ARGS="--issue <UUID> [--repair]"`；HR2 可指定 `TED_PYTHON=.venv/bin/python`。只处理当前报告的引用，保留已有成功分析和正文；未知发布日期保持为空。
+- SDK 的 `ResultMessage.errors` 为空，不代表没有具体错误。网关的 403/额度不足等详情可能在 `result` 或错误 AssistantMessage 内；CLI 随后抛退出码1时必须保留已收到的错误正文，并脱敏记录。不要只按退出码猜原因。
+- 每条补齐任务最多3次、失败后间隔15分钟，中断任务30分钟后可重新领取；遇到额度或鉴权错误停止本批。报告的引用说明不能充当逐篇分析，实际结果须通过 enrich JSON Schema 校验。
+- 部署使用 `make web-deploy`；依赖同步、构建、重启与检查保留在统一入口。服务器已有无关未提交文件时，用 `DEPLOY_RSYNC_ARGS` 明确排除并核对内容未变，示例见 `docs/operations.md`。

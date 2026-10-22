@@ -49,7 +49,7 @@ SYSTEM_PROMPT = _PROMPT.system_prompt
 ENRICH_OUTPUT_SCHEMA = _PROMPT.output_schema
 
 
-def _build_user_prompt(item: dict, original: dict, *, pre_fetched_text: str | None = None) -> str:
+def _build_user_prompt(item: dict, original: dict, *, pre_fetched_text: str | None = None, full_text_max_chars: int = 15000) -> str:
     base = (
         f"文章标题：{item.get('title', '')}\n"
         f"原文链接：{item.get('url', '')}\n"
@@ -57,7 +57,7 @@ def _build_user_prompt(item: dict, original: dict, *, pre_fetched_text: str | No
         f"初步核心事件：{original.get('core_event', '')}\n\n"
     )
     if pre_fetched_text:
-        truncated = pre_fetched_text[:15000]
+        truncated = pre_fetched_text[:full_text_max_chars]
         return (
             base
             + "【已预抓取全文】以下为已获取的原文完整内容，请直接基于此进行分析，无需再调用任何工具：\n\n"
@@ -84,7 +84,7 @@ def _has_enrich_content(payload: dict[str, Any] | None) -> bool:
     return bool(payload and (payload.get("core_event") or payload.get("hidden_signal") or payload.get("reason")))
 
 
-async def _enrich_one(item: dict, original: dict, log_event: Any | None = None, *, pre_fetched_text: str | None = None) -> tuple[dict | None, str]:
+async def _enrich_one(item: dict, original: dict, log_event: Any | None = None, *, pre_fetched_text: str | None = None, full_text_max_chars: int = 15000, max_budget_usd: float | None = None) -> tuple[dict | None, str]:
     """
     使用 output_format 让 CLI 处理 JSON Schema 验证和重试。
     TimeoutError 时按配置进行退避重试；其他异常直接返回。
@@ -151,13 +151,13 @@ async def _enrich_one(item: dict, original: dict, log_event: Any | None = None, 
         timeout = max(30, int(base_timeout * (0.8 ** attempt)))
         try:
             structured_output = await run_json_agent(
-                prompt=_build_user_prompt(item, original, pre_fetched_text=pre_fetched_text),
+                prompt=_build_user_prompt(item, original, pre_fetched_text=pre_fetched_text, full_text_max_chars=full_text_max_chars),
                 system_prompt=SYSTEM_PROMPT,
                 schema=ENRICH_OUTPUT_SCHEMA,
                 allowed_tools=allowed_tools,
                 mcp_servers={"enrich-tools": server},
                 max_turns=param("enrich", "max_turns", 20),
-                max_budget_usd=ENRICH_MAX_BUDGET_USD,
+                max_budget_usd=max_budget_usd if max_budget_usd is not None else ENRICH_MAX_BUDGET_USD,
                 timeout_seconds=timeout,
                 cwd=Path.cwd(),
                 setting_sources=["project"] if ENRICH_ENABLE_SKILLS else None,

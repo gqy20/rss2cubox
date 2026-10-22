@@ -154,6 +154,13 @@ def main() -> int:
             "version": issue["version"], "action": "save", "report": report,
         }, timeout=30))
         print(f"报告已保存，阅读链接：{base}/ted/{issue['id']}")
+        from rss2cubox.ted_source_repair import audit_saved_issue
+        checks = audit_saved_issue(issue['id'])
+        missing = sum(bool(check['missing']) for check in checks)
+        if missing:
+            print(f"引用完整性检查：{missing}/{len(checks)} 条缺少入库记录、正文或分析，已进入 ted_source_jobs。")
+            print(f'make ted-sources TED_SOURCE_ARGS="--issue {issue["id"]} --repair"')
+            return 2
         return 0
     except (ValueError, RuntimeError, requests.RequestException) as exc:
         # Do not print HTTP request objects or configuration, which can carry credentials.

@@ -99,6 +99,27 @@ def _stderr_tail(lines):
     return " | ".join(lines[-_STDERR_TAIL_LINES:]) if lines else ""
 
 
+def safe_sdk_error(value: Any) -> str:
+    """Keep useful provider errors without persisting deployment credentials."""
+    text = str(value)
+    for key, secret in os.environ.items():
+        if len(secret) >= 8 and any(part in key for part in ("TOKEN", "API_KEY", "PASSWORD", "DATABASE_URL")):
+            text = text.replace(secret, "[redacted]")
+    text = re.sub(r"(?i)Bearer\s+[A-Za-z0-9_.-]+", "Bearer [redacted]", text)
+    return text[:4000]
+
+
+def _failure_detail(message: Any) -> str:
+    if message is None:
+        return ""
+    parts = [getattr(message, "subtype", "") or "agent_error"]
+    parts.extend(getattr(message, "errors", None) or [])
+    # Gateway errors often arrive in result rather than errors (e.g. HTTP 403).
+    if getattr(message, "result", None):
+        parts.append(str(message.result))
+    return safe_sdk_error("; ".join(parts))
+
+
 def _enriched_error(exc, stderr_lines):
     """把 stderr 尾部拼进异常消息，让「exit code 1」不再是死胡同。
 
@@ -109,7 +130,7 @@ def _enriched_error(exc, stderr_lines):
     tail = _stderr_tail(stderr_lines)
     if tail:
         msg = f"{msg}; stderr_tail={tail}"
-    enriched = RuntimeError(msg)
+    enriched = RuntimeError(safe_sdk_error(msg))
     if isinstance(exc, BaseException):
         enriched.__cause__ = exc
     return enriched
@@ -288,6 +309,7 @@ async def run_json_agent(
         result: Any = None           # 正常的 ResultMessage
         output: Any = None           # structured_output
         raw_text = ""
+        assistant_errors: list[str] = []
         cli_query = query(prompt=prompt, options=options, transport=transport)
         try:
             async for message in cli_query:
@@ -304,6 +326,12 @@ async def run_json_agent(
                 # 之前只处理 ResultMessage，工具调用/思考/限流完全不可见，排查
                 # 「CLI exit 1 但拿不到任何信息」只能靠写一次性诊断脚本。
                 if isinstance(message, AssistantMessage):
+                    if getattr(message, "error", None):
+                        detail = safe_sdk_error("; ".join(
+                            str(getattr(block, "text", "")) for block in (message.content or [])
+                        ))
+                        assistant_errors.append(detail)
+                        emit("agent_sdk_assistant_error", error=detail)
                     for block in (getattr(message, "content", None) or []):
                         block_type = type(block).__name__
                         if block_type == "ToolUseBlock":
@@ -400,6 +428,7 @@ async def run_json_agent(
                         stop_reason=getattr(message, "stop_reason", None),
                         session_id=getattr(message, "session_id", None),
                         errors=getattr(message, "errors", None),
+                        error_detail=_failure_detail(message) if message.is_error else None,
                     )
                     # 只记录，不在这里抛：ResultMessage 通常是流里最后一条，
                     # 迭代会自然结束、生成器自己走完 teardown。
@@ -419,15 +448,18 @@ async def run_json_agent(
                 lambda t: t.exception() if not t.cancelled() else None
             )
             raise
+        except Exception as exc:
+            # The SDK may raise exit-code errors after yielding the actual API error.
+            detail = _failure_detail(failure) or "; ".join(assistant_errors[-3:])
+            error = _enriched_error(RuntimeError(f"{exc}; {detail}" if detail else str(exc)), stderr_lines)
+            emit("agent_sdk_error", error=str(error), category=_classify_sdk_exception(error))
+            raise error from exc
         # 循环自然耗尽（生成器已在同任务内完成 finally: query.close()）。
         # 现在才抛异常/返回——安全。
         if failure is not None:
             # errors 数组里是「Failed to provide valid structured output
             # after N attempts」这类具体信息，并入异常而不是只报 subtype
-            detail = "; ".join(getattr(failure, "errors", None) or [])
-            exc = RuntimeError(failure.subtype or "agent_error")
-            if detail:
-                exc = RuntimeError(f"{failure.subtype or 'agent_error'}: {detail}")
+            exc = RuntimeError(_failure_detail(failure))
             raise _enriched_error(exc, stderr_lines)
         if result is not None and output is not None:
             return output

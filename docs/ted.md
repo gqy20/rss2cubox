@@ -47,6 +47,29 @@ uv run python -m rss2cubox.ted_report_agent --start 2026-10-16 --end 2026-10-22 
 
 存储复用现有 PostgreSQL 连接池，首次创建时幂等建表，保存使用版本比较处理并发。`publicReport` 过滤主持人备注，阅读页和历史预览使用同一内容格式。
 
+## 引用完整性检查与补齐
+
+生成命令在保存报告后自动检查引用，逐条核对入库记录、正文和实际 AI 分析。缺失项进入 `ted_source_jobs`，命令退出码为2，便于自动化识别尚未补齐的报告。检查与补齐应在前端同库的服务器上执行。
+
+```sh
+# 检查并入队，不调用模型
+make ted-sources TED_SOURCE_ARGS="--issue <报告UUID>"
+
+# 每批最多补齐5条，单篇 SDK 预算上限默认1美元
+make ted-sources TED_SOURCE_ARGS="--issue <报告UUID> --repair"
+
+# 服务器直接使用已有 Python 环境
+make ted-sources TED_PYTHON=.venv/bin/python TED_SOURCE_ARGS="--issue <报告UUID> --repair"
+```
+
+`--url` 可重复指定原始引用链接来缩小处理范围。已有记录按原始 URL 查找，新增记录复用主链路的稳定 ID；未知发布日期保持为空，已收录记录的标题、链接、来源、发布时间、正文和成功分析不被覆盖。GitHub Markdown 文档优先读取原始文件，数据库仍保留引用中的 GitHub 链接。
+
+分析复用 `enrich_agent`，正文完整输入（最多60000字符，超出时保留缺口，要求分段处理），并按 `prompts/enrich.yaml` 的 JSON Schema 校验后保存。SDK 错误同时记录网关错误正文和进程错误，凭据脱敏。
+
+任务状态为 `pending` / `running` / `complete` / `failed`，保留缺失阶段、实际记录 ID、尝试次数、最近错误和下一次可重试时间。失败后至少等待15分钟，每条最多自动尝试3次；工作进程中断后30分钟可重新领取。重复检查不会清空失败或刷新处理中的租约。再次运行补齐命令时只领取到期任务。额度或鉴权失败会停止本批后续调用。
+
+政策缺口交给现有政策采集/enrich 流程，不作为普通文章重复入库。报告正文及引用编号保持不变；文章分析保存后，TED 抽屉和 Agent 引用接口按 URL 自动读取新结果。
+
 ## 数据口径
 
 覆盖日期为北京时间自然日，优先按原始发布时间选材，缺失时用首次收录时间并注明。截止时间与统计固定在快照中，候选数量不冒充全区间收录数量。

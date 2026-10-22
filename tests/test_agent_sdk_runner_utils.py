@@ -684,3 +684,26 @@ class TestConsumeQueryContract:
         assert tool_results[0]["tool"] == "StructuredOutput"
         assert tool_results[0]["is_error"] is True
         assert "must be number" in tool_results[0]["content"]
+
+
+    @pytest.mark.asyncio
+    async def test_preserves_gateway_error_when_sdk_exits_after_result(self, _patch_sdk, monkeypatch):
+        from claude_agent_sdk import query
+        from rss2cubox.agent_sdk_runner import run_json_agent
+        monkeypatch.setenv("ANTHROPIC_AUTH_TOKEN", "test-private-token-123")
+        failure = self._error_msg("success")
+        failure.result = "API Error: 403 用户额度不足; token=test-private-token-123"
+        async def stream(**kwargs):
+            yield failure
+            raise RuntimeError("Command failed with exit code 1")
+        query.side_effect = stream
+        events = []
+        with pytest.raises(RuntimeError) as error:
+            await run_json_agent(prompt="test", system_prompt="s", schema={"type": "object"},
+                                 sdk_log=lambda event, **fields: events.append({"event": event, **fields}))
+        assert "用户额度不足" in str(error.value)
+        assert "exit code 1" in str(error.value)
+        assert "test-private-token-123" not in str(error.value)
+        result_event = next(event for event in events if event["event"] == "agent_sdk_result")
+        assert "用户额度不足" in result_event["error_detail"]
+        assert "test-private-token-123" not in result_event["error_detail"]

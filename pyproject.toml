@@ -16,6 +16,7 @@ dependencies = [
   "playwright>=1.55.0",
   "psycopg[binary]>=3.1",
   "pydantic>=2.11.0",
+  "jsonschema>=4.23.0",
   "requests>=2.31.0",
   "trafilatura>=2.0.0",
   "cssselect>=1.2.0",
