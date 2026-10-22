@@ -2,7 +2,7 @@
 # 生效日期、适用主体、义务强度。防幻觉是首要目标：source_quote 必须是原文逐字引句。
 # 迁移自 src/rss2cubox/policy/enrich_agent.py。
 
-version: 3
+version: 4
 description: 政策文件逐篇深度结构化抽取，供 AI/智能体方向合规与趋势研判
 
 system_prompt: |-
@@ -43,7 +43,7 @@ system_prompt: |-
 user_instructions:
   - 严格依据上面的 title 和 full_text 抽取，不得凭常识补充。
   - has_full_text=false 时 key_provisions 给空数组、confidence 不高于 2。
-  - source_quote 必须是材料里的逐字原文。
+  - source_quote 必须是材料里的逐字原文。source_quote_options 非空时，从中选择最能支撑摘要的一项原样返回；不得改写、拼接、省略或替换标点。
   - 无法确定的字段填 null 或空数组。
 
 # enum 值与 .py 里的 INSTRUMENT_TYPES / STAGES / OBLIGATION_LEVELS 常量保持一致

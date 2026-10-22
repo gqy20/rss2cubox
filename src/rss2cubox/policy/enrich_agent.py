@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
+from copy import deepcopy
 from functools import partial
 from typing import Any
 
@@ -82,6 +84,23 @@ SYSTEM_PROMPT = _PROMPT.system_prompt
 POLICY_ENRICH_SCHEMA: dict[str, Any] = _PROMPT.output_schema
 
 
+def _resource_quote_options(doc: dict[str, Any], full_text: str | None) -> list[str]:
+    from rss2cubox.policy.data_channels import RESOURCE_KINDS
+
+    if doc.get("content_kind") not in RESOURCE_KINDS:
+        return []
+    max_chars = param("policy_enrich", "max_text_chars", 12000, env_var="POLICY_ENRICH_MAX_TEXT_CHARS")
+    body = (full_text or "").strip()[:max_chars]
+    options = []
+    for match in re.finditer(r"[^\n。！？；]+[。！？；]?", body):
+        quote = match.group(0).strip()[:120]
+        if len(quote) >= 4 and quote not in options:
+            options.append(quote)
+        if len(options) >= 24:
+            break
+    return options
+
+
 def _build_prompt(doc: dict[str, Any], full_text: str | None) -> str:
     body = (full_text or "").strip()
     max_chars = param("policy_enrich", "max_text_chars", 12000, env_var="POLICY_ENRICH_MAX_TEXT_CHARS")
@@ -98,6 +117,7 @@ def _build_prompt(doc: dict[str, Any], full_text: str | None) -> str:
             "site_name": doc.get("site_name", ""),
             "published_at": str(doc.get("published_at") or ""),
             "content_kind": doc.get("content_kind"),
+            "source_quote_options": _resource_quote_options(doc, full_text),
             "has_full_text": bool(body),
             "text_truncated": truncated,
             "full_text": body,
@@ -173,6 +193,11 @@ async def _enrich_one(
     full_text: str | None,
     log_event: Any | None = None,
 ) -> tuple[dict[str, Any] | None, str]:
+    schema = POLICY_ENRICH_SCHEMA
+    quote_options = _resource_quote_options(doc, full_text)
+    if quote_options:
+        schema = deepcopy(POLICY_ENRICH_SCHEMA)
+        schema["properties"]["source_quote"]["enum"] = quote_options
     sdk_logger = make_sdk_logger(
         "policy_enrich", log_event=log_event, doc_id=doc.get("id", ""), url=doc.get("url", ""),
         prompt_version=_PROMPT.version,
@@ -183,7 +208,7 @@ async def _enrich_one(
                 run_json_agent,
                 prompt=_build_prompt(doc, full_text),
                 system_prompt=SYSTEM_PROMPT,
-                schema=POLICY_ENRICH_SCHEMA,
+                schema=schema,
                 allowed_tools=[],
                 mcp_servers=None,
                 max_turns=param("policy_enrich", "max_turns", 6),

@@ -179,3 +179,20 @@ def test_no_fulltext_fetch_still_analyzes_saved_snapshot():
         enrich_agent.enrich_policy_documents([
             {"id": "one", "full_text": "公开目录实际内容"}], fetch_full_text_enabled=False)
     assert enrich.call_args.args[1] == {"one": "公开目录实际内容"}
+
+
+@pytest.mark.asyncio
+async def test_resource_quotes_constrained_to_actual_snapshot_without_mutating_global_schema():
+    from unittest.mock import AsyncMock
+    from rss2cubox.policy import enrich_agent
+
+    body = "骨密度相关数据\n需求说明：依托科研项目从事人工智能应用研究。数据用于模型评测。"
+    doc = {"id": "one", "content_kind": "用数需求"}
+    options = enrich_agent._resource_quote_options(doc, body)
+    assert options and all(q in body and 4 <= len(q) <= 120 for q in options)
+    with patch.object(enrich_agent, "run_with_fallback", AsyncMock(return_value={})) as run:
+        await enrich_agent._enrich_one(doc, body)
+    schema = run.call_args.args[0].keywords["schema"]
+    assert schema["properties"]["source_quote"]["enum"] == options
+    assert "enum" not in enrich_agent.POLICY_ENRICH_SCHEMA["properties"]["source_quote"]
+    assert enrich_agent._resource_quote_options({"content_kind": "政策文件"}, body) == []
