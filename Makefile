@@ -176,7 +176,7 @@ web-deploy: ## 同步代码到服务器并重建重启前端（rsync + pnpm buil
 	  --exclude .pytest_cache --exclude .rss2cubox-prediction-loop \
 	  --exclude logs --exclude .tashan --exclude '.rss2cubox-*.lock' --exclude .git/config \
 	  --exclude .playwright-cli --exclude playwright-report --exclude test-results \
-	  --exclude .env --exclude .env.example --exclude 'web/.env*' \
+	  --include .env.example --exclude '.env*' --exclude 'web/.env*' \
 	  --filter 'P .env*' --filter 'P web/.env*' --filter 'P logs/' \
 	  $(DEPLOY_RSYNC_ARGS) \
 	  ./ $(DEPLOY_HOST):$(DEPLOY_DIR)/

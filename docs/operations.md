@@ -855,7 +855,7 @@ cluster 产出新结果会级联触发 generate（删 marker 使其立即 due）
 
 统一使用仓库根目录的 `make web-deploy`：rsync 同步代码 → uv/pnpm 安装依赖 → 生产构建 → systemd 重启 → HTTP 验证。发布前提交并推送本次改动，核对本地、服务器的未提交文件；不把单独手写的传输和重启命令作为另一套发布入口。
 
-同步保留环境配置、日志、虚拟环境、依赖、构建目录、运行锁和服务器 Git 配置。服务器存在与本次任务无关的未提交文件时，用 `DEPLOY_RSYNC_ARGS` 明确排除，并在发布记录中保留这些参数，例如：
+同步保留真实环境配置、日志、虚拟环境、依赖、构建目录、运行锁和服务器 Git 配置；公开的 `.env.example` 样例随代码同步。服务器存在与本次任务无关的未提交文件时，用 `DEPLOY_RSYNC_ARGS` 明确排除，并在发布记录中保留这些参数，例如：
 
 ```sh
 make web-deploy DEPLOY_RSYNC_ARGS='--exclude=scripts/run_policy_sync.sh --exclude=scripts/check_data_health.py --exclude=web/next-env.d.ts'
