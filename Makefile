@@ -181,7 +181,9 @@ web-deploy: ## 同步代码到服务器并重建重启前端（rsync + pnpm buil
 	  $(DEPLOY_RSYNC_ARGS) \
 	  ./ $(DEPLOY_HOST):$(DEPLOY_DIR)/
 	@ssh $(DEPLOY_HOST) 'set -e; cd $(DEPLOY_DIR); export PATH="$$HOME/.local/bin:$$PATH" LC_ALL=C; \
-	  uv sync --no-progress; cd web; \
+	  uv sync --no-progress; \
+	  uv run python -c "from dotenv import load_dotenv; load_dotenv(); from rss2cubox.policy.store import ensure_policy_schema; import sys; sys.exit(0 if ensure_policy_schema() else 1)"; \
+	  cd web; \
 	  pnpm install --registry=https://registry.npmmirror.com --silent; \
 	  pnpm build; \
 	  systemctl stop rss2cubox-web 2>/dev/null || true; \

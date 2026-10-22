@@ -1,6 +1,10 @@
 import type { Row, GlobalInsights } from '../app/types'
 
 export type Policy = {
+  first_seen_at?: string | null
+  content_kind?: string | null
+  source_updated_at?: string | null
+  source_metadata?: Record<string, string> | null
   search_field?: string
   search_excerpt?: string
   id: string

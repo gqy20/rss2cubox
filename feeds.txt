@@ -517,3 +517,5 @@
 2	https://aihot.news/feed/all.xml # AIHOT
 
 2	https://home.gqy20.top/feed/rss/all.xml # Trail Feed
+
+# 数据平台目录/需求/授权披露走政策库 API 适配器，见 policy_sources.toml 中 ndsms_* / sjd_*，不作为 RSS。

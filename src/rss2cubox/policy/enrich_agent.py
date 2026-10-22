@@ -42,6 +42,9 @@ INSTRUMENT_TYPES = [
     "通知公告",
     "司法解释",
     "其他",
+    "数据集目录",
+    "用数需求",
+    "授权运营披露",
 ]
 
 STAGES = ["征求意见", "已发布", "已生效", "已修订", "已废止", "不明"]
@@ -94,6 +97,7 @@ def _build_prompt(doc: dict[str, Any], full_text: str | None) -> str:
             "level": doc.get("level", ""),
             "site_name": doc.get("site_name", ""),
             "published_at": str(doc.get("published_at") or ""),
+            "content_kind": doc.get("content_kind"),
             "has_full_text": bool(body),
             "text_truncated": truncated,
             "full_text": body,
@@ -208,6 +212,15 @@ async def _enrich_one(
         return None, "missing_source_quote"
 
     enriched = _coerce_enriched({**payload, "_has_full_text": "1" if (full_text or "").strip() else ""})
+    from rss2cubox.policy.data_channels import RESOURCE_KINDS
+
+    if doc.get("content_kind") in RESOURCE_KINDS:
+        # 非规范性材料不能因模型输出变成法规/强制义务。
+        enriched.update(instrument_type=doc["content_kind"], obligation_level="不适用", stage="已发布",
+                        document_number=None, effective_date=None, comment_deadline=None,
+                        issuing_authority=None)
+        if str(enriched.get("source_quote") or "") not in (full_text or ""):
+            return None, "source_quote_not_in_snapshot"
     # Jev 交叉校验主线归属：分歧只记录进 enrich_meta（观察期不改数据），
     # 未配置/失败完全无感。同步 requests 放线程里跑，避免阻塞 anyio 事件循环。
     await anyio.to_thread.run_sync(
@@ -396,7 +409,8 @@ def enrich_policy_documents(
     workers = max_workers or param("policy_enrich", "max_workers", 4, env_var="POLICY_ENRICH_MAX_WORKERS", minimum=1)
     ft_workers = fulltext_workers or param("policy_enrich", "fulltext_workers", 6, env_var="POLICY_FULLTEXT_MAX_WORKERS", minimum=1)
 
-    full_texts: dict[str, str] = {}
+    full_texts: dict[str, str] = {str(d["id"]): str(d["full_text"]).strip()
+                                  for d in docs if d.get("id") and str(d.get("full_text") or "").strip()}
     if fetch_full_text_enabled:
         full_texts = _fetch_full_texts(docs, max_workers=ft_workers, log_event=log_event)
 

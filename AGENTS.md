@@ -73,7 +73,7 @@ ssh HR2 'cd /root/project/rss2cubox/web && pnpm build && sudo systemctl restart 
 ## 4. 关键注意
 
 - **`feeds.txt` werss 段**：单账号订阅 `/feed/MP_WXS_<id>.rss`，单行格式 `2\t/feed/<id>.rss # <name>`。name 字段直接进 articles.source_feed_name → 前端显示；超 32 字符的 name 写库后会被替换为短名（如 `AIHOT 全量动态（...）` → `AIHOT`）。
-- **`policy_sources.toml`**：每条目声明 `key/name/level/region/list_url`，以及 tier（`rss`/`requests`/`playwright`）、选择器等。加源时同步改 toml 与 feeds.txt 注释（不要删原有 note）。
+- **`policy_sources.toml`**：每条目声明 `key/name/level/region/list_url`，以及 tier（`rss`/`requests`/`playwright`/`api`）、选择器等。加源时同步改 toml 与 feeds.txt 注释（不要删原有 note）。
 - **HR2 不跑 `Jev`**：出口 IP 被 Typesafe 区域封锁 451（"not available in your region"），空转大量调用。**HR2 `.env` 的 `JEV_API_KEY` 必须注释掉**；本机保留。本机测过可用。
 - **rsync 必须 `--delete`**：HR2 上有 10-19 前的旧文件，不删会双份混在一起。`--filter='P logs/'` 保留 HR2 的运行日志，幂等。
 - **依赖变更时要装包**：`pyproject.toml` / `web/package.json` 改了必须 `uv sync` / `pnpm install`。
@@ -103,8 +103,8 @@ ssh HR2 'cd /root/project/rss2cubox && make policy-dry POLICY_ARGS="--only <key>
 # b. 三种源处理路径
 #  RSS：加 feeds.txt
 #  政策 HTML：加 policy_sources.toml（tier=playwright 时用反无头请求头）
-#  API：写 policy/<source>_fetcher.py（model="api" 自动跳过 RSS），加 toml 条目
-#       启 enabled=false（标记非 engine 抓取），key 进 .env
+#  API：公开数据平台用 tier="api" + 固定 adapter，enabled=true，自动进入 policy_runner/cron/监控。
+#       Congress 沿用独立 fetcher；不要以为任意 model="api" 或 disabled 配置会自动被调度。
 
 # c. 启用 + 入库
 ssh HR2 "cd /root/project/rss2cubox && make policy --only <key> --enrich" 2>&1 | grep run_summary
@@ -172,3 +172,12 @@ ssh HR2 'curl -s -o /dev/null -w "%{http_code}\n" http://localhost:3424/<route>'
 - 外部传入的 URL 使用 `web/lib/public-source-fetch.ts`：校验规范化 URL、全部 DNS 答案和每个跳转，再把连接固定到已验证 IP。只检查域名字符串或“先解析检查、随后普通 fetch 再解析”仍有绕过风险。
 - 计时必须覆盖响应体读取，大小限制必须在流式读取时执行，不能在 `res.text()` 完整下载后再 slice。抓取不转发调用者的 Cookie/Authorization。
 - 用模拟 DNS/HTTP 测试内网、云元数据地址、编码 IP、重绑定与跳转阻断，不通过生产漏洞发起真实内网探测。部署仍走 `make web-deploy`，更新 llms.txt 中对应的鉴权与调用约定。
+
+
+## 13. 公开数据平台进入政策库
+
+- `policy/data_channels.py` 只读 NDSMS/SJD 固定公开接口；不要绕过登录/验证码，不采数据文件与联系人表。业务 success/schema 校验失败进入源监控，不能当作无更新。
+- 目录/需求/授权运营披露使用明确的非规范性类型，`triage_is_policy=false` 仍可按相关度进入分析。预筛使用快照上下文，短但有效的资源标题不被 8 字门槛挡掉。
+- 新 API 记录按 site_key + 原站ID稳定去重；SJD SPA 没有独立详情链接，多条记录保留真实同一入口 URL，不能编造深链。普通源保留 URL 部分唯一索引。
+- 公开快照/实质字段变化清空旧分析等待重算；浏览/下载数、抓取时间与单纯 updatedTime 变化不重跑分析。未知发布日期保持 null，年度披露不能伪造为某年1月1日发布。
+- `--only` 的多源范围同时约束抓取、预筛、深度分析，不能意外处理全库积压。新列由 `make web-deploy` 在构建前幂等迁移，部署仍用统一入口。

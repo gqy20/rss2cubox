@@ -2,7 +2,7 @@
 # 生效日期、适用主体、义务强度。防幻觉是首要目标：source_quote 必须是原文逐字引句。
 # 迁移自 src/rss2cubox/policy/enrich_agent.py。
 
-version: 2
+version: 3
 description: 政策文件逐篇深度结构化抽取，供 AI/智能体方向合规与趋势研判
 
 system_prompt: |-
@@ -13,6 +13,8 @@ system_prompt: |-
   2. 任何字段无法从材料确定时，字符串填 null、数组填空数组，绝不允许编造或猜测。
   3. source_quote 必须是从材料里逐字复制的原文片段（≤120 字），不能改写、不能拼接、不能翻译。这是人工核查你是否在编造的唯一依据。若只有标题没有正文，就引标题原文。
   4. summary 要回答「这份文件要求谁、做什么、什么时候」，不要复述标题，不要写「本文强调了…的重要性」这类空话。
+
+  【公开数据资源材料】content_kind 为「数据集目录」「用数需求」「授权运营披露」时，保留同名 instrument_type，obligation_level=不适用。摘要说明资源内容/需求场景/授权范围与条件；不能当成新出台的法规，不能把目录可见当成可下载、可商用或训练授权。供给方与运营方不是立法机关，issuing_authority 填 null。缺失的许可证、质量、开放范围均不推断。披露年度不是发布日期，授权期限不是法规生效日。原站创建时间不是发布日期。没有提供枚举释义的代码按原值保留，不得根据编号推断其含义。
 
   【instrument_type 判定】中国文件按法律位阶：法律(全国人大及其常委会) > 行政法规(国务院) > 部门规章(部委令) / 地方性法规(地方人大) > 地方政府规章(地方政府令) > 规范性文件 > 指导意见。标题含「征求意见稿」一律判为「征求意见稿」。TC260 的「实践指南」「基本要求」判「技术标准」。「十五五规划」判「规划」。「关于…的通知」不含实体规则判「通知公告」。
   美国文件按语义映射：Act / Public Law（国会通过的法律）→「法律」；Executive Order / 总统备忘录 →「部门规章」；Federal Register 上的 Final Rule（机构最终规则）→「规范性文件」；Proposed Rule / Notice of Proposed Rulemaking →「征求意见稿」；NIST AI RMF 类框架指南 →「指导意见」；总统公告 →「通知公告」。
@@ -50,7 +52,7 @@ output_schema:
   type: object
   properties:
     issuing_authority:
-      type: string
+      type: [string, "null"]
       description: "发布机构全称，如「国务院办公厅」「北京市人民政府」「全国网络安全标准化技术委员会」"
     document_number:
       type: [string, "null"]
@@ -60,7 +62,7 @@ output_schema:
       description: "管辖范围，如「全国」「北京市」「广东省深圳市」"
     instrument_type:
       type: string
-      enum: [法律, 行政法规, 部门规章, 地方性法规, 地方政府规章, 规范性文件, 指导意见, 征求意见稿, 技术标准, 规划, 通知公告, 司法解释, 其他]
+      enum: [法律, 行政法规, 部门规章, 地方性法规, 地方政府规章, 规范性文件, 指导意见, 征求意见稿, 技术标准, 规划, 通知公告, 司法解释, 其他, 数据集目录, 用数需求, 授权运营披露]
     stage:
       type: string
       enum: [征求意见, 已发布, 已生效, 已修订, 已废止, 不明]

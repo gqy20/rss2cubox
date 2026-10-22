@@ -46,6 +46,8 @@ def _build_prompt(batch: list[dict[str, Any]]) -> str:
             "region": str(doc.get("region", "")),
             "level": str(doc.get("level", "")),
             "site_name": str(doc.get("site_name", ""))[:40],
+            "content_kind": doc.get("content_kind"),
+            "source_context": str(doc.get("source_context") or "")[:1200],
         }
         for doc in batch
     ]
@@ -63,7 +65,10 @@ async def _triage_batch(
     batch: list[dict[str, Any]],
     log_event: Any | None = None,
 ) -> tuple[list[dict[str, Any]], str]:
+    from rss2cubox.policy.data_channels import RESOURCE_KINDS
+
     valid_ids = {str(doc.get("id", "")) for doc in batch}
+    resource_ids = {str(doc.get("id", "")) for doc in batch if doc.get("content_kind") in RESOURCE_KINDS}
     sdk_logger = make_sdk_logger("policy_triage", log_event=log_event, batch_size=len(batch), prompt_version=_PROMPT.version)
 
     def _fail(reason: str) -> tuple[list[dict[str, Any]], str]:
@@ -126,7 +131,7 @@ async def _triage_batch(
         out.append(
             {
                 "id": doc_id,
-                "is_policy": bool(row.get("is_policy")),
+                "is_policy": False if doc_id in resource_ids else bool(row.get("is_policy")),
                 "ai_relevance": int(relevance) if isinstance(relevance, int) and 1 <= relevance <= 5 else 1,
                 "reason": str(row.get("reason", ""))[:120],
             }

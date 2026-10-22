@@ -8,6 +8,7 @@ policy_source_state 是失效监测的核心：爬虫最危险的不是抓不到
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -75,6 +76,17 @@ ALTER TABLE policy_documents
     ADD COLUMN IF NOT EXISTS triage_is_policy  BOOLEAN;
 
 CREATE INDEX IF NOT EXISTS idx_policy_docs_triage ON policy_documents(triage_relevance DESC);
+
+ALTER TABLE policy_documents
+    ADD COLUMN IF NOT EXISTS content_kind VARCHAR(40),
+    ADD COLUMN IF NOT EXISTS content_hash VARCHAR(64),
+    ADD COLUMN IF NOT EXISTS source_metadata JSONB DEFAULT '{}',
+    ADD COLUMN IF NOT EXISTS source_updated_at TIMESTAMPTZ;
+
+-- SPA 的多个公开记录共用同一 URL，用源记录 ID 去重，不能伪造详情链接。
+ALTER TABLE policy_documents DROP CONSTRAINT IF EXISTS policy_documents_url_unique;
+CREATE UNIQUE INDEX IF NOT EXISTS policy_documents_standard_url_unique
+    ON policy_documents(url) WHERE content_kind IS NULL;
 """
 
 POLICY_SOURCE_STATE_SCHEMA = """
@@ -123,8 +135,7 @@ def save_policy_documents(
     region: str = "",
     db_url: str | None = None,
 ) -> dict[str, int]:
-    """幂等写入。已存在的记录只更新 last_seen_at / seen_count / 标题，
-    不覆盖 enrich 阶段回填的字段。
+    """幂等写入。普通列表保留分析；API 正文/语义字段变化时清空旧分析待重算。
     """
     stats = {"inserted": 0, "updated": 0, "skipped": 0}
     db_url = _get_db_url(db_url)
@@ -137,16 +148,27 @@ def save_policy_documents(
 
     sql = """
         INSERT INTO policy_documents
-            (id, site_key, site_name, level, region, title, url, published_at, raw_date)
+            (id, site_key, site_name, level, region, title, url, published_at, raw_date,
+             full_text, content_kind, content_hash, source_metadata, source_updated_at,
+             instrument_type)
         VALUES
-            (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+            (%s, %s, %s, %s, %s, %s, %s, %s, %s,
+             %s, %s, %s, %s::jsonb, %s, %s)
         ON CONFLICT (id) DO UPDATE SET
             last_seen_at = NOW(),
             seen_count   = policy_documents.seen_count + 1,
             title        = EXCLUDED.title,
             site_name    = EXCLUDED.site_name,
             level        = EXCLUDED.level,
-            region       = EXCLUDED.region
+            region       = EXCLUDED.region,
+            full_text = CASE WHEN EXCLUDED.content_hash IS NOT NULL
+                THEN EXCLUDED.full_text ELSE policy_documents.full_text END,
+            content_kind = COALESCE(EXCLUDED.content_kind, policy_documents.content_kind),
+            content_hash = COALESCE(EXCLUDED.content_hash, policy_documents.content_hash),
+            source_metadata = CASE WHEN EXCLUDED.content_hash IS NOT NULL
+                THEN EXCLUDED.source_metadata ELSE policy_documents.source_metadata END,
+            source_updated_at = COALESCE(EXCLUDED.source_updated_at, policy_documents.source_updated_at),
+            published_at = COALESCE(EXCLUDED.published_at, policy_documents.published_at)
     """
     try:
         with psycopg.connect(db_url) as conn:
@@ -163,6 +185,24 @@ def save_policy_documents(
                 existing.update(row[0] for row in cur.fetchall())
 
             for item in items:
+                # API 快照实质变化才重新分析；普通 HTML 源保留原来的 enrich 行为。
+                content_hash = None
+                if item.full_text:
+                    content_hash = hashlib.sha256(json.dumps(
+                        [item.title, item.content_kind, item.full_text, item.source_metadata],
+                        ensure_ascii=False, sort_keys=True,
+                    ).encode()).hexdigest()
+                    cur.execute("""
+                        UPDATE policy_documents SET
+                            triaged_at=NULL, triage_relevance=NULL, triage_is_policy=NULL,
+                            enriched_at=NULL, summary=NULL, source_quote=NULL,
+                            key_provisions='[]', affected_parties='[]', enrich_meta='{}',
+                            issuing_authority=NULL, document_number=NULL, jurisdiction=NULL,
+                            stage=NULL, effective_date=NULL, comment_deadline=NULL,
+                            obligation_level=NULL, ai_relevance=NULL, ai_relevance_reason=NULL,
+                            confidence=NULL, policy_lineage=NULL, instrument_type=%s
+                        WHERE id=%s AND content_hash IS DISTINCT FROM %s
+                    """, (item.content_kind or None, item.doc_id, content_hash))
                 cur.execute(
                     sql,
                     (
@@ -175,6 +215,12 @@ def save_policy_documents(
                         item.url,
                         item.published_at,
                         item.raw_date,
+                        item.full_text or None,
+                        item.content_kind or None,
+                        content_hash,
+                        json.dumps(item.source_metadata, ensure_ascii=False),
+                        item.source_updated_at,
+                        item.content_kind or None,
                     ),
                 )
                 if item.doc_id in existing:
@@ -378,7 +424,7 @@ _ENRICH_COLUMNS: dict[str, str] = {
 def get_documents_for_enrichment(
     *,
     limit: int = 50,
-    site_key: str | None = None,
+    site_key: str | set[str] | None = None,
     level: str | None = None,
     min_title_length: int = 8,
     min_triage_relevance: int | None = None,
@@ -392,7 +438,7 @@ def get_documents_for_enrichment(
     db_url = _get_db_url(db_url)
     if not db_url:
         return []
-    clauses = ["enriched_at IS NULL", "CHAR_LENGTH(title) >= %s"]
+    clauses = ["enriched_at IS NULL", "(CHAR_LENGTH(title) >= %s OR content_kind IS NOT NULL)"]
     params: list[Any] = [max(1, int(min_title_length))]
     if min_triage_relevance is not None:
         # 站点白名单绕过 AI 相关度门槛：社会经济背景数据（统计局 PMI/CPI 等）
@@ -408,17 +454,17 @@ def get_documents_for_enrichment(
             clauses.append("triage_relevance IS NOT NULL AND triage_relevance >= %s")
             params.append(int(min_triage_relevance))
     if site_key:
-        clauses.append("site_key = %s")
-        params.append(site_key)
+        clauses.append("site_key = ANY(%s)" if isinstance(site_key, set) else "site_key = %s")
+        params.append(sorted(site_key) if isinstance(site_key, set) else site_key)
     if level:
         clauses.append("level = %s")
         params.append(level)
     params.append(max(1, int(limit)))
     sql = f"""
-        SELECT id, site_key, site_name, level, region, title, url, published_at, full_text
+        SELECT id, site_key, site_name, level, region, title, url, published_at, full_text, content_kind, source_metadata
         FROM policy_documents
         WHERE {' AND '.join(clauses)}
-        ORDER BY COALESCE(published_at, first_seen_at) DESC NULLS LAST, id
+        ORDER BY COALESCE(published_at, source_updated_at, first_seen_at) DESC NULLS LAST, id
         LIMIT %s
     """
     try:
@@ -503,7 +549,7 @@ def count_policy_documents(*, db_url: str | None = None) -> dict[str, int]:
 def get_untriaged_documents(
     *,
     limit: int = 200,
-    site_key: str | None = None,
+    site_key: str | set[str] | None = None,
     level: str | None = None,
     min_title_length: int = 8,
     db_url: str | None = None,
@@ -512,20 +558,20 @@ def get_untriaged_documents(
     db_url = _get_db_url(db_url)
     if not db_url:
         return []
-    clauses = ["triaged_at IS NULL", "CHAR_LENGTH(title) >= %s"]
+    clauses = ["triaged_at IS NULL", "(CHAR_LENGTH(title) >= %s OR content_kind IS NOT NULL)"]
     params: list[Any] = [max(1, int(min_title_length))]
     if site_key:
-        clauses.append("site_key = %s")
-        params.append(site_key)
+        clauses.append("site_key = ANY(%s)" if isinstance(site_key, set) else "site_key = %s")
+        params.append(sorted(site_key) if isinstance(site_key, set) else site_key)
     if level:
         clauses.append("level = %s")
         params.append(level)
     params.append(max(1, int(limit)))
     sql = f"""
-        SELECT id, site_key, site_name, level, region, title, published_at
+        SELECT id, site_key, site_name, level, region, title, published_at, content_kind, LEFT(full_text, 1200) AS source_context
         FROM policy_documents
         WHERE {' AND '.join(clauses)}
-        ORDER BY COALESCE(published_at, first_seen_at) DESC NULLS LAST, id
+        ORDER BY COALESCE(published_at, source_updated_at, first_seen_at) DESC NULLS LAST, id
         LIMIT %s
     """
     try:

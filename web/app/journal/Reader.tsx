@@ -26,6 +26,7 @@ import Select from './Select'
 import MarkdownRenderer from '../MarkdownRenderer'
 import { ScoreIndicator } from './Numbers'
 import { ReturnLink } from './ReadingNavigation'
+import { isResourceMaterial } from '../../lib/policy-utils'
 import PolicyApplicability from './PolicyApplicability'
 import { safeReturnPath, withOrigin } from '../../lib/reading-context'
 import { useReadingPosition } from '../../hooks/useReadingPosition'
@@ -487,7 +488,11 @@ export default function Reader({
                       {policy
                         ? p.region || p.site_name || '政策文件'
                         : r.source}
-                      <span>{dateLabel(policy ? p.published_at : r.time)}</span>
+                      <span>
+                        {policy && !p.published_at && !p.source_updated_at
+                          ? `收录 ${dateLabel(p.first_seen_at)}`
+                          : dateLabel(policy ? p.published_at || p.source_updated_at : r.time)}
+                      </span>
                     </span>
                     <h3>
                       <Highlight text={item.title} query={filters.search} />
@@ -630,7 +635,7 @@ export default function Reader({
                 )}
                 <span>
                   {dateLabel(
-                    policy ? document?.published_at : article?.time,
+                    policy ? document?.published_at || document?.source_updated_at : article?.time,
                     true,
                   )}
                 </span>
@@ -698,7 +703,7 @@ export default function Reader({
                     />
                     <div className="document-section">
                       <h3>
-                        政策摘要 <span className="ai-label">AI 提炼</span>
+                        {isResourceMaterial(document) ? '材料摘要' : '政策摘要'} <span className="ai-label">AI 提炼</span>
                       </h3>
                       <p>
                         {document.summary ||
@@ -719,7 +724,7 @@ export default function Reader({
                           `/policies?${currentReaderParams}`,
                         )}
                       >
-                        阅读条款与完整解读
+                        {isResourceMaterial(document) ? '阅读来源内容与分析' : '阅读条款与完整解读'}
                         <ArrowRight size={15} />
                       </Link>
                     </div>

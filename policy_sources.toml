@@ -423,3 +423,49 @@ tier          = "playwright"
 render_wait_ms = 8000
 max_items     = 30
 note          = "新闻发布会实录（智能体互联标准化/AI 国标专题等——AI 标准主线落地口径）。2026-10-04 反检测复验后接入（此前裸配置下是壳）。li 无日期。司法部同日终审：209B 与指纹无关，IP 级 WAF 永久放弃。"
+
+# 公开数据平台：api tier 由标准 policy_runner 定时调度，状态进入政策源监控。
+# 本批只采公开目录/需求/披露元数据；原站不可达的 data.gov.cn、data.cegn.cn 暂不启用。
+[[sites]]
+key = "ndsms_datasets"
+name = "国家数据集平台·数据目录"
+level = "national"
+region = "全国"
+list_url = "https://www.ndsms.cn/dataRetrieval"
+tier = "api"
+adapter = "ndsms_datasets"
+max_items = 50
+note = "最新公开目录窗口50条；仅元数据，不代表训练/商用授权。修改 max_items 可扩大回填范围。"
+
+[[sites]]
+key = "ndsms_demands"
+name = "国家数据集平台·用数需求"
+level = "national"
+region = "全国"
+list_url = "https://www.ndsms.cn/requirementHall"
+tier = "api"
+adapter = "ndsms_demands"
+max_items = 50
+note = "公开需求分页列表；过滤联系方式，不采登录后内容。"
+
+[[sites]]
+key = "sjd_policies"
+name = "公共数据登记平台·政策通知"
+level = "national"
+region = "全国"
+list_url = "https://sjdj.nda.gov.cn/userHome"
+tier = "api"
+adapter = "sjd_policies"
+max_items = 100
+note = "国家/地方政策及通知；通过浏览器读取匿名公开接口；保存正文和源记录ID，共用原站入口。"
+
+[[sites]]
+key = "sjd_disclosures"
+name = "公共数据登记平台·授权披露"
+level = "national"
+region = "全国"
+list_url = "https://sjdj.nda.gov.cn/userHome"
+tier = "api"
+adapter = "sjd_disclosures"
+max_items = 300
+note = "实施机构全列表（最多300家），展开各家全部披露行；年度不冒充发布日期；按机构ID追踪变化。"

@@ -1,7 +1,7 @@
 """政策信源配置加载。
 
 配置用 TOML（stdlib tomllib，只读场景够用），避免为配置文件引入 pyyaml。
-每个 [[sites]] 是一个站点适配器，加站点只改配置、不改代码。
+HTML/RSS 站点由配置驱动；公开 API 另用固定适配器。
 """
 from __future__ import annotations
 
@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Any
 
 LEVELS = frozenset({"national", "province", "city"})
-TIERS = frozenset({"requests", "playwright", "rss"})
+TIERS = frozenset({"requests", "playwright", "rss", "api"})
+API_ADAPTERS = frozenset({"ndsms_datasets", "ndsms_demands", "sjd_policies", "sjd_disclosures"})
 
 
 @dataclass(frozen=True)
@@ -30,13 +31,14 @@ class SiteSpec:
     url_attr: str = "href"
     date_selector: str = ""         # 留空则从 item 全文里正则提取
     base_url: str = ""              # urljoin 基准，留空则用 list_url
-    tier: str = "requests"          # requests | playwright | rss
+    tier: str = "requests"          # requests | playwright | rss | api
     render_wait_ms: int = 1500      # playwright: networkidle 后的额外等待（XHR 注入列表的重站调大）
     enabled: bool = True
     max_items: int = 200
     min_title_length: int = 8       # 过滤导航/装饰性短链接
     title_exclude: tuple[str, ...] = ()   # 标题命中任一子串即丢弃
     note: str = ""
+    adapter: str = ""              # api: 固定的公开接口适配器，不接受任意请求地址
 
     @property
     def resolve_base(self) -> str:
@@ -45,7 +47,7 @@ class SiteSpec:
 
 _REQUIRED = ("key", "name", "level", "region", "list_url")
 # item_selector 只对 HTML 列表页有意义，rss tier 不需要
-_REQUIRED_BY_TIER = {"requests": ("item_selector",), "playwright": ("item_selector",), "rss": ()}
+_REQUIRED_BY_TIER = {"requests": ("item_selector",), "playwright": ("item_selector",), "rss": (), "api": ("adapter",)}
 
 
 def _coerce_bool(value: Any, default: bool) -> bool:
@@ -88,6 +90,8 @@ def parse_site(raw: dict[str, Any]) -> SiteSpec:
     tier = tier_raw
     if tier not in TIERS:
         raise ValueError(f"站点 {raw['key']} 的 tier={tier!r} 非法，应为 {sorted(TIERS)}")
+    if tier == "api" and raw.get("adapter") not in API_ADAPTERS:
+        raise ValueError(f"未知的公开接口适配器: {raw.get('adapter')}")
 
     return SiteSpec(
         key=str(raw["key"]).strip(),
@@ -109,6 +113,7 @@ def parse_site(raw: dict[str, Any]) -> SiteSpec:
         min_title_length=_coerce_int(raw.get("min_title_length", 8), 8),
         title_exclude=_coerce_tuple(raw.get("title_exclude")),
         note=str(raw.get("note", "")).strip(),
+        adapter=str(raw.get("adapter", "")).strip(),
     )
 
 

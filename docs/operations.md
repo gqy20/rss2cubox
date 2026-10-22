@@ -950,3 +950,27 @@ uv run python scripts/audit_ic_gqy_quality.py
 | 政策 enrich 成功但没入库 | 看有没有 `policy_enrich_save_failed` 事件。常见原因是 DATE 列收到中文日期（已在 `_coerce_enriched` 里归一化） |
 | 前端 3424 端口被占 | `npm run dev` 不会把 SIGINT 转发给 `next-server` 子进程。真实终端 Ctrl-C 没问题，但用 `timeout`/脚本包一层会残留。`make dev` 用 `trap 'kill 0'` 杀整个进程组，没这个问题 |
 | shell 里 export 的变量不生效 | `.env` 优先级更高，见上文 |
+
+
+## 公开数据平台采集
+
+`policy_sources.toml` 启用四个公开 API 源，统一由现有每天 07:30/19:30 政策任务调度，无需另装 cron 或密钥：
+
+| key | 内容与范围 |
+| --- | --- |
+| ndsms_datasets | 国家数据集管理服务系统最近50条公开数据目录；不下载文件 |
+| ndsms_demands | 公开用数需求，分页上限50条 |
+| sjd_policies | 国家公共数据资源登记平台国家/地方政策及通知，上限100条 |
+| sjd_disclosures | 公开实施机构（最多300家），展开每家全部披露行；空详情不入库 |
+
+原站接口总量大于上限时只采配置窗口，可调整 `max_items` 扩大回填；这是公开网页接口，不是长期稳定 API 承诺。data.gov.cn 和 data.cegn.cn 暂未接入，不以不可访问条目充数。监控页和 `/api/sources` 可查看四源状态。
+
+```bash
+make policy-dry POLICY_ARGS="--only ndsms_datasets,ndsms_demands,sjd_policies,sjd_disclosures"
+# 手工生产运行与原政策 cron 共用锁，避免重叠：
+flock -n .rss2cubox-policy.lock make policy POLICY_ARGS="--only ndsms_datasets,ndsms_demands,sjd_policies,sjd_disclosures --enrich --enrich-limit 20"
+```
+
+`policy_documents` 保存正文快照、原站记录ID、来源更新时间与材料类型。目录/需求/授权披露明确不是法规，逐篇分析复用已有 triage/enrich。重复采集不重复写入记录；内容或条件改变才清空旧分析重算。创建/修改时间不冒充发布日期；目录可见不代表下载/商用/模型训练许可。SJD 多记录共用真实入口 URL，在本站详情展开快照，并按元数据提示的菜单路径在原站核验。
+
+部署仍执行 `make web-deploy`（包含构建前政策表迁移）；已有无关服务器文件按 `DEPLOY_RSYNC_ARGS` 排除保留。不要通过远程临时改代码替代本地提交。

@@ -574,11 +574,11 @@ class TestRealConfigFile:
 
     def test_tier_values_are_valid(self) -> None:
         for site in policy_config.load_sources(self.REPO_CONFIG, include_disabled=True):
-            assert site.tier in ("requests", "playwright", "rss")
+            assert site.tier in policy_config.TIERS
 
     def test_rss_tier_sites_need_no_item_selector(self) -> None:
         for site in policy_config.load_sources(self.REPO_CONFIG, include_disabled=True):
-            if site.tier == "rss":
+            if site.tier in ("rss", "api"):
                 assert site.item_selector == ""
             else:
                 assert site.item_selector, f"{site.key} 是 HTML 站点却没有 item_selector"

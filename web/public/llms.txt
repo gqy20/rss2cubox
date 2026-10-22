@@ -53,6 +53,8 @@
 | `sourceRef` | 信源过滤，`policy:<md5>`（信源编号从监控页获取） |
 | `cursor` | 分页游标 |
 
+政策库同时收录公开数据平台的补充材料，可用 `instrument_type=数据集目录`、`instrument_type=用数需求`、`instrument_type=授权运营披露` 筛选。这些不是法规，义务强度为「不适用」；目录可见不代表可下载、可商用或可用于训练。详情增加 `content_kind`、`source_metadata`（含原站记录ID）、`source_updated_at`、`first_seen_at`，`full_text` 为公开内容快照。未知发布日期为空；列表按发布日期/原站更新/收录时间排序，不把收录当作发布。登记平台的多条记录共用 `/userHome`，原站阅读路径在元数据中，按本站记录 `id` 获取详情，不按 URL 合并记录。
+
 预筛相关度 <2 的民生噪音（停水通知、月票办理等）不出现在任何模式。
 
 ### GET /api/reader/signals — 科技信号列表

@@ -362,3 +362,48 @@ class TestTriageStore:
 
     def test_empty_results_noop(self) -> None:
         assert store.save_triage_results([], db_url=_DB) == 0
+
+
+def test_api_snapshot_change_invalidates_analysis_but_timestamp_change_does_not():
+    from dataclasses import replace
+
+    item = _item("snapshot", 1, title="骨密度数据")
+    item.content_kind = "用数需求"
+    item.full_text = "骨密度数据，用于人工智能应用研究。"
+    item.source_metadata = {"原站记录ID": "one", "需求说明": "人工智能应用研究"}
+    assert store.save_policy_documents([item], db_url=_DB)["inserted"] == 1
+    store.save_triage_results([{"id": item.doc_id, "is_policy": False, "ai_relevance": 5}], db_url=_DB)
+    assert store.save_policy_enrichment(item.doc_id, {"summary": "已经分析", "instrument_type": "用数需求"}, db_url=_DB)
+
+    refreshed = replace(item, source_updated_at=datetime(2026, 10, 22, tzinfo=timezone.utc))
+    store.save_policy_documents([refreshed], db_url=_DB)
+    with psycopg.connect(_DB) as conn:
+        row = conn.execute("SELECT summary,enriched_at,triaged_at FROM policy_documents WHERE id=%s", (item.doc_id,)).fetchone()
+    assert row[0] == "已经分析" and row[1] and row[2]
+
+    changed = replace(refreshed, full_text="骨密度数据，仅限评测，禁止模型训练。")
+    store.save_policy_documents([changed], db_url=_DB)
+    with psycopg.connect(_DB) as conn:
+        row = conn.execute("SELECT summary,enriched_at,triaged_at,full_text,source_updated_at FROM policy_documents WHERE id=%s", (item.doc_id,)).fetchone()
+    assert row[:3] == (None, None, None)
+    assert row[3] == changed.full_text and row[4] == refreshed.source_updated_at
+    candidates = store.get_untriaged_documents(site_key={item.site_key}, db_url=_DB)
+    assert [d["id"] for d in candidates] == [item.doc_id]  # 短标题仍进入预筛
+    assert candidates[0]["source_context"] == changed.full_text
+
+
+def test_spa_records_share_real_origin_url_and_remain_distinct():
+    first = _item("spa", 1)
+    first.content_kind, first.full_text = "授权运营披露", "某市公共数据授权运营内容"
+    second = _item("spa", 2)
+    second.url = first.url
+    second.content_kind, second.full_text = "授权运营披露", "另一个实施机构的公开披露内容"
+    stats = store.save_policy_documents([first, second], db_url=_DB)
+    assert stats == {"inserted": 2, "updated": 0, "skipped": 0}
+    rows = store.get_policy_documents(site_key=first.site_key, db_url=_DB)
+    assert len(rows) == 2
+    store.save_triage_results([{"id": first.doc_id, "is_policy": False, "ai_relevance": 3},
+                               {"id": second.doc_id, "is_policy": False, "ai_relevance": 3}], db_url=_DB)
+    docs = store.get_documents_for_enrichment(site_key={first.site_key, "unrelated"}, min_triage_relevance=2, db_url=_DB)
+    assert {d["id"] for d in docs} == {first.doc_id, second.doc_id}
+    assert all(d["content_kind"] == "授权运营披露" for d in docs)

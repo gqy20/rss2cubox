@@ -51,6 +51,10 @@ class PolicyItem:
     published_at: datetime | None = None
     raw_date: str = ""
     doc_id: str = ""
+    full_text: str = ""
+    content_kind: str = ""
+    source_metadata: dict[str, Any] = field(default_factory=dict)
+    source_updated_at: datetime | None = None
 
     def __post_init__(self) -> None:
         if not self.doc_id and self.url:
@@ -359,6 +363,22 @@ def scrape_site(
     """
     started = time.perf_counter()
     result = ScrapeResult(site_key=site.key, site_name=site.name, method=site.tier)
+
+    if site.tier == "api":
+        from rss2cubox.policy.data_channels import scrape_data_channel
+
+        try:
+            result.items = scrape_data_channel(site, timeout=read_timeout, session=session)
+            result.raw_item_count = len(result.items)
+            result.status = STATUS_OK if result.items else STATUS_EMPTY
+            result.error = "" if result.items else "public_api_empty"
+            result.http_status = 200
+        except Exception as exc:  # noqa: BLE001
+            result.status = STATUS_FETCH_ERROR
+            result.error = f"public_api_{type(exc).__name__}: {str(exc)[:180]}"
+        result.duration_ms = int((time.perf_counter() - started) * 1000)
+        _emit(log_event, result, site)
+        return result
 
     html, http_status, error = fetch_html(
         site.list_url,

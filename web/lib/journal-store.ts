@@ -55,7 +55,7 @@ const articleFields = `id, title, url, source_feed_name, source_feed_id, pic_url
 const policyFields = `id, title, url, site_name, region, stage, instrument_type, policy_lineage, jurisdiction,
   issuing_authority, document_number, obligation_level, published_at, effective_date::text,
   comment_deadline::text, summary, source_quote, key_provisions, affected_parties, ai_relevance,
-  ai_relevance_reason, confidence, enriched_at`
+  ai_relevance_reason, confidence, enriched_at, content_kind, source_updated_at, source_metadata, first_seen_at`
 
 function pageNumber(params: URLSearchParams) {
   const value = Number(params.get('page'))
@@ -322,7 +322,7 @@ export async function readPolicies(
     fields: policyFields + (searchWhere?.select || ''),
     where,
     values,
-    time: "COALESCE(published_at,'0001-01-01'::timestamptz)",
+    time: "COALESCE(published_at,source_updated_at,first_seen_at,'0001-01-01'::timestamptz)",
     created: 'first_seen_at',
     rank: searchWhere ? 'CASE WHEN title ILIKE $1 THEN 0 ELSE 1 END' : '0::int',
   })

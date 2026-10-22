@@ -72,7 +72,7 @@ POLICY_ENRICH_MIN_RELEVANCE = min(
 def _run_triage_stage(
     *,
     limit: int,
-    site_key: str | None,
+    site_key: str | set[str] | None,
     level: str | None,
     stats: dict[str, Any],
 ) -> None:
@@ -141,7 +141,7 @@ def _print_status() -> int:
 def _run_enrich_stage(
     *,
     limit: int,
-    site_key: str | None,
+    site_key: str | set[str] | None,
     level: str | None,
     fetch_full_text: bool,
     min_triage_relevance: int | None,
@@ -238,7 +238,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         stats: dict[str, Any] = {"sites": 0, "sites_ok": 0, "sites_failed": 0, "items_total": 0}
         only_keys = {k.strip() for k in args.only.split(",") if k.strip()}
-        single_key = next(iter(only_keys)) if len(only_keys) == 1 else None
+        single_key = next(iter(only_keys)) if len(only_keys) == 1 else (only_keys or None)
         level_filter = args.level.strip() or None
         started = datetime.now(timezone.utc)
 
@@ -382,13 +382,13 @@ def main(argv: list[str] | None = None) -> int:
             if not args.no_triage:
                 _run_triage_stage(
                     limit=args.triage_limit,
-                    site_key=None,
+                    site_key=only_keys,
                     level=(args.level.strip() or None),
                     stats=stats,
                 )
             _run_enrich_stage(
                 limit=args.enrich_limit,
-                site_key=None,
+                site_key=only_keys,
                 level=(args.level.strip() or None),
                 fetch_full_text=not args.no_fulltext,
                 min_triage_relevance=min_relevance,
