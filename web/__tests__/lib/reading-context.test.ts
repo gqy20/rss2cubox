@@ -73,6 +73,13 @@ describe('reading context navigation', () => {
       expect(safeReturnPath(path)).toBeNull()
     expect(safeReturnPath('/topics?id=3')).toBe('/topics?id=3')
   })
+  it('returns report evidence to its report without allowing editor return destinations', () => {
+    const from = '/ted/00000000-0000-4000-8000-000000000001#topic-one'
+    expect(safeReturnPath(from)).toBe(from)
+    expect(returnLabel(from)).toBe('返回他山 TED')
+    expect(safeReturnPath('/ted/manage')).toBeNull()
+    expect(policyDestination('policy-one', { from })).toContain('from=')
+  })
   it('distinguishes historical insights from today using the business timezone', () => {
     expect(
       insightFreshness('2026-09-18T20:00:00Z', '2026-09-19T01:00:00Z'),

@@ -14,6 +14,7 @@ import {
   Bookmark,
   Menu,
   Newspaper,
+  Presentation,
   X,
 } from 'lucide-react'
 const links = [
@@ -22,6 +23,7 @@ const links = [
   { href: '/policies', label: '政策观察', icon: Files },
   { href: '/topics', label: '专题对读', icon: Layers3 },
   { href: '/daily', label: 'AI 日报', icon: Newspaper },
+  { href: '/ted', label: '他山青年 TED', icon: Presentation },
   { href: '/predictions', label: '预测与复盘', icon: ChartNoAxesCombined },
   { href: '/monitor', label: '运行监控', icon: Activity },
 ]

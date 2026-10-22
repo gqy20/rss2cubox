@@ -25,6 +25,7 @@ ALL_AGENTS = (
     "prediction",
     "prediction_review",
     "daily_report",
+    "ted_report",
     "policy_triage",
     "policy_enrich",
 )

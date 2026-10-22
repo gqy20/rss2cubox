@@ -14,7 +14,7 @@ export function safeReturnPath(value?: string | null): string | null {
     const url = new URL(value, BASE)
     if (
       url.origin !== BASE ||
-      !/^\/(?:signals|policies(?:\/[^/]+)?|topics|monitor|saved|predictions|briefing)?$/.test(
+      !/^\/(?:signals|policies(?:\/[^/]+)?|topics|monitor|saved|predictions|briefing|ted(?:\/[0-9a-fA-F-]{36})?)?$/.test(
         url.pathname,
       )
     )
@@ -38,6 +38,7 @@ export function returnLabel(path: string) {
   if (route === '/saved') return '返回收藏'
   if (route === '/predictions') return '返回预测'
   if (route === '/briefing') return '返回简报'
+  if (route.startsWith('/ted')) return '返回他山 TED'
   if (route.startsWith('/policies/')) return '返回政策解读'
   return route === '/policies' ? '返回政策列表' : '返回文章列表'
 }

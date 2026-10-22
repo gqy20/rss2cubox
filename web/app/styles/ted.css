@@ -1,0 +1,591 @@
+/* Weekly live reports use the journal's established reading materials and controls. */
+.ted-page {
+  min-width: 0;
+  padding-bottom: 32px;
+}
+.ted-page-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin: 8px 0 28px;
+}
+.ted-page-heading h1 {
+  font-size: 30px;
+}
+.ted-page-heading > div > p {
+  color: var(--muted);
+  margin-top: 5px;
+  font-size: 13px;
+}
+.ted-page .surface + .surface {
+  margin-top: var(--section-gap);
+}
+.ted-page .soft-button,
+.ted-page .primary-button {
+  min-height: 40px;
+  font-size: 13px;
+}
+.ted-back {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+.ted-issue-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ted-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 15px;
+}
+.ted-archive-row {
+  display: flex;
+  gap: 24px;
+  padding: 22px 0;
+  align-items: center;
+}
+.ted-archive-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.ted-archive-row h3 {
+  overflow-wrap: anywhere;
+}
+.ted-archive-row p {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 6px;
+}
+.ted-archive-row > .metadata {
+  flex-shrink: 0;
+}
+.ted-report {
+  width: 100%;
+  padding: 32px 36px;
+}
+.ted-report-head h1 {
+  font: 600 28px/1.5 var(--serif);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.ted-report-meta {
+  margin-bottom: 12px;
+}
+.ted-broadcast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 24px;
+}
+.ted-broadcast > span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ted-intro {
+  margin: 24px 0;
+}
+.ted-intro .ted-prose {
+  font-size: 16px;
+}
+.ted-contents {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 28px;
+  padding: 16px 0;
+}
+.ted-contents a {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+  min-height: 40px;
+  padding: 8px 0;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.ted-contents a span {
+  color: var(--accent);
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+.ted-report-body {
+  width: 100%;
+  min-width: 0;
+}
+.ted-topic {
+  padding: 30px 0;
+  scroll-margin-top: 24px;
+}
+.ted-topic-heading {
+  display: flex;
+  gap: 14px;
+  align-items: baseline;
+  margin-bottom: 20px;
+}
+.ted-topic-heading > span {
+  color: var(--accent);
+  font: 600 30px/1.2 var(--serif);
+  font-variant-numeric: tabular-nums;
+}
+.ted-topic h3 {
+  font: 600 24px/1.6 var(--serif);
+  overflow-wrap: anywhere;
+}
+.ted-judgment {
+  padding: 20px 24px;
+  background: var(--olive-tint);
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+.ted-field-label {
+  display: block;
+  color: var(--olive);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.ted-prose {
+  font-size: 16px;
+  line-height: 1.95;
+  overflow-wrap: anywhere;
+}
+.ted-prose p + p {
+  margin-top: 14px;
+}
+.ted-prose h4 {
+  font-size: 17px;
+  margin: 20px 0 10px;
+}
+.ted-prose ul,
+.ted-prose ol {
+  padding-left: 1.5em;
+}
+.ted-prose a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.ted-prose a.ted-citation {
+  font-family: var(--sans);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ted-prose pre {
+  overflow-x: auto;
+  padding: 14px;
+  background: var(--canvas);
+  border-radius: 8px;
+  font-size: 13px;
+}
+.ted-prose code {
+  font-size: 0.88em;
+}
+.ted-prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.ted-prose td,
+.ted-prose th {
+  border: 1px solid var(--faint);
+  padding: 8px 12px;
+}
+.ted-prose blockquote {
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--canvas);
+  border-radius: 8px;
+}
+.ted-observation {
+  margin-top: 24px;
+}
+.ted-observation h4 {
+  font-size: 14px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.ted-evidence {
+  min-width: 0;
+  margin-top: 26px;
+}
+.ted-evidence > h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.ted-sources {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.ted-source {
+  display: flex;
+  gap: 10px;
+  padding: 14px 0;
+  scroll-margin-top: 30px;
+}
+.ted-source > div {
+  min-width: 0;
+}
+.ted-reference-no {
+  color: var(--accent);
+  font-size: 12px;
+  padding-top: 3px;
+  flex-shrink: 0;
+}
+.ted-source-title {
+  display: inline;
+  font-size: 14px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.ted-source-title svg {
+  margin-left: 5px;
+  vertical-align: middle;
+}
+.ted-source .metadata {
+  margin-top: 5px;
+  font-size: 12px;
+}
+.ted-source-reason {
+  font-size: 13px;
+  margin-top: 8px;
+  line-height: 1.8;
+}
+.ted-source:target {
+  background: var(--clay-tint);
+  border-radius: 8px;
+  padding: 14px 10px;
+}
+.ted-picture {
+  margin: 28px 0;
+  min-width: 0;
+}
+.ted-picture img {
+  display: block;
+  width: 100%;
+  max-height: 600px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: var(--canvas);
+}
+.ted-picture figcaption {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.ted-bibliography h3 > span {
+  font: 400 14px var(--sans);
+  color: var(--muted);
+  margin-left: 8px;
+}
+.ted-bibliography ul {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0;
+  margin: 20px 0 0;
+  list-style: none;
+}
+/* Fixed source and title columns keep long reference lists easy to scan. */
+.ted-bibliography li {
+  display: grid;
+  grid-template-columns: 10rem 8px minmax(0, 1fr) 2em;
+  align-items: baseline;
+  gap: 10px;
+  padding: 8px 0;
+  min-width: 0;
+  font-size: 15px;
+  line-height: 1.6;
+}
+.ted-source-title,
+.ted-reference-title {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.ted-reference-publisher,
+.ted-reference-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ted-reference-publisher {
+  color: var(--muted);
+  font-size: 14px;
+}
+.ted-reference-title {
+  font-size: inherit;
+  line-height: inherit;
+}
+.ted-reference-divider {
+  text-align: center;
+  color: var(--muted);
+}
+.ted-bibliography .ted-reference-original {
+  display: inline;
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.ted-source-title:hover,
+.ted-reference-title:hover,
+.ted-source-original:hover,
+.ted-reference-original:hover {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+@media (max-width: 640px) {
+  .ted-bibliography li {
+    grid-template-columns: 6.5em 6px minmax(0, 1fr) 2em;
+    gap: 8px;
+    font-size: 14px;
+  }
+  .ted-reference-publisher { font-size: 13px; }
+}
+.ted-report-footer {
+  padding-top: 24px;
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+
+.ted-topic-main {
+  min-width: 0;
+}
+
+@media (min-width: 1320px) {
+  .ted-topic:has(> .ted-evidence) {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(290px, 1fr);
+    gap: 22px 36px;
+    align-items: start;
+  }
+  .ted-topic:has(> .ted-evidence) > .ted-topic-heading {
+    grid-column: 1 / -1;
+    margin: 0;
+  }
+  .ted-topic:has(> .ted-evidence) > .ted-evidence {
+    margin-top: 0;
+  }
+}
+@media (min-width: 1600px) {
+  .ted-report {
+    padding: 36px 42px;
+  }
+  .ted-contents {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1100px) {
+  .ted-report {
+    padding: 28px;
+  }
+}
+@media (max-width: 640px) {
+  .ted-page-heading h1 {
+    font-size: 25px;
+  }
+  .ted-page .surface {
+    padding: 24px 20px;
+  }
+  .ted-report-head h1 {
+    font-size: 22px;
+  }
+  .ted-report-title {
+    font-size: 24px;
+  }
+  .ted-masthead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .ted-contents {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .ted-topic {
+    padding: 26px 0;
+  }
+  .ted-topic h3 {
+    font-size: 21px;
+  }
+  .ted-topic-heading {
+    gap: 10px;
+  }
+  .ted-judgment {
+    padding: 16px;
+  }
+  .ted-archive-row {
+    gap: 14px;
+    align-items: start;
+  }
+  .ted-bibliography ul {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ted-page *,
+  .ted-page *::before,
+  .ted-page *::after {
+    scroll-behavior: auto;
+    transition: none !important;
+    animation: none !important;
+  }
+}
+@media print {
+  .journal-sidebar,
+  .journal-topbar,
+  .ted-back,
+  .ted-broadcast,
+  .daily-source-internal {
+    display: none !important;
+  }
+  .journal-workspace {
+    margin: 0;
+  }
+  .ted-report {
+    padding: 0;
+  }
+  .ted-topic:has(> .ted-evidence) {
+    display: block;
+  }
+  .ted-evidence {
+    margin-top: 20px;
+  }
+  .ted-source,
+  .ted-judgment {
+    break-inside: avoid;
+  }
+}
+
+.ted-masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  padding-bottom: 18px;
+}
+.ted-edition {
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 16px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.ted-report-title {
+  font: 600 29px/1.55 var(--serif);
+  margin: 24px 0 14px;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 640px) {
+  .ted-report-title {
+    font-size: 24px;
+  }
+  .ted-report-head h1 {
+    font-size: 22px;
+  }
+  .ted-masthead {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+.ted-topic-heading > span {
+  font: 600 30px/1.2 var(--serif);
+  min-width: 2ch;
+}
+.ted-contents a span {
+  font-size: 16px;
+  font-weight: 600;
+}
+.ted-report-footer {
+  font-size: 12px;
+  line-height: 1.7;
+}
+@media (max-width: 640px) {
+  .ted-topic-heading > span {
+    font-size: 25px;
+  }
+  .ted-footer-update {
+    display: none;
+  }
+  .ted-report-footer {
+    font-size: 11px;
+  }
+}
+
+/* Inline judgment, distinct subheadings, and a bibliography with stable columns. */
+.ted-field-label {
+  display: inline;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.95;
+}
+.ted-judgment > .ted-prose,
+.ted-judgment > .ted-prose > p {
+  display: inline;
+}
+.ted-observation {
+  margin-top: 26px;
+}
+.ted-observation h4 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font: 650 18px/1.5 var(--sans);
+}
+.ted-evidence > h4 {
+  color: var(--ink);
+  font: 600 16px/1.5 var(--sans);
+}
+
+.ted-analysis-heading h2 {
+  margin: 0 0 12px;
+  font: 600 23px/1.5 var(--serif);
+}
+.ted-analysis-heading .metadata {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px 16px;
+}
+.ted-analysis-content {
+  font-size: 16px;
+  line-height: 1.85;
+}
+.ted-analysis-content section { margin-top: 28px; }
+.ted-analysis-content h3 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font: 650 18px/1.5 var(--sans);
+}
+.ted-analysis-content p { margin: 8px 0; }
+.ted-analysis-content .ted-tags { margin-top: 24px; }
+
+.drawer-head:has(.ted-analysis-heading) { border-bottom: 0; }
