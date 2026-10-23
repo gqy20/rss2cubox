@@ -65,6 +65,7 @@ def compare_pair(prev: dict, curr: dict) -> dict[str, Any] | None:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="政策系列跨期比较（MVP）")
     parser.add_argument("--dry-run", action="store_true", help="只打印比较结果不落库")
+    parser.add_argument("--force", action="store_true", help="已入库的对也重跑")
     args = parser.parse_args(argv)
 
     db_url = os.environ["DATABASE_URL"]
@@ -73,6 +74,21 @@ def main(argv: list[str] | None = None) -> int:
 
     pairs = get_comparison_pairs(db_url)
     print(f"[series] 可比较对 {len(pairs)} 个", flush=True)
+
+    # 跳过已入库的对——cron 每轮只对新增配对调 LLM（重跑用 --force）
+    if not args.force:
+        done: set[tuple[str, str, str]] = set()
+        with psycopg.connect(db_url) as conn:
+            conn.execute(DDL)
+            for row in conn.execute(
+                "SELECT series_key, prev_doc_id, curr_doc_id FROM policy_series_changes"
+            ):
+                done.add(row)
+        before = len(pairs)
+        pairs = [p for p in pairs if (p["series_key"], p["prev"]["id"], p["curr"]["id"]) not in done]
+        skipped = before - len(pairs)
+        if skipped:
+            print(f"[series] 跳过已比较 {skipped} 对（--force 重跑）", flush=True)
 
     for pair in pairs:
         skey = pair["series_key"]

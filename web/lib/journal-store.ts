@@ -723,3 +723,35 @@ export async function readerSourceName(ref: string) {
   )
   return row?.name || null
 }
+export type PolicyChange = {
+  series_key: string
+  created_at: string
+  verdict: {
+    has_meaningful_change?: boolean
+    new_issues?: string[]
+    dropped_issues?: string[]
+    intensity_changes?: { topic: string; old_wording: string; new_wording: string; direction: string }[]
+    numeric_changes?: { metric: string; old_value: string; new_value: string; meaning: string }[]
+    new_formulations?: string[]
+    priority_shift?: string | null
+    stage_verdict?: string | null
+    significance?: string
+    summary?: string
+  }
+  prev_title: string
+  curr_title: string
+  prev_id: string
+  curr_id: string
+}
+export async function readPolicyChanges(limit = 30): Promise<PolicyChange[]> {
+  return query<PolicyChange>(
+    `SELECT c.series_key, c.created_at, c.verdict,
+       p.title AS prev_title, p.id AS prev_id,
+       q.title AS curr_title, q.id AS curr_id
+     FROM policy_series_changes c
+     JOIN policy_documents p ON p.id = c.prev_doc_id
+     JOIN policy_documents q ON q.id = c.curr_doc_id
+     ORDER BY c.created_at DESC LIMIT $1`,
+    [limit],
+  )
+}

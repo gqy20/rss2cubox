@@ -96,6 +96,13 @@
 
 `data.predictions`（预测，含关联聚类标签与状态）与 `data.reviews`（事后复核记录）。
 
+### GET /api/policy-changes — 政策阶段变化
+
+政策系列相邻两期的跨期比较纪要（同系列文件 t-1 期 vs t 期）：
+`new_issues` / `dropped_issues` / `intensity_changes`（旧新原文短引+方向）/
+`numeric_changes`（硬指标变化）/ `new_formulations` / `stage_verdict`
+（阶段定性，如"门槛初启期→普惠扩面期"）/ `significance`。
+
 ### GET /api/daily-reports — 日报归档
 
 每天一份的综合分析：`summary`、`key_topics`、`trends`、`top_articles`、`weak_signals`（早期弱信号）、`daily_advices`、`cluster_evolution`、`prediction_status`、`confidence_level`。不带参数返回全部（按日期倒序）；`?date=YYYY-MM-DD` 取单份。

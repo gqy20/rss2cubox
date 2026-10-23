@@ -48,6 +48,18 @@ export RSS2CUBOX_RUN_ID="${RSS2CUBOX_RUN_ID:-policy-cron-$(date -u '+%Y%m%dT%H%M
 
 run_status=0
 
+run_module() {
+  # -m 直跑任意模块（如 rss2cubox.policy.congress_fetcher）。
+  # 不要复用 run_policy：它固定以 policy_runner 为主体，模块名会被当参数
+  # 传给 policy_runner 的 argparse → exit 2 → 连锁跳过 triage/enrich
+  # （2026-10-01 引入、2026-10-15 破案的 8 天静默断流第二根因）。
+  if command -v uv >/dev/null 2>&1; then
+    uv run python -m "$1"
+  else
+    PYTHONPATH="$ROOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}" "$ROOT_DIR/.venv/bin/python" -m "$1"
+  fi
+}
+
 run_policy() {
   if command -v uv >/dev/null 2>&1; then
     uv run python -m rss2cubox.policy_runner "$@"
@@ -71,13 +83,20 @@ run_policy() {
   # 阶段 1.5：Congress 立法适配器（API→policy_documents，供后续 triage/enrich）
   congress_status=0
   if [ "$fetch_status" -eq 0 ]; then
-    run_policy rss2cubox.policy.congress_fetcher
+    run_module rss2cubox.policy.congress_fetcher
     congress_status=$?
+  fi
+
+  # 阶段 1.6：政策系列跨期比较（仅在有新配对时调 LLM，~0.02 元/次）
+  series_status=0
+  if [ "$fetch_status" -eq 0 ]; then
+    run_module rss2cubox.policy.series_compare_agent
+    series_status=$?
   fi
 
   # 阶段 2：预筛（N 个标题一次调用，便宜）
   triage_status=0
-  if [ "$fetch_status" -eq 0 ] && [ "$congress_status" -eq 0 ]; then
+  if [ "$fetch_status" -eq 0 ] && [ "$congress_status" -eq 0 ] && [ "$series_status" -eq 0 ]; then
     run_policy --triage --triage-limit "$POLICY_CRON_TRIAGE_LIMIT"
     triage_status=$?
   else
@@ -101,6 +120,7 @@ run_policy() {
   # 任一阶段失败即整体失败，但三个状态都记下来便于定位
   status=$fetch_status
   [ "$status" -eq 0 ] && status=$congress_status
+  [ "$status" -eq 0 ] && status=$series_status
   [ "$status" -eq 0 ] && status=$triage_status
   [ "$status" -eq 0 ] && status=$enrich_status
 
