@@ -1,0 +1,97 @@
+# 政策系列跨期比较 Agent —— 阶段性变化检测的核心。
+# 输入是同系列相邻两期的完整文本（t-1 期与 t 期），输出结构化"变化纪要"。
+# 比较的对象不是字符 diff，而是政策姿态：议题增减、措辞强度、数字目标、
+# 新提法、优先级位移、阶段定性。
+
+version: 1
+description: 政策系列相邻两期对比，输出阶段性变化纪要
+
+system_prompt: |-
+  你是中国政策分析专家，任务是比较**同一系列**政策文件的两个相邻时期版本，找出阶段性变化。
+
+  【背景】这两个文本来自同一来源的跨期发布（如网信办月度问答的两期、某办法的修订版与原版、
+  两场同主题发布会实录）。读者要的不是逐字 diff，而是**政策姿态的演化**。
+
+  【铁律】
+  1. 只能依据两个输入文本作答，禁止用常识补充。
+  2. 每条变化必须能指向文本依据（旧文本哪里说 X、新文本哪里说 Y）。
+  3. 数量/目标变化必须核对原文数字，禁止估算。
+  4. 没有实质变化时，各数组留空——不要为了输出而编造变化。
+
+  【分析维度】
+  - new_issues：本期新出现的话题/关切（上期完全没有）
+  - dropped_issues：上期有、本期消失或明显淡化的话题
+  - intensity_changes：同一事项的措辞/态度强度变化（如"探索"→"全面实施"，
+    "原则上不得"→"不得"），给出旧表述和新表述的原文短引
+  - numeric_changes：数量、金额、比例、期限等硬指标变化（旧值、新值、指标名）
+  - new_formulations：首次出现的提法/概念（如新出现的政策术语）
+  - priority_shift：话题位置/篇幅/顺序变化反映的优先级调整
+  - stage_verdict：阶段定性判断（动员期→执行期→深化期→收尾期 之类的一句话）
+
+  【输出】只输出符合 JSON Schema 的结构化结果。
+
+output_schema:
+  type: object
+  properties:
+    has_meaningful_change:
+      type: boolean
+      description: 两期是否存在值得关注的实质变化（false 时其余字段应为空/默认）
+    new_issues:
+      type: array
+      items: {type: string}
+      description: 本期新增话题，每条一句话
+    dropped_issues:
+      type: array
+      items: {type: string}
+      description: 上期有、本期消失或淡化的话题
+    intensity_changes:
+      type: array
+      items:
+        type: object
+        properties:
+          topic: {type: string}
+          old_wording: {type: string, description: 旧期原文短引（≤30字）}
+          new_wording: {type: string, description: 新期原文短引（≤30字）}
+          direction: {type: string, enum: [强化, 弱化, 中性调整]}
+        required: [topic, old_wording, new_wording, direction]
+    numeric_changes:
+      type: array
+      items:
+        type: object
+        properties:
+          metric: {type: string}
+          old_value: {type: string}
+          new_value: {type: string}
+          meaning: {type: string, description: 一句话解释这个数字变化的含义}
+        required: [metric, old_value, new_value, meaning]
+    new_formulations:
+      type: array
+      items: {type: string}
+      description: 首次出现的提法/概念
+    priority_shift:
+      type: string
+      description: 优先级/篇幅/顺序变化的一句话描述，无变化填 null
+    stage_verdict:
+      type: string
+      description: 阶段定性（如"从试点探索转向全面推开"），无法判断填 null
+    significance:
+      type: string
+      enum: [高, 中, 低]
+      description: 整体变化的重要程度
+    summary:
+      type: string
+      description: ≤120 字的变化纪要，直接说"什么变了、意味着什么"
+  required:
+    - has_meaningful_change
+    - new_issues
+    - dropped_issues
+    - intensity_changes
+    - numeric_changes
+    - new_formulations
+    - significance
+    - summary
+
+params:
+  max_text_chars: 6000       # 每期截断（两期共 12k）
+  timeout_seconds: 180
+  max_turns: 4
