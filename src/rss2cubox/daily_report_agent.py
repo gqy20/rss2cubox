@@ -340,7 +340,10 @@ async def _run_agent(
     return None
 
 
-def run_daily_report(log_event: Any | None = None) -> dict[str, Any] | None:
+def run_daily_report(
+    log_event: Any | None = None,
+    report_date: str | None = None,
+) -> dict[str, Any] | None:
     """
     日报生成入口函数。
 
@@ -349,12 +352,17 @@ def run_daily_report(log_event: Any | None = None) -> dict[str, Any] | None:
     2. 聚合当日数据
     3. 调用 Agent 生成报告
     4. 返回 payload（由调用方写入 DB）
+
+    report_date（YYYY-MM-DD）不传 = 今天；传入 = 补生成历史期
+    （save 侧 ON CONFLICT 覆盖已有同期报告，幂等可重跑）。
     """
     if not DAILY_REPORT_ENABLED:
         print("[daily_report] DAILY_REPORT_ENABLED=false，跳过", flush=True)
         return None
 
-    report_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    if not report_date:
+        report_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    report_date = str(report_date).strip()[:10]
 
     if log_event:
         log_event("INFO", "daily_report_start", report_date=report_date)
