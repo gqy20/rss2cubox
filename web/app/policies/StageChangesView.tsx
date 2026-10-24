@@ -5,18 +5,20 @@ import {
   GitCompareArrows,
   TrendingUp,
   TrendingDown,
-  ExternalLink,
   Sparkles,
   Hash,
+  ArrowRight,
 } from 'lucide-react'
 import type { PolicyChange } from '../../lib/journal-store'
 import { dateLabel } from '../../lib/journal-utils'
 
 /**
  * 阶段变化双栏视图（政策库 mode=changes 的列表主体）。
- * 左列 = 变化流（选中态）；右列 = 选中变化的完整纪要面板：
- *   变化概要 / 数字变化表 / 措辞强度 / 新增·消失议题 / 新提法 / 两期原文入口。
- * 列表行设计为"一条变化一行信号"：显著性 + 阶段定性 + 一句话摘要。
+ * 右栏层级与其他视图的阅读详情对齐：
+ *   变化速览卡（显著性+阶段定性+系列+日期）
+ *   → document-section（16px 节标题 + 衬线正文）
+ *   → 证据引句框（措辞强度的新旧原文）
+ *   → 底部主操作（两期原文，primary-button 同款）
  */
 export default function StageChangesView({ changes }: { changes: PolicyChange[] }) {
   const [active, setActive] = useState(0)
@@ -45,22 +47,47 @@ export default function StageChangesView({ changes }: { changes: PolicyChange[] 
         ))}
       </ol>
       <aside className="stage-view-detail" aria-label="变化详情">
-        <header>
-          <GitCompareArrows size={16} />
-          <b>{cur.verdict.stage_verdict || '跨期对比'}</b>
-          <span className={`pill ${sig(cur.verdict.significance)}`}>
-            {cur.verdict.significance || '低'}显著
-          </span>
-          <time>{dateLabel(cur.created_at, true)}</time>
-        </header>
-        <p className="stage-view-series">
-          {cur.prev_title} <span aria-hidden>→</span> {cur.curr_title}
-        </p>
-        {cur.verdict.summary && <p className="stage-view-summary">{cur.verdict.summary}</p>}
+        <section className="stage-glance" aria-label="变化速览">
+          <div className="stage-glance-heading">
+            <h3>变化速览</h3>
+            <span className="ai-label">AI 跨期对比</span>
+            <span className={`pill ${sig(cur.verdict.significance)}`}>
+              {cur.verdict.significance || '低'}显著
+            </span>
+          </div>
+          <dl className="stage-glance-facts">
+            <div>
+              <dt>阶段判断</dt>
+              <dd>{cur.verdict.stage_verdict || '—'}</dd>
+            </div>
+            <div>
+              <dt>比较期</dt>
+              <dd>{dateLabel(cur.created_at, true)}</dd>
+            </div>
+            <div className="stage-glance-wide">
+              <dt>对比对象</dt>
+              <dd>
+                {shortTitle(cur.prev_title)} <span aria-hidden>→</span>{' '}
+                {shortTitle(cur.curr_title)}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        {cur.verdict.summary && (
+          <div className="document-section">
+            <h3>
+              变化纪要 <span className="ai-label">AI 提炼</span>
+            </h3>
+            <p>{cur.verdict.summary}</p>
+          </div>
+        )}
 
         {!!cur.verdict.numeric_changes?.length && (
-          <section>
-            <h3><Hash size={12} /> 数字变化</h3>
+          <div className="document-section">
+            <h3>
+              <Hash size={14} /> 数字变化
+            </h3>
             <table className="stage-num-table">
               <tbody>
                 {cur.verdict.numeric_changes.map((n, i) => (
@@ -73,72 +100,91 @@ export default function StageChangesView({ changes }: { changes: PolicyChange[] 
                 ))}
               </tbody>
             </table>
-          </section>
+          </div>
         )}
 
         {!!cur.verdict.intensity_changes?.length && (
-          <section>
-            <h3><Sparkles size={12} /> 措辞强度</h3>
-            <ul>
+          <div className="document-section">
+            <h3>
+              <Sparkles size={14} /> 措辞强度
+            </h3>
+            <ul className="stage-intensity-list">
               {cur.verdict.intensity_changes.map((n, i) => (
                 <li key={i}>
-                  {n.direction === '强化' ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-                  <div>
+                  <span className="stage-intensity-head">
+                    {n.direction === '强化' ? (
+                      <TrendingUp size={13} />
+                    ) : (
+                      <TrendingDown size={13} />
+                    )}
                     <b>{n.topic}</b>
+                    <em>{n.direction}</em>
+                  </span>
+                  <div className="quote-box stage-quote">
+                    <small>新旧原文对照 · 请与原文核对</small>
                     <p>
-                      <q>{n.old_wording}</q> → <q>{n.new_wording}</q>
-                      <em>{n.direction}</em>
+                      <q>{n.old_wording}</q>
+                      <span aria-hidden> → </span>
+                      <q>{n.new_wording}</q>
                     </p>
                   </div>
                 </li>
               ))}
             </ul>
-          </section>
+          </div>
         )}
 
         {(!cur.verdict.new_issues?.length && !cur.verdict.dropped_issues?.length) || (
-          <section className="stage-view-issues">
+          <div className="document-section stage-view-issues">
             {!!cur.verdict.new_issues?.length && (
               <div>
-                <h4>新增议题</h4>
+                <h3>新增议题</h3>
                 <ul>{cur.verdict.new_issues.map((x, i) => <li key={i}>{x}</li>)}</ul>
               </div>
             )}
             {!!cur.verdict.dropped_issues?.length && (
               <div>
-                <h4>淡出议题</h4>
+                <h3>淡出议题</h3>
                 <ul>{cur.verdict.dropped_issues.map((x, i) => <li key={i}>{x}</li>)}</ul>
               </div>
             )}
-          </section>
+          </div>
         )}
 
         {!!cur.verdict.new_formulations?.length && (
-          <section>
-            <h3><Sparkles size={12} /> 新提法</h3>
+          <div className="document-section">
+            <h3>新提法</h3>
             <p className="stage-tags">
               {cur.verdict.new_formulations.map((x, i) => (
                 <span key={i} className="pill clay">{x}</span>
               ))}
             </p>
-          </section>
+          </div>
         )}
 
         {cur.verdict.priority_shift && (
-          <section>
-            <h3>优先级位移</h3>
+          <div className="document-section">
+            <h3>
+              <GitCompareArrows size={14} /> 优先级位移
+            </h3>
             <p>{cur.verdict.priority_shift}</p>
-          </section>
+          </div>
         )}
 
-        <footer className="stage-view-docs">
-          <Link href={`/policies/${encodeURIComponent(cur.prev_id)}`} className="text-link">
-            上期原文 <ExternalLink size={11} />
+        <div className="document-section stage-view-docs">
+          <Link
+            className="primary-button"
+            href={`/policies/${encodeURIComponent(cur.prev_id)}`}
+          >
+            阅读上期原文 <ArrowRight size={15} />
           </Link>
-          <Link href={`/policies/${encodeURIComponent(cur.curr_id)}`} className="text-link">
-            本期原文 <ExternalLink size={11} />
+          <Link
+            className="primary-button"
+            href={`/policies/${encodeURIComponent(cur.curr_id)}`}
+          >
+            阅读本期原文 <ArrowRight size={15} />
           </Link>
-        </footer>
+        </div>
       </aside>
     </div>
   )
@@ -153,4 +199,9 @@ function sig(s?: string) {
 function seriesName(key: string) {
   const m = key.match(/《(.+?)》/)
   return m ? m[1] : key.replace(/^generic:/, '').slice(0, 20)
+}
+
+function shortTitle(t: string) {
+  const m = t.match(/《(.+?)》/)
+  return (m ? m[1] : t).slice(0, 26)
 }
