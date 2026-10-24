@@ -7,9 +7,24 @@ import { dateLabel } from '../../lib/journal-utils'
  * 阶段变化区块：政策系列相邻两期的跨期比较纪要（LLM 产出）。
  * 展示维度为"变化"而非"文件"——数字目标变化与措辞强度变化是核心信号。
  */
-export default function StageShifts({ changes }: { changes: PolicyChange[] }) {
+export default function StageShifts({
+  changes,
+  expanded = false,
+}: {
+  changes: PolicyChange[]
+  /** 视图模式：作为列表主体全展开（不包 details 折叠） */
+  expanded?: boolean
+}) {
   if (!changes.length) return null
   const top = changes[0]
+  if (expanded)
+    return (
+      <div className="stage-shifts-list">
+        {changes.map((c, i) => (
+          <ChangeItem key={i} c={c} />
+        ))}
+      </div>
+    )
   return (
     <details className="surface stage-shifts">
       <summary aria-label="展开政策阶段变化">
@@ -24,7 +39,15 @@ export default function StageShifts({ changes }: { changes: PolicyChange[] }) {
         <span className="stage-shifts-sub">AI 生成 · {changes.length} 期对比</span>
       </summary>
       {changes.map((c, i) => (
-        <article key={i} className="stage-shift">
+        <ChangeItem key={i} c={c} />
+      ))}
+    </details>
+  )
+}
+
+function ChangeItem({ c }: { c: PolicyChange }) {
+  return (
+    <article className="stage-shift">
           <header>
             <span className={`pill ${sigClass(c.verdict.significance)}`}>
               {c.verdict.significance || '低'}显著
@@ -76,8 +99,6 @@ export default function StageShifts({ changes }: { changes: PolicyChange[] }) {
             </Link>
           </div>
         </article>
-      ))}
-    </details>
   )
 }
 

@@ -27,7 +27,7 @@ export default async function PoliciesPage({
     policyFacets(),
     policyStats(),
     policyLineageStats(selected),
-    readPolicyChanges(10),
+    readPolicyChanges(50),
   ])
   const facets =
     facetResult.status === 'fulfilled'
@@ -53,11 +53,14 @@ export default async function PoliciesPage({
       {lineageResult.status === 'fulfilled' && (
         <LineageStrip stats={lineageResult.value} selected={selected} />
       )}
-      {changesResult.status === 'fulfilled' && (
-        <StageShifts changes={changesResult.value} />
-      )}
+
       <Reader
         kind="policies"
+        changesView={
+          changesResult.status === 'fulfilled' ? (
+            <StageShifts changes={changesResult.value} expanded />
+          ) : undefined
+        }
         facets={facets}
         sourceLabel={sourceLabel}
         toolbarAside={

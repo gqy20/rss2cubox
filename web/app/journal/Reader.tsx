@@ -72,6 +72,8 @@ type Props = {
   }
   /** Page-level stat rendered inside the controls row, next to the result summary. */
   toolbarAside?: React.ReactNode
+  /** 政策库 mode=changes 时的替代列表（阶段变化视图）。 */
+  changesView?: React.ReactNode
 }
 export default function Reader({
   kind,
@@ -80,6 +82,7 @@ export default function Reader({
   topicLabel,
   sourceLabel,
   toolbarAside,
+  changesView,
 }: Props) {
   const searchParams = useSearchParams()
   const urlQuery = searchParams.toString()
@@ -386,6 +389,7 @@ export default function Reader({
                   ['all', '全部政策'],
                   ['relevant', '高相关政策'],
                   ['analyzed', '已分析'],
+                  ['changes', '阶段变化'],
                 ]
               : [
                   ['all', '全部信号'],
@@ -453,7 +457,9 @@ export default function Reader({
           aria-label={policy ? '政策列表' : '文章列表'}
           aria-busy={searching}
         >
-          {searching ? (
+          {policy && filters.mode === 'changes' && changesView ? (
+            changesView
+          ) : searching ? (
             <>
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="loading-skeleton" />

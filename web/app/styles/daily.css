@@ -609,3 +609,15 @@
   gap: 14px;
   font-size: 12px;
 }
+
+/* 阶段变化视图（Reader mode=changes 的列表主体） */
+.stage-shifts-list {
+  display: flex;
+  flex-direction: column;
+}
+.stage-shifts-list .stage-shift {
+  padding: 16px 22px;
+}
+.stage-shifts-list .stage-shift:first-child {
+  padding-top: 20px;
+}

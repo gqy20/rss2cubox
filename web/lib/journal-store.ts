@@ -315,6 +315,9 @@ export async function readPolicies(
     }
   }
   if (params.get('mode') === 'analyzed') where.push('enriched_at IS NOT NULL')
+  if (params.get('mode') === 'changes')
+    // 阶段变化视图在 Reader 插槽渲染（readPolicyChanges），列表查询直接空返回
+    return { data: [], total: 0, page: 1, hasMore: false, snapshot: new Date().toISOString(), nextCursor: null }
   if (params.get('mode') === 'relevant')
     where.push('ai_relevance >= 4 AND enriched_at IS NOT NULL')
   return readCursorPage<Policy>('policies', params, {
