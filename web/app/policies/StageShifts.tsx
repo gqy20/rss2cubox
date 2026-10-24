@@ -9,14 +9,20 @@ import { dateLabel } from '../../lib/journal-utils'
  */
 export default function StageShifts({ changes }: { changes: PolicyChange[] }) {
   if (!changes.length) return null
+  const top = changes[0]
   return (
-    <section className="surface stage-shifts" aria-label="政策阶段变化">
-      <h2>
-        <GitCompareArrows size={17} /> 阶段变化
-        <span className="stage-shifts-sub">
-          同系列文件跨期对比，由 AI 生成、可能有误
-        </span>
-      </h2>
+    <details className="surface stage-shifts">
+      <summary aria-label="展开政策阶段变化">
+        <GitCompareArrows size={17} />
+        <b>阶段变化</b>
+        {top.verdict?.significance && (
+          <span className={`pill ${sigClass(top.verdict.significance)}`}>
+            {top.verdict.significance}显著
+          </span>
+        )}
+        <span className="stage-shifts-teaser">{top.verdict?.summary?.slice(0, 44) || '同系列文件跨期对比'}</span>
+        <span className="stage-shifts-sub">AI 生成 · {changes.length} 期对比</span>
+      </summary>
       {changes.map((c, i) => (
         <article key={i} className="stage-shift">
           <header>
@@ -71,7 +77,7 @@ export default function StageShifts({ changes }: { changes: PolicyChange[] }) {
           </div>
         </article>
       ))}
-    </section>
+    </details>
   )
 }
 

@@ -460,17 +460,52 @@
 
 /* ── 政策阶段变化区块（/policies StageShifts）── */
 .stage-shifts {
-  padding: 18px 22px;
+  padding: 0;
   margin-bottom: 14px;
+  flex-shrink: 0;
+  /* reader-shell 页面总高固定（100dvh overflow:hidden），顶部区块不能
+     挤占列表区：默认折叠为一行摘要，展开时限高内滚 */
 }
-.stage-shifts > h2 {
+.stage-shifts[open] {
+  max-height: 300px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.stage-shifts > summary {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 16px;
-  margin: 0 0 12px;
+  padding: 10px 22px;
+  cursor: pointer;
+  font-size: 13.5px;
+  list-style: none;
+  user-select: none;
+}
+.stage-shifts > summary::-webkit-details-marker {
+  display: none;
+}
+.stage-shifts > summary b {
+  font-size: 14px;
   font-family: var(--sans);
 }
+.stage-shifts-teaser {
+  color: var(--muted);
+  font-size: 12.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.stage-shifts[open] > summary {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  border-bottom: 1px solid var(--faint);
+  z-index: 1;
+}
+.stage-shifts[open] > h2 { display: none; }
+
 .stage-shifts-sub {
   font-size: 11px;
   color: var(--muted);
@@ -478,7 +513,7 @@
   margin-left: auto;
 }
 .stage-shift {
-  padding: 12px 0;
+  padding: 12px 22px;
   border-bottom: 1px solid var(--faint);
 }
 .stage-shift:last-child {
