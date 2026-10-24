@@ -738,10 +738,17 @@ export async function readerSourceName(ref: string) {
   )
   return row?.name || null
 }
-/** 段落 diff 段（series_compare_agent 写入，difflib 对齐）。same 只存一份文本。 */
+/** 段落 diff 段（series_compare_agent 写入，difflib 对齐）。same 只存一份文本；
+ *  changed 附字符级差异区间 [start, end)，前端高亮真正变动的字。 */
 export type DiffSegment =
   | { type: 'same'; text: string }
-  | { type: 'changed'; prev: string | null; curr: string | null }
+  | {
+      type: 'changed'
+      prev: string | null
+      curr: string | null
+      prev_marks?: number[][]
+      curr_marks?: number[][]
+    }
   | { type: 'deleted'; prev: string }
   | { type: 'added'; curr: string }
 

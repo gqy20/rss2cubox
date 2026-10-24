@@ -229,16 +229,38 @@ function DiffBlocks({ segments }: { segments: DiffSegment[] }) {
         ) : (
           <div key={g.key} className={`diff-row diff-${g.item.type}`}>
             <p className="diff-prev">
-              {('prev' in g.item && g.item.prev) || <span aria-hidden>—</span>}
+              {g.item.type === 'changed' && g.item.prev ? (
+                <Marked text={g.item.prev} marks={g.item.prev_marks} />
+              ) : (
+                ('prev' in g.item && g.item.prev) || <span aria-hidden>—</span>
+              )}
             </p>
             <p className="diff-curr">
-              {('curr' in g.item && g.item.curr) || <span aria-hidden>—</span>}
+              {g.item.type === 'changed' && g.item.curr ? (
+                <Marked text={g.item.curr} marks={g.item.curr_marks} />
+              ) : (
+                ('curr' in g.item && g.item.curr) || <span aria-hidden>—</span>
+              )}
             </p>
           </div>
         ),
       )}
     </div>
   )
+}
+
+/** 按 agent 预计算的区间把差异字圈成 <mark>；无 marks 时整段原样。 */
+function Marked({ text, marks }: { text: string; marks?: number[][] }) {
+  if (!marks?.length) return <>{text}</>
+  const parts: React.ReactNode[] = []
+  let pos = 0
+  for (const [start, end] of marks) {
+    if (start > pos) parts.push(text.slice(pos, start))
+    parts.push(<mark key={start}>{text.slice(start, end)}</mark>)
+    pos = end
+  }
+  if (pos < text.length) parts.push(text.slice(pos))
+  return <>{parts}</>
 }
 
 function significanceClass(s?: string) {

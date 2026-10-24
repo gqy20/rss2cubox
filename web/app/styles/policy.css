@@ -515,3 +515,17 @@
   line-height: 1.7;
   color: var(--muted);
 }
+
+/* 段内字符级差异高亮（agent 预计算区间） */
+.diff-prev mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 600;
+  text-decoration-color: var(--accent);
+}
+.diff-curr mark {
+  background: none;
+  color: var(--accent);
+  font-weight: 700;
+  padding: 0;
+}

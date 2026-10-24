@@ -54,6 +54,7 @@ def diff_segments(prev_text: str | None, curr_text: str | None) -> list[dict[str
     """段落级程序 diff（difflib 对齐，非 LLM）：写入 diff_segments 列，前端渲染原文对照。
 
     autojunk=False——公文里重复出现的短段（"附则"等）在 autojunk 下会被当垃圾元素导致对齐劣化。
+    changed 段附字符级 prev_marks/curr_marks，前端只高亮真正变动的字，不再整段找茬。
     """
 
     def split(t: str | None) -> list[str]:
@@ -68,16 +69,54 @@ def diff_segments(prev_text: str | None, curr_text: str | None) -> list[dict[str
         elif tag == "replace":
             # 多段换多段：按序配对，多出的一侧留空，前端左右并排渲染
             for k in range(max(i2 - i1, j2 - j1)):
-                out.append({
-                    "type": "changed",
-                    "prev": prev[i1 + k] if i1 + k < i2 else None,
-                    "curr": curr[j1 + k] if j1 + k < j2 else None,
-                })
+                p = prev[i1 + k] if i1 + k < i2 else None
+                c = curr[j1 + k] if j1 + k < j2 else None
+                seg: dict[str, Any] = {"type": "changed", "prev": p, "curr": c}
+                if p and c:
+                    pm, cm = _inline_marks(p, c)
+                    if pm:
+                        seg["prev_marks"] = pm
+                    if cm:
+                        seg["curr_marks"] = cm
+                out.append(seg)
         elif tag == "delete":
             out.extend({"type": "deleted", "prev": p} for p in prev[i1:i2])
         elif tag == "insert":
             out.extend({"type": "added", "curr": c} for c in curr[j1:j2])
     return out
+
+
+# 段内高亮上限：超长段的字符级 SequenceMatcher 是 O(n²)，整段重写时也没有高亮意义
+_INLINE_LIMIT = 2000
+# 间隔 ≤3 字符的标记合并，避免"事后<mark>支持</mark>方式"这类碎片高亮
+_INLINE_GAP = 3
+
+
+def _merge_marks(marks: list[list[int]]) -> list[list[int]]:
+    merged: list[list[int]] = []
+    for start, end in marks:
+        if merged and start - merged[-1][1] <= _INLINE_GAP:
+            merged[-1][1] = end
+        else:
+            merged.append([start, end])
+    return merged
+
+
+def _inline_marks(a: str, b: str) -> tuple[list[list[int]], list[list[int]]]:
+    """changed 段内的字符级差异区间 [start, end)（各自侧），供前端 <mark> 高亮。"""
+    if len(a) > _INLINE_LIMIT or len(b) > _INLINE_LIMIT:
+        return [], []
+    a_marks: list[list[int]] = []
+    b_marks: list[list[int]] = []
+    for tag, i1, i2, j1, j2 in difflib.SequenceMatcher(a=a, b=b, autojunk=False).get_opcodes():
+        if tag == "replace":
+            a_marks.append([i1, i2])
+            b_marks.append([j1, j2])
+        elif tag == "delete":
+            a_marks.append([i1, i2])
+        elif tag == "insert":
+            b_marks.append([j1, j2])
+    return _merge_marks(a_marks), _merge_marks(b_marks)
 
 
 def _build_prompt(prev: dict, curr: dict) -> str:
@@ -208,9 +247,13 @@ def _selftest() -> None:
         ("same", "第二条 适用范围"),
         ("same", "第三条 罚则"),
     ], got
-    # 单段内改措辞 → changed，左右两侧都有值
-    segs2 = diff_segments("严格执行", "从严执行")
-    assert segs2 == [{"type": "changed", "prev": "严格执行", "curr": "从严执行"}], segs2
+    # 单段内改措辞 → changed，字符级高亮只圈住变动的字
+    seg = diff_segments("支持方式为事后奖励。", "支持方式为事后支持。")[0]
+    a, b = seg["prev"], seg["curr"]
+    (s, e) = seg["prev_marks"][0]
+    assert a[s:e] == "奖励", seg
+    (s, e) = seg["curr_marks"][0]
+    assert b[s:e] == "支持", seg
     print("[selftest] diff_segments ok")
 
 
