@@ -582,6 +582,7 @@ export default function Reader({
           )}
         </section>
       )}
+        {policy && filters.mode === 'changes' && changesView ? null : (
         <section
           className="surface reader-document"
           aria-label="阅读详情"
@@ -834,6 +835,7 @@ export default function Reader({
             )}
           </div>
         </section>
+        )}
       </div>
     </div>
   )
