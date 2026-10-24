@@ -189,7 +189,8 @@ list_url      = "https://www.beijing.gov.cn/zhengce/zhengcefagui/"
 item_selector = "ul.default_news > li"
 title_attr    = "title"
 date_selector = "span"
-max_items     = 300
+# 单页 999 条一直排到 2024-12：全量保留，历史版本（政策修订的上几期）靠它进库做系列对比
+max_items     = 999
 note          = "单页 999 条，含市级/区级/经开区管委会文件。href 是 ./YYYYMM/ 相对路径。"
 
 [[sites]]
