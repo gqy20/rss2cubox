@@ -18,7 +18,8 @@ import {
 } from 'lucide-react'
 import type { Row } from '../types'
 import type { Policy } from '../../lib/journal-types'
-import { dateLabel, excerpt } from '../../lib/journal-utils'
+import type { PolicyChange } from '../../lib/journal-store'
+import { dateLabel, excerpt, seriesName } from '../../lib/journal-utils'
 import { Empty, ExternalLink } from './Shared'
 import { BookmarkButton, ExportButton, getBookmarks } from './Actions'
 import { SearchTrigger } from './SearchPalette'
@@ -28,6 +29,7 @@ import { ScoreIndicator } from './Numbers'
 import { ReturnLink } from './ReadingNavigation'
 import { isResourceMaterial } from '../../lib/policy-utils'
 import PolicyApplicability from './PolicyApplicability'
+import StageChangeDetail from '../policies/StageChangeDetail'
 import { safeReturnPath, withOrigin } from '../../lib/reading-context'
 import { useReadingPosition } from '../../hooks/useReadingPosition'
 
@@ -72,8 +74,6 @@ type Props = {
   }
   /** Page-level stat rendered inside the controls row, next to the result summary. */
   toolbarAside?: React.ReactNode
-  /** 政策库 mode=changes 时的替代列表（阶段变化视图）。 */
-  changesView?: React.ReactNode
 }
 export default function Reader({
   kind,
@@ -82,7 +82,6 @@ export default function Reader({
   topicLabel,
   sourceLabel,
   toolbarAside,
-  changesView,
 }: Props) {
   const searchParams = useSearchParams()
   const urlQuery = searchParams.toString()
@@ -98,7 +97,7 @@ export default function Reader({
     query: string
     id: string | null
   }>({ query: '', id: null })
-  const [rawDetail, setDetail] = useState<Row | Policy | null>(null),
+  const [rawDetail, setDetail] = useState<Row | Policy | PolicyChange | null>(null),
     [detailLoading, setDetailLoading] = useState(false),
     [detailError, setDetailError] = useState('')
   const tab = searchParams.get('tab') === 'original' ? 'original' : 'summary'
@@ -134,7 +133,7 @@ export default function Reader({
     cacheKey,
     loadMore,
     refresh,
-  } = useReaderFeed<Row | Policy>(
+  } = useReaderFeed<Row | Policy | PolicyChange>(
     kind,
     encoded,
     filters.saved === '1' ? savedIds : undefined,
@@ -154,7 +153,11 @@ export default function Reader({
     filters.instrument_type,
     filters.policy_lineage,
   ].filter(Boolean).length
-  const detail = rawDetail?.id === selectedId ? rawDetail : null
+  const matched = rawDetail?.id === selectedId ? rawDetail : null
+  // change:<n> 详情（PolicyChange）与文档/文章详情分轨，detail 保持 Row|Policy
+  const changeDetail =
+    matched && 'verdict' in matched ? (matched as PolicyChange) : null
+  const detail = (changeDetail ? null : matched) as Row | Policy | null
   const updateUrl = (
     changes: Record<string, string | null>,
     reset = true,
@@ -184,7 +187,7 @@ export default function Reader({
   useReadingPosition(
     bodyRef,
     `reader:${kind}:${selectedId}:${tab}`,
-    Boolean(detail) && !detailLoading,
+    Boolean(matched) && !detailLoading,
   )
   const setTab = (value: string) =>
     updateUrl({ tab: value === 'summary' ? null : value }, false, false)
@@ -259,7 +262,9 @@ export default function Reader({
     article = detail as Row | null,
     document = detail as Policy | null
   const sourceName = policy
-    ? document?.issuing_authority || document?.site_name
+    ? changeDetail
+      ? seriesName(changeDetail.series_key)
+      : document?.issuing_authority || document?.site_name
     : article?.source
   // The source tag doubles as a list filter, but only when the value is a
   // real feed name that the source filter can match.
@@ -446,11 +451,6 @@ export default function Reader({
         )}
       </div>
       <div className={`reader-grid ${selectedId ? 'has-selection' : ''}`}>
-        {policy && filters.mode === 'changes' && changesView ? (
-        <section className="surface stage-grid-full" aria-label="阶段变化">
-          {changesView}
-        </section>
-      ) : (
         <section
           className="surface reader-list"
           ref={listRef}
@@ -462,9 +462,7 @@ export default function Reader({
           aria-label={policy ? '政策列表' : '文章列表'}
           aria-busy={searching}
         >
-          {policy && filters.mode === 'changes' && changesView ? (
-            changesView
-          ) : searching ? (
+          {searching ? (
             <>
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="loading-skeleton" />
@@ -479,15 +477,21 @@ export default function Reader({
             </div>
           ) : result?.data.length ? (
             <>
-              {detail && !result.data.some((item) => item.id === detail.id) && (
+              {matched && !result.data.some((item) => item.id === matched.id) && (
                 <div className="reader-current-context">
                   <small>当前阅读 · 不在已加载结果中</small>
-                  <strong>{detail.title}</strong>
+                  <strong>
+                    {changeDetail
+                      ? changeDetail.verdict.stage_verdict || seriesName(changeDetail.series_key)
+                      : detail?.title}
+                  </strong>
                 </div>
               )}
               {result.data.map((item) => {
                 const p = item as Policy,
-                  r = item as Row
+                  r = item as Row,
+                  c = 'verdict' in item ? (item as PolicyChange) : null,
+                  rest = (c ? null : item) as (Row & Policy) | null
                 return (
                   <button
                     className="reader-item"
@@ -496,28 +500,42 @@ export default function Reader({
                     onClick={() => setSelectedId(item.id)}
                   >
                     <span className="metadata">
-                      {policy
-                        ? p.region || p.site_name || '政策文件'
-                        : r.source}
+                      {c
+                        ? seriesName(c.series_key)
+                        : policy
+                          ? p.region || p.site_name || '政策文件'
+                          : r.source}
                       <span>
-                        {policy && !p.published_at && !p.source_updated_at
-                          ? `收录 ${dateLabel(p.first_seen_at)}`
-                          : dateLabel(policy ? p.published_at || p.source_updated_at : r.time)}
+                        {c
+                          ? dateLabel(c.created_at)
+                          : policy && !p.published_at && !p.source_updated_at
+                            ? `收录 ${dateLabel(p.first_seen_at)}`
+                            : dateLabel(policy ? p.published_at || p.source_updated_at : r.time)}
                       </span>
                     </span>
                     <h3>
-                      <Highlight text={item.title} query={filters.search} />
+                      <Highlight
+                        text={
+                          c
+                            ? c.verdict.stage_verdict || seriesName(c.series_key)
+                            : rest!.title
+                        }
+                        query={filters.search}
+                      />
                     </h3>
                     <p>
-                      {filters.search &&
-                      item.search_excerpt &&
-                      item.search_field !== '标题' ? (
+                      {c ? (
+                        excerpt(c.verdict.summary, 90) ||
+                        'AI 跨期对比结论待生成。'
+                      ) : filters.search &&
+                      rest?.search_excerpt &&
+                      rest.search_field !== '标题' ? (
                         <>
                           <span className="match-field">
-                            {item.search_field}命中 ·{' '}
+                            {rest.search_field}命中 ·{' '}
                           </span>
                           <Highlight
-                            text={item.search_excerpt}
+                            text={rest.search_excerpt}
                             query={filters.search}
                           />
                         </>
@@ -530,7 +548,11 @@ export default function Reader({
                     </p>
                     {policy && (
                       <span className="metadata">
-                        {p.enriched_at ? p.stage || '阶段未明确' : '待分析'}
+                        {c
+                          ? `${c.verdict.significance || '低'}显著变化`
+                          : p.enriched_at
+                            ? p.stage || '阶段未明确'
+                            : '待分析'}
                       </span>
                     )}
                   </button>
@@ -581,8 +603,6 @@ export default function Reader({
             />
           )}
         </section>
-      )}
-        {policy && filters.mode === 'changes' && changesView ? null : (
         <section
           className="surface reader-document"
           aria-label="阅读详情"
@@ -598,20 +618,30 @@ export default function Reader({
               >
                 <ArrowLeft size={16} />
               </button>
-              {detail ? (
+              {matched ? (
                 <>
-                  <h2 title={detail.title}>
-                    <ExternalLink url={detail.url} className="original-title">
-                      {detail.title}
-                    </ExternalLink>
+                  <h2
+                    title={
+                      changeDetail
+                        ? changeDetail.verdict.stage_verdict || seriesName(changeDetail.series_key)
+                        : detail?.title
+                    }
+                  >
+                    {changeDetail ? (
+                      changeDetail.verdict.stage_verdict || seriesName(changeDetail.series_key)
+                    ) : (
+                      <ExternalLink url={detail?.url} className="original-title">
+                        {detail?.title}
+                      </ExternalLink>
+                    )}
                   </h2>
                   <div className="heading-actions">
                     <BookmarkButton
-                      id={detail.id}
+                      id={matched.id}
                       kind={policy ? 'policy' : 'article'}
                     />
                     <ExportButton
-                      data={detail}
+                      data={matched}
                       name={policy ? 'policy' : 'article'}
                     />
                   </div>
@@ -620,7 +650,7 @@ export default function Reader({
                 <h2>{detailError ? '详情暂时不可用' : '正在加载…'}</h2>
               )}
             </div>
-            {detail && (
+            {matched && (
               <div className="metadata">
                 {sourceFilterable ? (
                   <button
@@ -648,7 +678,11 @@ export default function Reader({
                 )}
                 <span>
                   {dateLabel(
-                    policy ? document?.published_at || document?.source_updated_at : article?.time,
+                    changeDetail
+                      ? changeDetail.created_at
+                      : policy
+                        ? document?.published_at || document?.source_updated_at
+                        : article?.time,
                     true,
                   )}
                 </span>
@@ -659,7 +693,7 @@ export default function Reader({
                 <ReturnLink from={origin} />
               </div>
             )}
-            {detail && !policy && (
+            {matched && (!policy || changeDetail) && (
               <div
                 className="document-tabs"
                 role="group"
@@ -669,13 +703,13 @@ export default function Reader({
                   aria-pressed={tab === 'summary'}
                   onClick={() => setTab('summary')}
                 >
-                  概览与分析
+                  {changeDetail ? '变化纪要' : '概览与分析'}
                 </button>
                 <button
                   aria-pressed={tab === 'original'}
                   onClick={() => setTab('original')}
                 >
-                  已抓取正文
+                  {changeDetail ? '原文对照' : '已抓取正文'}
                 </button>
               </div>
             )}
@@ -702,9 +736,11 @@ export default function Reader({
                   重试
                 </button>
               </div>
-            ) : detail ? (
+            ) : matched ? (
               <>
-                {policy && document ? (
+                {policy && changeDetail ? (
+                  <StageChangeDetail change={changeDetail} tab={tab} />
+                ) : policy && document ? (
                   <>
                     <PolicyApplicability
                       policy={document}
@@ -733,7 +769,7 @@ export default function Reader({
                       <Link
                         className="primary-button"
                         href={withOrigin(
-                          `/policies/${encodeURIComponent(detail.id)}`,
+                          `/policies/${encodeURIComponent(document.id)}`,
                           `/policies?${currentReaderParams}`,
                         )}
                       >
@@ -835,7 +871,6 @@ export default function Reader({
             )}
           </div>
         </section>
-        )}
       </div>
     </div>
   )

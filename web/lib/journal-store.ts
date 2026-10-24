@@ -288,7 +288,7 @@ export async function readArticle(id: string): Promise<Row | null> {
 }
 export async function readPolicies(
   params: URLSearchParams,
-): Promise<PageResult<Policy>> {
+): Promise<PageResult<Policy | PolicyChange>> {
   const where: string[] = [],
     values: unknown[] = []
   // 预筛相关度 <2 的（停水通知、民生提示类）默认不出现在政策库任何视图；
@@ -315,9 +315,7 @@ export async function readPolicies(
     }
   }
   if (params.get('mode') === 'analyzed') where.push('enriched_at IS NOT NULL')
-  if (params.get('mode') === 'changes')
-    // 阶段变化视图在 Reader 插槽渲染（readPolicyChanges），列表查询直接空返回
-    return { data: [], total: 0, page: 1, hasMore: false, snapshot: new Date().toISOString(), nextCursor: null }
+  if (params.get('mode') === 'changes') return readPolicyChangesList(params)
   if (params.get('mode') === 'relevant')
     where.push('ai_relevance >= 4 AND enriched_at IS NOT NULL')
   return readCursorPage<Policy>('policies', params, {
@@ -337,6 +335,20 @@ export async function readPolicy(id: string) {
     [id],
   )
   return policy || null
+}
+/** change:<n> 单条阶段变化（Reader 右栏详情），与文档 id 命名空间区分。 */
+export async function readPolicyChange(id: string) {
+  const numeric = Number(id.slice(7))
+  if (!id.startsWith('change:') || !Number.isInteger(numeric) || numeric <= 0)
+    return null
+  const [change] = await query<PolicyChange>(
+    `SELECT ${policyChangeFields} FROM policy_series_changes c
+     JOIN policy_documents p ON p.id = c.prev_doc_id
+     JOIN policy_documents q ON q.id = c.curr_doc_id
+     WHERE c.id=$1`,
+    [numeric],
+  )
+  return change || null
 }
 export type PolicyFacets = {
   region: string[]
@@ -726,7 +738,15 @@ export async function readerSourceName(ref: string) {
   )
   return row?.name || null
 }
+/** 段落 diff 段（series_compare_agent 写入，difflib 对齐）。same 只存一份文本。 */
+export type DiffSegment =
+  | { type: 'same'; text: string }
+  | { type: 'changed'; prev: string | null; curr: string | null }
+  | { type: 'deleted'; prev: string }
+  | { type: 'added'; curr: string }
+
 export type PolicyChange = {
+  id: string
   series_key: string
   created_at: string
   verdict: {
@@ -745,16 +765,56 @@ export type PolicyChange = {
   curr_title: string
   prev_id: string
   curr_id: string
+  diff_segments?: DiffSegment[] | null
 }
-export async function readPolicyChanges(limit = 30): Promise<PolicyChange[]> {
-  return query<PolicyChange>(
-    `SELECT c.series_key, c.created_at, c.verdict,
-       p.title AS prev_title, p.id AS prev_id,
-       q.title AS curr_title, q.id AS curr_id
-     FROM policy_series_changes c
-     JOIN policy_documents p ON p.id = c.prev_doc_id
-     JOIN policy_documents q ON q.id = c.curr_doc_id
-     ORDER BY c.created_at DESC LIMIT $1`,
-    [limit],
-  )
+
+const policyChangeFields = `'change:' || c.id AS id, c.series_key, c.created_at, c.verdict, c.diff_segments,
+  p.title AS prev_title, p.id AS prev_id, q.title AS curr_title, q.id AS curr_id`
+
+/** 阶段变化列表（mode=changes 的原生查询）：筛选下推到本期文档，搜索匹配两期标题与变化纪要。
+ *  数据量小（cron 产出的系列对），一次全拉不做游标。 */
+export async function readPolicyChangesList(
+  params: URLSearchParams,
+): Promise<PageResult<PolicyChange>> {
+  const where: string[] = [],
+    values: unknown[] = []
+  for (const key of ['region', 'stage', 'instrument_type', 'policy_lineage'] as const) {
+    const value = params.get(key)
+    if (value) {
+      values.push(value)
+      where.push(`q.${key}=$${values.length}`)
+    }
+  }
+  const search = (params.get('search') || '').trim().slice(0, 300)
+  if (search) {
+    values.push(`%${search.replace(/[\\%_]/g, '\\$&')}%`)
+    where.push(
+      `(q.title ILIKE $${values.length} OR p.title ILIKE $${values.length} OR c.verdict->>'summary' ILIKE $${values.length})`,
+    )
+  }
+  const filter = where.length ? `WHERE ${where.join(' AND ')}` : ''
+  const [counts, data] = await Promise.all([
+    query<{ total: number }>(
+      `SELECT count(*)::int AS total FROM policy_series_changes c
+       JOIN policy_documents p ON p.id = c.prev_doc_id
+       JOIN policy_documents q ON q.id = c.curr_doc_id ${filter}`,
+      values,
+    ),
+    query<PolicyChange>(
+      `SELECT ${policyChangeFields} FROM policy_series_changes c
+       JOIN policy_documents p ON p.id = c.prev_doc_id
+       JOIN policy_documents q ON q.id = c.curr_doc_id
+       ${filter} ORDER BY c.created_at DESC LIMIT 100`,
+      values,
+    ),
+  ])
+  return {
+    data,
+    total: counts[0].total,
+    page: 1,
+    hasMore: false,
+    snapshot: new Date().toISOString(),
+    nextCursor: null,
+  }
 }
+

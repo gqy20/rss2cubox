@@ -2,8 +2,6 @@ import { Coverage } from '../journal/Numbers'
 import Reader from '../journal/Reader'
 import { PageHeading, DataNotice } from '../journal/Shared'
 import LineageStrip from './LineageStrip'
-import StageChangesView from './StageChangesView'
-import { readPolicyChanges } from '../../lib/journal-store'
 import {
   policyFacets,
   policyLineageStats,
@@ -23,11 +21,10 @@ export default async function PoliciesPage({
     typeof sourceRef === 'string'
       ? await readerSourceName(sourceRef).catch(() => null)
       : null
-  const [facetResult, statsResult, lineageResult, changesResult] = await Promise.allSettled([
+  const [facetResult, statsResult, lineageResult] = await Promise.allSettled([
     policyFacets(),
     policyStats(),
     policyLineageStats(selected),
-    readPolicyChanges(50),
   ])
   const facets =
     facetResult.status === 'fulfilled'
@@ -56,11 +53,6 @@ export default async function PoliciesPage({
 
       <Reader
         kind="policies"
-        changesView={
-          changesResult.status === 'fulfilled' ? (
-            <StageChangesView changes={changesResult.value} />
-          ) : undefined
-        }
         facets={facets}
         sourceLabel={sourceLabel}
         toolbarAside={

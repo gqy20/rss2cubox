@@ -10,8 +10,10 @@ prompt 见 prompts/policy_series_compare.yaml。
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import os
+import re
 from typing import Any
 
 from dotenv import load_dotenv
@@ -35,10 +37,47 @@ CREATE TABLE IF NOT EXISTS policy_series_changes (
     prev_doc_id  TEXT NOT NULL,
     curr_doc_id  TEXT NOT NULL,
     verdict      JSONB NOT NULL,
+    diff_segments JSONB,
     created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
     UNIQUE (series_key, prev_doc_id, curr_doc_id)
 );
+ALTER TABLE policy_series_changes ADD COLUMN IF NOT EXISTS diff_segments JSONB;
 """
+
+# 段落切分：空行，或行首的中文条款编号（一、/（二）/第三条/1.）
+_PARA_SPLIT = re.compile(
+    r"\n\s*\n|\n(?=\s*(?:[（(]?[一二三四五六七八九十百]+|[0-9]+)[、.)．])"
+)
+
+
+def diff_segments(prev_text: str | None, curr_text: str | None) -> list[dict[str, Any]]:
+    """段落级程序 diff（difflib 对齐，非 LLM）：写入 diff_segments 列，前端渲染原文对照。
+
+    autojunk=False——公文里重复出现的短段（"附则"等）在 autojunk 下会被当垃圾元素导致对齐劣化。
+    """
+
+    def split(t: str | None) -> list[str]:
+        return [x.strip() for x in _PARA_SPLIT.split(t or "") if x.strip()]
+
+    prev, curr = split(prev_text), split(curr_text)
+    matcher = difflib.SequenceMatcher(a=prev, b=curr, autojunk=False)
+    out: list[dict[str, Any]] = []
+    for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        if tag == "equal":
+            out.extend({"type": "same", "text": p} for p in prev[i1:i2])
+        elif tag == "replace":
+            # 多段换多段：按序配对，多出的一侧留空，前端左右并排渲染
+            for k in range(max(i2 - i1, j2 - j1)):
+                out.append({
+                    "type": "changed",
+                    "prev": prev[i1 + k] if i1 + k < i2 else None,
+                    "curr": curr[j1 + k] if j1 + k < j2 else None,
+                })
+        elif tag == "delete":
+            out.extend({"type": "deleted", "prev": p} for p in prev[i1:i2])
+        elif tag == "insert":
+            out.extend({"type": "added", "curr": c} for c in curr[j1:j2])
+    return out
 
 
 def _build_prompt(prev: dict, curr: dict) -> str:
@@ -66,9 +105,36 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="政策系列跨期比较（MVP）")
     parser.add_argument("--dry-run", action="store_true", help="只打印比较结果不落库")
     parser.add_argument("--force", action="store_true", help="已入库的对也重跑")
+    parser.add_argument("--selftest", action="store_true", help="跑 diff_segments 最小自检后退出")
     args = parser.parse_args(argv)
 
+    if args.selftest:
+        _selftest()
+        return 0
+
     db_url = os.environ["DATABASE_URL"]
+
+    # 补算存量：diff 列为空的行用两期全文重算（幂等，cron 每轮自然补齐）
+    with psycopg.connect(db_url) as conn:
+        conn.execute(DDL)
+        pending = conn.execute(
+            """SELECT c.id, p.full_text, q.full_text
+               FROM policy_series_changes c
+               JOIN policy_documents p ON p.id = c.prev_doc_id
+               JOIN policy_documents q ON q.id = c.curr_doc_id
+               WHERE c.diff_segments IS NULL"""
+        ).fetchall()
+    for cid, prev_text, curr_text in pending:
+        segs = diff_segments(prev_text, curr_text)
+        with psycopg.connect(db_url) as conn:
+            conn.execute(
+                "UPDATE policy_series_changes SET diff_segments=%s WHERE id=%s",
+                (json.dumps(segs, ensure_ascii=False), cid),
+            )
+            conn.commit()
+    if pending:
+        print(f"[diff] 补算 {len(pending)} 行段落 diff", flush=True)
+
     stats = rebuild_series(db_url)
     print(f"[series] 识别 {len(stats)} 个系列: {json.dumps(stats, ensure_ascii=False)}", flush=True)
 
@@ -114,16 +180,38 @@ def main(argv: list[str] | None = None) -> int:
         with psycopg.connect(db_url) as conn:
             conn.execute(DDL)
             conn.execute(
-                """INSERT INTO policy_series_changes (series_key, prev_doc_id, curr_doc_id, verdict)
-                   VALUES (%s, %s, %s, %s)
+                """INSERT INTO policy_series_changes (series_key, prev_doc_id, curr_doc_id, verdict, diff_segments)
+                   VALUES (%s, %s, %s, %s, %s)
                    ON CONFLICT (series_key, prev_doc_id, curr_doc_id)
-                   DO UPDATE SET verdict = EXCLUDED.verdict, created_at = now()""",
-                (skey, pair["prev"]["id"], pair["curr"]["id"], json.dumps(verdict, ensure_ascii=False)),
+                   DO UPDATE SET verdict = EXCLUDED.verdict,
+                                 diff_segments = EXCLUDED.diff_segments,
+                                 created_at = now()""",
+                (skey, pair["prev"]["id"], pair["curr"]["id"],
+                 json.dumps(verdict, ensure_ascii=False),
+                 json.dumps(diff_segments(pair["prev"]["text"], pair["curr"]["text"]), ensure_ascii=False)),
             )
             conn.commit()
         print("  ✓ 已入库", flush=True)
 
     return 0
+
+
+def _selftest() -> None:
+    """diff_segments 的最小可运行检查：开头插入一段不得让后续段落错位。"""
+    prev = ["第一章 总则", "第二条 适用范围", "第三条 罚则"]
+    curr = ["第一章 总则", "新增段", "第二条 适用范围", "第三条 罚则"]
+    segs = diff_segments("\n\n".join(prev), "\n\n".join(curr))
+    got = [(s["type"], s.get("prev") or s.get("curr") or s.get("text")) for s in segs]
+    assert got == [
+        ("same", "第一章 总则"),
+        ("added", "新增段"),
+        ("same", "第二条 适用范围"),
+        ("same", "第三条 罚则"),
+    ], got
+    # 单段内改措辞 → changed，左右两侧都有值
+    segs2 = diff_segments("严格执行", "从严执行")
+    assert segs2 == [{"type": "changed", "prev": "严格执行", "curr": "从严执行"}], segs2
+    print("[selftest] diff_segments ok")
 
 
 if __name__ == "__main__":

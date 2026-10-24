@@ -4,6 +4,7 @@ import {
   readArticle,
   readPolicies,
   readPolicy,
+  readPolicyChange,
   readSaved,
 } from '../../../../lib/journal-store'
 export const dynamic = 'force-dynamic'
@@ -47,7 +48,11 @@ export async function GET(
           { status: 400, headers },
         )
       const data =
-        kind === 'article' ? await readArticle(id) : await readPolicy(id)
+        kind === 'article'
+          ? await readArticle(id)
+          : id.startsWith('change:')
+            ? await readPolicyChange(id)
+            : await readPolicy(id)
       return NextResponse.json(data ? { data } : { error: '未找到这条内容' }, {
         status: data ? 200 : 404,
         headers,

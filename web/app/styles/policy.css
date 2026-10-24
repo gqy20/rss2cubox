@@ -317,3 +317,201 @@
   font-family: var(--serif);
   margin-bottom: var(--space-lg);
 }
+
+/* ── 阶段变化详情（Reader 右栏 id=change:<n>，变化纪要 tab）── */
+.stage-glance {
+  background: var(--canvas);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 22px;
+}
+.stage-glance-heading {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 12px;
+}
+.stage-glance-heading h3 {
+  margin: 0;
+  font-size: 16px;
+  font-family: var(--sans);
+}
+.stage-glance-facts {
+  display: grid;
+  gap: 11px;
+  margin: 0;
+}
+/* 65px 标签列 + 值同行，与 policy-applicability 同款 */
+.stage-glance-facts > div {
+  display: grid;
+  grid-template-columns: 65px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
+.stage-glance-facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.stage-glance-facts dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.stage-num-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.stage-num-table th {
+  text-align: left;
+  font-family: var(--sans);
+  font-weight: 600;
+  padding: 6px 12px 6px 0;
+  vertical-align: top;
+  max-width: 130px;
+}
+.stage-num-table td {
+  padding: 6px 12px 6px 0;
+  vertical-align: top;
+}
+.stage-num-table .old {
+  color: var(--muted);
+  text-decoration: line-through;
+  max-width: 170px;
+}
+.stage-num-table .new {
+  color: var(--accent);
+  font-weight: 600;
+  max-width: 170px;
+}
+.stage-num-table .why {
+  color: var(--muted);
+  font-size: 12px;
+}
+.stage-intensity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.stage-intensity-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  margin-bottom: 6px;
+}
+.stage-intensity-head svg {
+  color: var(--olive);
+}
+.stage-intensity-head em {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--olive);
+}
+.stage-quote {
+  margin: 0;
+}
+.stage-quote p {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+.stage-quote q {
+  quotes: none;
+  font-family: var(--serif);
+}
+.stage-view-issues {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+.stage-view-issues ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 13.5px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  line-height: 1.7;
+}
+.stage-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.stage-view-docs {
+  display: flex;
+  gap: 12px;
+  border-top: 1px solid var(--faint);
+  padding-top: 16px;
+  margin-top: 4px;
+}
+
+/* ── 原文对照（difflib 段落 diff，agent 预计算）── */
+.diff-legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--faint);
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.diff-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+.diff-row p {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.diff-prev {
+  color: var(--muted);
+}
+.diff-changed .diff-prev,
+.diff-deleted .diff-prev {
+  text-decoration: line-through;
+  text-decoration-color: var(--clay);
+}
+.diff-curr {
+  font-family: var(--serif);
+}
+.diff-changed .diff-curr,
+.diff-added .diff-curr {
+  color: var(--accent);
+  background: var(--clay-tint);
+  border-radius: 6px;
+  padding: 2px 6px;
+}
+.diff-same-group {
+  margin-bottom: 10px;
+}
+.diff-same-toggle {
+  border: 0;
+  background: none;
+  padding: 0;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline dotted;
+}
+.diff-same-toggle:hover {
+  color: var(--ink);
+}
+.diff-same-text {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--muted);
+}

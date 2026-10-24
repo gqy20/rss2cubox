@@ -40,6 +40,11 @@ export function excerpt(value?: string | null, length = 120): string {
   const text = plainText(value)
   return text.length > length ? `${text.slice(0, length)}…` : text
 }
+/** 政策系列键 → 展示名：《办法》取书名号内，generic: 前缀剥掉。 */
+export function seriesName(key: string): string {
+  const m = key.match(/《(.+?)》/)
+  return m ? m[1] : key.replace(/^generic:/, '').slice(0, 20)
+}
 export function insightItems(value: unknown): SignalItem[] {
   if (!Array.isArray(value)) return []
   return value.flatMap((item) => {
