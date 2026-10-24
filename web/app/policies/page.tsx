@@ -2,7 +2,7 @@ import { Coverage } from '../journal/Numbers'
 import Reader from '../journal/Reader'
 import { PageHeading, DataNotice } from '../journal/Shared'
 import LineageStrip from './LineageStrip'
-import StageShifts from './StageShifts'
+import StageChangesView from './StageChangesView'
 import { readPolicyChanges } from '../../lib/journal-store'
 import {
   policyFacets,
@@ -58,7 +58,7 @@ export default async function PoliciesPage({
         kind="policies"
         changesView={
           changesResult.status === 'fulfilled' ? (
-            <StageShifts changes={changesResult.value} expanded />
+            <StageChangesView changes={changesResult.value} />
           ) : undefined
         }
         facets={facets}
