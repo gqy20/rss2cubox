@@ -446,6 +446,11 @@ export default function Reader({
         )}
       </div>
       <div className={`reader-grid ${selectedId ? 'has-selection' : ''}`}>
+        {policy && filters.mode === 'changes' && changesView ? (
+        <section className="surface stage-grid-full" aria-label="阶段变化">
+          {changesView}
+        </section>
+      ) : (
         <section
           className="surface reader-list"
           ref={listRef}
@@ -576,6 +581,7 @@ export default function Reader({
             />
           )}
         </section>
+      )}
         <section
           className="surface reader-document"
           aria-label="阅读详情"

@@ -623,15 +623,19 @@
 }
 
 /* ── 阶段变化双栏视图（mode=changes 列表主体）── */
+.stage-grid-full {
+  grid-column: 1 / -1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
 .stage-view {
   display: grid;
   grid-template-columns: minmax(280px, 38%) minmax(0, 1fr);
-  /* 父容器 reader-list 是 overflow:auto 的内容流容器（含 17px 12px padding 与
-     max-height），height:100% 塌陷成内容高，右栏被推到左栏下方（即用户所见
-     "左列拆成两块、右侧空白"）。对齐其可视高度，双栏各占一列、各自滚动。 */
-  height: calc(100vh - 262px);
-  min-height: 320px;
-  margin: -17px -12px;  /* 吃掉 reader-list 的 padding，让双栏贴满列表区 */
+  flex: 1;
+  min-height: 0;
 }
 .stage-view-list {
   list-style: none;
