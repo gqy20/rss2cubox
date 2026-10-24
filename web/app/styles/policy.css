@@ -479,7 +479,7 @@
 .diff-prev {
   color: var(--muted);
 }
-.diff-changed .diff-prev,
+/* 整段删除线/底色只给真正整段增删的行；changed 段靠字符级 mark 区分 */
 .diff-deleted .diff-prev {
   text-decoration: line-through;
   text-decoration-color: var(--clay);
@@ -487,7 +487,6 @@
 .diff-curr {
   font-family: var(--serif);
 }
-.diff-changed .diff-curr,
 .diff-added .diff-curr {
   color: var(--accent);
   background: var(--clay-tint);
@@ -516,16 +515,18 @@
   color: var(--muted);
 }
 
-/* 段内字符级差异高亮（agent 预计算区间） */
+/* 段内字符级差异高亮（agent 预计算区间）：旧字划线、新字亮底 */
 .diff-prev mark {
   background: none;
   color: var(--accent);
   font-weight: 600;
+  text-decoration: line-through;
   text-decoration-color: var(--accent);
 }
 .diff-curr mark {
-  background: none;
+  background: var(--clay-tint);
+  border-radius: 3px;
   color: var(--accent);
   font-weight: 700;
-  padding: 0;
+  padding: 0 1px;
 }
