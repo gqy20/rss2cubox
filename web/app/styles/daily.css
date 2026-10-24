@@ -633,7 +633,8 @@
 }
 .stage-view {
   display: grid;
-  grid-template-columns: minmax(280px, 38%) minmax(0, 1fr);
+  /* 与 reader-grid（列表|详情）同款比例 0.8fr|1.7fr ≈ 32%/68% */
+  grid-template-columns: minmax(260px, 0.8fr) minmax(0, 1.7fr);
   flex: 1;
   min-height: 0;
 }
@@ -672,14 +673,14 @@
   flex: 1;
 }
 .stage-view-body b {
-  font-size: 13px;
+  font-size: 14px;
   font-family: var(--sans);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 .stage-view-body small {
-  font-size: 12px;
+  font-size: 12.5px;
   color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -710,38 +711,42 @@
 }
 .stage-glance-heading h3 {
   margin: 0;
-  font-size: 15px;
+  font-size: 16px;
   font-family: var(--sans);
 }
 .stage-glance-facts {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px 18px;
+  gap: 11px;
   margin: 0;
 }
+/* 与 policy-applicability 同款：65px 标签列 + 值同行，杜绝短内容独占一行 */
+.stage-glance-facts > div {
+  display: grid;
+  grid-template-columns: 65px 1fr;
+  gap: 12px;
+  align-items: baseline;
+}
 .stage-glance-facts dt {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--muted);
-  margin-bottom: 2px;
 }
 .stage-glance-facts dd {
   margin: 0;
-  font-size: 13.5px;
-  line-height: 1.6;
-}
-.stage-glance-wide {
-  grid-column: 1 / -1;
+  font-size: 13px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
 }
 .stage-view-detail .document-section h3 {
   display: flex;
   align-items: center;
   gap: 7px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  font-size: 16px;
 }
 .stage-num-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 13.5px;
+  font-size: 14px;
 }
 .stage-num-table th {
   text-align: left;
@@ -781,7 +786,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13.5px;
+  font-size: 14px;
   margin-bottom: 6px;
 }
 .stage-intensity-head svg {
@@ -797,7 +802,7 @@
 }
 .stage-quote p {
   margin: 4px 0 0;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.8;
 }
 .stage-quote q {
@@ -813,7 +818,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--muted);
   display: flex;
   flex-direction: column;
