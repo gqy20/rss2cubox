@@ -19,7 +19,7 @@ import {
 import type { Row } from '../types'
 import type { Policy } from '../../lib/journal-types'
 import type { PolicyChange } from '../../lib/journal-store'
-import { dateLabel, excerpt, seriesName } from '../../lib/journal-utils'
+import { dateLabel, excerpt, policyTitle } from '../../lib/journal-utils'
 import { Empty, ExternalLink } from './Shared'
 import { BookmarkButton, ExportButton, getBookmarks } from './Actions'
 import { SearchTrigger } from './SearchPalette'
@@ -263,7 +263,7 @@ export default function Reader({
     document = detail as Policy | null
   const sourceName = policy
     ? changeDetail
-      ? seriesName(changeDetail.series_key)
+      ? changeDetail.curr_source || '政策系列'
       : document?.issuing_authority || document?.site_name
     : article?.source
   // The source tag doubles as a list filter, but only when the value is a
@@ -481,9 +481,7 @@ export default function Reader({
                 <div className="reader-current-context">
                   <small>当前阅读 · 不在已加载结果中</small>
                   <strong>
-                    {changeDetail
-                      ? changeDetail.verdict.stage_verdict || seriesName(changeDetail.series_key)
-                      : detail?.title}
+                    {changeDetail ? policyTitle(changeDetail.curr_title) : detail?.title}
                   </strong>
                 </div>
               )}
@@ -501,7 +499,7 @@ export default function Reader({
                   >
                     <span className="metadata">
                       {c
-                        ? seriesName(c.series_key)
+                        ? c.curr_source || '政策系列'
                         : policy
                           ? p.region || p.site_name || '政策文件'
                           : r.source}
@@ -515,17 +513,13 @@ export default function Reader({
                     </span>
                     <h3>
                       <Highlight
-                        text={
-                          c
-                            ? c.verdict.stage_verdict || seriesName(c.series_key)
-                            : rest!.title
-                        }
+                        text={c ? policyTitle(c.curr_title) : rest!.title}
                         query={filters.search}
                       />
                     </h3>
                     <p>
                       {c ? (
-                        excerpt(c.verdict.summary, 90) ||
+                        excerpt(c.verdict.stage_verdict || c.verdict.summary, 90) ||
                         'AI 跨期对比结论待生成。'
                       ) : filters.search &&
                       rest?.search_excerpt &&
@@ -623,12 +617,12 @@ export default function Reader({
                   <h2
                     title={
                       changeDetail
-                        ? changeDetail.verdict.stage_verdict || seriesName(changeDetail.series_key)
+                        ? policyTitle(changeDetail.curr_title)
                         : detail?.title
                     }
                   >
                     {changeDetail ? (
-                      changeDetail.verdict.stage_verdict || seriesName(changeDetail.series_key)
+                      policyTitle(changeDetail.curr_title)
                     ) : (
                       <ExternalLink url={detail?.url} className="original-title">
                         {detail?.title}

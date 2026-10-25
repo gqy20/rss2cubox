@@ -45,6 +45,12 @@ export function seriesName(key: string): string {
   const m = key.match(/《(.+?)》/)
   return m ? m[1] : key.replace(/^generic:/, '').slice(0, 20)
 }
+/** 变化记录的展示标题：本期文档真实标题，书名号内容优先（剥掉"关于印发…的通知"外壳）。
+ *  归一化系列键会把年份变 N（"N—N年"），不能当展示名。 */
+export function policyTitle(title: string): string {
+  const m = title.match(/《(.+?)》/)
+  return (m ? m[1] : title).slice(0, 44)
+}
 export function insightItems(value: unknown): SignalItem[] {
   if (!Array.isArray(value)) return []
   return value.flatMap((item) => {

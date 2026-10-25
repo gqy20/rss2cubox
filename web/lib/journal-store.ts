@@ -772,11 +772,13 @@ export type PolicyChange = {
   curr_title: string
   prev_id: string
   curr_id: string
+  curr_source?: string | null
   diff_segments?: DiffSegment[] | null
 }
 
 const policyChangeFields = `'change:' || c.id AS id, c.series_key, c.created_at, c.verdict, c.diff_segments,
-  p.title AS prev_title, p.id AS prev_id, q.title AS curr_title, q.id AS curr_id`
+  p.title AS prev_title, p.id AS prev_id, q.title AS curr_title, q.id AS curr_id,
+  COALESCE(q.issuing_authority, q.site_name) AS curr_source`
 
 /** 阶段变化列表（mode=changes 的原生查询）：筛选下推到本期文档，搜索匹配两期标题与变化纪要。
  *  数据量小（cron 产出的系列对），一次全拉不做游标。 */

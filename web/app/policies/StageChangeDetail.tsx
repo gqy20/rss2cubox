@@ -10,7 +10,7 @@ import {
   ArrowRight,
 } from 'lucide-react'
 import type { DiffSegment, PolicyChange } from '../../lib/journal-store'
-import { dateLabel, seriesName } from '../../lib/journal-utils'
+import { dateLabel } from '../../lib/journal-utils'
 
 /**
  * 阶段变化详情（Reader 右栏，id=change:<n>）。
