@@ -17,7 +17,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Any, Callable
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin
 
 import requests
 from lxml import html as lxml_html
@@ -107,6 +107,12 @@ def _pick_encoding(response: requests.Response) -> str:
     return guessed or "utf-8"
 
 
+# 政策源全是公开政府站，统一直连：系统代理（本地 clash 等）会重置 europa.eu 这类域名，
+# 而 cron 服务器本就无代理环境。需要代理访问的源未来单独配置。
+_DIRECT_SESSION = requests.Session()
+_DIRECT_SESSION.trust_env = False
+
+
 def fetch_html(
     url: str,
     *,
@@ -116,6 +122,7 @@ def fetch_html(
     session: requests.Session | None = None,
     user_agent: str = DEFAULT_USER_AGENT,
     render_wait_ms: int = 1500,
+    goto_wait: str = "networkidle",
 ) -> tuple[str, int, str]:
     """抓取页面 HTML，返回 (html, http_status, error)。"""
     headers = {
@@ -123,10 +130,24 @@ def fetch_html(
         "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
         "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     }
-    getter = session.get if session is not None else requests.get
+    getter = session.get if session is not None else _DIRECT_SESSION.get
     try:
         if tier == "playwright":
-            return _fetch_html_playwright(url, read_timeout=read_timeout, wait_ms=render_wait_ms)
+            return _fetch_html_playwright(url, read_timeout=read_timeout, wait_ms=render_wait_ms, goto_wait=goto_wait)
+        if tier == "curl":
+            # WAF 按 TLS 指纹（JA3）拦 python-requests 时，curl 的 OpenSSL 指纹可过
+            import subprocess
+            # gov.ca.gov 等站的 CF 会标记完整版 Chrome UA（KHTML/Safari 后缀），
+            # 简版指纹反而干净；curl 通道本身就是绕 WAF 用的，统一简版
+            proc = subprocess.run(
+                ["curl", "-sk", "--compressed", "--noproxy", "*", "--max-time", str(int(read_timeout)),
+                 "-A", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124",
+                 "-H", "Accept-Language: zh-CN,zh;q=0.9,en;q=0.8", url],
+                capture_output=True, text=True, timeout=read_timeout + 5,
+            )
+            if proc.returncode == 0 and proc.stdout:
+                return proc.stdout, 200, ""
+            return "", 0, f"curl_exit_{proc.returncode}"
         response = getter(url, timeout=(connect_timeout, read_timeout), headers=headers)
     except requests.exceptions.Timeout:
         return "", 0, "timeout"
@@ -140,12 +161,14 @@ def fetch_html(
     return response.text, response.status_code, ""
 
 
-def _fetch_html_playwright(url: str, *, read_timeout: float, wait_ms: int = 1500) -> tuple[str, int, str]:
+def _fetch_html_playwright(url: str, *, read_timeout: float, wait_ms: int = 1500, goto_wait: str = "networkidle") -> tuple[str, int, str]:
     """JS 渲染站点走无头浏览器。playwright 未安装时返回明确错误而非抛异常。
 
     wait_until 用 networkidle 而非 domcontentloaded：工信部/网信办的列表由
     页面加载后的 XHR 注入，domcontentloaded 时数据还没回来。wait_ms 是
     networkidle 之后的额外缓冲，站点可经 SiteSpec.render_wait_ms 调整。
+    慢 CDN 站（雄安等）networkidle 永远等不到，经 SiteSpec.goto_wait 降级
+    为 domcontentloaded + 更长 render_wait_ms。
     """
     try:
         from playwright.sync_api import sync_playwright
@@ -179,7 +202,7 @@ def _fetch_html_playwright(url: str, *, read_timeout: float, wait_ms: int = 1500
                     "window.chrome = window.chrome || {runtime: {}};"
                 )
                 page = ctx.new_page()
-                page.goto(url, wait_until="networkidle", timeout=read_timeout * 1000)
+                page.goto(url, wait_until=goto_wait, timeout=read_timeout * 1000)
                 page.wait_for_timeout(wait_ms)
                 content = page.content()
                 status = 200
@@ -384,9 +407,10 @@ def scrape_site(
         site.list_url,
         connect_timeout=connect_timeout,
         read_timeout=read_timeout,
-        tier=site.tier,
+        tier=site.fetch_via or site.tier,
         session=session,
         render_wait_ms=getattr(site, "render_wait_ms", 1500),
+        goto_wait=getattr(site, "goto_wait", "networkidle"),
     )
     result.http_status = http_status
     result.duration_ms = int((time.perf_counter() - started) * 1000)
@@ -406,6 +430,31 @@ def scrape_site(
         parse_rss_items(html, site) if site.tier == "rss" else parse_list_html(html, site)
     )
     result.raw_item_count = raw_count
+
+    # 静态翻页（仅 requests tier 的 SSR 列表）：第 1 页是 list_url，后续页按模板追加，
+    # 直到凑满 max_items 或页面不再产出新条目。改版页/空页自动终止，不报错。
+    if site.tier == "requests" and site.page_url_template and len(items) < site.max_items:
+        seen_urls = {i.url for i in items}
+        page = 2
+        while len(items) < site.max_items and page <= 200:
+            phtml, pstatus, perr = fetch_html(
+                site.page_url_template.format(page=page),
+                connect_timeout=connect_timeout,
+                read_timeout=read_timeout,
+                tier="requests",
+                session=session,
+            )
+            if perr or not phtml:
+                break
+            page_items, _ = parse_list_html(phtml, site)
+            fresh = [i for i in page_items if i.url not in seen_urls]
+            if not fresh:
+                break
+            for i in fresh:
+                seen_urls.add(i.url)
+            items.extend(fresh)
+            page += 1
+            time.sleep(1)  # 礼貌限速
 
     if not items and llm_extractor is not None:
         try:

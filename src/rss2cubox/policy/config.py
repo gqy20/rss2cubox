@@ -6,13 +6,13 @@ HTML/RSS 站点由配置驱动；公开 API 另用固定适配器。
 from __future__ import annotations
 
 import tomllib
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 LEVELS = frozenset({"national", "province", "city"})
 TIERS = frozenset({"requests", "playwright", "rss", "api"})
-API_ADAPTERS = frozenset({"ndsms_datasets", "ndsms_demands", "sjd_policies", "sjd_disclosures"})
+API_ADAPTERS = frozenset({"ndsms_datasets", "ndsms_demands", "sjd_policies", "sjd_disclosures", "govcn_zcwjk"})
 
 
 @dataclass(frozen=True)
@@ -32,13 +32,16 @@ class SiteSpec:
     date_selector: str = ""         # 留空则从 item 全文里正则提取
     base_url: str = ""              # urljoin 基准，留空则用 list_url
     tier: str = "requests"          # requests | playwright | rss | api
-    render_wait_ms: int = 1500      # playwright: networkidle 后的额外等待（XHR 注入列表的重站调大）
+    render_wait_ms: int = 1500      # playwright: goto 完成后的额外等待（XHR 注入列表的重站调大）
+    goto_wait: str = "networkidle"  # playwright: goto 等待策略；慢 CDN 站用 domcontentloaded + 大 render_wait_ms
     enabled: bool = True
     max_items: int = 200
     min_title_length: int = 8       # 过滤导航/装饰性短链接
     title_exclude: tuple[str, ...] = ()   # 标题命中任一子串即丢弃
     note: str = ""
     adapter: str = ""              # api: 固定的公开接口适配器，不接受任意请求地址
+    page_url_template: str = ""    # 翻页 URL 模板（{page} 占位，从 2 起）；仅 tier=requests 的 SSR 列表页
+    fetch_via: str = ""            # 抓取通道覆盖（""=随 tier | curl | playwright）；WAF 按 TLS 指纹拦 python-requests 时用 curl
 
     @property
     def resolve_base(self) -> str:
@@ -108,12 +111,16 @@ def parse_site(raw: dict[str, Any]) -> SiteSpec:
         base_url=str(raw.get("base_url", "")).strip(),
         tier=tier,
         render_wait_ms=_coerce_int(raw.get("render_wait_ms", 1500), 1500),
+        goto_wait=(str(raw.get("goto_wait", "networkidle")).strip()
+                   or "networkidle"),
         enabled=_coerce_bool(raw.get("enabled", True), True),
         max_items=_coerce_int(raw.get("max_items", 200), 200),
         min_title_length=_coerce_int(raw.get("min_title_length", 8), 8),
         title_exclude=_coerce_tuple(raw.get("title_exclude")),
         note=str(raw.get("note", "")).strip(),
         adapter=str(raw.get("adapter", "")).strip(),
+        page_url_template=str(raw.get("page_url_template", "")).strip(),
+        fetch_via=(str(raw.get("fetch_via", "")).strip().lower()),
     )
 
 

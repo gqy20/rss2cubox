@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import re
+import time
 from contextlib import contextmanager
 from datetime import datetime
 from typing import Any, Iterator
@@ -18,6 +19,10 @@ from lxml import html
 
 from .config import SiteSpec
 from .engine import PolicyItem
+
+# 与 engine._DIRECT_SESSION 同策略：公开政府接口统一直连，绕过系统代理
+_DIRECT = requests.Session()
+_DIRECT.trust_env = False
 
 NDSMS = "https://www.ndsms.cn"
 NDSMS_API = NDSMS + "/api/cedc-dsm-backend-main/public"
@@ -255,6 +260,8 @@ def scrape_data_channel(site: SiteSpec, *, timeout: float = 30,
                         session: requests.Session | None = None) -> list[PolicyItem]:
     if site.max_items <= 0:
         raise ValueError("max_items must be positive")
+    if site.adapter == "govcn_zcwjk":
+        return _fetch_govcn_zcwjk(site, timeout, session or _DIRECT)
     if site.adapter in {"ndsms_datasets", "ndsms_demands"}:
         if session is not None:
             return _fetch_ndsms(site, timeout, session)
@@ -266,3 +273,68 @@ def scrape_data_channel(site: SiteSpec, *, timeout: float = 30,
         if site.adapter == "sjd_disclosures":
             return _sjd_disclosures(site, read)
         raise ValueError("unsupported public API adapter")
+
+
+# ── gov.cn 政策文件库检索接口 ──────────────────────────────
+# 接口要求 q 非空；公文标题几乎都含"的"，用它近似全量，按发布时间倒序翻页。
+# 回溯深度由 max_items 控制（每页 20 条），历史远至 2005 年。
+GOVCN_SEARCH = "https://sousuo.www.gov.cn/search-gov/data"
+_GOVCN_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124",
+    "Referer": "https://sousuo.www.gov.cn/zcwjk/policyRetrieval",
+    "Accept": "application/json",
+}
+
+
+def _fetch_govcn_zcwjk(site: SiteSpec, timeout: float,
+                       session: requests.Session) -> list[PolicyItem]:
+    items: list[PolicyItem] = []
+    seen: set[str] = set()
+    per_page = 20
+    max_pages = max(1, (site.max_items + per_page - 1) // per_page)
+    for channel in ("zhengcelibrary_gw", "zhengcelibrary_bm"):
+        for page in range(1, max_pages + 1):
+            params = {"t": channel, "q": "的", "timetype": "", "sort": "pubtime",
+                      "sortType": "1", "searchfield": "title", "p": str(page),
+                      "n": str(per_page), "type": "gwyzcwjk"}
+            resp = session.get(GOVCN_SEARCH, params=params, headers=_GOVCN_HEADERS,
+                               timeout=timeout)
+            resp.raise_for_status()
+            body = resp.json()
+            if body.get("code") != 200:
+                raise ValueError(f"govcn_zcwjk code={body.get('code')}")
+            rows = (body.get("searchVO") or {}).get("listVO") or []
+            if not rows:
+                break
+            for row in rows:
+                url = str(row.get("url") or "").strip()
+                title = re.sub(r"<[^>]+>", "", str(row.get("title") or "")).strip()
+                if not url or len(title) < 6 or url in seen:
+                    continue
+                seen.add(url)
+                published, raw = _govcn_date(row.get("pubtimeStr"))
+                items.append(PolicyItem(
+                    site_key=site.key, title=title, url=url,
+                    published_at=published, raw_date=raw,
+                    content_kind="policy",
+                    source_metadata={
+                        "document_number": str(row.get("pcode") or ""),
+                        "issuing_authority": str(row.get("puborg") or ""),
+                        "channel": "国务院文件" if channel.endswith("gw") else "部门文件",
+                    },
+                ))
+                if len(items) >= site.max_items:
+                    return items
+            time.sleep(1)  # 礼貌限速
+    return items
+
+
+def _govcn_date(value: Any) -> tuple[datetime | None, str]:
+    raw = str(value or "").strip()
+    m = re.match(r"(\d{4})\.(\d{1,2})\.(\d{1,2})", raw)
+    if not m:
+        return None, raw
+    try:
+        return datetime(int(m[1]), int(m[2]), int(m[3])), raw
+    except ValueError:
+        return None, raw

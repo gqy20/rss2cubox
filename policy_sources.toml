@@ -23,6 +23,18 @@ max_items  = 120
 note       = "实测 18 个候选源里唯一的原生 RSS，60 条、每日更新。中央/国务院层面的一手源。注意它是「原创推荐」编辑精选，不等于完整的政策文件库（后者只有 HTML，且返回 403）。"
 
 [[sites]]
+key        = "govcn_zcwjk"
+name       = "国务院政策文件库"
+level      = "national"
+region     = "全国"
+list_url   = "https://sousuo.www.gov.cn/zcwjk/policyRetrieval"
+tier       = "api"
+adapter    = "govcn_zcwjk"
+# 检索接口按发布时间倒序翻页，1200 条约覆盖近三年；接口远端可回溯到 2005 年，要更深改这里
+max_items  = 1200
+note       = "政策文件库检索接口（gw=国务院文件 bm=部门文件）。接口要求 q 非空，用高频字「的」近似全量。"
+
+[[sites]]
 key           = "tc260_zqyj"
 name          = "全国网安标委(TC260)-征求意见与通知"
 level         = "national"
@@ -201,7 +213,10 @@ region        = "上海"
 list_url      = "https://www.shanghai.gov.cn/nw12344/index.html"
 item_selector = "ul.tadaty-list > li"
 title_attr    = "title"
-note          = "日期在 li 文本里，走正则回退提取。"
+# SSR 直出 + 静态分页 index_2.html 起（第 1 页无后缀）；44 条/页，1500 条约回溯到 2024 年初
+page_url_template = "https://www.shanghai.gov.cn/nw12344/index_{page}.html"
+max_items     = 1500
+note          = "日期在 li 文本里，走正则回退提取。静态翻页由 engine 的 page_url_template 驱动。"
 
 [[sites]]
 key           = "zhejiang_zcjd"
@@ -291,10 +306,8 @@ level         = "province"
 region        = "广东"
 list_url      = "https://www.gd.gov.cn/zwgk/zcjd/index.html"
 item_selector = "ul > li"
-tier          = "playwright"
-render_wait_ms = 3000
 max_items     = 40
-note          = "2026-10-01 验证启用：networkidle+3s 渲染后 ul>li 41 命中（32 条真实文章，post_49xxxx 路径）。与 gd_qbwj 互补：文件本体+解读。"
+note          = "2026-10-28 改回 requests：页面实为 SSR（post_49xxxx 23 条直出），playwright 在 HR2 上 20s 超时不稳。与 gd_qbwj 互补：文件本体+解读。旧 403/超时根因是系统代理污染（engine 已 trust_env=False）。"
 
 # ── 美国政策线（2026-10-01 接入，政策管线统一本体化）─────
 # RSS tier 走 feedparser；标题为英文，triage/enrich prompt 已国际化（v2）。
@@ -326,9 +339,9 @@ level         = "national"
 region        = "美国"
 list_url      = "https://www.gov.ca.gov/feed/"
 tier          = "rss"
+fetch_via     = "curl"
 max_items     = 20
-enabled       = false
-note          = "州级代表（AI 立法最活跃州）。2026-10-02 禁用：HR2（生产）出网 IP 被该站 403 屏蔽（完整 Chrome UA 亦拒），仅本机网络可达而本机 cron 已停——暂无采集通道。加州动态经 AIHOT/科技源间接收敛。"
+note          = "州级代表（AI 立法最活跃州）。WAF 按 TLS 指纹拦 python-requests（403），curl 指纹可过——fetch_via=curl 取源、feedparser 解析。"
 
 [[sites]]
 key           = "us_nist_news"
@@ -470,3 +483,51 @@ tier = "api"
 adapter = "sjd_disclosures"
 max_items = 300
 note = "实施机构全列表（最多300家），展开各家全部披露行；年度不冒充发布日期；按机构ID追踪变化。"
+
+# ── T1 新增：欧洲（2026-10-26）──
+# 本地 clash 代理会重置 europa.eu 连接，HR2 直连正常；cron 以服务器环境为准。
+[[sites]]
+key           = "govuk_dsit"
+name          = "英国-科学创新与技术部"
+level         = "national"
+region        = "英国"
+list_url      = "https://www.gov.uk/government/organisations/department-for-science-innovation-and-technology.atom"
+tier          = "rss"
+max_items     = 40
+note          = "DSIT 部门动态与政策文件 Atom feed（原生 RSS，白嫖级）。AI、数据、半导体政策的一手英方源。"
+
+[[sites]]
+key           = "eu_digital_strategy"
+name          = "欧盟-数字战略"
+level         = "national"
+region        = "欧盟"
+list_url      = "https://digital-strategy.ec.europa.eu/en/rss.xml"
+tier          = "rss"
+max_items     = 40
+note          = "欧盟委员会数字战略新闻（AI Act/DMA/DSA 实施动态）。法律文本本体在 EUR-Lex，后续可接 OJ 接口。"
+
+[[sites]]
+key           = "ah_zfwj"
+name          = "安徽省-政府文件"
+level         = "province"
+region        = "安徽"
+list_url      = "https://www.ah.gov.cn/public/column/1681?type=4&catId=6708431&action=list"
+item_selector = "li.mc"
+title_attr    = "title"
+tier          = "requests"
+max_items     = 60
+note          = "省政府文件（皖政/皖政办）。SSR 直出 38 条/页，日期在 li 文本尾部走正则回退。金监总局为三层 JS 栏目树已放弃。"
+
+[[sites]]
+key           = "xiongan_gfxwj"
+name          = "雄安新区-行政规范性文件"
+level         = "city"
+region        = "河北"
+list_url      = "https://www.xiongan.gov.cn/zwgk/zfxxgk/zc/xzgfxwj.html"
+item_selector = "li"
+title_attr    = ""
+tier          = "playwright"
+goto_wait     = "domcontentloaded"
+render_wait_ms = 9000
+max_items     = 40
+note          = "数字城市政策试验田。列表为 JS 注入 + 慢 CDN，networkidle 永远超时：domcontentloaded+9s 渲染后 li>a 21 条（标题在 a 文本，文号/日期/有效性在 li 尾部，日期走正则回退）。海南省政府文件 HR2 上主文档即超时，放弃。"

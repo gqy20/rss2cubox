@@ -104,7 +104,6 @@ def rebuild_series(db_url: str) -> dict[str, int]:
                 if len(members) < 2:
                     continue
                 # 排除同文件多站重复：同日入库的重复标题只留一个
-                days = sorted(m.pub_day for m in [(d, t) for d, t in members] for m in [type("X", (), {"pub_day": t.date()})()])
                 unique_days = {t.date() for _, t in members}
                 if len(unique_days) < 2:
                     continue
@@ -129,6 +128,10 @@ def rebuild_series(db_url: str) -> dict[str, int]:
     return {k: len(v) for k, v in kept.items()}
 
 
+# 程序性高频系列：内容是例行价格调整/人事招聘，跨期对比只会产出"92号汽油涨X分"式噪音
+_PROCEDURAL_PAT = re.compile(r"价格的通知|招聘|录用|分数线|成交结果")
+
+
 def get_comparison_pairs(db_url: str, min_gap_days: int = 60) -> list[dict[str, Any]]:
     """取可比较的系列对（相邻两期）。返回 [{series_key, prev, curr}]。"""
     with psycopg.connect(db_url) as conn:
@@ -145,6 +148,8 @@ def get_comparison_pairs(db_url: str, min_gap_days: int = 60) -> list[dict[str, 
         by_series.setdefault(r[0], []).append(r)
     pairs = []
     for key, items in by_series.items():
+        if _PROCEDURAL_PAT.search(key):
+            continue
         for a, b in zip(items, items[1:]):
             gap = (b[5] - a[5]).days if a[5] and b[5] else 999
             if gap >= min_gap_days:
